@@ -17,14 +17,17 @@
 module dftbp_mixer_andersonmixer
   use dftbp_common_accuracy, only : dp
   use dftbp_math_lapackroutines, only : gesv
+  use dftbp_io_message, only : error
+  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx
   implicit none
 
 #:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
 
   private
 #:for NAME, TYPE, LABEL in FLAVOURS
-  public :: TAndersonMixer${LABEL}$, TAndersonMixer${LABEL}$_init, TAndersonMixer${LABEL}$_reset
-  public :: TAndersonMixer${LABEL}$_mix
+  public :: TAndersonMixer${LABEL}$
+  public :: TAndersonMixer${LABEL}$_init, TAndersonMixer${LABEL}$_reset, TAndersonMixer${LABEL}$_mix
+  public :: TAndersonMixer${LABEL}$_hasInverseJacobian, TAndersonMixer${LABEL}$_getInverseJacobian
 #:endfor
 
 
@@ -35,7 +38,7 @@ module dftbp_mixer_andersonmixer
   !! which stores a given number of recent vector pairs. The storage should be accessed as an array
   !! with the help of the indx(:) array. Indx(1) gives the index for the most recent stored vector
   !! pairs. (LIFO)
-  type TAndersonMixer${LABEL}$
+  type, extends (TMixer${LABEL}$):: TAndersonMixer${LABEL}$
     private
 
     !> General mixing parameter
@@ -73,19 +76,27 @@ module dftbp_mixer_andersonmixer
 
     !> Stored prev. charge differences
     ${TYPE}$(dp), allocatable :: prevQDiff(:,:)
+      contains
+        procedure :: AndersonInit => TAndersonMixer${LABEL}$_init
+        procedure :: reset=> TAndersonMixer${LABEL}$_reset
+        procedure :: mix1D=> TAndersonMixer${LABEL}$_mix
+        procedure :: hasInverseJacobian => TAndersonMixer${LABEL}$_hasInverseJacobian
+        procedure :: getInverseJacobian => TAndersonMixer${LABEL}$_getInverseJacobian
   end type TAndersonMixer${LABEL}$
-#:endfor
 
+#:endfor
 
 contains
 
 #:for NAME, TYPE, LABEL in FLAVOURS
+
+
+
   !> Creates an Andersom mixer instance.
-  subroutine TAndersonMixer${LABEL}$_init(this, nGeneration, mixParam, initMixParam, convMixParam,&
-      & omega0)
+  subroutine TAndersonMixer${LABEL}$_init(this, nGeneration, mixParam, initMixParam, convMixParam, omega0)
 
     !> Initialized Anderson mixer on exit
-    type(TAndersonMixer${LABEL}$), intent(out) :: this
+    class(TAndersonMixer${LABEL}$), intent(out) :: this
 
     !> Nr. of generations (including actual) to consider
     integer, intent(in) :: nGeneration
@@ -141,7 +152,7 @@ contains
   subroutine TAndersonMixer${LABEL}$_reset(this, nElem)
 
     !> Anderson mixer instance
-    type(TAndersonMixer${LABEL}$), intent(inout) :: this
+    class(TAndersonMixer${LABEL}$), intent(inout) :: this
 
     !> Nr. of elements in the vectors to mix
     integer, intent(in) :: nElem
@@ -170,17 +181,17 @@ contains
   !!
   !! Warning: The complex-valued Anderson mixer requires flattened hermitian matrices as input.
   !!   You are free to permute the individual elements of the flattened arrays as long as the same
-  !!   permutation is applied to qInpResult and qDiff.
+  !!   permutation is applied to qInpRes and qDiff.
   !!   The restriction arises from the assumption that the dot-products of density matrices are
   !!   real-valued (imaginary parts add up to zero due to the hermitian property) and the linear
   !!   system of equations remains real-valued.
-  subroutine TAndersonMixer${LABEL}$_mix(this, qInpResult, qDiff)
+  subroutine TAndersonMixer${LABEL}$_mix(this, qInpRes, qDiff)
 
     !> Anderson mixer
-    type(TAndersonMixer${LABEL}$), intent(inout) :: this
+    class(TAndersonMixer${LABEL}$), intent(inout) :: this
 
     !> Input charges on entry, mixed charges on exit.
-    ${TYPE}$(dp), intent(inout) :: qInpResult(:)
+    ${TYPE}$(dp), intent(inout) :: qInpRes(:)
 
     !> Charge difference
     ${TYPE}$(dp), intent(in) :: qDiff(:)
@@ -190,7 +201,7 @@ contains
     real(dp) :: rTmp
     integer :: ii
 
-    @:ASSERT(size(qInpResult) == this%nElem)
+    @:ASSERT(size(qInpRes) == this%nElem)
     @:ASSERT(size(qDiff) == this%nElem)
 
     if (this%nPrevVector < this%mPrevVector) then
@@ -211,9 +222,9 @@ contains
 
     ! First iteration: store vectors and return simple mixed vector
     if (this%nPrevVector == 0) then
-      call storeVectors_${NAME}$(this%prevQInput, this%prevQDiff, this%indx, qInpResult, qDiff,&
+      call storeVectors_${NAME}$(this%prevQInput, this%prevQDiff, this%indx, qInpRes, qDiff,&
           & this%mPrevVector)
-      qInpResult(:) = qInpResult + this%initMixParam * qDiff
+      qInpRes(:) = qInpRes + this%initMixParam * qDiff
       return
     end if
 
@@ -221,15 +232,15 @@ contains
     allocate(qDiffMiddle(this%nElem))
 
     ! Calculate average input charges and average charge differences
-    call calcAndersonAverages_${NAME}$(qInpMiddle, qDiffMiddle, qInpResult, qDiff, this%prevQInput,&
+    call calcAndersonAverages_${NAME}$(qInpMiddle, qDiffMiddle, qInpRes, qDiff, this%prevQInput,&
         & this%prevQDiff, this%nElem, this%nPrevVector, this%indx, this%tBreakSym, this%omega02)
 
-    ! Store vectors before overwriting qInpResult
-    call storeVectors_${NAME}$(this%prevQInput, this%prevQDiff, this%indx, qInpResult, qDiff,&
+    ! Store vectors before overwriting qInpRes
+    call storeVectors_${NAME}$(this%prevQInput, this%prevQDiff, this%indx, qInpRes, qDiff,&
         & this%mPrevVector)
 
     ! Mix averaged input charge and average charge difference
-    qInpResult(:) = qInpMiddle + mixParam * qDiffMiddle
+    qInpRes(:) = qInpMiddle + mixParam * qDiffMiddle
 
   end subroutine TAndersonMixer${LABEL}$_mix
 
@@ -367,6 +378,21 @@ contains
     prevQDiff(:, indx(1)) = qDiff
 
   end subroutine storeVectors_${NAME}$
+
+  !> Anderson mixer does not have an inverse Jacobian.
+  !> Currently only provided by Broyden mixer.
+  logical function TAndersonMixer${LABEL}$_hasInverseJacobian(this) result(hasInverseJacobian)
+    class(TAndersonMixer${LABEL}$), intent(in) :: this
+    hasInverseJacobian = .false.
+  end function TAndersonMixer${LABEL}$_hasInverseJacobian
+    
+  !> Throws an error, since anderson mixer does not have an inverse Jacobian.
+  subroutine TAndersonMixer${LABEL}$_getInverseJacobian(this, invJac)
+    class(TAndersonMixer${LABEL}$), intent(in) :: this
+    ${TYPE}$(dp), intent(out) :: invJac(:,:)
+    call error('Anderson mixer does not provide inverse Jacobian. (maybe you wanted a Broyden mixer?)')
+  end subroutine TAndersonMixer${LABEL}$_getInverseJacobian
+
 #:endfor
 
 end module dftbp_mixer_andersonmixer

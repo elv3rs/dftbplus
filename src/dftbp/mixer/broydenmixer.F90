@@ -20,21 +20,25 @@ module dftbp_mixer_broydenmixer
   use dftbp_math_matrixops, only : adjointLowerTriangle
   use dftbp_math_blasroutines, only : ger
   use dftbp_math_lapackroutines, only : getrf, getrs, gesv, matinv, hermatinv
+  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx
   implicit none
 
 #:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
 
   private
+
 #:for NAME, TYPE, LABEL in FLAVOURS
-  public :: TBroydenMixer${LABEL}$, TBroydenMixer${LABEL}$_init, TBroydenMixer${LABEL}$_reset
-  public :: TBroydenMixer${LABEL}$_mix
+  public :: TBroydenMixer${LABEL}$
+  public :: TBroydenMixer${LABEL}$_mix, TBroydenMixer${LABEL}$_init, TBroydenMixer${LABEL}$_reset
 #:endfor
-  public :: TBroydenMixerReal_getInverseJacobian
+  public :: TBroydenMixerCmplx_hasInverseJacobian, TBroydenMixerCmplx_getInverseJacobian
+  public :: TBroydenMixerReal_hasInverseJacobian, TBroydenMixerReal_getInverseJacobian
+
 
 
 #:for NAME, TYPE, LABEL in FLAVOURS
   !> Contains the necessary data for a Broyden mixer.
-  type TBroydenMixer${LABEL}$
+  type, extends (TMixer${LABEL}$) :: TBroydenMixer${LABEL}$
     private
 
     !> Actual iteration
@@ -78,7 +82,12 @@ module dftbp_mixer_broydenmixer
 
     !> uu vectors
     ${TYPE}$(dp), allocatable :: uu(:,:)
-
+      contains
+        procedure :: BroydenInit => TBroydenMixer${LABEL}$_init
+        procedure :: reset => TBroydenMixer${LABEL}$_reset
+        procedure :: mix1D => TBroydenMixer${LABEL}$_mix
+        procedure :: hasInverseJacobian => TBroydenMixer${LABEL}$_hasInverseJacobian
+        procedure :: getInverseJacobian => TBroydenMixer${LABEL}$_getInverseJacobian
   end type TBroydenMixer${LABEL}$
 #:endfor
 
@@ -94,7 +103,7 @@ contains
       & weightFac)
 
     !> An initialized Broyden mixer on exit
-    type(TBroydenMixer${LABEL}$), intent(out) :: this
+    class(TBroydenMixer${LABEL}$), intent(out) :: this
 
     !> Maximum nr. of iterations (max. nr. of vectors to store)
     integer, intent(in) :: mIter
@@ -139,7 +148,7 @@ contains
   subroutine TBroydenMixer${LABEL}$_reset(this, nElem)
 
     !> Broyden mixer instance
-    type(TBroydenMixer${LABEL}$), intent(inout) :: this
+    class(TBroydenMixer${LABEL}$), intent(inout) :: this
 
     !> Length of the vectors to mix
     integer, intent(in) :: nElem
@@ -168,17 +177,17 @@ contains
   !!
   !! Warning: The complex-valued Broyden mixer requires flattened hermitian matrices as input.
   !!   You are free to permute the individual elements of the flattened arrays as long as the same
-  !!   permutation is applied to qInpResult and qDiff.
+  !!   permutation is applied to qInpRes and qDiff.
   !!   The restriction arises from the assumption that the dot-products of density matrices are
   !!   real-valued (imaginary parts add up to zero due to the hermitian property) and the linear
   !!   system of equations remains real-valued.
-  subroutine TBroydenMixer${LABEL}$_mix(this, qInpResult, qDiff)
+  subroutine TBroydenMixer${LABEL}$_mix(this, qInpRes, qDiff)
 
     !> The Broyden mixer
-    type(TBroydenMixer${LABEL}$), intent(inout) :: this
+    class(TBroydenMixer${LABEL}$), intent(inout) :: this
 
     !> Input charges on entry, mixed charges on exit
-    ${TYPE}$(dp), intent(inout) :: qInpResult(:)
+    ${TYPE}$(dp), intent(inout) :: qInpRes(:)
 
     !> Charge difference between output and input charges
     ${TYPE}$(dp), intent(in) :: qDiff(:)
@@ -188,7 +197,7 @@ contains
       call error("Broyden mixer: Maximal nr. of steps exceeded")
     end if
 
-    call modifiedBroydenMixing${LABEL}$(qInpResult, this%qInpLast, this%qDiffLast, this%aa,&
+    call modifiedBroydenMixing${LABEL}$(qInpRes, this%qInpLast, this%qDiffLast, this%aa,&
         & this%ww, this%iIter, qDiff, this%alpha, this%omega0, this%minWeight, this%maxWeight,&
         & this%weightFac, this%nElem, this%dF, this%uu)
 
@@ -196,11 +205,11 @@ contains
 
 
   !> Does the real work for the Broyden mixer.
-  subroutine modifiedBroydenMixing${LABEL}$(qInpResult, qInpLast, qDiffLast, aa, ww, nn, qDiff,&
+  subroutine modifiedBroydenMixing${LABEL}$(qInpRes, qInpLast, qDiffLast, aa, ww, nn, qDiff,&
       & alpha, omega0, minWeight, maxWeight, weightFac, nElem, dF, uu)
 
     !> Current input charge on entry, mixed charged on exit
-    ${TYPE}$(dp), intent(inout) :: qInpResult(:)
+    ${TYPE}$(dp), intent(inout) :: qInpRes(:)
 
     !> Input charge vector of the previous iterations
     ${TYPE}$(dp), intent(inout) :: qInpLast(:)
@@ -256,7 +265,7 @@ contains
     nn_1 = nn - 1
 
     @:ASSERT(nn > 0)
-    @:ASSERT(size(qInpResult) == nElem)
+    @:ASSERT(size(qInpRes) == nElem)
     @:ASSERT(size(qInpLast) == nElem)
     @:ASSERT(size(qDiffLast) == nElem)
     @:ASSERT(size(qDiff) == nElem)
@@ -265,9 +274,9 @@ contains
 
     ! First iteration: simple mix and storage of qInp and qDiff
     if (nn == 1) then
-      qInpLast(:) = qInpResult
+      qInpLast(:) = qInpRes
       qDiffLast(:) = qDiff
-      qInpResult(:) = qInpResult + alpha * qDiff
+      qInpRes(:) = qInpRes + alpha * qDiff
       return
     end if
 
@@ -318,18 +327,18 @@ contains
     dF(:, nn_1) = dF_uu
 
     ! Create |u(m-1)>
-    dF_uu(:) = alpha * dF_uu + invNorm * (qInpResult - qInpLast)
+    dF_uu(:) = alpha * dF_uu + invNorm * (qInpRes - qInpLast)
 
     ! Save charge vectors before overwriting
-    qInpLast(:) = qInpResult
+    qInpLast(:) = qInpRes
     qDiffLast(:) = qDiff
 
     ! Build new vector
-    qInpResult(:) = qInpResult + alpha * qDiff
+    qInpRes(:) = qInpRes + alpha * qDiff
     do ii = 1, nn-2
-      qInpResult(:) = qInpResult - ww(ii) * cc(ii) * uu(:,ii)
+      qInpRes(:) = qInpRes - ww(ii) * cc(ii) * uu(:,ii)
     end do
-    qInpResult(:) = qInpResult - ww(nn_1) * cc(nn_1) * dF_uu
+    qInpRes(:) = qInpRes - ww(nn_1) * cc(nn_1) * dF_uu
 
     ! Save |u(m-1)>
     uu(:, nn_1) = dF_uu
@@ -342,7 +351,7 @@ contains
   subroutine TBroydenMixerReal_getInverseJacobian(this, invJac)
 
     !> Broyden mixer
-    type(TBroydenMixerReal), intent(inout) :: this
+    class(TBroydenMixerReal), intent(in) :: this !TODO changed from inout
 
     !> Inverse of the Jacobian
     real(dp), intent(out) :: invJac(:,:)
@@ -392,5 +401,24 @@ contains
     end do
 
   end subroutine TBroydenMixerReal_getInverseJacobian
+ 
+  !> The real broyden mixer is currently the only one that provides the inverse Jacobian.
+  logical function TBroydenMixerReal_hasInverseJacobian(this) result(hasInverseJacobian)
+    class(TBroydenMixerReal), intent(in) :: this
+    hasInverseJacobian = .true.
+  end function TBroydenMixerReal_hasInverseJacobian 
+    
+  !> Not implemented for the complex broyden mixer.
+  logical function TBroydenMixerCmplx_hasInverseJacobian(this) result(hasInverseJacobian)
+    class(TBroydenMixerCmplx), intent(in) :: this
+    hasInverseJacobian = .false.
+  end function TBroydenMixerCmplx_hasInverseJacobian
+
+  !> Throw error when trying to get the inverse Jacobian for the complex broyden mixer.
+  subroutine TBroydenMixerCmplx_getInverseJacobian(this, invJac)
+    class(TBroydenMixerCmplx), intent(in) :: this
+    complex(dp), intent(out) :: invJac(:,:)
+    call error("Inverse Jacobian not implemented for complex Broyden mixer.")
+  end subroutine TBroydenMixerCmplx_getInverseJacobian
 
 end module dftbp_mixer_broydenmixer

@@ -6,64 +6,95 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include 'common.fypp'
-#:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
+#:set FLAVOURS = [('real', 'real', 'Real'),('cmplx', 'complex', 'Cmplx')]
 
 !> Provides a general mixer which contains the desired actual mixer.
 module dftbp_mixer_mixer
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
 #:for NAME, TYPE, LABEL in FLAVOURS
-  use dftbp_mixer_andersonmixer, only : TAndersonMixer${LABEL}$, TAndersonMixer${LABEL}$_mix,&
-      & TAndersonMixer${LABEL}$_reset
-  use dftbp_mixer_broydenmixer, only : TBroydenMixer${LABEL}$, TBroydenMixer${LABEL}$_mix,&
-      & TBroydenMixer${LABEL}$_reset
-  use dftbp_mixer_diismixer, only : TDiisMixer${LABEL}$, TDiisMixer${LABEL}$_mix,&
-      & TDiisMixer${LABEL}$_reset
-  use dftbp_mixer_simplemixer, only : TSimpleMixer${LABEL}$, TSimpleMixer${LABEL}$_mix,&
-      & TSimpleMixer${LABEL}$_reset
+!  use dftbp_mixer_andersonmixer, only : TAndersonMixer${LABEL}$, TAndersonMixer${LABEL}$_mix,&
+!      & TAndersonMixer${LABEL}$_reset
+!  use dftbp_mixer_broydenmixer, only : TBroydenMixer${LABEL}$, TBroydenMixer${LABEL}$_mix,&
+!    & TBroydenMixer${LABEL}$_reset
+! use dftbp_mixer_diismixer, only : TDiisMixer${LABEL}$, TDiisMixer${LABEL}$_mix,&
+!      & TDiisMixer${LABEL}$_reset
+!  use dftbp_mixer_simplemixer, only : TSimpleMixer${LABEL}$, TSimpleMixer${LABEL}$_mix,&
+!      & TSimpleMixer${LABEL}$_reset
 #:endfor
-  use dftbp_mixer_broydenmixer, only : TBroydenMixerReal_getInverseJacobian
   implicit none
 
   private
 #:for NAME, TYPE, LABEL in FLAVOURS
   public :: TMixer${LABEL}$
-  public :: TMixer${LABEL}$_init, TMixer${LABEL}$_reset, TMixer${LABEL}$_mix
+  !public :: TMixer${LABEL}$_init,
+  public::  TMixer${LABEL}$_reset, TMixer${LABEL}$_mix
 #:endfor
   public :: TMixerReal_hasInverseJacobian, TMixerReal_getInverseJacobian
   public :: mixerTypes
 
 
 #:for NAME, TYPE, LABEL in FLAVOURS
-  !> Interface type for various mixers.
-  type TMixer${LABEL}$
-    private
 
-    !> Numerical type of mixer 1:4
-    integer :: mixerType
 
-    !> Simple mixer instance
-    type(TSimpleMixer${LABEL}$), allocatable :: pSimpleMixer
 
-    !> Anderson mixer instance
-    type(TAndersonMixer${LABEL}$), allocatable :: pAndersonMixer
 
-    !> Broyden mixer instance
-    type(TBroydenMixer${LABEL}$), allocatable :: pBroydenMixer
 
-    !> Modified DIIS mixer instance
-    type(TDiisMixer${LABEL}$), allocatable :: pDIISMixer
+  type, abstract :: TMixer${LABEL}$
+    contains
+        !> Mixer Initialisation. 
+        !-- Since init has different signatures, each mixer has its unique init
+        !-- Todo: create a input type to unify the signature
+        !--procedure(Initialise), deferred :: init
+        procedure(IReset${LABEL}$), deferred :: reset
 
+        !> Actual mixing routine
+        procedure(IMix1D${LABEL}$), deferred :: mix1D
+        
+        !> Inverse Jacobian (only for Broyden mixer)
+        procedure(IhasInverseJacobian${LABEL}$), deferred :: hasInverseJacobian
+        procedure(IgetInverseJacobian${LABEL}$), deferred :: getInverseJacobian
+
+        !> Interface declared below, allowing to mix 1d, 3d and 6d arrays 
+        !--procedure, non-overridable :: TMixer${LABEL}$_mix
   end type TMixer${LABEL}$
 
 
+  abstract interface 
+    subroutine IReset${LABEL}$(this, nElem)
+      import :: TMixer${LABEL}$
+      class(TMixer${LABEL}$), intent(inout) :: this
+      integer, intent(in) :: nElem
+    end subroutine IReset${LABEL}$
+
+    logical function IhasInverseJacobian${LABEL}$(this)
+      import :: TMixer${LABEL}$
+      class(TMixer${LABEL}$), intent(in) :: this
+    end function IhasInverseJacobian${LABEL}$
+
+    subroutine IMix1D${LABEL}$(this, qInpRes, qDiff)
+      import :: TMixer${LABEL}$, dp
+      class(TMixer${LABEL}$), intent(inout) :: this
+      ${TYPE}$(dp), intent(inout) :: qInpRes(:)
+      ${TYPE}$(dp), intent(in) :: qDiff(:)
+    end subroutine IMix1D${LABEL}$
+
+    subroutine IgetInverseJacobian${LABEL}$(this, invJac)
+      import :: TMixer${LABEL}$, dp
+      class(TMixer${LABEL}$), intent(in) :: this
+      ${TYPE}$(dp), intent(out) :: invJac(:,:)
+    end subroutine IgetInverseJacobian${LABEL}$
+  end interface
+
+
+
   !> Initialises specific mixer in use
-  interface TMixer${LABEL}$_init
-    module procedure TMixer${LABEL}$_initSimple
-    module procedure TMixer${LABEL}$_initAnderson
-    module procedure TMixer${LABEL}$_initBroyden
-    module procedure TMixer${LABEL}$_initDiis
-  end interface TMixer${LABEL}$_init
+  !interface TMixer${LABEL}$_init
+   ! module procedure TMixer${LABEL}$_initSimple
+   ! module procedure TMixer${LABEL}$_initAnderson
+   ! module procedure TMixer${LABEL}$_initBroyden
+  !  module procedure TMixer${LABEL}$_initDiis
+  !end interface TMixer${LABEL}$_init
 
 
   !> Does the actual mixing
@@ -89,85 +120,16 @@ module dftbp_mixer_mixer
 contains
 
 #:for NAME, TYPE, LABEL in FLAVOURS
-  !> Initializes a simple mixer.
-  subroutine TMixer${LABEL}$_initSimple(this, pSimple)
-
-    !> Mixer instance
-    type(TMixer${LABEL}$), intent(out) :: this
-
-    !> A valid Simple mixer instance on exit
-    type(TSimpleMixer${LABEL}$), allocatable, intent(inout) :: pSimple
-
-    this%mixerType = mixerTypes%simple
-    call move_alloc(pSimple, this%pSimpleMixer)
-
-  end subroutine TMixer${LABEL}$_initSimple
-
-
-  !> Initializes an Anderson mixer.
-  subroutine TMixer${LABEL}$_initAnderson(this, pAnderson)
-
-    !> Mixer instance
-    type(TMixer${LABEL}$), intent(out) :: this
-
-    !> A valid Anderson mixer instance on exit
-    type(TAndersonMixer${LABEL}$), allocatable, intent(inout) :: pAnderson
-
-    this%mixerType = mixerTypes%anderson
-    call move_alloc(pAnderson, this%pAndersonMixer)
-
-  end subroutine TMixer${LABEL}$_initAnderson
-
-
-  !> Initializes a Broyden mixer.
-  subroutine TMixer${LABEL}$_initBroyden(this, pBroyden)
-
-    !> Mixer instance
-    type(TMixer${LABEL}$), intent(out) :: this
-
-    !> A valid Broyden mixer instance on exit
-    type(TBroydenMixer${LABEL}$), allocatable, intent(inout) :: pBroyden
-
-    this%mixerType = mixerTypes%broyden
-    call move_alloc(pBroyden, this%pBroydenMixer)
-
-  end subroutine TMixer${LABEL}$_initBroyden
-
-
-  !> Initializes a DIIS mixer.
-  subroutine TMixer${LABEL}$_initDiis(this, pDIIS)
-
-    !> Mixer instance
-    type(TMixer${LABEL}$), intent(out) :: this
-
-    !> A valid DIIS mixer instance on exit
-    type(TDiisMixer${LABEL}$), allocatable, intent(inout) :: pDIIS
-
-    this%mixerType = mixerTypes%diis
-    call move_alloc(pDIIS, this%pDIISMixer)
-
-  end subroutine TMixer${LABEL}$_initDiis
-
-
   !> Resets the mixer.
   subroutine TMixer${LABEL}$_reset(this, nElem)
 
     !> Mixer instance
-    type(TMixer${LABEL}$), intent(inout) :: this
+    class(TMixer${LABEL}$), intent(inout) :: this
 
     !> Size of the vectors to mix
     integer, intent(in) :: nElem
 
-    select case (this%mixerType)
-    case(mixerTypes%simple)
-      call TSimpleMixer${LABEL}$_reset(this%pSimpleMixer, nElem)
-    case(mixerTypes%anderson)
-      call TAndersonMixer${LABEL}$_reset(this%pAndersonMixer, nElem)
-    case(mixerTypes%broyden)
-      call TBroydenMixer${LABEL}$_reset(this%pBroydenMixer, nElem)
-    case(mixerTypes%diis)
-      call TDiisMixer${LABEL}$_reset(this%pDIISMixer, nElem)
-    end select
+    call this%reset(nElem)
 
   end subroutine TMixer${LABEL}$_reset
 
@@ -176,7 +138,7 @@ contains
   subroutine TMixer${LABEL}$_mix1D(this, qInpRes, qDiff)
 
     !> Mixer instance
-    type(TMixer${LABEL}$), intent(inout) :: this
+    class(TMixer${LABEL}$), intent(inout) :: this
 
     !> Input vector on entry, result vector on exit
     ${TYPE}$(dp), intent(inout) :: qInpRes(:)
@@ -184,16 +146,7 @@ contains
     !> Difference between input and output vectors (measure of lack of convergence)
     ${TYPE}$(dp), intent(in) :: qDiff(:)
 
-    select case (this%mixerType)
-    case(mixerTypes%simple)
-      call TSimpleMixer${LABEL}$_mix(this%pSimpleMixer, qInpRes, qDiff)
-    case(mixerTypes%anderson)
-      call TAndersonMixer${LABEL}$_mix(this%pAndersonMixer, qInpRes, qDiff)
-    case(mixerTypes%broyden)
-      call TBroydenMixer${LABEL}$_mix(this%pBroydenMixer, qInpRes, qDiff)
-    case(mixerTypes%diis)
-      call TDiisMixer${LABEL}$_mix(this%pDIISMixer, qInpRes, qDiff)
-    end select
+    call this%mix1D(qInpRes, qDiff)
 
   end subroutine TMixer${LABEL}$_mix1D
 
@@ -202,7 +155,7 @@ contains
   subroutine TMixer${LABEL}$_mix3D(this, qInpResSqr, qDiffSqr)
 
     !> Mixer instance
-    type(TMixer${LABEL}$), intent(inout) :: this
+    class(TMixer${LABEL}$), intent(inout) :: this
 
     !> Input vector on entry, result vector on exit
     ${TYPE}$(dp), intent(inout), contiguous, target :: qInpResSqr(:,:,:)
@@ -228,7 +181,7 @@ contains
   subroutine TMixer${LABEL}$_mix6D(this, qInpResSqr, qDiffSqr)
 
     !> Mixer instance
-    type(TMixer${LABEL}$), intent(inout) :: this
+    class(TMixer${LABEL}$), intent(inout) :: this
 
     !> Input vector on entry, result vector on exit
     ${TYPE}$(dp), intent(inout), contiguous, target :: qInpResSqr(:,:,:,:,:,:)
@@ -248,52 +201,22 @@ contains
     call TMixer${LABEL}$_mix1D(this, qInpRes, qDiff)
 
   end subroutine TMixer${LABEL}$_mix6D
-#:endfor
 
+
+  !-- By default, no Jacobian is provided. As of right now, only the Real Broyden mixer provides an inverse Jacobian.
 
   !> Tells whether the mixer is able to provide the inverse Jacobian.
-  function TMixerReal_hasInverseJacobian(this) result(has)
-
-    !> Mixer instance
-    type(TMixerReal), intent(inout) :: this
-
-    !> Size of the vectors to mix
-    logical :: has
-
-    select case (this%mixerType)
-    case(mixerTypes%simple)
-      has = .false.
-    case (mixerTypes%anderson)
-      has = .false.
-    case (mixerTypes%broyden)
-      has = .true.
-    case (mixerTypes%diis)
-      has = .false.
-    end select
-
-  end function TMixerReal_hasInverseJacobian
-
+  logical function TMixer${LABEL}$_hasInverseJacobian(this) result(has)
+    class(TMixer${LABEL}$), intent(in) :: this
+    has = this%hasInverseJacobian()
+  end function TMixer${LABEL}$_hasInverseJacobian
 
   !> Returns an inverse Jacobian if possible, halting if not.
-  subroutine TMixerReal_getInverseJacobian(this, invJac)
-
-    !> Mixer instance
-    type(TMixerReal), intent(inout) :: this
-
-    !> Inverse Jacobian matrix if available
-    real(dp), intent(out) :: invJac(:,:)
-
-    select case (this%mixerType)
-    case(mixerTypes%simple)
-      call error("Simple mixer does not provide inverse Jacobian")
-    case (mixerTypes%anderson)
-      call error("Anderson mixer does not provide inverse Jacobian")
-    case (mixerTypes%broyden)
-      call TBroydenMixerReal_getInverseJacobian(this%pBroydenMixer, invJac)
-    case (mixerTypes%diis)
-      call error("DIIS mixer does not provide inverse Jacobian")
-    end select
-
-  end subroutine TMixerReal_getInverseJacobian
+  subroutine TMixer${LABEL}$_getInverseJacobian(this, invJac)
+    class(TMixer${LABEL}$), intent(in) :: this
+    ${TYPE}$(dp), intent(out) :: invJac(:,:)
+    call this%getInverseJacobian(invJac)
+  end subroutine TMixer${LABEL}$_getInverseJacobian
+#:endfor
 
 end module dftbp_mixer_mixer

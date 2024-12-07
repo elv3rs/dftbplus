@@ -4330,7 +4330,7 @@ contains
     type(TEnvironment), intent(in) :: env
 
     !> Charge mixing object
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Output electrons
     real(dp), intent(inout) :: qOutput(:,:,:)
@@ -4523,7 +4523,7 @@ contains
     integer, intent(in) :: img2CentCell(:)
 
     !> Charge mixing object
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Output electrons
     real(dp), intent(inout) :: qOutput(:,:,:)
@@ -4734,10 +4734,10 @@ contains
     integer, intent(in) :: img2CentCell(:)
 
     !> Charge mixing object
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Complex charge mixing object
-    type(TMixerCmplx), intent(inout), allocatable :: pChrgMixerCmplx
+    class(TMixerCmplx), intent(inout), allocatable :: pChrgMixerCmplx
 
     !> Output electrons
     real(dp), intent(in) :: qOutput(:,:,:)
@@ -5356,7 +5356,7 @@ contains
     real(dp), intent(in) :: qOutRed(:)
 
     !> SCC mixer
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Atomic orbital information
     type(TOrbitals), intent(in) :: orb

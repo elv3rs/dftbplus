@@ -17,20 +17,21 @@
 module dftbp_mixer_diismixer
   use dftbp_common_accuracy, only : dp
   use dftbp_math_lapackroutines, only : gesv
+  use dftbp_io_message, only : error
+  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx
   implicit none
 
 #:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
 
   private
 #:for NAME, TYPE, LABEL in FLAVOURS
-  public :: TDiisMixer${LABEL}$, TDiisMixer${LABEL}$_init, TDiisMixer${LABEL}$_reset
-  public :: TDiisMixer${LABEL}$_mix
-#:endfor
+  public :: TDiisMixer${LABEL}$
+  public :: TDiisMixer${LABEL}$_mix, TDiisMixer${LABEL}$_init, TDiisMixer${LABEL}$_reset
+  public :: TDiisMixer${LABEL}$_hasInverseJacobian, TDiisMixer${LABEL}$_getInverseJacobian
 
 
-#:for NAME, TYPE, LABEL in FLAVOURS
   !> Contains the necessary data for an DIIS mixer.
-  type TDiisMixer${LABEL}$
+  type, extends (TMixer${LABEL}$) :: TDiisMixer${LABEL}$
     private
 
     !> Initial mixing parameter
@@ -65,7 +66,12 @@ module dftbp_mixer_diismixer
 
     !> Holds DIIS mixed gradients from older iterations for downhill direction
     ${TYPE}$(dp), allocatable :: deltaR(:)
-
+    contains
+      procedure :: mix1D => TDiisMixer${LABEL}$_mix
+      procedure :: DiisInit => TDiisMixer${LABEL}$_init
+      procedure :: reset => TDiisMixer${LABEL}$_reset
+      procedure :: hasInverseJacobian => TDiisMixer${LABEL}$_hasInverseJacobian
+      procedure :: getInverseJacobian => TDiisMixer${LABEL}$_getInverseJacobian
   end type TDiisMixer${LABEL}$
 #:endfor
 
@@ -77,7 +83,7 @@ contains
   subroutine TDiisMixer${LABEL}$_init(this, nGeneration, initMixParam, tFromStart, alpha)
 
     !> Pointer to an initialized DIIS mixer on exit
-    type(TDiisMixer${LABEL}$), intent(out) :: this
+    class(TDiisMixer${LABEL}$), intent(out) :: this
 
     !> Nr. of generations (including actual) to consider
     integer, intent(in) :: nGeneration
@@ -126,7 +132,7 @@ contains
   subroutine TDiisMixer${LABEL}$_reset(this, nElem)
 
     !> DIIS mixer instance
-    type(TDiisMixer${LABEL}$), intent(inout) :: this
+    class(TDiisMixer${LABEL}$), intent(inout) :: this
 
     !> Nr. of elements in the vectors to mix
     integer, intent(in) :: nElem
@@ -155,17 +161,17 @@ contains
   !!
   !! Warning: The complex-valued DIIS mixer requires flattened hermitian matrices as input.
   !!   You are free to permute the individual elements of the flattened arrays as long as the same
-  !!   permutation is applied to qInpResult and qDiff.
+  !!   permutation is applied to qInpRes and qDiff.
   !!   The restriction arises from the assumption that the dot-products of density matrices are
   !!   real-valued (imaginary parts add up to zero due to the hermitian property) and the linear
   !!   system of equations remains real-valued.
-  subroutine TDiisMixer${LABEL}$_mix(this, qInpResult, qDiff)
+  subroutine TDiisMixer${LABEL}$_mix(this, qInpRes, qDiff)
 
     !> Pointer to the diis mixer
-    type(TDiisMixer${LABEL}$), intent(inout) :: this
+    class(TDiisMixer${LABEL}$), intent(inout) :: this
 
     !> Input charges on entry, mixed charges on exit.
-    ${TYPE}$(dp), intent(inout) :: qInpResult(:)
+    ${TYPE}$(dp), intent(inout) :: qInpRes(:)
 
     !> Charge difference vector between output and input charges
     ${TYPE}$(dp), intent(in) :: qDiff(:)
@@ -173,14 +179,14 @@ contains
     real(dp), allocatable :: aa(:,:), bb(:,:)
     integer :: ii, jj
 
-    @:ASSERT(size(qInpResult) == this%nElem)
+    @:ASSERT(size(qInpRes) == this%nElem)
     @:ASSERT(size(qDiff) == this%nElem)
 
     if (this%iPrevVector < this%mPrevVector) then
       this%iPrevVector = this%iPrevVector + 1
     end if
 
-    call storeVectors_${NAME}$(this%prevQInput, this%prevQDiff, this%indx, qInpResult, qDiff,&
+    call storeVectors_${NAME}$(this%prevQInput, this%prevQDiff, this%indx, qInpRes, qDiff,&
         & this%mPrevVector)
 
     if (this%tFromStart .or. this%iPrevVector == this%mPrevVector) then
@@ -217,9 +223,9 @@ contains
       ! Solve DIIS system of linear equations
       call gesv(aa, bb)
 
-      qInpResult(:) = 0.0_dp
+      qInpRes(:) = 0.0_dp
       do ii = 1, this%iPrevVector
-        qInpResult(:) = qInpResult + bb(ii, 1) * (this%prevQInput(:, ii) + this%prevQDiff(:, ii))
+        qInpRes(:) = qInpRes + bb(ii, 1) * (this%prevQInput(:, ii) + this%prevQDiff(:, ii))
       end do
 
       if (this%tAddIntrpGradient) then
@@ -228,14 +234,14 @@ contains
         do ii = 1, this%iPrevVector
           this%deltaR(:) = this%deltaR + bb(ii, 1) * this%prevQDiff(:, ii)
         end do
-        qInpResult(:) = qInpResult - this%alpha * this%deltaR
+        qInpRes(:) = qInpRes - this%alpha * this%deltaR
       end if
 
     end if
 
     if (this%iPrevVector < this%mPrevVector) then
       ! First few iterations return simple mixed vector
-      qInpResult(:) = qInpResult + this%initMixParam * qDiff
+      qInpRes(:) = qInpRes + this%initMixParam * qDiff
     end if
 
   end subroutine TDiisMixer${LABEL}$_mix
@@ -268,6 +274,23 @@ contains
     prevQDiff(:, indx) = qDiff
 
   end subroutine storeVectors_${NAME}$
+
+  !> No inverse Jacobian for DIIS mixer
+  logical function TDiisMixer${LABEL}$_hasInverseJacobian(this)
+    class(TDiisMixer${LABEL}$), intent(in) :: this
+    logical :: hasInverseJacobian = .false.
+  end function TDiisMixer${LABEL}$_hasInverseJacobian
+
+  !> Throw an error if the inverse Jacobian is requested
+  subroutine TDiisMixer${LABEL}$_getInverseJacobian(this, invJac)
+      class(TDiisMixer${LABEL}$), intent(in) :: this
+      ${TYPE}$(dp), intent(out) :: invJac(:,:)
+      call error("Inverse Jacobian not implemented for DIIS mixer. (Maybe you want to use the Broyden mixer?)")
+  end subroutine TDiisMixer${LABEL}$_getInverseJacobian
+
+
+
+
 #:endfor
 
 end module dftbp_mixer_diismixer

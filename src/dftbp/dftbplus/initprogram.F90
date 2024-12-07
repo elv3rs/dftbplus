@@ -114,8 +114,7 @@ module dftbp_dftbplus_initprogram
       & TBroydenMixerCmplx, TBroydenMixerCmplx_init
   use dftbp_mixer_diismixer, only : TDiisMixerReal, TDiisMixerReal_init, TDiisMixerCmplx,&
       & TDiisMixerCmplx_init
-  use dftbp_mixer_mixer, only : TMixerReal, TMixerCmplx, mixerTypes, TMixerReal_init,&
-      & TMixerCmplx_init
+  use dftbp_mixer_mixer, only : TMixerReal, TMixerCmplx, mixerTypes
   use dftbp_mixer_simplemixer, only : TSimpleMixerReal, TSimpleMixerCmplx, TSimpleMixerReal_init,&
       & TSimpleMixerCmplx_init
   use dftbp_reks_reks, only : TReksInp, TReksCalc, reksTypes, REKS_init
@@ -614,10 +613,10 @@ module dftbp_dftbplus_initprogram
     real(dp), allocatable :: gcurr(:), glast(:), displ(:)
 
     !> Charge mixer for real matrices
-    type(TMixerReal), allocatable :: pChrgMixerReal
+    class(TMixerReal), allocatable :: pChrgMixerReal
 
     !> Charge mixer for complex matrices
-    type(TMixerCmplx), allocatable :: pChrgMixerCmplx
+    class(TMixerCmplx), allocatable :: pChrgMixerCmplx
 
     !> MD Framework
     type(TMDCommon), allocatable :: pMDFrame
@@ -1830,12 +1829,11 @@ contains
       mixParam = input%ctrl%almix
       tCmplxMixer = (.not. this%tRealHS) .and. (this%hybridXcAlg == hybridXcAlgo%matrixBased)
       if (tCmplxMixer) then
-        allocate(this%pChrgMixerCmplx)
         select case (iMixer)
         case (mixerTypes%simple)
           allocate(pSimplemixerCmplx)
           call TSimpleMixerCmplx_init(pSimpleMixerCmplx, mixParam)
-          call TMixerCmplx_init(this%pChrgMixerCmplx, pSimpleMixerCmplx)
+          call move_alloc(pSimpleMixerCmplx, this%pChrgMixerCmplx)
         case(mixerTypes%anderson)
           allocate(pAndersonMixerCmplx)
           if (input%ctrl%andersonNrDynMix > 0) then
@@ -1846,27 +1844,27 @@ contains
             call TAndersonMixerCmplx_init(pAndersonMixerCmplx, nGeneration, mixParam,&
                 & input%ctrl%andersonInitMixing, omega0=input%ctrl%andersonOmega0)
           end if
-          call TMixerCmplx_init(this%pChrgMixerCmplx, pAndersonMixerCmplx)
+          call move_alloc(pAndersonMixerCmplx, this%pChrgMixerCmplx)
         case (mixerTypes%broyden)
           allocate(pBroydenMixerCmplx)
           call TBroydenMixerCmplx_init(pBroydenMixerCmplx, this%maxSccIter, mixParam,&
               & input%ctrl%broydenOmega0, input%ctrl%broydenMinWeight, input%ctrl%broydenMaxWeight,&
               & input%ctrl%broydenWeightFac)
-          call TMixerCmplx_init(this%pChrgMixerCmplx, pBroydenMixerCmplx)
+
+          call move_alloc(pBroydenMixerCmplx, this%pChrgMixerCmplx)
         case(mixerTypes%diis)
           allocate(pDiisMixerCmplx)
           call TDiisMixerCmplx_init(pDiisMixerCmplx, nGeneration, mixParam, input%ctrl%tFromStart)
-          call TMixerCmplx_init(this%pChrgMixerCmplx, pDiisMixerCmplx)
+          call move_alloc(pDiisMixerCmplx, this%pChrgMixerCmplx)
         case default
           call error("Unknown charge/density mixer type.")
         end select
       end if
-      allocate(this%pChrgMixerReal)
       select case (iMixer)
       case(mixerTypes%simple)
         allocate(pSimplemixerReal)
         call TSimpleMixerReal_init(pSimpleMixerReal, mixParam)
-        call TMixerReal_init(this%pChrgMixerReal, pSimpleMixerReal)
+        call move_alloc(pSimpleMixerReal, this%pChrgMixerReal)
       case(mixerTypes%anderson)
         allocate(pAndersonMixerReal)
         if (input%ctrl%andersonNrDynMix > 0) then
@@ -1877,17 +1875,17 @@ contains
           call TAndersonMixerReal_init(pAndersonMixerReal, nGeneration, mixParam,&
               & input%ctrl%andersonInitMixing, omega0=input%ctrl%andersonOmega0)
         end if
-        call TMixerReal_init(this%pChrgMixerReal, pAndersonMixerReal)
+        call move_alloc(pAndersonMixerReal, this%pChrgMixerReal)
       case(mixerTypes%broyden)
         allocate(pBroydenMixerReal)
         call TBroydenMixerReal_init(pBroydenMixerReal, this%maxSccIter, mixParam,&
             & input%ctrl%broydenOmega0, input%ctrl%broydenMinWeight, input%ctrl%broydenMaxWeight,&
             & input%ctrl%broydenWeightFac)
-        call TMixerReal_init(this%pChrgMixerReal, pBroydenMixerReal)
+        call move_alloc(pBroydenMixerReal, this%pChrgMixerReal)
       case(mixerTypes%diis)
         allocate(pDiisMixerReal)
         call TDiisMixerReal_init(pDiisMixerReal, nGeneration, mixParam, input%ctrl%tFromStart)
-        call TMixerReal_init(this%pChrgMixerReal, pDiisMixerReal)
+        call move_alloc(pBroydenMixerReal, this%pChrgMixerReal)
       case default
         call error("Unknown charge/density mixer type.")
       end select
