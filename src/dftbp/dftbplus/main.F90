@@ -1143,14 +1143,14 @@ contains
       if (this%isHybridXc) then
         if (withMpi .and. this%tRealHS&
             & .and. this%hybridXc%hybridXcAlg == hybridXcAlgo%matrixBased) then
-          call TMixerReal_reset(this%pChrgMixerReal, this%nOrb**2 * this%nSpin)
+          call this%pChrgMixerReal%reset(this%nOrb**2 * this%nSpin)
         elseif (allocated(this%pChrgMixerCmplx)) then
-          call TMixerCmplx_reset(this%pChrgMixerCmplx, this%nMixElements)
+          call this%pChrgMixerCmplx%reset(this%nMixElements)
         else
-          call TMixerReal_reset(this%pChrgMixerReal, this%nMixElements)
+          call this%pChrgMixerReal%reset(this%nMixElements)
         end if
       else
-        call TMixerReal_reset(this%pChrgMixerReal, this%nMixElements)
+        call this%pChrgMixerReal%reset(this%nMixElements)
       end if
     end if
 
@@ -4330,7 +4330,7 @@ contains
     type(TEnvironment), intent(in) :: env
 
     !> Charge mixing object
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Output electrons
     real(dp), intent(inout) :: qOutput(:,:,:)
@@ -4523,7 +4523,7 @@ contains
     integer, intent(in) :: img2CentCell(:)
 
     !> Charge mixing object
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Output electrons
     real(dp), intent(inout) :: qOutput(:,:,:)
@@ -4734,10 +4734,10 @@ contains
     integer, intent(in) :: img2CentCell(:)
 
     !> Charge mixing object
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Complex charge mixing object
-    type(TMixerCmplx), intent(inout), allocatable :: pChrgMixerCmplx
+    class(TMixerCmplx), intent(inout), allocatable :: pChrgMixerCmplx
 
     !> Output electrons
     real(dp), intent(in) :: qOutput(:,:,:)
@@ -5356,7 +5356,7 @@ contains
     real(dp), intent(in) :: qOutRed(:)
 
     !> SCC mixer
-    type(TMixerReal), intent(inout) :: pChrgMixerReal
+    class(TMixerReal), intent(inout) :: pChrgMixerReal
 
     !> Atomic orbital information
     type(TOrbitals), intent(in) :: orb

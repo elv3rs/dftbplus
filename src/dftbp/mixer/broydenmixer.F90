@@ -20,21 +20,22 @@ module dftbp_mixer_broydenmixer
   use dftbp_math_matrixops, only : adjointLowerTriangle
   use dftbp_math_blasroutines, only : ger
   use dftbp_math_lapackroutines, only : getrf, getrs, gesv, matinv, hermatinv
+  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx, TMixerInput
   implicit none
 
 #:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
 
   private
+
 #:for NAME, TYPE, LABEL in FLAVOURS
-  public :: TBroydenMixer${LABEL}$, TBroydenMixer${LABEL}$_init, TBroydenMixer${LABEL}$_reset
-  public :: TBroydenMixer${LABEL}$_mix
+  public :: TBroydenMixer${LABEL}$
 #:endfor
-  public :: TBroydenMixerReal_getInverseJacobian
+
 
 
 #:for NAME, TYPE, LABEL in FLAVOURS
   !> Contains the necessary data for a Broyden mixer.
-  type TBroydenMixer${LABEL}$
+  type, extends (TMixer${LABEL}$) :: TBroydenMixer${LABEL}$
     private
 
     !> Actual iteration
@@ -78,7 +79,12 @@ module dftbp_mixer_broydenmixer
 
     !> uu vectors
     ${TYPE}$(dp), allocatable :: uu(:,:)
-
+      contains
+        procedure :: init => TBroydenMixer${LABEL}$_initFromStruct
+        procedure :: reset => TBroydenMixer${LABEL}$_reset
+        procedure :: mix1D => TBroydenMixer${LABEL}$_mix
+        procedure :: hasInverseJacobian => TBroydenMixer${LABEL}$_hasInverseJacobian
+        procedure :: getInverseJacobian => TBroydenMixer${LABEL}$_getInverseJacobian
   end type TBroydenMixer${LABEL}$
 #:endfor
 
@@ -86,6 +92,20 @@ module dftbp_mixer_broydenmixer
 contains
 
 #:for NAME, TYPE, LABEL in FLAVOURS
+
+    
+  subroutine TBroydenMixer${LABEL}$_initFromStruct(this, mixerInp)
+    class(TBroydenMixer${LABEL}$), intent(out) :: this
+    type(TMixerInput), intent(in) :: mixerInp
+    if (mixerInp%maxSccIter == -1) then
+      call error("Trying to initialise BroydenMixer without having set mixerInp%maxSccIter")
+    end if
+        
+    call TBroydenMixer${LABEL}$_init(this, mixerInp%maxSccIter, mixerInp%almix,&
+            & mixerInp%broydenOmega0, mixerInp%broydenMinWeight, mixerInp%broydenMaxWeight,&
+            & mixerInp%broydenWeightFac)
+  end subroutine TBroydenMixer${LABEL}$_initFromStruct
+
   !> Creates a Broyden mixer instance.
   !! The weight associated with an iteration is calculated as weigthFac/ww where ww is the Euclidean
   !! norm of the charge difference vector. If the calculated weigth is outside of the
@@ -94,7 +114,7 @@ contains
       & weightFac)
 
     !> An initialized Broyden mixer on exit
-    type(TBroydenMixer${LABEL}$), intent(out) :: this
+    class(TBroydenMixer${LABEL}$), intent(out) :: this
 
     !> Maximum nr. of iterations (max. nr. of vectors to store)
     integer, intent(in) :: mIter
@@ -139,7 +159,7 @@ contains
   subroutine TBroydenMixer${LABEL}$_reset(this, nElem)
 
     !> Broyden mixer instance
-    type(TBroydenMixer${LABEL}$), intent(inout) :: this
+    class(TBroydenMixer${LABEL}$), intent(inout) :: this
 
     !> Length of the vectors to mix
     integer, intent(in) :: nElem
@@ -175,7 +195,7 @@ contains
   subroutine TBroydenMixer${LABEL}$_mix(this, qInpResult, qDiff)
 
     !> The Broyden mixer
-    type(TBroydenMixer${LABEL}$), intent(inout) :: this
+    class(TBroydenMixer${LABEL}$), intent(inout) :: this
 
     !> Input charges on entry, mixed charges on exit
     ${TYPE}$(dp), intent(inout) :: qInpResult(:)
@@ -342,7 +362,7 @@ contains
   subroutine TBroydenMixerReal_getInverseJacobian(this, invJac)
 
     !> Broyden mixer
-    type(TBroydenMixerReal), intent(inout) :: this
+    class(TBroydenMixerReal), intent(in) :: this
 
     !> Inverse of the Jacobian
     real(dp), intent(out) :: invJac(:,:)
@@ -392,5 +412,24 @@ contains
     end do
 
   end subroutine TBroydenMixerReal_getInverseJacobian
+ 
+  !> The real broyden mixer is currently the only one that provides the inverse Jacobian.
+  logical function TBroydenMixerReal_hasInverseJacobian(this) result(has)
+    class(TBroydenMixerReal), intent(in) :: this
+    has = .true.
+  end function TBroydenMixerReal_hasInverseJacobian 
+    
+  !> Not implemented for the complex broyden mixer.
+  logical function TBroydenMixerCmplx_hasInverseJacobian(this) result(has)
+    class(TBroydenMixerCmplx), intent(in) :: this
+    has = .false.
+  end function TBroydenMixerCmplx_hasInverseJacobian
+
+  !> Throw error when trying to get the inverse Jacobian for the complex broyden mixer.
+  subroutine TBroydenMixerCmplx_getInverseJacobian(this, invJac)
+    class(TBroydenMixerCmplx), intent(in) :: this
+    complex(dp), intent(out) :: invJac(:,:)
+    call error("Inverse Jacobian not implemented for complex Broyden mixer.")
+  end subroutine TBroydenMixerCmplx_getInverseJacobian
 
 end module dftbp_mixer_broydenmixer
