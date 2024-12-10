@@ -1138,7 +1138,7 @@ contains
     end if
 
     if (tSccCalc) then
-      call TMixerReal_reset(pChrgMixer, size(dqInpRed))
+      call pChrgMixer%reset(size(dqInpRed))
     end if
 
     if (abs(omega) > epsilon(0.0_dp)) then

@@ -18,16 +18,14 @@ module dftbp_mixer_diismixer
   use dftbp_common_accuracy, only : dp
   use dftbp_math_lapackroutines, only : gesv
   use dftbp_io_message, only : error
-  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx
+  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx, TMixerInput
   implicit none
 
 #:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
 
   private
 #:for NAME, TYPE, LABEL in FLAVOURS
-  public :: TDiisMixer${LABEL}$
-  public :: TDiisMixer${LABEL}$_mix, TDiisMixer${LABEL}$_init, TDiisMixer${LABEL}$_reset
-  public :: TDiisMixer${LABEL}$_hasInverseJacobian, TDiisMixer${LABEL}$_getInverseJacobian
+  public :: TDiisMixer${LABEL}$, TDiisMixer${LABEL}$_init
 
 
   !> Contains the necessary data for an DIIS mixer.
@@ -67,6 +65,7 @@ module dftbp_mixer_diismixer
     !> Holds DIIS mixed gradients from older iterations for downhill direction
     ${TYPE}$(dp), allocatable :: deltaR(:)
     contains
+      procedure :: init => TDiisMixer${LABEL}$_initFromStruct
       procedure :: mix1D => TDiisMixer${LABEL}$_mix
       procedure :: DiisInit => TDiisMixer${LABEL}$_init
       procedure :: reset => TDiisMixer${LABEL}$_reset
@@ -79,6 +78,14 @@ module dftbp_mixer_diismixer
 contains
 
 #:for NAME, TYPE, LABEL in FLAVOURS
+
+  subroutine TDiisMixer${LABEL}$_initFromStruct(this, mixerInp)
+    class(TDiisMixer${LABEL}$), intent(out) :: this
+    type(TMixerInput), intent(in) :: mixerInp
+    call TDiisMixer${LABEL}$_init(this, mixerInp%iGenerations, mixerInp%almix, mixerInp%tFromStart)
+  end subroutine TDiisMixer${LABEL}$_initFromStruct
+
+
   !> Creates a DIIS mixer instance.
   subroutine TDiisMixer${LABEL}$_init(this, nGeneration, initMixParam, tFromStart, alpha)
 
@@ -276,9 +283,9 @@ contains
   end subroutine storeVectors_${NAME}$
 
   !> No inverse Jacobian for DIIS mixer
-  logical function TDiisMixer${LABEL}$_hasInverseJacobian(this)
+  logical function TDiisMixer${LABEL}$_hasInverseJacobian(this) result(has)
     class(TDiisMixer${LABEL}$), intent(in) :: this
-    logical :: hasInverseJacobian = .false.
+    has= .false.
   end function TDiisMixer${LABEL}$_hasInverseJacobian
 
   !> Throw an error if the inverse Jacobian is requested
@@ -287,10 +294,6 @@ contains
       ${TYPE}$(dp), intent(out) :: invJac(:,:)
       call error("Inverse Jacobian not implemented for DIIS mixer. (Maybe you want to use the Broyden mixer?)")
   end subroutine TDiisMixer${LABEL}$_getInverseJacobian
-
-
-
-
 #:endfor
 
 end module dftbp_mixer_diismixer

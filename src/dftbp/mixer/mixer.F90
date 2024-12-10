@@ -12,40 +12,52 @@
 module dftbp_mixer_mixer
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
-#:for NAME, TYPE, LABEL in FLAVOURS
-!  use dftbp_mixer_andersonmixer, only : TAndersonMixer${LABEL}$, TAndersonMixer${LABEL}$_mix,&
-!      & TAndersonMixer${LABEL}$_reset
-!  use dftbp_mixer_broydenmixer, only : TBroydenMixer${LABEL}$, TBroydenMixer${LABEL}$_mix,&
-!    & TBroydenMixer${LABEL}$_reset
-! use dftbp_mixer_diismixer, only : TDiisMixer${LABEL}$, TDiisMixer${LABEL}$_mix,&
-!      & TDiisMixer${LABEL}$_reset
-!  use dftbp_mixer_simplemixer, only : TSimpleMixer${LABEL}$, TSimpleMixer${LABEL}$_mix,&
-!      & TSimpleMixer${LABEL}$_reset
-#:endfor
   implicit none
 
   private
 #:for NAME, TYPE, LABEL in FLAVOURS
-  public :: TMixer${LABEL}$
-  !public :: TMixer${LABEL}$_init,
-  public::  TMixer${LABEL}$_reset, TMixer${LABEL}$_mix
+  public :: TMixer${LABEL}$, TMixer${LABEL}$_reset, TMixer${LABEL}$_mix
 #:endfor
   public :: TMixerReal_hasInverseJacobian, TMixerReal_getInverseJacobian
-  public :: mixerTypes
+  public :: mixerTypes, TMixerInput
 
+
+
+
+  type :: TMixerTypesEnum
+    integer :: simple = 1
+    integer :: anderson = 2
+    integer :: broyden = 3
+    integer :: diis = 4
+  end type TMixerTypesEnum
+
+  !> Contains mixer types
+  type(TMixerTypesEnum), parameter :: mixerTypes = TMixerTypesEnum()
+
+  !> Mixer specific Input
+  type :: TMixerInput
+    integer :: iMixSwitch = -1
+    real(dp) :: almix = 0.0_dp
+    integer :: iGenerations = 0
+    logical :: tFromStart = .true.
+    real(dp) :: broydenOmega0 = 0.01_dp
+    real(dp) :: broydenMinWeight = 1.0_dp
+    real(dp) :: broydenMaxWeight = 1.0e5_dp
+    real(dp) :: broydenWeightFac = 1.0e-2_dp
+    real(dp) :: andersonInitMixing = 0.01_dp
+    integer :: andersonNrDynMix = 0
+    real(dp), allocatable :: andersonDynMixParams(:,:)
+    real(dp) :: andersonOmega0 = 1.0e-2_dp
+    ! Beside the above mixer specific input, the
+    ! Broyden Mixer needs to know the maximum iteration count.
+    integer :: maxSccIter = -1
+  end type TMixerInput
 
 #:for NAME, TYPE, LABEL in FLAVOURS
-
-
-
-
-
   type, abstract :: TMixer${LABEL}$
     contains
-        !> Mixer Initialisation. 
-        !-- Since init has different signatures, each mixer has its unique init
-        !-- Todo: create a input type to unify the signature
-        !--procedure(Initialise), deferred :: init
+        procedure(IInitialise${LABEL}$), deferred :: init
+        
         procedure(IReset${LABEL}$), deferred :: reset
 
         !> Actual mixing routine
@@ -55,12 +67,16 @@ module dftbp_mixer_mixer
         procedure(IhasInverseJacobian${LABEL}$), deferred :: hasInverseJacobian
         procedure(IgetInverseJacobian${LABEL}$), deferred :: getInverseJacobian
 
-        !> Interface declared below, allowing to mix 1d, 3d and 6d arrays 
-        !--procedure, non-overridable :: TMixer${LABEL}$_mix
   end type TMixer${LABEL}$
 
-
   abstract interface 
+
+    subroutine IInitialise${LABEL}$(this, mixerInp)
+      import :: TMixer${LABEL}$, TMixerInput
+      class(TMixer${LABEL}$), intent(out) :: this
+      type(TMixerInput), intent(in) :: mixerInp
+    end subroutine IInitialise${LABEL}$
+
     subroutine IReset${LABEL}$(this, nElem)
       import :: TMixer${LABEL}$
       class(TMixer${LABEL}$), intent(inout) :: this
@@ -86,17 +102,6 @@ module dftbp_mixer_mixer
     end subroutine IgetInverseJacobian${LABEL}$
   end interface
 
-
-
-  !> Initialises specific mixer in use
-  !interface TMixer${LABEL}$_init
-   ! module procedure TMixer${LABEL}$_initSimple
-   ! module procedure TMixer${LABEL}$_initAnderson
-   ! module procedure TMixer${LABEL}$_initBroyden
-  !  module procedure TMixer${LABEL}$_initDiis
-  !end interface TMixer${LABEL}$_init
-
-
   !> Does the actual mixing
   interface TMixer${LABEL}$_mix
     module procedure TMixer${LABEL}$_mix1D
@@ -106,15 +111,8 @@ module dftbp_mixer_mixer
 #:endfor
 
 
-  type :: TMixerTypesEnum
-    integer :: simple = 1
-    integer :: anderson = 2
-    integer :: broyden = 3
-    integer :: diis = 4
-  end type TMixerTypesEnum
 
-  !> Contains mixer types
-  type(TMixerTypesEnum), parameter :: mixerTypes = TMixerTypesEnum()
+
 
 
 contains
@@ -132,7 +130,6 @@ contains
     call this%reset(nElem)
 
   end subroutine TMixer${LABEL}$_reset
-
 
   !> Mixes two vectors.
   subroutine TMixer${LABEL}$_mix1D(this, qInpRes, qDiff)

@@ -11,28 +11,25 @@
 module dftbp_mixer_simplemixer
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
-  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx
+  use dftbp_mixer_mixer, only: TMixerReal, TMixerCmplx, TMixerInput
   implicit none
 
 #:set FLAVOURS = [('cmplx', 'complex', 'Cmplx'), ('real', 'real', 'Real')]
-
-
-!  private
+  
+  private
 #:for NAME, TYPE, LABEL in FLAVOURS
   public :: TSimpleMixer${LABEL}$
-  public :: TSimpleMixer${LABEL}$_init, TSimpleMixer${LABEL}$_reset, TSimpleMixer${LABEL}$_mix
 #:endfor
 
 
 #:for NAME, TYPE, LABEL in FLAVOURS
   !> Contains data for a simple mixer
   type, extends (TMixer${LABEL}$) :: TSimpleMixer${LABEL}$
-    !private
-
+    private
     !> Mixing parameter
     real(dp) :: mixParam
     contains
-      procedure :: SimpleInit => TSimpleMixer${LABEL}$_init
+      procedure :: init => TSimpleMixer${LABEL}$_initFromStruct
       procedure :: reset => TSimpleMixer${LABEL}$_reset
       procedure :: mix1D => TSimpleMixer${LABEL}$_mix
       procedure :: hasInverseJacobian => TSimpleMixer${LABEL}$_hasInverseJacobian
@@ -44,6 +41,14 @@ module dftbp_mixer_simplemixer
 contains
 
 #:for NAME, TYPE, LABEL in FLAVOURS
+
+  subroutine TSimpleMixer${LABEL}$_initFromStruct(this, mixerInp)
+    class(TSimpleMixer${LABEL}$), intent(out) :: this
+    type(TMixerInput), intent(in) :: mixerInp
+    call TSimpleMixer${LABEL}$_init(this, mixerInp%almix)
+  end subroutine TSimpleMixer${LABEL}$_initFromStruct
+
+
   !> Creates a simple mixer.
   subroutine TSimpleMixer${LABEL}$_init(this, mixParam)
 

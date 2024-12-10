@@ -1143,14 +1143,14 @@ contains
       if (this%isHybridXc) then
         if (withMpi .and. this%tRealHS&
             & .and. this%hybridXc%hybridXcAlg == hybridXcAlgo%matrixBased) then
-          call TMixerReal_reset(this%pChrgMixerReal, this%nOrb**2 * this%nSpin)
+          call this%pChrgMixerReal%reset(this%nOrb**2 * this%nSpin)
         elseif (allocated(this%pChrgMixerCmplx)) then
-          call TMixerCmplx_reset(this%pChrgMixerCmplx, this%nMixElements)
+          call this%pChrgMixerCmplx%reset(this%nMixElements)
         else
-          call TMixerReal_reset(this%pChrgMixerReal, this%nMixElements)
+          call this%pChrgMixerReal%reset(this%nMixElements)
         end if
       else
-        call TMixerReal_reset(this%pChrgMixerReal, this%nMixElements)
+        call this%pChrgMixerReal%reset(this%nMixElements)
       end if
     end if
 
