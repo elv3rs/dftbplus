@@ -2128,7 +2128,6 @@ contains
     integer :: n, lda, info, int_idealwork, ldvl, ldvr
     real(r${VPREC}$p) :: idealwork(1)
     character :: jobvl, jobvr
-    character(len=100) :: error_string
 
     ! If no eigenvectors requested, need a dummy array for lapack call
     real(r${VPREC}$p) :: dummyvl(1,1), dummyvr(1,1)
@@ -2237,7 +2236,7 @@ contains
 
     real(r${VPREC}$p), allocatable :: work(:), z(:, :)
     real(r${VPREC}$p) :: tmpWork(1), abstol, vl, vu
-    integer :: lwork, tmpIWork(1), liwork, n, info, m, neig, il, iu, ii, jj, ldz
+    integer :: lwork, tmpIWork(1), liwork, n, info, m, il, iu, ldz
     integer, allocatable :: iwork(:), isuppz(:)
     logical :: subspace
     character(len=100) :: error_string

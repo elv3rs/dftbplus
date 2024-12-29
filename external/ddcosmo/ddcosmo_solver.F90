@@ -112,7 +112,7 @@ contains
     !> Format: real(dp) function u_norm(n, x)
     procedure(hnorm_interface), optional :: u_norm
 
-    integer :: it, nmat, istatus, lenb
+    integer :: it, nmat, lenb
     real(dp) :: rms_norm, max_norm, tol_max
     logical :: dodiis
 
@@ -489,7 +489,7 @@ contains
     real(dp), intent(in) :: x(:, :) ! [ddCosmo%nylm, ddCosmo%nat]
     real(dp), intent(inout) :: y(:, :) ! [ddCosmo%nylm, ddCosmo%nat]
 
-    integer :: iat, ig, istatus
+    integer :: iat, ig
     real(dp), allocatable :: xi(:, :), vplm(:), basloc(:), vcos(:), vsin(:)
 
     ! allocate workspaces
@@ -555,7 +555,7 @@ contains
     type(TDomainDecomposition), intent(in) :: ddCosmo
     integer, intent(in) :: n
     real(dp), intent(in) :: x(:, :) ! [ddCosmo%nylm, ddCosmo%nat]
-    integer :: iat, istatus
+    integer :: iat
     real(dp) :: vrms, vmax
     real(dp), allocatable :: u(:)
 

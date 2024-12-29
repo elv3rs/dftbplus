@@ -101,9 +101,8 @@ contains
     real(dp), intent(in) :: rvdw(:)
     real(dp), intent(in) :: wang(:), grid(:, :)
 
-    integer :: iat, jat, i, ii, lnl, l, ind, m, igrid, inear, jnear
-    integer :: istatus
-    real(dp) :: fac, fl, ffl, fnorm, d2, r2, v(3), vv, t, xt, swthr
+    integer :: i, l, ind, m
+    real(dp) :: fl, ffl, fnorm
 
     real(dp), allocatable :: vcos(:), vsin(:), vplm(:)
 
@@ -1153,7 +1152,7 @@ contains
     integer :: ig, ji, jat, l, ind, m, jk, kat
     logical :: proc
     real(dp) :: vvji, tji, xji, oji, t, fac, fl, f1, f2, beta, di, tlow, thigh
-    real(dp) :: b, g1, g2, vvjk, tjk, f, xjk
+    real(dp) :: b, g1, g2, vvjk, tjk, xjk
     real(dp) :: vji(3), sji(3), alp(3), vb(3), vjk(3), sjk(3), vc(3)
 
 
@@ -1306,7 +1305,7 @@ contains
 
     integer :: its, ij, jat
     real(dp) :: vij(3), sij(3)
-    real(dp) :: vvij2, vvij, tij, xij, oij, stslm, stslm2, stslm3
+    real(dp) :: vvij2, vvij, tij, xij, oij
 
     ! initialize
     pot(:) = 0.0_dp

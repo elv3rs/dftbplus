@@ -158,7 +158,7 @@ contains
     real(dp), allocatable :: d(:), q(:), a(:)
     real(dp) :: b
 
-    integer :: thisiter, lastiter, mem
+    integer :: thisiter, mem
     integer :: i
 
     allocate(q(nvar), d(nvar), a(memory), source = 0.0_dp)
