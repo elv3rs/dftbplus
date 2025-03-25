@@ -427,6 +427,8 @@ contains
               iSpecies = species(iAtom)
               diff(:) = xyz - coords(:, iAtom, iCell)
               xx = norm2(diff)
+
+
               lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
                 iL = angMoms(iOrb)
                 ! Calculate wave function only if atom is inside the cutoff
@@ -442,6 +444,8 @@ contains
                   ind = ind + 2 * iL + 1
                 end if
               end do lpOrb
+
+
             end do lpAtom
           end do lpCell
 
@@ -471,7 +475,10 @@ contains
             if (tAddDensities) then
               atomAllOrbVal(:,:) = atomAllOrbVal**2
             end if
+            ! Flatten cell contributions onto main grid
             atomOrbValReal(:) = sum(atomAllOrbVal, dim=2)
+            ! Value at point is ∑ c_i \cdot wavefunc_i
+            ! Why do we have this loop? nPoints(4) appears to always be set to 1.
             do iEig = 1, nPoints(4)
               valueReal(i1, i2, i3, iEig) = dot_product(atomOrbValReal(nonZeroIndices),&
                   & eigVecsReal(nonZeroIndices, iEig))
