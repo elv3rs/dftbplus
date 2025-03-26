@@ -188,7 +188,7 @@ contains
       this%nCell = 1
     end if
 
-    ! Create coorinates for central cell and periodic images
+    ! Create coordinates for central cell and periodic images
     allocate(this%coords(3, this%nAtom, this%nCell))
     this%coords(:,:,1) = geometry%coords
     call boundaryCond%foldCoordsToCell(this%coords(:,:,1), this%latVecs)
@@ -325,7 +325,7 @@ contains
     !> Nr. of atoms
     integer, intent(in) :: nAtom
 
-    !> Nr. of orbitals
+    !> combined nr. of all orbitals (i.e. double atomCount =>double orbitalCount)
     integer, intent(in) :: nOrb
 
     !> Coordinates of the atoms
@@ -392,13 +392,184 @@ contains
     integer :: nPoints(4)
     integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
+    ! Cache variables
+    integer :: resolutionFactor = 5
+
+    ! Wavefunction cache overview:
+    ! Wavefunctions are evaluated across a finer grid (resolutionFactor as many points as the main one).
+    ! When aligned, points can simply be read using a stride of resolutionFactor.
+    ! Main feature:
+    ! The X-coordinate is subdivided into <resolutionFactor> phased parts to ensure a contiguous memory layout.
+    ! Y and Z have been subdivided as well, though only for convenience.
+    ! Indices : [X, cacheInd, XPhase, Y, YPhase, Z, ZPhase]
+    real(dp), allocatable :: wavefunctionCache(:,:,:,:,:)
+
+    ! cacheInd is the index of the orbital in the cache as a running sum of (iSpecies, iOrb, iM)
+    integer :: cacheInd, cacheSize
+
+    ! Cache grid vectors (x_fine, y_fine, z_fine)
+    real(dp) :: cacheGridVecs(3,3)
+
+    ! Used for decomposing Atom position into cacheGrid Basis vecs
+    real(dp) :: cacheBasis(3,3)
+    real(dp) :: pos(3)
+    
+    ! Aligning the cache to the main grid for each atom position
+    integer :: xSlice(2), ySlice(2), zSlice(2)
+
+    ! Mapping array describing cache layout: (iM, iOrb, iSpecies) -> cacheInd.
+    integer, allocatable :: cacheIndexMap(:,:,:)
+    integer :: halfPoints(3)
+
+    integer :: i1Phase, i2Phase, i3Phase
+
+    !---------------------------------
+    
+    allocate(cacheIndexMap(-MAXVAL(angMoms):MAXVAL(angMoms), MAXVAL(iStos), nSpecies))
+    cacheIndexMap(:,:,:) = -1 ! Ensure we dont go oob
+
+    ! Calculate nr. of cache entries <cacheSize> and populate mapping array <cacheIndexMap>
+    cacheInd = 1
+    do iSpecies = 1, nSpecies
+      cacheInd = cacheInd + 1
+      do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+        iL = angMoms(iOrb)
+        do iM = -iL, iL
+          cacheInd = cacheInd + 1
+          cacheIndexMap(iM, iOrb, iSpecies) = cacheInd
+        end do
+      end do
+    end do
+    cacheSize = cacheInd
+    
+    ! Main grid size
+    if (tReal) then
+      nPoints = shape(valueReal)
+    else
+      nPoints = shape(valueCmpl)
+    end if
+
+    ! Allocate Wavefunction cache
+    nPointsHalved = [nPoints(1) / 2, nPoints(2) / 2, nPoints(3) / 2]
+
+    ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
+    allocate(wavefunctionCache(-nPointsHalved(1):nPointsHalved(1), 1:cacheSize, 1:resolutionFactor, &
+        & -nPointsHalved(2):nPointsHalved(2), 1:resolutionFactor, -nPointsHalved(3):nPointsHalved(3), &
+        & resolutionFactor))
+    ! Fine Grid Basis Vectors
+    cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
+    cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
+    cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor
+
+
+    ! Loop over all wavefunctions and cache them on the fine grid
+    ! Todo: Disk Caching
+    ! Todo: This is embarassingly parallel, add some OpenMP / MPI magic
+    ! Todo: Consider sparse cache to avoid unnecessary calculations
+    lpSpecies: do iSpecies = 1, nSpecies
+      lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+        iL = angMoms(iOrb)
+        ! For every Point on the fine grid:
+        lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
+          lpI3Phase : do i3Phase = 0, resolutionFactor-2
+            curCoords(:, 3) = real(i3*resolutionFactor + i3Phase, dp) * cacheGridVecs(:, 3)
+              lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
+                lpI2Phase : do i2Phase = 0, resolutionFactor-2
+                  curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
+                    lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
+                      lpI1Phase : do i1Phase = 0, resolutionFactor-2
+                        curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
+                        
+                        ! Calculate position
+                        xyz(:) = sum(curCoords, dim=2)
+                        if (tPeriodic) then
+                          frac(:) = matmul(xyz, recVecs2p)
+                          xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
+                        end if
+                        xx = norm2(xyz)
+
+                        ! Get radial dependence
+                        call getValue(stos(iOrb), xx, val)
+                        lpIM : do iM = -iL, iL
+                          cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
+                          ! Combine with angular dependence and add to cache
+                          wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
+                        end do lpIM
+                      end do lpI1Phase
+                    end do lpI1
+                  end do lpI2Phase
+                end do lpI2
+              end do lpI3Phase
+            end do lpI3
+          end do lpOrb
+        end do lpSpecies
+
+
+                
+
+
+    ! Apply wavefunctions. For each atom, determine the offsets, then loop (using stride).
+    ! Apply the X Coordinate using sliced Array Operations, directly multiplied with the 
+    ! corresponding Eigenvector entry.
+    ! Todo: This is also embarassingly parallel.
+
+    lpCell: do iCell = 1, nCell
+      lpAtom: do iAtom = 1, nAtom
+        iSpecies = species(iAtom)
+        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
+        ! Todo: Use different LAPACK call that doesnt mutate the input arrays
+        pos(:) = coords(:, iAtom, iCell)
+        base(:) = cacheGridVecs
+        ! Decompose Atom position onto basis
+        gesv(cacheGridVecs, pos)
+        ! Offset is now in pos. Clamp Slices to main and cache grid bounds.
+        zSlice(1) = MAX(1, int(pos(3) - nPointsCache(5)/2))
+        zSlice(2) = MIN(nPoints(3), int(pos(3) + nPointsCache(5)/2))
+
+        ySlice(1) = MAX(1, int(pos(2) - nPointsCache(4)/2))
+        ySlice(2) = MIN(nPoints(2), int(pos(2) + nPointsCache(4)/2))
+
+        xSlice(1) = MAX(1, int(pos(1) - nPointsCache(1)/2))
+        xSlice(2) = MIN(nPoints(1), int(pos(1) + nPointsCache(1)/2))
+        i1Phase = int(MOD(real(xSlice(1)), 1.0) * resolutionFactor)
+
+        lpI3 : do i3Fine = zSlice(1), zSlice(2), resolutionFactor
+          lpI2 : do i2Fine = ySlice(1), ySlice(2), resolutionFactor
+              lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+                iL = angMoms(iOrb)
+                  lpIM : do iM = -iL, iL
+                    cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
+                    ! TODO: Why would we have more than one Eigenvector?
+                    lpEig : do iEig = 1, nPoints(4)
+                      !TODO : Select the correct eigenvector index <ind> for the current orbital
+                      valueReal(xSlice(1):xSlice(2), i2, i3, iEig) = valueReal(xSlice(1):xSlice(2), i2, i3, iEig) &
+                          & + eigVecsReal(ind, iEig) * &
+                          & wavefunctionCache(int(pos(1))+xSlice(1):int(pos(1)+xSlice(2), &
+                          &                   cacheInd, &
+                          &                   i1Phase, &
+                          &                   i2 * resolutionFactor + i2Phase, &
+                          &                   i3 * resolutionFactor + i3Phase)
+                    end do lpEig
+                  end do lpIM
+              end do lpOrb
+          end do lpI2
+        end do lpI3
+      end do lpAtom
+    end do lpCell
+
+
+
+
+
+
+
+
+
     ! Array for the contribution of each orbital (and its periodic images)
     if (tReal) then
       allocate(atomOrbValReal(nOrb))
-      nPoints = shape(valueReal)
     else
       allocate(atomOrbValCmpl(nOrb))
-      nPoints = shape(valueCmpl)
     end if
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
@@ -431,43 +602,20 @@ contains
 
               lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
                 iL = angMoms(iOrb)
-                ! Calculate wave function only if atom is inside the cutoff
-                if (xx <= cutoffs(iOrb)) then
-                  allZero = .false.
-                  call getValue(stos(iOrb), xx, val)
+
+                  !call getValue(stos(iOrb), xx, val)
                   do iM = -iL, iL
-                    atomAllOrbVal(ind, iCell) = val * realTessY(iL, iM, diff, xx)
+                    !atomAllOrbVal(ind, iCell) = val * realTessY(iL, iM, diff, xx)
+                    ! TODO: align x_coarse/phase/yz fine
+                    atomAllOrbVal(ind, iCell) = wavefunctionCache(x_coarse, iM, x_phase, y_fine, z_fine, iOrb)
                     ind = ind + 1
                   end do
-                else
-                  atomAllOrbVal(ind:ind+2*iL, iCell) = 0.0_dp
-                  ind = ind + 2 * iL + 1
-                end if
+
               end do lpOrb
 
 
             end do lpAtom
           end do lpCell
-
-          if (allZero) then
-            if (tReal) then
-              valueReal(i1, i2, i3, :) = 0.0_dp
-            else
-              valueCmpl(i1, i2, i3, :) = 0.0_dp
-            end if
-            cycle lpI1
-          end if
-
-          ! Establish mask and index of nonzero elements
-          nonZeroMask = any(atomAllOrbVal /= 0.0_dp, dim=2)
-          nNonZero = 0
-          do iOrb = 1, nOrb
-            if (nonZeroMask(iOrb)) then
-              nNonZero = nNonZero + 1
-              nonZeroIndContainer(nNonZero) = iOrb
-            end if
-          end do
-          nonZeroIndices => nonZeroIndContainer(1:nNonZero)
 
           ! Sum the contribution from all cells and multiply by the provided coefficients (usually
           ! the eigenvector)
@@ -475,10 +623,8 @@ contains
             if (tAddDensities) then
               atomAllOrbVal(:,:) = atomAllOrbVal**2
             end if
-            ! Flatten cell contributions onto main grid
+            ! Collapse Cells onto main array
             atomOrbValReal(:) = sum(atomAllOrbVal, dim=2)
-            ! Value at point is ∑ c_i \cdot wavefunc_i
-            ! Why do we have this loop? nPoints(4) appears to always be set to 1.
             do iEig = 1, nPoints(4)
               valueReal(i1, i2, i3, iEig) = dot_product(atomOrbValReal(nonZeroIndices),&
                   & eigVecsReal(nonZeroIndices, iEig))
