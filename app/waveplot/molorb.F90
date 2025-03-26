@@ -381,12 +381,8 @@ contains
 
     real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
     real(dp) :: atomAllOrbVal(nOrb, nCell)
-    logical :: nonZeroMask(nOrb), allZero
-    integer :: nNonZero
     integer, target :: nonZeroIndContainer(nOrb)
     integer, pointer :: nonZeroIndices(:)
-    real(dp), allocatable :: atomOrbValReal(:)
-    complex(dp), allocatable :: atomOrbValCmpl(:)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
     real(dp) :: xx, val
     integer :: nPoints(4)
@@ -428,12 +424,14 @@ contains
 
     !---------------------------------
     
+    nSpecies = SIZE(iStos)
     allocate(cacheIndexMap(-MAXVAL(angMoms):MAXVAL(angMoms), MAXVAL(iStos), nSpecies))
+
     cacheIndexMap(:,:,:) = -1 ! Ensure we dont go oob
 
     ! Calculate nr. of cache entries <cacheSize> and populate mapping array <cacheIndexMap>
     cacheInd = 1
-    do iSpecies = 1, nSpecies
+    do iSpecies = 1, nSpecies - 1
       cacheInd = cacheInd + 1
       do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
         iL = angMoms(iOrb)
@@ -444,7 +442,6 @@ contains
       end do
     end do
     cacheSize = cacheInd
-    nSpecies = SIZE(iStos) - 1
     
     ! Main grid size
     if (tReal) then
@@ -457,26 +454,29 @@ contains
     nPointsHalved(1)  = nPoints(1) / 2
     nPointsHalved(2)  = nPoints(2) / 2
     nPointsHalved(3)  = nPoints(3) / 2
-
+    print *, "Allocating wavefunction cache"
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
     allocate(wavefunctionCache(   -nPointsHalved(1):nPointsHalved(1), &
-                                &  1:cacheSize, 1:resolutionFactor, &
+                                &  1:cacheSize, &
+                                &  0:resolutionFactor-1, &
                                 & -nPointsHalved(2):nPointsHalved(2),&
-                                &  1:resolutionFactor, &
+                                &  0:resolutionFactor-1, &
                                 & -nPointsHalved(3):nPointsHalved(3), &
-                                &  1:resolutionFactor))
+                                &  0:resolutionFactor-1))
     ! Fine Grid Basis Vectors
     cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
     cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
     cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor
 
-
+    print *, "Caching wavefunctions" 
     ! Loop over all wavefunctions and cache them on the fine grid
     ! Todo: Disk Caching
     ! Todo: This is embarassingly parallel, add some OpenMP / MPI magic
     ! Todo: Consider sparse cache to avoid unnecessary calculations
-    lpSpecies: do iSpecies = 1, nSpecies
+    lpSpecies: do iSpecies = 1, nSpecies -1
+      print *, "Caching species ", iSpecies
       lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+        print *, "  orbital ", iOrb
         iL = angMoms(iOrb)
         ! For every Point on the fine grid:
         lpI3Phase : do i3Phase = 0, resolutionFactor-2
@@ -513,6 +513,7 @@ contains
       end do lpOrb
     end do lpSpecies
 
+    print *, "Applying wavefunctions"
     ! Apply wavefunctions. For each atom, determine the offsets, then loop (using stride).
     ! Apply the X Coordinate using sliced Array Operations, directly multiplied with the 
     ! corresponding Eigenvector entry.
@@ -530,9 +531,9 @@ contains
         call gesv(cacheBasis, pos)
         ! Atom Offset in terms of cacheGridVecs now stored in pos.
         ! Choose closest phase
-        i1Phase = int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp))
-        i2Phase = int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp))
-        i3Phase = int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp))
+        i1Phase = ABS (int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp)))
+        i2Phase = ABS (int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp)))
+        i3Phase = ABS (int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp)))
         ! Align to main grid, clamp to bounds
         zSlice(1) = MAX(1, int(pos(3,1)) - nPointsHalved(3))
         zSlice(2) = MIN(nPoints(3), int(pos(3,1)) + nPointsHalved(3))
