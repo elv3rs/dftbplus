@@ -470,14 +470,14 @@ contains
       lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
         iL = angMoms(iOrb)
         ! For every Point on the fine grid:
-        lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-          lpI3Phase : do i3Phase = 0, resolutionFactor-2
+        lpI3Phase : do i3Phase = 0, resolutionFactor-2
+          lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
             curCoords(:, 3) = real(i3*resolutionFactor + i3Phase, dp) * cacheGridVecs(:, 3)
-              lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-                lpI2Phase : do i2Phase = 0, resolutionFactor-2
+              lpI2Phase : do i2Phase = 0, resolutionFactor-2
+                lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
                   curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
-                    lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                      lpI1Phase : do i1Phase = 0, resolutionFactor-2
+                    lpI1Phase : do i1Phase = 0, resolutionFactor-2
+                      lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
                         curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
                         
                         ! Calculate position
@@ -495,14 +495,16 @@ contains
                           ! Combine with angular dependence and add to cache
                           wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
                         end do lpIM
-                      end do lpI1Phase
-                    end do lpI1
-                  end do lpI2Phase
-                end do lpI2
-              end do lpI3Phase
-            end do lpI3
+                      end do lpI1
+                    end do lpI1Phase
+                  end do lpI2
+                end do lpI2Phase
+              end do lpI3
+            end do lpI3Phase
           end do lpOrb
         end do lpSpecies
+
+
 
 
                 
@@ -522,38 +524,35 @@ contains
         base(:) = cacheGridVecs
         ! Decompose Atom position onto basis
         gesv(cacheGridVecs, pos)
-        ! Offset is now in pos. Clamp Slices to main and cache grid bounds.
-        zSlice(1) = MAX(1, int(pos(3) - nPointsCache(5)/2))
-        zSlice(2) = MIN(nPoints(3), int(pos(3) + nPointsCache(5)/2))
+        ! Atom Offset in terms of cacheGridVecs now stored in pos.
+        ! Choose closest phase
+        i1Phase = int(MOD(pos(1), 1.0) * resolutionFactor)
+        i2Phase = int(MOD(pos(2), 1.0) * resolutionFactor)
+        i3Phase = int(MOD(pos(3), 1.0) * resolutionFactor)
+        ! Align to main grid, clamp to bounds
+        zSlice(1) = MAX(1, int(pos(3) - nPointsHalved(3)))
+        zSlice(2) = MIN(nPoints(3), int(pos(3) + nPointsHalved(3))
 
-        ySlice(1) = MAX(1, int(pos(2) - nPointsCache(4)/2))
-        ySlice(2) = MIN(nPoints(2), int(pos(2) + nPointsCache(4)/2))
+        ySlice(1) = MAX(1, int(pos(2) - nPointsHalved(2)))
+        ySlice(2) = MIN(nPoints(2), int(pos(2) + nPointsHalved(2))
 
-        xSlice(1) = MAX(1, int(pos(1) - nPointsCache(1)/2))
-        xSlice(2) = MIN(nPoints(1), int(pos(1) + nPointsCache(1)/2))
-        i1Phase = int(MOD(real(xSlice(1)), 1.0) * resolutionFactor)
+        xSlice(1) = MAX(1, int(pos(1) - nPointsHalved(1)))
+        xSlice(2) = MIN(nPoints(1), int(pos(1) + nPointsHalved(1))
 
-        lpI3 : do i3Fine = zSlice(1), zSlice(2), resolutionFactor
-          lpI2 : do i2Fine = ySlice(1), ySlice(2), resolutionFactor
-              lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-                iL = angMoms(iOrb)
-                  lpIM : do iM = -iL, iL
-                    cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
-                    ! TODO: Why would we have more than one Eigenvector?
-                    lpEig : do iEig = 1, nPoints(4)
-                      !TODO : Select the correct eigenvector index <ind> for the current orbital
-                      valueReal(xSlice(1):xSlice(2), i2, i3, iEig) = valueReal(xSlice(1):xSlice(2), i2, i3, iEig) &
-                          & + eigVecsReal(ind, iEig) * &
-                          & wavefunctionCache(int(pos(1))+xSlice(1):int(pos(1)+xSlice(2), &
-                          &                   cacheInd, &
-                          &                   i1Phase, &
-                          &                   i2 * resolutionFactor + i2Phase, &
-                          &                   i3 * resolutionFactor + i3Phase)
-                    end do lpEig
-                  end do lpIM
-              end do lpOrb
-          end do lpI2
-        end do lpI3
+        lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+          iL = angMoms(iOrb)
+          lpIM : do iM = -iL, iL
+            cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
+            ! TODO: Why would we even have multiple Eigenvectors?
+            lpEig : do iEig = 1, nPoints(4)
+              !TODO : Select the correct eigenvector index <coeffInd> for the current orbital
+              valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
+                  & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
+                  & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1):xSlice(2), cacheInd, i1Phase, &
+                  & ySlice(1):ySlice(2), i2Phase, zSlice(1):zSlice(2), i3Phase)
+            end do lpEig
+          end do lpIM
+        end do lpOrb
       end do lpAtom
     end do lpCell
 
