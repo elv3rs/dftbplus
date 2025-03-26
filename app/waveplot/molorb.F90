@@ -524,7 +524,6 @@ contains
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
         ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        ! Todo: Use different LAPACK call that doesnt mutate the input arrays
         pos(:,1) = coords(:, iAtom, iCell)
         cacheBasis(:,:) = cacheGridVecs(:,:)
         ! Decompose Atom position onto basis
