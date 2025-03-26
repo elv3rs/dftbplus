@@ -412,7 +412,7 @@ contains
 
     ! Used for decomposing Atom position into cacheGrid Basis vecs
     real(dp) :: cacheBasis(3,3)
-    real(dp) :: pos(3)
+    real(dp) :: pos(3, 1)
     
     ! Aligning the cache to the main grid for each atom position
     integer :: xSlice(2), ySlice(2), zSlice(2)
@@ -524,24 +524,24 @@ contains
         iSpecies = species(iAtom)
         ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
         ! Todo: Use different LAPACK call that doesnt mutate the input arrays
-        pos(:) = coords(:, iAtom, iCell)
+        pos(:,1) = coords(:, iAtom, iCell)
         cacheBasis(:,:) = cacheGridVecs(:,:)
         ! Decompose Atom position onto basis
         call gesv(cacheBasis, pos)
         ! Atom Offset in terms of cacheGridVecs now stored in pos.
         ! Choose closest phase
-        i1Phase = int(MOD(pos(1), 1.0_dp) * real(resolutionFactor, dp))
-        i2Phase = int(MOD(pos(2), 1.0_dp) * real(resolutionFactor, dp))
-        i3Phase = int(MOD(pos(3), 1.0_dp) * real(resolutionFactor, dp))
+        i1Phase = int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp))
+        i2Phase = int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp))
+        i3Phase = int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp))
         ! Align to main grid, clamp to bounds
-        zSlice(1) = MAX(1, int(pos(3)) - nPointsHalved(3))
-        zSlice(2) = MIN(nPoints(3), int(pos(3)) + nPointsHalved(3))
+        zSlice(1) = MAX(1, int(pos(3,1)) - nPointsHalved(3))
+        zSlice(2) = MIN(nPoints(3), int(pos(3,1)) + nPointsHalved(3))
 
-        ySlice(1) = MAX(1, int(pos(2)) - nPointsHalved(2))
-        ySlice(2) = MIN(nPoints(2), int(pos(2)) + nPointsHalved(2))
+        ySlice(1) = MAX(1, int(pos(2,1)) - nPointsHalved(2))
+        ySlice(2) = MIN(nPoints(2), int(pos(2,1)) + nPointsHalved(2))
 
-        xSlice(1) = MAX(1, int(pos(1)) - nPointsHalved(1))
-        xSlice(2) = MIN(nPoints(1), int(pos(1)) + nPointsHalved(1))
+        xSlice(1) = MAX(1, int(pos(1,1)) - nPointsHalved(1))
+        xSlice(2) = MIN(nPoints(1), int(pos(1,1)) + nPointsHalved(1))
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
@@ -549,23 +549,23 @@ contains
             cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
             ! TODO: Figure out why we need multiple Eigenvectors
             do iEig = 1, nPoints(4)
-              !TODO : Select the correct eigenvector index <coeffInd> for the current orbital
               if (tReal) then
                 if (tAddDensities) then
                   ! Square the wavefunction
                   valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
                       & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
-                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1)) :xSlice(2)-int(pos(1)), &
-                      & cacheInd, i1Phase, ySlice(1)-int(pos(2)):ySlice(2)-int(pos(2)), i2Phase, &
-                      & zSlice(1)-int(pos(3)):zSlice(2)-int(pos(3)), i3Phase) ** 2
+                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1,1)) :xSlice(2)-int(pos(1,1)), &
+                      & cacheInd, i1Phase, ySlice(1)-int(pos(2,1)):ySlice(2)-int(pos(2,1)), i2Phase, &
+                      & zSlice(1)-int(pos(3,1)):zSlice(2)-int(pos(3,1)), i3Phase) ** 2
                 else
                   valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
                       & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
-                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1)) :xSlice(2)-int(pos(1)), &
-                      & cacheInd, i1Phase, ySlice(1)-int(pos(2)):ySlice(2)-int(pos(2)), i2Phase, &
-                      & zSlice(1)-int(pos(3)):zSlice(2)-int(pos(3)), i3Phase) 
+                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1,1)) :xSlice(2)-int(pos(1,1)), &
+                      & cacheInd, i1Phase, ySlice(1)-int(pos(2,1)):ySlice(2)-int(pos(2,1)), i2Phase, &
+                      & zSlice(1)-int(pos(3,1)):zSlice(2)-int(pos(3,1)), i3Phase) 
                 end if
               else
+                !TODO: Implement complex version
                 stop "TODO: Complex not implemented yet"
               end if
             end do
