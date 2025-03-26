@@ -402,7 +402,7 @@ contains
     ! The X-coordinate is subdivided into <resolutionFactor> phased parts to ensure a contiguous memory layout.
     ! Y and Z have been subdivided as well, though only for convenience.
     ! Indices : [X, cacheInd, XPhase, Y, YPhase, Z, ZPhase]
-    real(dp), allocatable :: wavefunctionCache(:,:,:,:,:)
+    real(dp), allocatable :: wavefunctionCache(:,:,:,:,:,:,:)
 
     ! cacheInd is the index of the orbital in the cache as a running sum of (iSpecies, iOrb, iM)
     integer :: cacheInd, cacheSize
@@ -422,6 +422,9 @@ contains
     integer :: halfPoints(3)
 
     integer :: i1Phase, i2Phase, i3Phase
+    integer :: coeffInd, nSpecies
+    integer :: nPointsHalved(3)
+
 
     !---------------------------------
     
@@ -441,6 +444,7 @@ contains
       end do
     end do
     cacheSize = cacheInd
+    nSpecies = SIZE(iStos) - 1
     
     ! Main grid size
     if (tReal) then
@@ -450,12 +454,17 @@ contains
     end if
 
     ! Allocate Wavefunction cache
-    nPointsHalved = [nPoints(1) / 2, nPoints(2) / 2, nPoints(3) / 2]
+    nPointsHalved(1)  = nPoints(1) / 2
+    nPointsHalved(2)  = nPoints(2) / 2
+    nPointsHalved(3)  = nPoints(3) / 2
 
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
-    allocate(wavefunctionCache(-nPointsHalved(1):nPointsHalved(1), 1:cacheSize, 1:resolutionFactor, &
-        & -nPointsHalved(2):nPointsHalved(2), 1:resolutionFactor, -nPointsHalved(3):nPointsHalved(3), &
-        & resolutionFactor))
+    allocate(wavefunctionCache(   -nPointsHalved(1):nPointsHalved(1), &
+                                &  1:cacheSize, 1:resolutionFactor, &
+                                & -nPointsHalved(2):nPointsHalved(2),&
+                                &  1:resolutionFactor, &
+                                & -nPointsHalved(3):nPointsHalved(3), &
+                                &  1:resolutionFactor))
     ! Fine Grid Basis Vectors
     cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
     cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
@@ -473,180 +482,98 @@ contains
         lpI3Phase : do i3Phase = 0, resolutionFactor-2
           lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
             curCoords(:, 3) = real(i3*resolutionFactor + i3Phase, dp) * cacheGridVecs(:, 3)
-              lpI2Phase : do i2Phase = 0, resolutionFactor-2
-                lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-                  curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
-                    lpI1Phase : do i1Phase = 0, resolutionFactor-2
-                      lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                        curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
-                        
-                        ! Calculate position
-                        xyz(:) = sum(curCoords, dim=2)
-                        if (tPeriodic) then
-                          frac(:) = matmul(xyz, recVecs2p)
-                          xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-                        end if
-                        xx = norm2(xyz)
+            lpI2Phase : do i2Phase = 0, resolutionFactor-2
+              lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
+                curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
+                lpI1Phase : do i1Phase = 0, resolutionFactor-2
+                  lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
+                    curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
+                    
+                    ! Calculate position
+                    xyz(:) = sum(curCoords, dim=2)
+                    if (tPeriodic) then
+                      frac(:) = matmul(xyz, recVecs2p)
+                      xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
+                    end if
+                    xx = norm2(xyz)
 
-                        ! Get radial dependence
-                        call getValue(stos(iOrb), xx, val)
-                        lpIM : do iM = -iL, iL
-                          cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
-                          ! Combine with angular dependence and add to cache
-                          wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
-                        end do lpIM
-                      end do lpI1
-                    end do lpI1Phase
-                  end do lpI2
-                end do lpI2Phase
-              end do lpI3
-            end do lpI3Phase
-          end do lpOrb
-        end do lpSpecies
-
-
-
-
-                
-
+                    ! Get radial dependence
+                    call getValue(stos(iOrb), xx, val)
+                    lpIM : do iM = -iL, iL
+                      cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
+                      ! Combine with angular dependence and add to cache
+                      wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
+                    end do lpIM
+                  end do lpI1
+                end do lpI1Phase
+              end do lpI2
+            end do lpI2Phase
+          end do lpI3
+        end do lpI3Phase
+      end do lpOrb
+    end do lpSpecies
 
     ! Apply wavefunctions. For each atom, determine the offsets, then loop (using stride).
     ! Apply the X Coordinate using sliced Array Operations, directly multiplied with the 
     ! corresponding Eigenvector entry.
     ! Todo: This is also embarassingly parallel.
 
-    lpCell: do iCell = 1, nCell
-      lpAtom: do iAtom = 1, nAtom
+    do iCell = 1, nCell
+      coeffInd = 1
+      do iAtom = 1, nAtom
         iSpecies = species(iAtom)
         ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
         ! Todo: Use different LAPACK call that doesnt mutate the input arrays
         pos(:) = coords(:, iAtom, iCell)
-        base(:) = cacheGridVecs
+        cacheBasis(:,:) = cacheGridVecs(:,:)
         ! Decompose Atom position onto basis
-        gesv(cacheGridVecs, pos)
+        call gesv(cacheBasis, pos)
         ! Atom Offset in terms of cacheGridVecs now stored in pos.
         ! Choose closest phase
-        i1Phase = int(MOD(pos(1), 1.0) * resolutionFactor)
-        i2Phase = int(MOD(pos(2), 1.0) * resolutionFactor)
-        i3Phase = int(MOD(pos(3), 1.0) * resolutionFactor)
+        i1Phase = int(MOD(pos(1), 1.0_dp) * real(resolutionFactor, dp))
+        i2Phase = int(MOD(pos(2), 1.0_dp) * real(resolutionFactor, dp))
+        i3Phase = int(MOD(pos(3), 1.0_dp) * real(resolutionFactor, dp))
         ! Align to main grid, clamp to bounds
-        zSlice(1) = MAX(1, int(pos(3) - nPointsHalved(3)))
-        zSlice(2) = MIN(nPoints(3), int(pos(3) + nPointsHalved(3))
+        zSlice(1) = MAX(1, int(pos(3)) - nPointsHalved(3))
+        zSlice(2) = MIN(nPoints(3), int(pos(3)) + nPointsHalved(3))
 
-        ySlice(1) = MAX(1, int(pos(2) - nPointsHalved(2)))
-        ySlice(2) = MIN(nPoints(2), int(pos(2) + nPointsHalved(2))
+        ySlice(1) = MAX(1, int(pos(2)) - nPointsHalved(2))
+        ySlice(2) = MIN(nPoints(2), int(pos(2)) + nPointsHalved(2))
 
-        xSlice(1) = MAX(1, int(pos(1) - nPointsHalved(1)))
-        xSlice(2) = MIN(nPoints(1), int(pos(1) + nPointsHalved(1))
+        xSlice(1) = MAX(1, int(pos(1)) - nPointsHalved(1))
+        xSlice(2) = MIN(nPoints(1), int(pos(1)) + nPointsHalved(1))
 
-        lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+        do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
-          lpIM : do iM = -iL, iL
+          do iM = -iL, iL
             cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
-            ! TODO: Why would we even have multiple Eigenvectors?
-            lpEig : do iEig = 1, nPoints(4)
+            ! TODO: Figure out why we need multiple Eigenvectors
+            do iEig = 1, nPoints(4)
               !TODO : Select the correct eigenvector index <coeffInd> for the current orbital
-              valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
-                  & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
-                  & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1):xSlice(2), cacheInd, i1Phase, &
-                  & ySlice(1):ySlice(2), i2Phase, zSlice(1):zSlice(2), i3Phase)
-            end do lpEig
-          end do lpIM
-        end do lpOrb
-      end do lpAtom
-    end do lpCell
-
-
-
-
-
-
-
-
-
-    ! Array for the contribution of each orbital (and its periodic images)
-    if (tReal) then
-      allocate(atomOrbValReal(nOrb))
-    else
-      allocate(atomOrbValCmpl(nOrb))
-    end if
-
-    ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
-    ! below. This is fine as, in contrast to what was published, DFTB+ uses implicitly exp(-ikr) as
-    ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as
-    ! factor.
-    phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
-
-    ! Loop over all grid points
-    lpI3: do i3 = 1, nPoints(3)
-      curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
-      lpI2: do i2 = 1, nPoints(2)
-        curCoords(:, 2) =  real(i2 - 1, dp) * gridVecs(:, 2)
-        lpI1: do i1 = 1, nPoints(1)
-          curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
-          xyz(:) = sum(curCoords, dim=2) + origin
-          if (tPeriodic) then
-            frac(:) = matmul(xyz, recVecs2p)
-            xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-          end if
-          ! Get contribution from every atom in every cell for current point
-          allZero = .true.
-          lpCell: do iCell = 1, nCell
-            ind = 1
-            lpAtom: do iAtom = 1, nAtom
-              iSpecies = species(iAtom)
-              diff(:) = xyz - coords(:, iAtom, iCell)
-              xx = norm2(diff)
-
-
-              lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-                iL = angMoms(iOrb)
-
-                  !call getValue(stos(iOrb), xx, val)
-                  do iM = -iL, iL
-                    !atomAllOrbVal(ind, iCell) = val * realTessY(iL, iM, diff, xx)
-                    ! TODO: align x_coarse/phase/yz fine
-                    atomAllOrbVal(ind, iCell) = wavefunctionCache(x_coarse, iM, x_phase, y_fine, z_fine, iOrb)
-                    ind = ind + 1
-                  end do
-
-              end do lpOrb
-
-
-            end do lpAtom
-          end do lpCell
-
-          ! Sum the contribution from all cells and multiply by the provided coefficients (usually
-          ! the eigenvector)
-          if (tReal) then
-            if (tAddDensities) then
-              atomAllOrbVal(:,:) = atomAllOrbVal**2
-            end if
-            ! Collapse Cells onto main array
-            atomOrbValReal(:) = sum(atomAllOrbVal, dim=2)
-            do iEig = 1, nPoints(4)
-              valueReal(i1, i2, i3, iEig) = dot_product(atomOrbValReal(nonZeroIndices),&
-                  & eigVecsReal(nonZeroIndices, iEig))
-            end do
-          else
-            ind = 0
-            do iEig = 1, nPoints(4)
-              if (kIndexes(iEig) /= ind) then
-                ind = kIndexes(iEig)
-                atomOrbValCmpl(nonZeroIndices) = (0.0_dp, 0.0_dp)
-                do iCell = 1, nCell
-                  atomOrbValCmpl(nonZeroIndices) = atomOrbValCmpl(nonZeroIndices)&
-                      & + atomAllOrbVal(nonZeroIndices, iCell) * phases(iCell, ind)
-                end do
+              if (tReal) then
+                if (tAddDensities) then
+                  ! Square the wavefunction
+                  valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
+                      & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
+                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1)) :xSlice(2)-int(pos(1)), &
+                      & cacheInd, i1Phase, ySlice(1)-int(pos(2)):ySlice(2)-int(pos(2)), i2Phase, &
+                      & zSlice(1)-int(pos(3)):zSlice(2)-int(pos(3)), i3Phase) ** 2
+                else
+                  valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
+                      & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
+                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1)) :xSlice(2)-int(pos(1)), &
+                      & cacheInd, i1Phase, ySlice(1)-int(pos(2)):ySlice(2)-int(pos(2)), i2Phase, &
+                      & zSlice(1)-int(pos(3)):zSlice(2)-int(pos(3)), i3Phase) 
+                end if
+              else
+                stop "TODO: Complex not implemented yet"
               end if
-              valueCmpl(i1, i2, i3, iEig) = dot_product(atomOrbValCmpl(nonZeroIndices),&
-                  & eigVecsCmpl(nonZeroIndices, iEig))
             end do
-          end if
-        end do lpI1
-      end do lpI2
-    end do lpI3
-
+            coeffInd = coeffInd + 1
+          end do
+        end do
+      end do
+    end do
   end subroutine localGetValue
 
 end module waveplot_molorb
