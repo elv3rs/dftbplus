@@ -1,0 +1,38 @@
+Geometry = GenFormat {
+  <<< "geo_end.gen"
+}
+
+Hamiltonian = DFTB {
+  SCC = Yes
+  MaxAngularMomentum = {
+    H = "s"
+    C = "p"
+    N = "p"
+    O = "p"
+  }
+  SlaterKosterFiles = Type2FileNames {
+    Prefix = "3ob-3-1/"
+    Separator = "-"
+    Suffix  = ".skf"
+  }
+  KPointsAndWeights = {
+    0.0 0.0 0.0 1.0
+  }
+}
+
+Options {
+  WriteDetailedXml = Yes
+  WriteDetailedOut = No
+  WriteCharges = No
+}
+
+Analysis {
+  WriteEigenvectors = Yes
+  WriteBandOut = No
+  MullikenAnalysis = No
+}
+
+ParserOptions = {
+  ParserVersion = 14
+  WriteHSDInput = No
+}

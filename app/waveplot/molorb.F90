@@ -426,6 +426,7 @@ contains
     integer, pointer :: iMain(:,:)
     integer, pointer :: iCache(:,:)
 
+    logical :: tSparseCache = .true.
 
     !---------------------------------
     
@@ -456,6 +457,7 @@ contains
 
     ! Print cutoff size
     print *, "Cuttoff size", MAXVAL(cutoffs)
+    ! TODO: choose Cache size as min(cutoff, nPoints)
 
     ! Allocate Wavefunction cache
     nPointsHalved(1)  = nPoints(1) / 2
@@ -516,48 +518,57 @@ contains
 
 
 
-    print *, "Caching wavefunctions" 
+    print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
     ! Loop over all wavefunctions and cache them on the fine grid
     ! Todo: Disk Caching
     ! Todo: This is embarassingly parallel, add some OpenMP / MPI magic
     ! Todo: Consider sparse cache to avoid unnecessary calculations
     ! Todo: Set cache Size to cutoff or min(cutoff, nPoints)
-      lpOrb: do iOrb = 1, nUniqueOrb
-        print *, "Caching orbital ", iOrb
-        iL = angMoms(iOrb)
-        ! For every Point on the fine grid:
-        lpI3Phase : do i3Phase = 0, resolutionFactor-2
-          lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-            curCoords(:, 3) = real(i3*resolutionFactor + i3Phase, dp) * cacheGridVecs(:, 3)
-            lpI2Phase : do i2Phase = 0, resolutionFactor-2
-              lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-                curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
-                lpI1Phase : do i1Phase = 0, resolutionFactor-2
-                  lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                    curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
-                    
-                    ! Calculate position
-                    xyz(:) = sum(curCoords, dim=2)
-                    if (tPeriodic) then
-                      frac(:) = matmul(xyz, recVecs2p)
-                      xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-                    end if
-                    xx = norm2(xyz)
+    lpOrb: do iOrb = 1, nUniqueOrb
+      print "(*(G0, 1X))", " -> Caching orbital ", iOrb
+      iL = angMoms(iOrb)
+      ! For every Point on the fine grid:
+      lpI3Phase : do i3Phase = 0, resolutionFactor-2
+        if (tSparseCache) then
+          if (.not. any(i3Phase == phaseIndices(3, :, :))) cycle
+        end if
+        lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
+          curCoords(:, 3) = real(i3*resolutionFactor + i3Phase, dp) * cacheGridVecs(:, 3)
+          lpI2Phase : do i2Phase = 0, resolutionFactor-2
+            if (tSparseCache) then
+              if (.not. any(i2Phase == phaseIndices(2, :, :))) cycle
+            end if
+            lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
+              curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
+              lpI1Phase : do i1Phase = 0, resolutionFactor-2
+                if (tSparseCache) then
+                  if (.not. any(i1Phase == phaseIndices(1, :, :))) cycle
+                end if
+                lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
+                  curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
+                  
+                  ! Calculate position
+                  xyz(:) = sum(curCoords, dim=2)
+                  if (tPeriodic) then
+                    frac(:) = matmul(xyz, recVecs2p)
+                    xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
+                  end if
+                  xx = norm2(xyz)
 
-                    ! Get radial dependence
-                    call getValue(stos(iOrb), xx, val)
-                    lpIM : do iM = -iL, iL
-                      cacheInd = cacheIndexMap(iM, iOrb)
-                      ! Combine with angular dependence and add to cache
-                      wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
-                    end do lpIM
-                  end do lpI1
-                end do lpI1Phase
-              end do lpI2
-            end do lpI2Phase
-          end do lpI3
-        end do lpI3Phase
-      end do lpOrb
+                  ! Get radial dependence
+                  call getValue(stos(iOrb), xx, val)
+                  lpIM : do iM = -iL, iL
+                    cacheInd = cacheIndexMap(iM, iOrb)
+                    ! Combine with angular dependence and add to cache
+                    wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
+                  end do lpIM
+                end do lpI1
+              end do lpI1Phase
+            end do lpI2
+          end do lpI2Phase
+        end do lpI3
+      end do lpI3Phase
+    end do lpOrb
 
     print *, "Applying wavefunctions"
     ! Apply wavefunctions. For each atom, determine the offsets, then align the cache and apply using slicing.
@@ -581,11 +592,6 @@ contains
               if (tReal) then
                 if (tAddDensities) then
                   ! Square the wavefunction
-                  !!valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
-                  !    & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
-                  !    & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1,1)) :xSlice(2)-int(pos(1,1)), &
-                  !    & cacheInd, i1Phase, ySlice(1)-int(pos(2,1)):ySlice(2)-int(pos(2,1)), i2Phase, &
-                  !    & zSlice(1)-int(pos(3,1)):zSlice(2)-int(pos(3,1)), i3Phase) ** 2
                   valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
                       & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
                       & eigVecsReal(coeffInd, iEig) * wavefunctionCache(iCache(1,1):iCache(1,2), &
