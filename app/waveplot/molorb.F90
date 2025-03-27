@@ -392,10 +392,16 @@ contains
     ! Wavefunctions are evaluated across a finer grid (resolutionFactor as many points as the main one).
     ! When aligned, points can simply be read using a stride of resolutionFactor.
     ! Main feature:
-    ! The X-coordinate is subdivided into <resolutionFactor> phased parts to ensure a contiguous memory layout.
+    ! The X-coordinate is subdivided into <resolutionFactor> chunked parts to ensure a contiguous memory layout.
     ! Y and Z have been subdivided as well, though only for convenience.
-    ! Indices : [X, cacheInd, XPhase, Y, YPhase, Z, ZPhase]
-    real(dp), allocatable :: wavefunctionCache(:,:,:,:,:,:,:)
+    ! Indices : [X, cacheInd, XChunked, Y, YChunked, Z, ZChunked]
+    real(dp), allocatable, save :: wavefunctionCache(:,:,:,:,:,:,:)
+
+    integer, allocatable, save, target :: chunkedIndices(:,:,:)
+    integer, allocatable, save, target :: sliceIndicesMain(:,:,:,:)
+    integer, allocatable, save, target :: sliceIndicesCache(:,:,:,:)
+
+    logical, save :: tCacheInitialised = .false.
 
     ! cacheInd is the index of the orbital in the cache as a running sum of (iSpecies, iOrb, iM)
     integer :: cacheInd, cacheSize
@@ -408,21 +414,19 @@ contains
     real(dp) :: pos(3, 1)
     
     ! Aligning the cache to the main grid for each atom position
-    integer :: xSlice(2), ySlice(2), zSlice(2)
     integer :: nUniqueOrb
 
     ! Mapping array describing cache layout: (iM, iOrb) -> cacheInd.
     integer, allocatable :: cacheIndexMap(:,:)
 
-    integer :: i1Phase, i2Phase, i3Phase
+
+    integer :: i1Chunked, i2Chunked, i3Chunked
     integer :: coeffInd
     integer :: nPointsHalved(3)
 
 
-    integer, allocatable, target :: phaseIndices(:,:,:)
-    integer, allocatable, target :: sliceIndicesMain(:,:,:,:)
-    integer, allocatable, target :: sliceIndicesCache(:,:,:,:)
-    integer, pointer :: iPhase(:)
+
+    integer, pointer :: iChunk(:)
     integer, pointer :: iMain(:,:)
     integer, pointer :: iCache(:,:)
 
@@ -455,14 +459,37 @@ contains
       stop "Complex not implemented yet"
     end if
 
-    ! Print cutoff size
-    print *, "Cuttoff size", MAXVAL(cutoffs)
-    ! TODO: choose Cache size as min(cutoff, nPoints)
+    ! Fine Grid Basis Vectors
+    cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
+    cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
+    cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor
+
+    ! Print cutoff size. We assume that maxval == minval.
+    print *, "Cuttoff size", MAXVAL(cutoffs), MINVAL(cutoffs)
+
+
 
     ! Allocate Wavefunction cache
     nPointsHalved(1)  = nPoints(1) / 2
     nPointsHalved(2)  = nPoints(2) / 2
     nPointsHalved(3)  = nPoints(3) / 2
+
+    ! Choose Cache size as min(cutoff, nPoints). This assumes that the basis is orthogonal.
+    ! We might have to invert the Gram matrix to get the correct cutoffs.
+    nPointsHalved(1) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,1))), nPointsHalved(1)*2)
+    nPointsHalved(2) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,2))), nPointsHalved(2)*2)
+    nPointsHalved(3) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,3))), nPointsHalved(3)*2)
+
+    print *, "Main Grid Size", nPoints
+    print *, "Cache Grid Size", nPointsHalved * 2
+
+
+
+    if (tCacheInitialised) then
+      print "(*(G0, 1X))", "Reusing saved wavefunctions"
+      goto 591 ! Temporary quick fix
+    end if
+
     print *, "Allocating wavefunction cache"
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
     allocate(wavefunctionCache(   -nPointsHalved(1):nPointsHalved(1), &
@@ -472,18 +499,17 @@ contains
                                 &  0:resolutionFactor-1, &
                                 & -nPointsHalved(3):nPointsHalved(3), &
                                 &  0:resolutionFactor-1))
-    ! Fine Grid Basis Vectors
-    cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
-    cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
-    cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor
+    ! zero out the cache
+    wavefunctionCache(:,:,:,:,:,:,:) = 0.0_dp
+
 
     ! Allocate indice arrays
-    allocate(phaseIndices(3, nAtom, nCell))
+    allocate(chunkedIndices(3, nAtom, nCell))
     allocate(sliceIndicesMain(3,2, nAtom, nCell))
     allocate(sliceIndicesCache(3,2, nAtom, nCell))
 
     print *, "Aligning Arrays..."
-    ! Factored this out of the main loop to get phase information for sparse caching
+    ! Factored this out of the main loop to get chunked information for sparse caching
     do iCell = 1, nCell
       coeffInd = 1
       do iAtom = 1, nAtom
@@ -494,10 +520,10 @@ contains
         ! Decompose Atom position onto basis
         call gesv(cacheBasis, pos)
         ! Atom Offset in terms of cacheGridVecs now stored in pos.
-        ! Choose closest phase
-        phaseIndices(1, iAtom, iCell) = ABS (int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp)))
-        phaseIndices(2, iAtom, iCell) = ABS (int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp)))
-        phaseIndices(3, iAtom, iCell) = ABS (int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp)))
+        ! Choose closest chunk
+        chunkedIndices(1, iAtom, iCell) = ABS (int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp)))
+        chunkedIndices(2, iAtom, iCell) = ABS (int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp)))
+        chunkedIndices(3, iAtom, iCell) = ABS (int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp)))
         ! Align to main grid, clamp to bounds
         sliceIndicesMain(3,1, iAtom, iCell) = MAX(1, int(pos(3,1)) - nPointsHalved(3))
         sliceIndicesMain(3,2, iAtom, iCell) = MIN(nPoints(3), int(pos(3,1)) + nPointsHalved(3))
@@ -515,37 +541,35 @@ contains
 
 
 
-
+  
 
 
     print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
     ! Loop over all wavefunctions and cache them on the fine grid
-    ! Todo: Disk Caching
-    ! Todo: This is embarassingly parallel, add some OpenMP / MPI magic
-    ! Todo: Consider sparse cache to avoid unnecessary calculations
+    ! Todo: Disk Caching?
     ! Todo: Set cache Size to cutoff or min(cutoff, nPoints)
     lpOrb: do iOrb = 1, nUniqueOrb
       print "(*(G0, 1X))", " -> Caching orbital ", iOrb
       iL = angMoms(iOrb)
       ! For every Point on the fine grid:
-      lpI3Phase : do i3Phase = 0, resolutionFactor-2
+      lpI3Chunked : do i3Chunked = 0, resolutionFactor-2
         if (tSparseCache) then
-          if (.not. any(i3Phase == phaseIndices(3, :, :))) cycle
+          if (.not. any(i3Chunked == chunkedIndices(3, :, :))) cycle
         end if
         lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-          curCoords(:, 3) = real(i3*resolutionFactor + i3Phase, dp) * cacheGridVecs(:, 3)
-          lpI2Phase : do i2Phase = 0, resolutionFactor-2
+          curCoords(:, 3) = real(i3*resolutionFactor + i3Chunked, dp) * cacheGridVecs(:, 3)
+          lpI2Chunked : do i2Chunked = 0, resolutionFactor-2
             if (tSparseCache) then
-              if (.not. any(i2Phase == phaseIndices(2, :, :))) cycle
+              if (.not. any(i2Chunked == chunkedIndices(2, :, :))) cycle
             end if
             lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-              curCoords(:, 2) = real(i2*resolutionFactor + i2Phase, dp) * cacheGridVecs(:, 2)
-              lpI1Phase : do i1Phase = 0, resolutionFactor-2
+              curCoords(:, 2) = real(i2*resolutionFactor + i2Chunked, dp) * cacheGridVecs(:, 2)
+              lpI1Chunked : do i1Chunked = 0, resolutionFactor-2
                 if (tSparseCache) then
-                  if (.not. any(i1Phase == phaseIndices(1, :, :))) cycle
+                  if (.not. any(i1Chunked == chunkedIndices(1, :, :))) cycle
                 end if
                 lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                  curCoords(:, 1) = real(i1*resolutionFactor + i1Phase, dp) * cacheGridVecs(:, 1)
+                  curCoords(:, 1) = real(i1*resolutionFactor + i1Chunked, dp) * cacheGridVecs(:, 1)
                   
                   ! Calculate position
                   xyz(:) = sum(curCoords, dim=2)
@@ -554,25 +578,27 @@ contains
                     xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
                   end if
                   xx = norm2(xyz)
-
-                  ! Get radial dependence
-                  call getValue(stos(iOrb), xx, val)
-                  lpIM : do iM = -iL, iL
-                    cacheInd = cacheIndexMap(iM, iOrb)
-                    ! Combine with angular dependence and add to cache
-                    wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
-                  end do lpIM
+                  if (xx <= cutoffs(iOrb)) then
+                    ! Get radial dependence
+                    call getValue(stos(iOrb), xx, val)
+                    lpIM : do iM = -iL, iL
+                      cacheInd = cacheIndexMap(iM, iOrb)
+                      ! Combine with angular dependence and add to cache
+                      wavefunctionCache(i1, cacheInd, i1Chunked, i2, i2Chunked, i3, i3Chunked) = val * realTessY(iL, iM, diff, xx)
+                    end do lpIM
+                  end if
                 end do lpI1
-              end do lpI1Phase
+              end do lpI1Chunked
             end do lpI2
-          end do lpI2Phase
+          end do lpI2Chunked
         end do lpI3
-      end do lpI3Phase
+      end do lpI3Chunked
     end do lpOrb
+    tCacheInitialised = .true.
 
-    print *, "Applying wavefunctions"
+
+591 print *, "Applying wavefunctions"
     ! Apply wavefunctions. For each atom, determine the offsets, then align the cache and apply using slicing.
-    ! Todo: This is also embarassingly parallel.
     do iCell = 1, nCell
       coeffInd = 1
       do iAtom = 1, nAtom
@@ -580,7 +606,7 @@ contains
         print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
         
         ! Load Alignment
-        iPhase => phaseIndices(:, iAtom, iCell)
+        iChunk => chunkedIndices(:, iAtom, iCell)
         iMain => sliceIndicesMain(:, :, iAtom, iCell)
         iCache => sliceIndicesCache(:, :, iAtom, iCell)
 
@@ -588,7 +614,6 @@ contains
           iL = angMoms(iOrb)
           do iM = -iL, iL
             cacheInd = cacheIndexMap(iM, iOrb)
-            ! TODO: Figure out why we need multiple Eigenvectors
             do iEig = 1, nPoints(4)
               if (tReal) then
                 if (tAddDensities) then
@@ -596,14 +621,14 @@ contains
                   valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
                       & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
                       & eigVecsReal(coeffInd, iEig) * wavefunctionCache(iCache(1,1):iCache(1,2), &
-                      & cacheInd, iPhase(1), iCache(2,1):iCache(2,2), iPhase(2), &
-                      & iCache(3,1):iCache(3,2), iPhase(3)) ** 2
+                      & cacheInd, iChunk(1), iCache(2,1):iCache(2,2), iChunk(2), &
+                      & iCache(3,1):iCache(3,2), iChunk(3)) ** 2
                 else
                   valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
                       & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
                       & eigVecsReal(coeffInd, iEig) * wavefunctionCache(iCache(1,1):iCache(1,2), &
-                      & cacheInd, iPhase(1), iCache(2,1):iCache(2,2), iPhase(2), &
-                      & iCache(3,1):iCache(3,2), iPhase(3))
+                      & cacheInd, iChunk(1), iCache(2,1):iCache(2,2), iChunk(2), &
+                      & iCache(3,1):iCache(3,2), iChunk(3))
                 end if
               else
                 !TODO: Implement complex version
