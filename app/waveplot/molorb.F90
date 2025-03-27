@@ -325,7 +325,7 @@ contains
     !> Nr. of atoms
     integer, intent(in) :: nAtom
 
-    !> combined nr. of all orbitals (i.e. double atomCount =>double orbitalCount)
+    !> total Nr. of orbitals, i.e. ∑ atoms  ∑ orbitals
     integer, intent(in) :: nOrb
 
     !> Coordinates of the atoms
@@ -380,13 +380,10 @@ contains
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
     real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
-    real(dp) :: atomAllOrbVal(nOrb, nCell)
-    integer, target :: nonZeroIndContainer(nOrb)
-    integer, pointer :: nonZeroIndices(:)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
     real(dp) :: xx, val
     integer :: nPoints(4)
-    integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
+    integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
     ! Cache variables
     integer :: resolutionFactor = 5
@@ -412,33 +409,31 @@ contains
     
     ! Aligning the cache to the main grid for each atom position
     integer :: xSlice(2), ySlice(2), zSlice(2)
+    integer :: nUniqueOrb
 
-    ! Mapping array describing cache layout: (iM, iOrb, iSpecies) -> cacheInd.
-    integer, allocatable :: cacheIndexMap(:,:,:)
-    integer :: halfPoints(3)
+    ! Mapping array describing cache layout: (iM, iOrb) -> cacheInd.
+    integer, allocatable :: cacheIndexMap(:,:)
 
     integer :: i1Phase, i2Phase, i3Phase
-    integer :: coeffInd, nSpecies
+    integer :: coeffInd
     integer :: nPointsHalved(3)
 
 
     !---------------------------------
     
-    nSpecies = SIZE(iStos)
-    allocate(cacheIndexMap(-MAXVAL(angMoms):MAXVAL(angMoms), MAXVAL(iStos), nSpecies))
+    nUniqueOrb = SIZE(angMoms)
+    allocate(cacheIndexMap(-MAXVAL(angMoms):MAXVAL(angMoms), nUniqueOrb))
 
-    cacheIndexMap(:,:,:) = -1 ! Ensure we dont go oob
+    cacheIndexMap(:,:) = -1 ! Ensure we dont go oob
 
     ! Calculate nr. of cache entries <cacheSize> and populate mapping array <cacheIndexMap>
     cacheInd = 1
-    do iSpecies = 1, nSpecies - 1
-      cacheInd = cacheInd + 1
-      do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-        iL = angMoms(iOrb)
-        do iM = -iL, iL
-          cacheInd = cacheInd + 1
-          cacheIndexMap(iM, iOrb, iSpecies) = cacheInd
-        end do
+    print *, "nUniqueOrb", nUniqueOrb
+    do iOrb = 1, nUniqueOrb
+      iL = angMoms(iOrb)
+      do iM = -iL, iL
+        cacheInd = cacheInd + 1
+        cacheIndexMap(iM, iOrb) = cacheInd
       end do
     end do
     cacheSize = cacheInd
@@ -448,7 +443,11 @@ contains
       nPoints = shape(valueReal)
     else
       nPoints = shape(valueCmpl)
+      stop "Complex not implemented yet"
     end if
+
+    ! Print cutoff size
+    print *, "Cuttoff size", MAXVAL(cutoffs)
 
     ! Allocate Wavefunction cache
     nPointsHalved(1)  = nPoints(1) / 2
@@ -473,10 +472,9 @@ contains
     ! Todo: Disk Caching
     ! Todo: This is embarassingly parallel, add some OpenMP / MPI magic
     ! Todo: Consider sparse cache to avoid unnecessary calculations
-    lpSpecies: do iSpecies = 1, nSpecies -1
-      print *, "Caching species ", iSpecies
-      lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-        print *, "  orbital ", iOrb
+    ! Todo: Set cache Size to cutoff or min(cutoff, nPoints)
+      lpOrb: do iOrb = 1, nUniqueOrb
+        print *, "Caching orbital ", iOrb
         iL = angMoms(iOrb)
         ! For every Point on the fine grid:
         lpI3Phase : do i3Phase = 0, resolutionFactor-2
@@ -500,7 +498,7 @@ contains
                     ! Get radial dependence
                     call getValue(stos(iOrb), xx, val)
                     lpIM : do iM = -iL, iL
-                      cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
+                      cacheInd = cacheIndexMap(iM, iOrb)
                       ! Combine with angular dependence and add to cache
                       wavefunctionCache(i1, cacheInd, i1Phase, i2, i2Phase, i3, i3Phase) = val * realTessY(iL, iM, diff, xx)
                     end do lpIM
@@ -511,20 +509,16 @@ contains
           end do lpI3
         end do lpI3Phase
       end do lpOrb
-    end do lpSpecies
 
     print *, "Applying wavefunctions"
-    ! Apply wavefunctions. For each atom, determine the offsets, then loop (using stride).
-    ! Apply the X Coordinate using sliced Array Operations, directly multiplied with the 
-    ! corresponding Eigenvector entry.
+    ! Apply wavefunctions. For each atom, determine the offsets, then align the cache and apply using slicing.
     ! Todo: This is also embarassingly parallel.
-
     do iCell = 1, nCell
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
         ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        pos(:,1) = coords(:, iAtom, iCell)
+        pos(:,1) = coords(:, iAtom, iCell) + origin
         cacheBasis(:,:) = cacheGridVecs(:,:)
         ! Decompose Atom position onto basis
         call gesv(cacheBasis, pos)
@@ -546,7 +540,7 @@ contains
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
           do iM = -iL, iL
-            cacheInd = cacheIndexMap(iM, iOrb, iSpecies)
+            cacheInd = cacheIndexMap(iM, iOrb)
             ! TODO: Figure out why we need multiple Eigenvectors
             do iEig = 1, nPoints(4)
               if (tReal) then
@@ -572,8 +566,8 @@ contains
             coeffInd = coeffInd + 1
           end do
         end do
+        end do
       end do
-    end do
   end subroutine localGetValue
 
 end module waveplot_molorb
