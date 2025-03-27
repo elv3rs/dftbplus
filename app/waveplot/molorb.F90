@@ -577,7 +577,8 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-
+        print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
+        
         ! Load Alignment
         iPhase => phaseIndices(:, iAtom, iCell)
         iMain => sliceIndicesMain(:, :, iAtom, iCell)
