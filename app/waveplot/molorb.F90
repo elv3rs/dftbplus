@@ -419,6 +419,14 @@ contains
     integer :: nPointsHalved(3)
 
 
+    integer, allocatable, target :: phaseIndices(:,:,:)
+    integer, allocatable, target :: sliceIndicesMain(:,:,:,:)
+    integer, allocatable, target :: sliceIndicesCache(:,:,:,:)
+    integer, pointer :: iPhase(:)
+    integer, pointer :: iMain(:,:)
+    integer, pointer :: iCache(:,:)
+
+
     !---------------------------------
     
     nUniqueOrb = SIZE(angMoms)
@@ -466,6 +474,47 @@ contains
     cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
     cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
     cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor
+
+    ! Allocate indice arrays
+    allocate(phaseIndices(3, nAtom, nCell))
+    allocate(sliceIndicesMain(3,2, nAtom, nCell))
+    allocate(sliceIndicesCache(3,2, nAtom, nCell))
+
+    print *, "Aligning Arrays..."
+    ! Factored this out of the main loop to get phase information for sparse caching
+    do iCell = 1, nCell
+      coeffInd = 1
+      do iAtom = 1, nAtom
+        iSpecies = species(iAtom)
+        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
+        pos(:,1) = coords(:, iAtom, iCell) + origin
+        cacheBasis(:,:) = cacheGridVecs(:,:)
+        ! Decompose Atom position onto basis
+        call gesv(cacheBasis, pos)
+        ! Atom Offset in terms of cacheGridVecs now stored in pos.
+        ! Choose closest phase
+        phaseIndices(1, iAtom, iCell) = ABS (int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp)))
+        phaseIndices(2, iAtom, iCell) = ABS (int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp)))
+        phaseIndices(3, iAtom, iCell) = ABS (int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp)))
+        ! Align to main grid, clamp to bounds
+        sliceIndicesMain(3,1, iAtom, iCell) = MAX(1, int(pos(3,1)) - nPointsHalved(3))
+        sliceIndicesMain(3,2, iAtom, iCell) = MIN(nPoints(3), int(pos(3,1)) + nPointsHalved(3))
+
+        sliceIndicesMain(2,1, iAtom, iCell) = MAX(1, int(pos(2,1)) - nPointsHalved(2))
+        sliceIndicesMain(2,2, iAtom, iCell) = MIN(nPoints(2), int(pos(2,1)) + nPointsHalved(2))
+
+        sliceIndicesMain(1,1, iAtom, iCell) = MAX(1, int(pos(1,1)) - nPointsHalved(1))
+        sliceIndicesMain(1,2, iAtom, iCell) = MIN(nPoints(1), int(pos(1,1)) + nPointsHalved(1))
+
+        sliceIndicesCache(:,1, iAtom, iCell) = sliceIndicesMain(:,1, iAtom, iCell) - int(pos(:,1))
+        sliceIndicesCache(:,2, iAtom, iCell) = sliceIndicesMain(:,2, iAtom, iCell) - int(pos(:,1))
+      end do
+    end do
+
+
+
+
+
 
     print *, "Caching wavefunctions" 
     ! Loop over all wavefunctions and cache them on the fine grid
@@ -517,25 +566,11 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        pos(:,1) = coords(:, iAtom, iCell) + origin
-        cacheBasis(:,:) = cacheGridVecs(:,:)
-        ! Decompose Atom position onto basis
-        call gesv(cacheBasis, pos)
-        ! Atom Offset in terms of cacheGridVecs now stored in pos.
-        ! Choose closest phase
-        i1Phase = ABS (int(MOD(pos(1,1), 1.0_dp) * real(resolutionFactor, dp)))
-        i2Phase = ABS (int(MOD(pos(2,1), 1.0_dp) * real(resolutionFactor, dp)))
-        i3Phase = ABS (int(MOD(pos(3,1), 1.0_dp) * real(resolutionFactor, dp)))
-        ! Align to main grid, clamp to bounds
-        zSlice(1) = MAX(1, int(pos(3,1)) - nPointsHalved(3))
-        zSlice(2) = MIN(nPoints(3), int(pos(3,1)) + nPointsHalved(3))
 
-        ySlice(1) = MAX(1, int(pos(2,1)) - nPointsHalved(2))
-        ySlice(2) = MIN(nPoints(2), int(pos(2,1)) + nPointsHalved(2))
-
-        xSlice(1) = MAX(1, int(pos(1,1)) - nPointsHalved(1))
-        xSlice(2) = MIN(nPoints(1), int(pos(1,1)) + nPointsHalved(1))
+        ! Load Alignment
+        iPhase => phaseIndices(:, iAtom, iCell)
+        iMain => sliceIndicesMain(:, :, iAtom, iCell)
+        iCache => sliceIndicesCache(:, :, iAtom, iCell)
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
@@ -546,17 +581,22 @@ contains
               if (tReal) then
                 if (tAddDensities) then
                   ! Square the wavefunction
-                  valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
-                      & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
-                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1,1)) :xSlice(2)-int(pos(1,1)), &
-                      & cacheInd, i1Phase, ySlice(1)-int(pos(2,1)):ySlice(2)-int(pos(2,1)), i2Phase, &
-                      & zSlice(1)-int(pos(3,1)):zSlice(2)-int(pos(3,1)), i3Phase) ** 2
+                  !!valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
+                  !    & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
+                  !    & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1,1)) :xSlice(2)-int(pos(1,1)), &
+                  !    & cacheInd, i1Phase, ySlice(1)-int(pos(2,1)):ySlice(2)-int(pos(2,1)), i2Phase, &
+                  !    & zSlice(1)-int(pos(3,1)):zSlice(2)-int(pos(3,1)), i3Phase) ** 2
+                  valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
+                      & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
+                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(iCache(1,1):iCache(1,2), &
+                      & cacheInd, iPhase(1), iCache(2,1):iCache(2,2), iPhase(2), &
+                      & iCache(3,1):iCache(3,2), iPhase(3)) ** 2
                 else
-                  valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) = &
-                      & valueReal(xSlice(1):xSlice(2), ySlice(1):ySlice(2), zSlice(1):zSlice(2), iEig) + &
-                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(xSlice(1)-int(pos(1,1)) :xSlice(2)-int(pos(1,1)), &
-                      & cacheInd, i1Phase, ySlice(1)-int(pos(2,1)):ySlice(2)-int(pos(2,1)), i2Phase, &
-                      & zSlice(1)-int(pos(3,1)):zSlice(2)-int(pos(3,1)), i3Phase) 
+                  valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
+                      & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
+                      & eigVecsReal(coeffInd, iEig) * wavefunctionCache(iCache(1,1):iCache(1,2), &
+                      & cacheInd, iPhase(1), iCache(2,1):iCache(2,2), iPhase(2), &
+                      & iCache(3,1):iCache(3,2), iPhase(3))
                 end if
               else
                 !TODO: Implement complex version
