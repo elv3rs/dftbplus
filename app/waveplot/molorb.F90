@@ -386,7 +386,16 @@ contains
     integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
     ! Cache variables
-    integer :: resolutionFactor = 5
+
+    ! Todo: This overrides targetResolution and resolutionFactor.
+    integer, parameter :: resolutionFactorLead = 5
+
+    ! Target subdivision resolution.
+    ! Todo: Figure out what unit we are using here. A?
+    real(dp) :: targetResolution(3)
+    
+    ! Resolution factors calculated to meet the targetResolution requirements
+    integer :: resolutionFactor(3)
 
     ! Wavefunction cache overview:
     ! Wavefunctions are evaluated across a finer grid (resolutionFactor as many points as the main one).
@@ -430,7 +439,8 @@ contains
     integer, pointer :: iMain(:,:)
     integer, pointer :: iCache(:,:)
 
-    logical :: tSparseCache = .true.
+    logical, parameter :: tSparseCache = .true.
+    real(dp) :: expectedSizeMB
 
     !---------------------------------
     
@@ -459,29 +469,42 @@ contains
       stop "Complex not implemented yet"
     end if
 
+    targetResolution = norm2(gridVecs, dim=1) / resolutionFactorLead
+    resolutionFactor = norm2(gridVecs, dim=1) / targetResolution
+    
     ! Fine Grid Basis Vectors
-    cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor
-    cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor
-    cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor
+    cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor(1)
+    cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor(2)
+    cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor(3)
 
     ! Print cutoff size. We assume that maxval == minval.
-    print *, "Cuttoff size", MAXVAL(cutoffs), MINVAL(cutoffs)
+    if (maxval(cutoffs) /= minval(cutoffs)) then
+      print *, "Warn: Different cutoffs (max/min):", maxval(cutoffs), minval(cutoffs)
+    end if
 
-
-
-    ! Allocate Wavefunction cache
-    nPointsHalved(1)  = nPoints(1) / 2
-    nPointsHalved(2)  = nPoints(2) / 2
-    nPointsHalved(3)  = nPoints(3) / 2
 
     ! Choose Cache size as min(cutoff, nPoints). This assumes that the basis is orthogonal.
     ! We might have to invert the Gram matrix to get the correct cutoffs.
-    nPointsHalved(1) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,1))), nPointsHalved(1)*2)
-    nPointsHalved(2) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,2))), nPointsHalved(2)*2)
-    nPointsHalved(3) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,3))), nPointsHalved(3)*2)
+    nPointsHalved(1) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,1))), nPoints(1))
+    nPointsHalved(2) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,2))), nPoints(2))
+    nPointsHalved(3) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,3))), nPoints(3))
+    
+    ! Todo: Calculate resolutionFactor to achieve a subdivision of targetResolution 1/A.
+    !       -> Figure out a sensible targetResolution for testing
+    !       -> Allow Different resolution factors per dimension
+    ! Todo: Extend cutoff estimation to non-orthogonal basis by building Gram matrix
+    ! Todo: Implement Complex Version
+    ! Todo: Compare with non-chunked version, decide if chunking is worth the added complexity
+    ! Todo: Benchmark dense/sparse variant. Can we remove the sparse version or does it provide a significant speedup for tiny systems?
 
-    print *, "Main Grid Size", nPoints
-    print *, "Cache Grid Size", nPointsHalved * 2
+
+
+
+
+
+    print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
+    print "(*(G0, 1X))", " ->", size(valueReal), "elements,",  sizeof(valueReal) / 1000.0 / 1000.0, "MB"
+    print "(*(G0, 1X))", "tSparseCache:", tSparseCache
 
 
 
@@ -490,7 +513,18 @@ contains
       goto 591 ! Temporary quick fix
     end if
 
-    print *, "Allocating wavefunction cache"
+
+    expectedSizeMB = 0.0_dp
+    expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
+    expectedSizeMB  = expectedSizeMB * 2**3 * resolutionFactor**3 * cacheSize
+    expectedSizeMB  = expectedSizeMB / 8.0 / 1024.0 / 1024.0
+
+    print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
+    print "(*(G0, 1X))", "expected Cache Allocation Size", expectedSizeMB, "MB"
+    if (expectedSizeMB > 8000) then
+      stop "Expected cache array size exceeds 8GB"
+    end if
+
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
     allocate(wavefunctionCache(   -nPointsHalved(1):nPointsHalved(1), &
                                 &  1:cacheSize, &
@@ -501,6 +535,7 @@ contains
                                 &  0:resolutionFactor-1))
     ! zero out the cache
     wavefunctionCache(:,:,:,:,:,:,:) = 0.0_dp
+    print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
 
 
     ! Allocate indice arrays
@@ -546,8 +581,6 @@ contains
 
     print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
     ! Loop over all wavefunctions and cache them on the fine grid
-    ! Todo: Disk Caching?
-    ! Todo: Set cache Size to cutoff or min(cutoff, nPoints)
     lpOrb: do iOrb = 1, nUniqueOrb
       print "(*(G0, 1X))", " -> Caching orbital ", iOrb
       iL = angMoms(iOrb)
