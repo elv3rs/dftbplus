@@ -1,0 +1,29 @@
+# General options
+
+Options {
+  TotalChargeDensity = Yes
+  TotalChargeDifference = No
+  ChargeDensity = No                # Charge density for each state?
+  RealComponent = No                # Plot real component of the wavefunction
+  PlottedSpins = 1 -1
+  PlottedLevels = 4                  # Levels to plot
+  PlottedRegion =  OptimalCuboid {}  # Region to plot
+
+  NrOfPoints = 50 50 50              # Number of grid points in each direction
+  NrOfCachedGrids = -1               # Nr of cached grids (speeds up things)
+  Verbose = Yes                      # Wanna see a lot of messages?
+}
+
+DetailedXml = "dftb/detailed.xml"         # File containing the detailed xml output
+                                          # of DFTB+
+EigenvecBin = "dftb/eigenvec.bin"         # File containing the binary eigenvecs
+
+
+# Definition of the basis
+Basis {
+  Resolution = 0.01
+  # Including mio-1-1.hsd. (If you use a set, which depends on other sets,
+  # the wfc.*.hsd files for each required set must be included in a similar
+  # way.)
+  <<+ "dftb/3ob-3-1/wfc.hsd"
+}

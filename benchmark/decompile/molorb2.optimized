@@ -1,0 +1,5586 @@
+
+;; Function localgetvalue (__waveplot_molorb2_MOD_localgetvalue, funcdef_no=0, decl_uid=4433, cgraph_uid=1, symbol_order=0)
+
+Removing basic block 3
+Removing basic block 9
+Removing basic block 11
+Removing basic block 15
+Removing basic block 21
+Removing basic block 23
+Removing basic block 59
+Removing basic block 67
+Removing basic block 77
+Removing basic block 84
+Removing basic block 100
+Removing basic block 121
+Removing basic block 142
+Removing basic block 328
+Removing basic block 329
+Removing basic block 330
+Removing basic block 331
+Removing basic block 332
+Removing basic block 333
+Removing basic block 334
+Removing basic block 335
+Removing basic block 336
+Removing basic block 337
+Removing basic block 338
+Removing basic block 339
+Removing basic block 340
+Removing basic block 341
+Removing basic block 342
+Removing basic block 343
+Removing basic block 344
+Removing basic block 345
+Removing basic block 346
+Removing basic block 347
+Removing basic block 348
+Removing basic block 349
+Removing basic block 350
+Removing basic block 351
+Removing basic block 352
+Removing basic block 353
+Removing basic block 354
+Removing basic block 355
+Removing basic block 356
+Removing basic block 357
+Removing basic block 358
+Removing basic block 359
+Removing basic block 360
+Removing basic block 361
+Removing basic block 362
+Removing basic block 363
+Removing basic block 364
+Removing basic block 365
+Removing basic block 366
+Removing basic block 367
+Removing basic block 368
+Removing basic block 369
+Removing basic block 370
+Removing basic block 371
+Removing basic block 372
+Removing basic block 373
+Removing basic block 374
+Removing basic block 375
+Removing basic block 376
+Removing basic block 377
+Removing basic block 378
+Removing basic block 379
+Removing basic block 380
+Removing basic block 381
+Removing basic block 382
+Removing basic block 383
+Removing basic block 385
+Removing basic block 386
+Removing basic block 389
+Removing basic block 391
+Removing basic block 392
+Removing basic block 395
+Removing basic block 396
+Removing basic block 397
+Removing basic block 398
+Removing basic block 399
+Removing basic block 400
+Removing basic block 401
+Removing basic block 402
+Removing basic block 403
+Removing basic block 405
+Removing basic block 406
+Removing basic block 407
+Removing basic block 409
+Removing basic block 410
+Removing basic block 411
+Removing basic block 412
+Removing basic block 413
+Removing basic block 414
+Removing basic block 416
+Removing basic block 417
+Removing basic block 418
+Removing basic block 419
+Removing basic block 421
+Removing basic block 422
+Removing basic block 423
+Removing basic block 424
+Removing basic block 425
+Removing basic block 426
+Removing basic block 427
+Removing basic block 429
+Removing basic block 430
+Removing basic block 431
+Removing basic block 432
+Removing basic block 433
+Removing basic block 434
+Removing basic block 435
+Removing basic block 436
+Removing basic block 438
+Removing basic block 439
+Removing basic block 440
+Removing basic block 441
+Removing basic block 442
+Removing basic block 443
+Removing basic block 444
+Removing basic block 445
+Removing basic block 447
+Removing basic block 448
+Removing basic block 449
+Removing basic block 450
+Removing basic block 451
+Removing basic block 452
+Removing basic block 453
+Removing basic block 454
+Removing basic block 455
+Removing basic block 456
+Removing basic block 457
+Removing basic block 458
+Removing basic block 459
+Removing basic block 460
+Removing basic block 461
+Removing basic block 462
+Removing basic block 463
+Removing basic block 464
+Removing basic block 465
+Removing basic block 466
+Removing basic block 467
+Removing basic block 468
+Removing basic block 469
+Removing basic block 470
+Removing basic block 471
+Removing basic block 472
+Removing basic block 473
+Removing basic block 474
+Removing basic block 475
+Removing basic block 476
+Removing basic block 477
+Removing basic block 478
+Removing basic block 479
+Removing basic block 480
+Removing basic block 481
+Removing basic block 482
+Removing basic block 483
+Removing basic block 484
+Removing basic block 485
+Removing basic block 486
+Removing basic block 487
+Removing basic block 488
+Removing basic block 489
+Removing basic block 490
+Removing basic block 491
+Removing basic block 492
+Removing basic block 493
+Removing basic block 494
+Removing basic block 495
+Removing basic block 496
+Removing basic block 497
+Removing basic block 498
+Removing basic block 499
+Removing basic block 500
+Removing basic block 501
+Removing basic block 502
+Removing basic block 503
+Removing basic block 504
+Removing basic block 505
+Removing basic block 506
+Removing basic block 507
+Removing basic block 508
+Removing basic block 509
+Removing basic block 510
+Removing basic block 511
+Removing basic block 512
+Removing basic block 513
+Removing basic block 514
+Removing basic block 515
+Removing basic block 516
+Removing basic block 517
+Removing basic block 518
+Removing basic block 519
+Removing basic block 520
+Removing basic block 521
+Removing basic block 522
+Removing basic block 523
+Removing basic block 524
+__attribute__((fn spec (". r r r r r r r r r r r r r r r r r r r r r w w ")))
+void localgetvalue (struct array01_real(kind=8) & restrict origin, struct array02_real(kind=8) & restrict gridvecs, struct array02_real(kind=8) & restrict eigvecsreal, struct array02_complex(kind=8) & restrict eigvecscmpl, integer(kind=4) & restrict natom, integer(kind=4) & restrict norb, struct array03_real(kind=8) & restrict coords, struct array01_integer(kind=4) & restrict species, struct array01_real(kind=8) & restrict cutoffs, struct array01_integer(kind=4) & restrict istos, struct array01_integer(kind=4) & restrict angmoms, struct array01_tslaterorbital & restrict stos, logical(kind=4) & restrict tperiodic, logical(kind=4) & restrict treal, struct array02_real(kind=8) & restrict latvecs, struct array02_real(kind=8) & restrict recvecs2p, struct array02_real(kind=8) & restrict kpoints, struct array01_integer(kind=4) & restrict kindexes, integer(kind=4) & restrict ncell, struct array02_real(kind=8) & restrict cellvec, logical(kind=4) & restrict tadddensities, struct array04_real(kind=8) & restrict valuereal, struct array04_complex(kind=8) & restrict valuecmpl)
+{
+  unsigned long ivtmp.886;
+  unsigned long ivtmp.883;
+  unsigned long ivtmp.881;
+  unsigned int ivtmp.877;
+  unsigned long ivtmp.876;
+  unsigned long ivtmp.874;
+  unsigned int ivtmp.870;
+  unsigned long ivtmp.867;
+  unsigned long ivtmp.857;
+  unsigned long ivtmp.851;
+  unsigned long ivtmp.849;
+  unsigned long ivtmp.848;
+  unsigned long ivtmp.844;
+  unsigned long ivtmp.841;
+  unsigned long ivtmp.839;
+  unsigned long ivtmp.838;
+  unsigned long ivtmp.834;
+  unsigned long ivtmp.831;
+  unsigned long ivtmp.829;
+  unsigned long ivtmp.824;
+  unsigned long ivtmp.821;
+  unsigned long ivtmp.819;
+  unsigned long ivtmp.814;
+  unsigned long ivtmp.811;
+  unsigned long ivtmp.809;
+  unsigned long ivtmp.804;
+  unsigned long ivtmp.801;
+  unsigned long ivtmp.799;
+  unsigned long ivtmp.794;
+  unsigned long ivtmp.791;
+  unsigned long ivtmp.789;
+  unsigned long ivtmp.784;
+  unsigned long ivtmp.781;
+  unsigned long ivtmp.779;
+  unsigned long ivtmp.771;
+  unsigned int ivtmp.766;
+  unsigned long ivtmp.765;
+  unsigned int ivtmp.762;
+  unsigned long ivtmp.761;
+  unsigned long ivtmp.758;
+  unsigned long ivtmp.755;
+  unsigned int ivtmp.752;
+  unsigned long ivtmp.751;
+  unsigned long ivtmp.748;
+  unsigned long ivtmp.745;
+  unsigned int ivtmp.742;
+  unsigned long ivtmp.741;
+  unsigned long ivtmp.740;
+  unsigned long ivtmp.731;
+  sizetype ivtmp.728;
+  unsigned long ivtmp.724;
+  unsigned long ivtmp.723;
+  unsigned long ivtmp.722;
+  unsigned long ivtmp.721;
+  unsigned long ivtmp.713;
+  unsigned long ivtmp.711;
+  unsigned int ivtmp.710;
+  unsigned long ivtmp.703;
+  unsigned long ivtmp.701;
+  unsigned int ivtmp.700;
+  unsigned long ivtmp.693;
+  unsigned long ivtmp.691;
+  unsigned int ivtmp.690;
+  sizetype ivtmp.682;
+  unsigned long ivtmp.678;
+  unsigned long ivtmp.673;
+  sizetype ivtmp.670;
+  unsigned long ivtmp.666;
+  unsigned long ivtmp.663;
+  unsigned int ivtmp.659;
+  unsigned long ivtmp.658;
+  sizetype ivtmp.652;
+  unsigned long ivtmp.646;
+  unsigned long ivtmp.644;
+  unsigned long ivtmp.637;
+  unsigned long ivtmp.636;
+  unsigned long ivtmp.634;
+  unsigned long ivtmp.629;
+  unsigned long ivtmp.627;
+  unsigned long ivtmp.623;
+  unsigned long ivtmp.620;
+  unsigned long ivtmp.619;
+  unsigned long ivtmp.612;
+  unsigned long ivtmp.611;
+  unsigned long ivtmp.609;
+  unsigned long ivtmp.604;
+  unsigned long ivtmp.603;
+  unsigned long ivtmp.598;
+  unsigned long ivtmp.594;
+  unsigned long ivtmp.593;
+  integer(kind=4) im_lsm.476;
+  struct __st_parameter_dt dt_parm.218;
+  struct __st_parameter_dt dt_parm.217;
+  struct array01_real(kind=8) parm.216;
+  struct array02_real(kind=8) parm.208;
+  struct array01_real(kind=8) parm.207;
+  struct array01_real(kind=8) parm.206;
+  struct __st_parameter_dt dt_parm.197;
+  struct __st_parameter_dt dt_parm.196;
+  struct array02_real(kind=8) parm.188;
+  struct array02_real(kind=8) parm.187;
+  struct __st_parameter_dt dt_parm.185;
+  real(kind=4) D.5086;
+  integer(kind=4) D.5084;
+  struct __st_parameter_dt dt_parm.171;
+  struct __st_parameter_dt dt_parm.160;
+  integer(kind=4) D.5003;
+  struct __st_parameter_dt dt_parm.158;
+  struct __st_parameter_dt dt_parm.153;
+  real(kind=4) D.4991;
+  integer(kind=4) D.4975;
+  struct __st_parameter_dt dt_parm.146;
+  struct array01_integer(kind=4) parm.145;
+  struct __st_parameter_dt dt_parm.144;
+  real(kind=8) D.4896;
+  real(kind=8) D.4887;
+  struct __st_parameter_dt dt_parm.115;
+  struct array01_integer(kind=4) parm.107;
+  struct __st_parameter_dt dt_parm.106;
+  struct array01_real(kind=8) parm.105;
+  struct __st_parameter_dt dt_parm.104;
+  real(kind=8) A.102[3];
+  struct array01_real(kind=8) atmp.101;
+  struct array02_real(kind=8) parm.99;
+  struct array02_real(kind=8) parm.96;
+  struct array01_real(kind=8) parm.95;
+  struct array04_complex(kind=8) parm.94;
+  struct __st_parameter_dt dt_parm.90;
+  real(kind=8) xyz[3];
+  real(kind=8) xx;
+  static struct array07_real(kind=8) wavefunctioncache = {.data=0B};
+  real(kind=8)[0:D.5617] * restrict valuereal.0;
+  integer(kind=8) ubound.78;
+  integer(kind=8) ubound.76;
+  integer(kind=8) ubound.74;
+  integer(kind=8) ubound.72;
+  integer(kind=8) ubound.68;
+  integer(kind=8) ubound.66;
+  integer(kind=8) ubound.64;
+  integer(kind=8) ubound.62;
+  real(kind=8) val;
+  static logical(kind=4) tcacheinitialised = 0;
+  real(kind=8) targetresolution[3];
+  struct tslaterorbital[0:D.5581] * restrict stos.0;
+  integer(kind=4)[0:D.5601] * restrict species.0;
+  static struct array04_integer(kind=4) sliceindicesmain = {.data=0B};
+  static struct array04_integer(kind=4) sliceindicescache = {.data=0B};
+  integer(kind=4) resolutionfactor[3];
+  real(kind=8)[0:D.5589] * restrict recvecs2p.0;
+  integer(kind=8) ubound.50;
+  integer(kind=8) ubound.48;
+  real(kind=8) pos[3];
+  real(kind=8)[0:D.5593] * restrict origin.0;
+  integer(kind=4) nuniqueorb;
+  integer(kind=4) npointshalved[3];
+  integer(kind=4) npoints[4];
+  real(kind=8)[0:D.5585] * restrict latvecs.0;
+  integer(kind=4)[0:D.5577] * restrict istos.0;
+  integer(kind=4) ispecies;
+  integer(kind=4) iorb;
+  integer(kind=4) im;
+  integer(kind=4) il;
+  integer(kind=4) ieig;
+  integer(kind=4) icell;
+  integer(kind=4) iatom;
+  integer(kind=4) i3;
+  integer(kind=4) i2;
+  integer(kind=4) i1;
+  real(kind=8)[0:D.5609] * restrict gridvecs.0;
+  integer(kind=8) ubound.24;
+  integer(kind=8) ubound.22;
+  real(kind=8) frac[3];
+  real(kind=8) expectedsizemb;
+  real(kind=8)[0:D.5573] * restrict eigvecsreal.0;
+  real(kind=8) diff[3];
+  real(kind=8)[0:D.5605] * restrict cutoffs.0;
+  integer(kind=8) ubound.12;
+  real(kind=8)[0:D.5597] * restrict coords.0;
+  integer(kind=4) coeffind;
+  static struct array03_integer(kind=4) chunkedindices = {.data=0B};
+  integer(kind=4) cacheind;
+  real(kind=8) cachegridvecs[9];
+  real(kind=8) cachebasis[9];
+  integer(kind=4)[0:D.5621] * restrict angmoms.0;
+  integer(kind=8) ubound.0;
+  integer(kind=8) _1;
+  integer(kind=8) _2;
+  integer(kind=8) _3;
+  real(kind=8) * _4;
+  integer(kind=8) _5;
+  integer(kind=8) _6;
+  integer(kind=8) _7;
+  integer(kind=8) _8;
+  integer(kind=8) _9;
+  integer(kind=8) _10;
+  integer(kind=8) _11;
+  integer(kind=8) _12;
+  integer(kind=8) _13;
+  integer(kind=8) _14;
+  integer(kind=8) _15;
+  integer(kind=8) _16;
+  integer(kind=8) _18;
+  integer(kind=8) _19;
+  integer(kind=8) _20;
+  integer(kind=8) _21;
+  integer(kind=8) _22;
+  integer(kind=8) _23;
+  integer(kind=8) _24;
+  integer(kind=8) _25;
+  integer(kind=8) _26;
+  integer(kind=8) _27;
+  integer(kind=8) _28;
+  integer(kind=8) _29;
+  integer(kind=8) _30;
+  integer(kind=8) _31;
+  sizetype _32;
+  integer(kind=8) _33;
+  integer(kind=8) _34;
+  integer(kind=8) _35;
+  integer(kind=8) _36;
+  integer(kind=8) _37;
+  integer(kind=8) _38;
+  integer(kind=8) _40;
+  integer(kind=8) _41;
+  integer(kind=8) _42;
+  integer(kind=8) _44;
+  integer(kind=8) _45;
+  integer(kind=8) _46;
+  integer(kind=8) _47;
+  integer(kind=8) _48;
+  integer(kind=8) _49;
+  integer(kind=8) _50;
+  integer(kind=8) _51;
+  integer(kind=8) _52;
+  integer(kind=8) _53;
+  integer(kind=8) _54;
+  integer(kind=4) _55;
+  integer(kind=8) _56;
+  integer(kind=8) _58;
+  integer(kind=8) S.129_61;
+  integer(kind=8) _63;
+  integer(kind=4) _64;
+  real(kind=8) _65;
+  integer(kind=4) _69;
+  integer(kind=4) _75;
+  unsigned long _76;
+  logical(kind=4) _87;
+  sizetype _92;
+  real(kind=8) _95;
+  unsigned long _97;
+  void * _98;
+  real(kind=8) _100;
+  real(kind=8) _105;
+  unsigned long _107;
+  real(kind=8) _108;
+  unsigned long _109;
+  logical(kind=1) _111;
+  integer(kind=4) _115;
+  logical(kind=4) _123;
+  integer(kind=8) _128;
+  integer(kind=4) _129;
+  integer(kind=8) _131;
+  integer(kind=8) _132;
+  integer(kind=8) _133;
+  integer(kind=8) _134;
+  integer(kind=8) _135;
+  integer(kind=4) _136;
+  unsigned int _137;
+  sizetype _138;
+  void * _142;
+  real(kind=8) _143;
+  real(kind=8) _145;
+  integer(kind=4) _146;
+  real(kind=8) * _151;
+  real(kind=8) _152;
+  real(kind=8) _154;
+  integer(kind=8) _156;
+  integer(kind=8) _158;
+  integer(kind=8) _159;
+  sizetype _160;
+  real(kind=8) * _161;
+  real(kind=8) _162;
+  real(kind=8) _164;
+  integer(kind=8) _168;
+  integer(kind=8) _169;
+  sizetype _170;
+  real(kind=8) * _171;
+  real(kind=8) _172;
+  real(kind=8) _174;
+  real(kind=8) _178;
+  unsigned long _180;
+  unsigned long _181;
+  real(kind=8) _182;
+  real(kind=8) _183;
+  real(kind=8) _187;
+  real(kind=8) _188;
+  integer(kind=4) _189;
+  real(kind=8) _190;
+  integer(kind=4) _191;
+  real(kind=8) _198;
+  real(kind=8) * _201;
+  real(kind=8) _210;
+  real(kind=8) * _211;
+  real(kind=8) _217;
+  real(kind=8) _222;
+  real(kind=8) scale.212_223;
+  unsigned long _225;
+  unsigned long _226;
+  unsigned long _231;
+  integer(kind=8) _232;
+  real(kind=8) _234;
+  real(kind=8) _235;
+  real(kind=8) _236;
+  real(kind=8) _237;
+  real(kind=8) _238;
+  real(kind=8) _239;
+  real(kind=8) _243;
+  real(kind=8) _245;
+  real(kind=8) absX.214_246;
+  real(kind=8) val.215_247;
+  unsigned long _250;
+  real(kind=8) _251;
+  real(kind=8) _252;
+  real(kind=8) _253;
+  real(kind=8) _254;
+  real(kind=8) _255;
+  real(kind=8) _256;
+  real(kind=8) _260;
+  real(kind=8) _261;
+  real(kind=8) _262;
+  real(kind=8) val.211_263;
+  real(kind=8) val.211_264;
+  unsigned long _266;
+  real(kind=8) _267;
+  real(kind=8) _268;
+  real(kind=8) _269;
+  real(kind=8) _270;
+  real(kind=8) _271;
+  real(kind=8) _272;
+  integer(kind=4) _276;
+  integer(kind=8) _277;
+  integer(kind=8) _278;
+  integer(kind=8) _279;
+  integer(kind=8) _280;
+  integer(kind=8) _281;
+  integer(kind=8) _282;
+  integer(kind=8) _283;
+  integer(kind=8) _284;
+  real(kind=4) _285;
+  real(kind=4) _286;
+  real(kind=4) _287;
+  logical(kind=4) tcacheinitialised.290_288;
+  integer(kind=4) _291;
+  real(kind=8) _292;
+  real(kind=8) _293;
+  unsigned int _294;
+  real(kind=8) _295;
+  real(kind=8) _296;
+  real(kind=8) _297;
+  real(kind=8) _298;
+  real(kind=8) _299;
+  real(kind=8) _300;
+  real(kind=8) _301;
+  real(kind=8) _302;
+  integer(kind=4) _304;
+  integer(kind=4) _305;
+  integer(kind=4) _306;
+  integer(kind=8) _307;
+  integer(kind=8) _308;
+  integer(kind=8) _309;
+  integer(kind=4) _310;
+  integer(kind=8) _311;
+  integer(kind=4) _312;
+  integer(kind=8) _313;
+  integer(kind=8) _314;
+  integer(kind=8) _315;
+  real(kind=8) limit.120_318;
+  integer(kind=8) _320;
+  integer(kind=8) S.121_323;
+  unsigned int _324;
+  integer(kind=4) _325;
+  integer(kind=8) _326;
+  real(kind=8) limit.136_329;
+  real(kind=8) _330;
+  integer(kind=8) _331;
+  logical(kind=4) _333;
+  integer(kind=8) S.137_334;
+  logical(kind=4) _335;
+  integer(kind=4) _336;
+  integer(kind=8) _337;
+  integer(kind=8) _338;
+  integer(kind=8) _339;
+  unsigned long _342;
+  integer(kind=8) _343;
+  integer(kind=8) _344;
+  sizetype _347;
+  integer(kind=4) _349;
+  integer(kind=8) _350;
+  real(kind=8) _352;
+  unsigned long _353;
+  integer(kind=8) _355;
+  real(kind=8) _356;
+  real(kind=8) * _357;
+  sizetype _359;
+  integer(kind=8) _361;
+  integer(kind=8) _363;
+  integer(kind=8) _364;
+  unsigned long _369;
+  sizetype _372;
+  vector(2) real(kind=8) _373;
+  logical(kind=4) _379;
+  unsigned long _382;
+  logical(kind=4) _383;
+  unsigned long _384;
+  unsigned long _386;
+  logical(kind=4) _387;
+  unsigned long _388;
+  void * _389;
+  real(kind=8) _391;
+  real(kind=8) _394;
+  real(kind=8) * _395;
+  sizetype _396;
+  integer(kind=8) _397;
+  unsigned long _398;
+  void * _399;
+  integer(kind=8) _400;
+  unsigned long _405;
+  integer(kind=8) _411;
+  integer(kind=8) _412;
+  integer(kind=8) _413;
+  integer(kind=4) _414;
+  integer(kind=8) _415;
+  integer(kind=8) _416;
+  integer(kind=8) _417;
+  integer(kind=8) _418;
+  integer(kind=8) _419;
+  integer(kind=8) _420;
+  integer(kind=8) _421;
+  integer(kind=8) _422;
+  integer(kind=8) _423;
+  integer(kind=8) _424;
+  integer(kind=8) _425;
+  integer(kind=8) _426;
+  integer(kind=8) _427;
+  integer(kind=8) _428;
+  integer(kind=8) _429;
+  integer(kind=8) _430;
+  integer(kind=8) _431;
+  integer(kind=8) _432;
+  integer(kind=8) _433;
+  integer(kind=8) _434;
+  integer(kind=8) _435;
+  integer(kind=8) _436;
+  integer(kind=8) _437;
+  integer(kind=8) _438;
+  integer(kind=8) _439;
+  integer(kind=8) _440;
+  integer(kind=8) _441;
+  integer(kind=8) _442;
+  integer(kind=8) _443;
+  integer(kind=8) _444;
+  integer(kind=8) _445;
+  integer(kind=8) _446;
+  integer(kind=8) _447;
+  integer(kind=8) _448;
+  integer(kind=8) _449;
+  real(kind=4) _450;
+  real(kind=4) _451;
+  real(kind=4) _452;
+  integer(kind=4) _453;
+  integer(kind=4) _454;
+  integer(kind=4) _455;
+  integer(kind=4) _456;
+  integer(kind=8) _461;
+  real(kind=8) _465;
+  unsigned long _466;
+  real(kind=8) _468;
+  real(kind=8) * _470;
+  void * _473;
+  sizetype _474;
+  integer(kind=8) _475;
+  real(kind=8) _476;
+  integer(kind=8) _477;
+  unsigned int _479;
+  unsigned long _482;
+  void * _483;
+  real(kind=8) _487;
+  integer(kind=8) _488;
+  integer(kind=8) _489;
+  integer(kind=8) _490;
+  real(kind=8) _492;
+  real(kind=8) * _494;
+  unsigned long _495;
+  sizetype _497;
+  integer(kind=8) _498;
+  integer(kind=8) _499;
+  sizetype _502;
+  sizetype _504;
+  unsigned long _505;
+  unsigned long _506;
+  unsigned long _508;
+  unsigned long _509;
+  void * _510;
+  integer(kind=4) iorb.335_512;
+  integer(kind=8) _515;
+  unsigned long _517;
+  real(kind=8) scale.123_518;
+  integer(kind=4) _520;
+  logical(kind=1) _522;
+  real(kind=8) val.122_523;
+  void * _529;
+  unsigned long _532;
+  real(kind=8) _534;
+  integer(kind=8) _535;
+  unsigned int _536;
+  real(kind=8) _543;
+  integer(kind=8) prephitmp_545;
+  real(kind=8) * _546;
+  real(kind=8) _547;
+  unsigned long _548;
+  real(kind=8) _549;
+  integer(kind=8) _550;
+  integer(kind=8) _551;
+  integer(kind=8) _552;
+  integer(kind=8) _553;
+  real(kind=8) _555;
+  real(kind=8) _556;
+  integer(kind=4) _557;
+  real(kind=8) _558;
+  real(kind=8) _559;
+  integer(kind=4) _560;
+  integer(kind=8) _561;
+  integer(kind=8) _562;
+  integer(kind=4) _563;
+  integer(kind=8) _564;
+  integer(kind=8) _565;
+  integer(kind=8) _566;
+  integer(kind=8) _567;
+  integer(kind=8) _568;
+  integer(kind=4) _571;
+  integer(kind=8) _573;
+  integer(kind=8) _574;
+  void * _576;
+  integer(kind=8) _581;
+  integer(kind=8) _582;
+  integer(kind=8) _583;
+  integer(kind=8) _584;
+  integer(kind=8) _585;
+  integer(kind=8) _586;
+  integer(kind=4) _589;
+  integer(kind=8) _593;
+  integer(kind=8) _594;
+  integer(kind=4) _595;
+  integer(kind=4) _599;
+  real(kind=8) _602;
+  integer(kind=8) _604;
+  integer(kind=4) _605;
+  integer(kind=4) _606;
+  integer(kind=8) _607;
+  unsigned long _608;
+  integer(kind=4) _612;
+  integer(kind=4) _614;
+  unsigned long _615;
+  unsigned long _616;
+  unsigned int _617;
+  integer(kind=4) _619;
+  unsigned int _621;
+  integer(kind=4) _624;
+  void * _627;
+  unsigned long _628;
+  unsigned int _629;
+  integer(kind=8) _633;
+  real(kind=4) _634;
+  real(kind=4) _635;
+  real(kind=8) * _636;
+  unsigned int _638;
+  integer(kind=8) _640;
+  unsigned long _642;
+  integer(kind=8) _643;
+  integer(kind=8) _644;
+  sizetype _645;
+  real(kind=8) * _646;
+  real(kind=8) _647;
+  real(kind=8) _648;
+  real(kind=8) _649;
+  real(kind=8) _651;
+  integer(kind=4) _652;
+  real(kind=8) _653;
+  real(kind=8) _654;
+  real(kind=8) _655;
+  real(kind=8) _656;
+  real(kind=8) * _664;
+  real(kind=8) _665;
+  real(kind=8) _667;
+  real(kind=8) _668;
+  real(kind=8) _670;
+  real(kind=8) _671;
+  real(kind=8) _672;
+  real(kind=8) _673;
+  real(kind=8) _674;
+  real(kind=8) _675;
+  real(kind=8) _679;
+  struct tslaterorbital * _682;
+  integer(kind=4) il.341_683;
+  real(kind=8) _689;
+  real(kind=8) val.345_690;
+  void * _691;
+  integer(kind=8) _692;
+  integer(kind=8) _693;
+  integer(kind=8) _694;
+  integer(kind=8) _695;
+  integer(kind=8) _696;
+  integer(kind=8) _697;
+  integer(kind=8) _698;
+  integer(kind=8) _699;
+  integer(kind=8) _700;
+  integer(kind=8) _701;
+  integer(kind=8) _702;
+  integer(kind=8) _703;
+  integer(kind=8) _704;
+  integer(kind=8) _705;
+  integer(kind=8) _706;
+  integer(kind=8) _707;
+  integer(kind=8) _708;
+  integer(kind=8) _709;
+  integer(kind=8) _710;
+  integer(kind=8) _711;
+  integer(kind=8) _712;
+  integer(kind=8) _713;
+  integer(kind=8) _714;
+  integer(kind=8) _715;
+  integer(kind=8) _716;
+  real(kind=8) * _717;
+  integer(kind=8) _718;
+  real(kind=8) _719;
+  integer(kind=4) _720;
+  integer(kind=4) _721;
+  integer(kind=8) _723;
+  integer(kind=8) _727;
+  void * _728;
+  integer(kind=8) _729;
+  integer(kind=8) _730;
+  integer(kind=8) _731;
+  integer(kind=8) _732;
+  integer(kind=8) _733;
+  integer(kind=8) _734;
+  integer(kind=8) _735;
+  integer(kind=8) _736;
+  integer(kind=8) _737;
+  integer(kind=4) * _738;
+  integer(kind=8) _739;
+  void * _740;
+  integer(kind=8) _741;
+  integer(kind=8) _742;
+  integer(kind=8) _743;
+  integer(kind=8) _744;
+  integer(kind=8) _745;
+  integer(kind=8) _746;
+  integer(kind=8) _747;
+  integer(kind=8) _748;
+  integer(kind=8) _749;
+  integer(kind=4) * _750;
+  integer(kind=8) _751;
+  integer(kind=8) _752;
+  void * _753;
+  integer(kind=8) _754;
+  integer(kind=8) _755;
+  integer(kind=8) _756;
+  integer(kind=8) _757;
+  integer(kind=8) _758;
+  integer(kind=8) _759;
+  integer(kind=8) _760;
+  integer(kind=8) _761;
+  integer(kind=8) _762;
+  integer(kind=4) * _763;
+  integer(kind=8) _764;
+  integer(kind=8) _765;
+  sizetype _766;
+  integer(kind=4) * _767;
+  integer(kind=8) _768;
+  sizetype _769;
+  integer(kind=4) * _770;
+  integer(kind=4) _771;
+  unsigned long _773;
+  integer(kind=4) _777;
+  logical(kind=4) _783;
+  unsigned long _784;
+  logical(kind=4) _785;
+  logical(kind=4) _786;
+  real(kind=8) _789;
+  unsigned long _795;
+  integer(kind=8) _797;
+  integer(kind=8) _798;
+  void * _799;
+  real(kind=8) _800;
+  real(kind=8) _801;
+  real(kind=8) _802;
+  sizetype _805;
+  real(kind=8) * _806;
+  real(kind=8) _807;
+  real(kind=8) _810;
+  integer(kind=8) _812;
+  integer(kind=8) _813;
+  sizetype _814;
+  real(kind=8) * _815;
+  integer(kind=8) _816;
+  void * _817;
+  unsigned long _818;
+  real(kind=8) _820;
+  real(kind=8) _821;
+  unsigned int _822;
+  unsigned long _823;
+  integer(kind=8) _826;
+  unsigned long _827;
+  real(kind=8) _829;
+  unsigned long _836;
+  integer(kind=8) _840;
+  integer(kind=8) _841;
+  unsigned long _843;
+  integer(kind=8) _844;
+  unsigned long _845;
+  unsigned long _848;
+  real(kind=8) _857;
+  real(kind=8) _858;
+  real(kind=8) _859;
+  integer(kind=8) _860;
+  sizetype _862;
+  sizetype _863;
+  void * _866;
+  real(kind=8) * _867;
+  real(kind=8) _868;
+  real(kind=8) _869;
+  void * _870;
+  unsigned long _871;
+  integer(kind=8) _872;
+  void * _874;
+  integer(kind=8) _875;
+  unsigned long _876;
+  void * _878;
+  real(kind=8) * _879;
+  unsigned long _880;
+  unsigned long _881;
+  void * _883;
+  real(kind=8) _884;
+  integer(kind=8) _887;
+  sizetype _888;
+  unsigned long _889;
+  void * _891;
+  void * _892;
+  unsigned long _894;
+  unsigned long _895;
+  real(kind=8) _899;
+  real(kind=8) _900;
+  void * _901;
+  unsigned long _905;
+  real(kind=8) * _906;
+  void * _907;
+  integer(kind=8) _909;
+  integer(kind=8) _910;
+  integer(kind=8) _911;
+  integer(kind=8) _912;
+  real(kind=8) * _913;
+  integer(kind=8) _914;
+  unsigned long _915;
+  integer(kind=8) _916;
+  integer(kind=8) _917;
+  integer(kind=8) _920;
+  real(kind=8) _921;
+  integer(kind=8) _924;
+  real(kind=8) _931;
+  real(kind=8) _934;
+  real(kind=8) _935;
+  real(kind=8) _936;
+  integer(kind=4) _937;
+  integer(kind=4) _939;
+  real(kind=8) val.122_940;
+  real(kind=8) _941;
+  sizetype _945;
+  integer(kind=8) _947;
+  unsigned int _950;
+  real(kind=8) _954;
+  real(kind=8) val.126_955;
+  unsigned long size.85_956;
+  real(kind=8) val.122_957;
+  real(kind=8) _958;
+  real(kind=8) val.126_959;
+  real(kind=8) absX.125_960;
+  integer(kind=4) _961;
+  unsigned long _962;
+  unsigned long _963;
+  real(kind=8) _967;
+  unsigned long _969;
+  unsigned long _970;
+  real(kind=8) iftmp.337_971;
+  real(kind=8) scale.123_972;
+  real(kind=8) val.122_973;
+  real(kind=8) val.122_974;
+  real(kind=8) _976;
+  real(kind=8) _977;
+  real(kind=8) val.126_978;
+  unsigned long _979;
+  real(kind=8) val.122_980;
+  real(kind=8) _981;
+  real(kind=8) absX.125_984;
+  real(kind=8) val.122_987;
+  real(kind=8) scale.123_989;
+  real(kind=8) val.211_992;
+  real(kind=8) val.130_996;
+  real(kind=8) scale.131_997;
+  real(kind=8) scale.131_998;
+  real(kind=8) val.130_999;
+  real(kind=8) val.130_1000;
+  integer(kind=8) _1001;
+  real(kind=8) _1002;
+  real(kind=8) _1003;
+  real(kind=8) val.134_1004;
+  real(kind=8) val.138_1005;
+  real(kind=8) val.130_1006;
+  real(kind=8) scale.139_1007;
+  real(kind=8) _1008;
+  real(kind=8) val.134_1009;
+  real(kind=8) absX.133_1010;
+  unsigned long _1013;
+  unsigned long size.161_1016;
+  void * _1018;
+  unsigned long size.176_1019;
+  real(kind=8) _1020;
+  unsigned long size.176_1026;
+  unsigned long size.179_1027;
+  integer(kind=4) * _1030;
+  unsigned long _1031;
+  unsigned long _1034;
+  real(kind=8) _1037;
+  real(kind=8) * _1045;
+  real(kind=8) val.211_1046;
+  real(kind=8) scale.212_1048;
+  sizetype _1049;
+  unsigned long _1051;
+  unsigned long _1055;
+  integer(kind=8) iftmp.228_1056;
+  integer(kind=8) iftmp.231_1057;
+  integer(kind=8) iftmp.237_1058;
+  integer(kind=8) iftmp.240_1059;
+  integer(kind=8) iftmp.243_1060;
+  integer(kind=8) iftmp.246_1061;
+  integer(kind=8) iftmp.249_1062;
+  integer(kind=8) iftmp.252_1063;
+  integer(kind=8) iftmp.255_1064;
+  integer(kind=8) iftmp.258_1065;
+  integer(kind=8) iftmp.261_1066;
+  integer(kind=8) iftmp.264_1067;
+  unsigned long _1069;
+  unsigned int _1070;
+  sizetype _1071;
+  integer(kind=4) _1072;
+  logical(kind=1) _1073;
+  integer(kind=4) iftmp.298_1074;
+  integer(kind=4) iftmp.300_1075;
+  integer(kind=4) iftmp.302_1076;
+  integer(kind=4) iftmp.304_1077;
+  integer(kind=4) _1078;
+  unsigned int _1079;
+  integer(kind=8) prephitmp_1080;
+  integer(kind=8) _1081;
+  real(kind=8) iftmp.337_1085;
+  real(kind=8) scale.131_1089;
+  real(kind=8) val.130_1090;
+  real(kind=8) val.130_1091;
+  unsigned long _1092;
+  real(kind=8) _1093;
+  real(kind=8) _1094;
+  real(kind=8) val.134_1095;
+  real(kind=8) val.130_1096;
+  integer(kind=4) _1097;
+  real(kind=8) _1100;
+  unsigned long size.179_1102;
+  integer(kind=4) _1104;
+  real(kind=8) limit.118_1105;
+  integer(kind=4) _1110;
+  unsigned long _1114;
+  real(kind=8) limit.111_1115;
+  integer(kind=8) _1119;
+  integer(kind=8) S.137_1120;
+  unsigned long _1125;
+  unsigned long _1126;
+  real(kind=8) limit.118_1127;
+  sizetype _1128;
+  integer(kind=4) _1129;
+  real(kind=8) limit.116_1130;
+  sizetype _1132;
+  unsigned long _1133;
+  sizetype _1137;
+  unsigned long _1138;
+  unsigned long _1143;
+  real(kind=8) _1145;
+  integer(kind=4) _1147;
+  integer(kind=8) _1154;
+  unsigned long _1156;
+  integer(kind=8) _1160;
+  unsigned long _1163;
+  integer(kind=8) stride.75_1166;
+  integer(kind=8) stride.77_1168;
+  integer(kind=8) stride.79_1170;
+  integer(kind=8) _1182;
+  real(kind=8) val.211_1185;
+  integer(kind=8) stride.25_1188;
+  integer(kind=8) offset.26_1190;
+  integer(kind=8) _1192;
+  real(kind=8) val.211_1194;
+  unsigned int _1195;
+  integer(kind=8) _1199;
+  integer(kind=8) _1204;
+  real(kind=8) val.215_1206;
+  integer(kind=8) stride.7_1208;
+  integer(kind=8) stride.9_1209;
+  integer(kind=8) offset.10_1210;
+  integer(kind=8) _1212;
+  integer(kind=8) _1213;
+  integer(kind=8) _1214;
+  integer(kind=8) _1215;
+  integer(kind=8) _1218;
+  integer(kind=8) _1219;
+  integer(kind=8) _1220;
+  integer(kind=8) _1221;
+  integer(kind=8) stride.51_1224;
+  integer(kind=8) offset.52_1226;
+  integer(kind=8) _1228;
+  integer(kind=8) _1229;
+  integer(kind=8) _1230;
+  integer(kind=8) _1231;
+  integer(kind=8) stride.41_1234;
+  integer(kind=8) offset.42_1235;
+  integer(kind=8) _1237;
+  integer(kind=8) _1242;
+  integer(kind=8) _1248;
+  integer(kind=8) _1249;
+  integer(kind=8) _1250;
+  integer(kind=8) stride.19_1253;
+  integer(kind=8) _1255;
+  integer(kind=4) limit.83_1258;
+  logical(kind=1) _1263;
+  integer(kind=8) _1264;
+  integer(kind=8) _1267;
+  logical(kind=4) _1270;
+  unsigned long size.85_1271;
+  real(kind=8) absX.133_1272;
+  unsigned long _1273;
+  unsigned long _1276;
+  real(kind=8) _1277;
+  real(kind=8) _1278;
+  unsigned long _1282;
+  integer(kind=4) _1291;
+  unsigned long _1295;
+  unsigned long _1296;
+  unsigned long _1325;
+  unsigned long _1369;
+  unsigned long _1383;
+  real(kind=8) _1423;
+  real(kind=8) _1426;
+  integer(kind=8) _1427;
+  real(kind=8) _1430;
+  integer(kind=8) _1431;
+  integer(kind=4) _1435;
+  unsigned long _1437;
+  real(kind=8) _1438;
+  integer(kind=8) S.117_1445;
+  integer(kind=8) S.119_1451;
+  real(kind=8) val.211_1452;
+  unsigned int _1456;
+  integer(kind=8) S.121_1459;
+  unsigned long _1460;
+  real(kind=8) absX.125_1462;
+  real(kind=8) val.126_1463;
+  real(kind=8) val.122_1464;
+  real(kind=8) val.126_1465;
+  real(kind=8) val.122_1466;
+  unsigned long _1467;
+  integer(kind=4) _1468;
+  unsigned long _1469;
+  integer(kind=4) M.127_1470;
+  integer(kind=8) S.129_1472;
+  real(kind=8) val.215_1473;
+  real(kind=8) absX.133_1474;
+  real(kind=8) val.134_1475;
+  real(kind=8) val.130_1476;
+  real(kind=8) val.134_1477;
+  real(kind=8) val.130_1478;
+  unsigned long _1479;
+  integer(kind=4) _1480;
+  unsigned long _1481;
+  integer(kind=4) M.135_1482;
+  integer(kind=8) S.137_1484;
+  real(kind=8) absX.141_1486;
+  real(kind=8) val.142_1487;
+  real(kind=8) val.138_1488;
+  real(kind=8) val.142_1489;
+  real(kind=8) val.138_1490;
+  unsigned long _1491;
+  integer(kind=4) _1492;
+  unsigned long _1493;
+  integer(kind=4) M.143_1494;
+  unsigned long _1509;
+  unsigned long _1526;
+  void * _1532;
+  void * _1533;
+  integer(kind=8) bytes.152_1539;
+  void * _1555;
+  void * _1569;
+  integer(kind=8) _1581;
+  integer(kind=8) _1582;
+  integer(kind=8) _1583;
+  integer(kind=8) _1584;
+  integer(kind=8) _1586;
+  integer(kind=8) _1587;
+  integer(kind=8) _1588;
+  real(kind=8) limit.128_1589;
+  integer(kind=8) _1590;
+  integer(kind=8) _1591;
+  integer(kind=8) _1592;
+  integer(kind=4) _1593;
+  integer(kind=8) _1594;
+  integer(kind=8) _1595;
+  integer(kind=8) _1596;
+  integer(kind=4) _1597;
+  integer(kind=8) _1598;
+  integer(kind=8) _1599;
+  integer(kind=8) _1600;
+  integer(kind=4) _1601;
+  integer(kind=8) _1602;
+  integer(kind=8) _1603;
+  integer(kind=8) _1604;
+  integer(kind=4) _1605;
+  integer(kind=4) _1607;
+  logical(kind=4) _1609;
+  unsigned long size.161_1610;
+  unsigned long _1641;
+  integer(kind=8) bytes.175_1662;
+  integer(kind=8) _1674;
+  integer(kind=8) _1675;
+  integer(kind=8) _1677;
+  integer(kind=8) _1679;
+  integer(kind=4) _1680;
+  integer(kind=8) _1681;
+  unsigned long size.176_1683;
+  unsigned long _1691;
+  integer(kind=8) _1701;
+  integer(kind=8) _1703;
+  integer(kind=4) _1704;
+  unsigned long size.179_1706;
+  unsigned long _1710;
+  unsigned long _1727;
+  logical(kind=1) _1728;
+  integer(kind=8) _1754;
+  unsigned long _1755;
+  unsigned long _1756;
+  real(kind=8) _1758;
+  integer(kind=4)[0:] * _1789;
+  integer(kind=8) _1790;
+  integer(kind=8) _1791;
+  integer(kind=8) _1793;
+  integer(kind=8) _1794;
+  integer(kind=8) _1796;
+  integer(kind=4)[0:] * _1797;
+  integer(kind=8) _1798;
+  integer(kind=8) _1799;
+  integer(kind=8) _1801;
+  integer(kind=8) _1802;
+  integer(kind=8) _1803;
+  integer(kind=4) _1804;
+  integer(kind=4) M.191_1805;
+  integer(kind=8) _1808;
+  integer(kind=8) _1809;
+  integer(kind=8) _1810;
+  integer(kind=4) _1811;
+  integer(kind=4) _1812;
+  integer(kind=4) M.193_1813;
+  integer(kind=4)[0:] * _1816;
+  integer(kind=8) _1817;
+  integer(kind=8) _1818;
+  unsigned long _1819;
+  integer(kind=8) _1820;
+  integer(kind=8) _1821;
+  integer(kind=8) _1822;
+  integer(kind=8) _1825;
+  integer(kind=8) _1826;
+  integer(kind=8) _1827;
+  integer(kind=8) _1829;
+  real(kind=8) _1858;
+  real(kind=8) _1859;
+  unsigned int _1860;
+  real(kind=8) _1862;
+  unsigned long _1863;
+  integer(kind=4) _1865;
+  real(kind=8) _1866;
+  unsigned long _1867;
+  void * _1868;
+  unsigned long _1869;
+  real(kind=8) * _1870;
+  unsigned long _1871;
+  unsigned long _1875;
+  unsigned long _1882;
+  unsigned long _1890;
+  real(kind=8) _1914;
+  real(kind=8) _1915;
+  integer(kind=4) _1916;
+  real(kind=8) iftmp.337_1917;
+  real(kind=8) absX.214_1924;
+  real(kind=8) val.215_1925;
+  real(kind=8) val.211_1926;
+  real(kind=8) val.215_1927;
+  real(kind=8) val.211_1928;
+  integer(kind=4) _1933;
+  unsigned long _1941;
+  integer(kind=8) extent.173_1966;
+  integer(kind=8) size.172_1967;
+  integer(kind=8) _1971;
+  real(kind=8) _1978;
+  unsigned long _1985;
+  integer(kind=4) _1991;
+  real(kind=8) _1992;
+  real(kind=8) _2006;
+  integer(kind=8) _2007;
+  integer(kind=4) _2008;
+  integer(kind=4) _2011;
+  integer(kind=4) _2014;
+  sizetype _2015;
+  sizetype _2017;
+  real(kind=8) _2018;
+  integer(kind=8) _2019;
+  sizetype _2020;
+  real(kind=8) _2021;
+  real(kind=8) _2022;
+  real(kind=8)[0:] * restrict _2023;
+  integer(kind=8) _2024;
+  real(kind=8) * _2026;
+  unsigned long _2027;
+  unsigned long _2028;
+  unsigned int _2033;
+  integer(kind=8) _2037;
+  sizetype _2038;
+  void * _2039;
+  real(kind=8) _2040;
+  unsigned int _2042;
+  real(kind=8) _2043;
+  real(kind=8) _2056;
+  real(kind=8) _2057;
+  real(kind=8) _2058;
+  integer(kind=8) _2059;
+  sizetype _2060;
+  real(kind=8) * _2061;
+  void * _2064;
+  void * _2071;
+  sizetype _2073;
+  real(kind=8) _2074;
+  unsigned long _2076;
+  real(kind=8) _2079;
+  real(kind=8) _2080;
+  unsigned long _2111;
+  integer(kind=8) size.148_2112;
+  integer(kind=4) _2116;
+  integer(kind=4) _2118;
+  unsigned long _2121;
+  real(kind=8) limit.136_2122;
+  real(kind=8) _2125;
+  unsigned long _2127;
+  real(kind=8) _2129;
+  unsigned long _2130;
+  real(kind=8) _2132;
+  real(kind=8) scale.139_2135;
+  unsigned long _2136;
+  unsigned int _2138;
+  real(kind=8) _2139;
+  real(kind=8) val.138_2141;
+  real(kind=8) val.138_2144;
+  integer(kind=8) _2145;
+  real(kind=8) _2146;
+  real(kind=8) _2149;
+  real(kind=8) _2150;
+  unsigned int _2152;
+  real(kind=8) _2153;
+  unsigned int _2155;
+  unsigned int _2157;
+  real(kind=8) _2160;
+  real(kind=8) _2163;
+  real(kind=8) _2167;
+  real(kind=8) val.142_2169;
+  unsigned long _2171;
+  real(kind=8) val.138_2172;
+  real(kind=8) _2174;
+  integer(kind=8) S.129_2177;
+  real(kind=8) limit.128_2178;
+  integer(kind=4) _2180;
+  unsigned long _2181;
+  logical(kind=1) _2186;
+  integer(kind=4) val.156_2187;
+  real(kind=8) limit.116_2188;
+  integer(kind=8) S.117_2191;
+  logical(kind=1) _2192;
+  integer(kind=4) val.156_2193;
+  integer(kind=8) S.119_2194;
+  unsigned long _2196;
+  logical(kind=1) _2198;
+  real(kind=8) * _2203;
+  integer(kind=4) val.154_2205;
+  integer(kind=4) _2206;
+  integer(kind=4) _2209;
+  integer(kind=4) _2210;
+  integer(kind=4) val.154_2211;
+  logical(kind=1) _2212;
+  unsigned long _2213;
+  unsigned long _2214;
+  real(kind=8) _2216;
+  real(kind=8) _2217;
+  void * _2219;
+  real(kind=8) _2223;
+  real(kind=8) _2224;
+  unsigned long _2227;
+  integer(kind=4) limit.83_2229;
+  real(kind=8) _2230;
+  real(kind=8) _2231;
+  unsigned int _2238;
+  real(kind=8) val.202_2239;
+  sizetype _2240;
+  real(kind=8) val.202_2242;
+  unsigned long _2243;
+  integer(kind=8) _2244;
+  real(kind=8) val.202_2245;
+  integer(kind=8) S.112_2247;
+  unsigned int _2251;
+  real(kind=8) limit.113_2253;
+  integer(kind=8) S.114_2254;
+  unsigned long _2255;
+  real(kind=8) val.202_2256;
+  real(kind=8) _2257;
+  real(kind=8) _2258;
+  real(kind=8) val.202_2259;
+  unsigned long _2260;
+  real(kind=8) val.142_2261;
+  real(kind=8) val.202_2262;
+  integer(kind=8) S.117_2264;
+  real(kind=8) absX.141_2269;
+  unsigned int _2270;
+  integer(kind=8) S.119_2271;
+  unsigned long _2272;
+  real(kind=8) val.202_2273;
+  real(kind=8) val.202_2276;
+  real(kind=8) _2277;
+  real(kind=8) val.202_2279;
+  real(kind=8) limit.120_2280;
+  integer(kind=8) S.121_2281;
+  unsigned long _2282;
+  real(kind=8) _2284;
+  unsigned long _2292;
+  unsigned long _2293;
+  logical(kind=4) _2296;
+  integer(kind=8) _2297;
+  integer(kind=8) _2300;
+  unsigned int _2305;
+  void * _2307;
+  integer(kind=8) _2310;
+  integer(kind=8) _2316;
+  real(kind=8) scale.139_2342;
+  real(kind=8) val.138_2343;
+  real(kind=8) val.138_2344;
+  real(kind=8) _2345;
+  real(kind=8) _2346;
+  real(kind=8) val.142_2347;
+  real(kind=8) val.138_2348;
+  real(kind=8) _2349;
+  real(kind=8) absX.141_2351;
+  unsigned long _2357;
+  unsigned long _2359;
+  integer(kind=8) size.148_2360;
+  unsigned long _2362;
+  integer(kind=8) size.148_2371;
+  unsigned long _2374;
+  unsigned long _2375;
+  unsigned long _2376;
+  void * _2379;
+  unsigned long _2380;
+  unsigned long _2381;
+  unsigned long _2382;
+  unsigned long _2383;
+  unsigned long _2385;
+  unsigned long _2386;
+  unsigned long _2387;
+  integer(kind=8) prephitmp_2389;
+  unsigned long _2392;
+  integer(kind=8) size.172_2393;
+  integer(kind=8) _2394;
+  integer(kind=8) extent.173_2395;
+  integer(kind=8) _2396;
+  integer(kind=8) _2397;
+  integer(kind=8) _2398;
+  unsigned long _2401;
+  unsigned long _2403;
+  integer(kind=8) size.172_2404;
+  integer(kind=8) _2405;
+  integer(kind=8) extent.173_2406;
+  integer(kind=8) _2407;
+  integer(kind=8) _2408;
+  integer(kind=8) _2409;
+  unsigned long _2412;
+  integer(kind=8) size.172_2415;
+  integer(kind=8) _2416;
+  integer(kind=8) extent.173_2417;
+  integer(kind=8) _2418;
+  integer(kind=8) _2419;
+  integer(kind=8) _2420;
+  void * _2421;
+  void * _2422;
+  unsigned long _2423;
+  integer(kind=8) size.172_2426;
+  integer(kind=8) _2427;
+  integer(kind=8) extent.173_2428;
+  integer(kind=8) _2429;
+  integer(kind=8) _2430;
+  integer(kind=8) _2431;
+  unsigned long _2432;
+  unsigned long _2433;
+  integer(kind=8) size.172_2437;
+  integer(kind=8) _2438;
+  integer(kind=8) extent.173_2439;
+  integer(kind=8) _2440;
+  integer(kind=8) _2441;
+  integer(kind=8) _2442;
+  integer(kind=4) _2446;
+  unsigned int _2447;
+  unsigned int _2448;
+  integer(kind=8) _2449;
+  integer(kind=8) extent.173_2450;
+  integer(kind=8) _2451;
+  integer(kind=8) _2452;
+  integer(kind=8) _2453;
+  unsigned long _2456;
+  unsigned long _2458;
+  real(kind=8) _2460;
+  real(kind=8) _2461;
+  real(kind=8) * _2462;
+  sizetype _2465;
+  real(kind=8) _2467;
+  unsigned long _2470;
+  unsigned long _2471;
+  unsigned int _2477;
+  real(kind=8) _2479;
+  real(kind=8) _2480;
+  unsigned long _2484;
+  unsigned long _2485;
+  real(kind=8) _2486;
+  unsigned long _2490;
+  void * _2491;
+  unsigned long _2492;
+  integer(kind=4) _2493;
+  integer(kind=4) _2498;
+  integer(kind=8) _2499;
+  integer(kind=8) _2500;
+  integer(kind=4) _2501;
+  real(kind=8) _2502;
+  real(kind=8) _2503;
+  integer(kind=4) _2504;
+  real(kind=8) _2505;
+  real(kind=8) _2506;
+  unsigned long _2510;
+  void * _2512;
+  integer(kind=4) _2514;
+  integer(kind=8) _2515;
+  integer(kind=4) _2517;
+  real(kind=8) _2518;
+  real(kind=8) _2519;
+  integer(kind=4) _2520;
+  real(kind=8) _2521;
+  real(kind=8) _2522;
+  unsigned long _2525;
+  unsigned long _2528;
+  integer(kind=8) _2530;
+  integer(kind=8) _2531;
+  integer(kind=4) M.191_2532;
+  integer(kind=4) _2533;
+  integer(kind=4) _2535;
+  integer(kind=8) _2536;
+  integer(kind=8) _2539;
+  unsigned long _2540;
+  unsigned long _2542;
+  integer(kind=8) _2544;
+  unsigned long _2545;
+  integer(kind=4) M.191_2546;
+  integer(kind=4) _2547;
+  unsigned int _2548;
+  integer(kind=4) _2549;
+  void * _2550;
+  real(kind=8) * _2551;
+  sizetype _2552;
+  unsigned long _2553;
+  integer(kind=8) _2554;
+  integer(kind=8) _2555;
+  integer(kind=8) _2558;
+  integer(kind=4) M.193_2560;
+  integer(kind=4) _2561;
+  unsigned long _2562;
+  unsigned long _2564;
+  integer(kind=4) _2565;
+  unsigned long _2566;
+  void * _2567;
+  unsigned int _2568;
+  real(kind=8) * _2569;
+  sizetype _2570;
+  integer(kind=8) _2571;
+  integer(kind=8) _2573;
+  integer(kind=8) _2574;
+  integer(kind=4) M.193_2575;
+  integer(kind=4) _2576;
+  integer(kind=8) _2577;
+  real(kind=8) _2579;
+  integer(kind=4) _2580;
+  unsigned int _2583;
+  unsigned long _2586;
+  integer(kind=4) _2588;
+  integer(kind=8) _2589;
+  integer(kind=8) _2590;
+  integer(kind=8) _2591;
+  integer(kind=4) _2594;
+  unsigned long _2595;
+  unsigned long _2597;
+  unsigned long _2598;
+  unsigned long _2599;
+  void * _2600;
+  real(kind=8) * _2601;
+  integer(kind=4) _2603;
+  integer(kind=8) _2604;
+  sizetype _2605;
+  integer(kind=8) _2606;
+  integer(kind=8) _2607;
+  integer(kind=8) _2608;
+  integer(kind=4) _2609;
+  integer(kind=8) prephitmp_2613;
+  integer(kind=4) _2618;
+  integer(kind=8) _2619;
+  void * _2620;
+  unsigned long _2622;
+  integer(kind=8) _2623;
+  integer(kind=4) _2624;
+  unsigned long _2627;
+  unsigned long _2630;
+  unsigned long _2631;
+  integer(kind=4) _2633;
+  integer(kind=8) _2634;
+  void * _2635;
+  real(kind=8) * _2636;
+  sizetype _2637;
+  integer(kind=8) _2638;
+  integer(kind=4) _2639;
+  integer(kind=8) _2640;
+  integer(kind=8) _2641;
+  real(kind=8) _2646;
+  real(kind=8) _2647;
+  real(kind=8) _2648;
+  real(kind=8) * _2649;
+  sizetype _2650;
+  integer(kind=8) _2651;
+  real(kind=8) limit.111_2653;
+  real(kind=8) _2654;
+  unsigned long _2657;
+  unsigned long _2658;
+  unsigned int _2659;
+  real(kind=8) _2660;
+  real(kind=8) limit.111_2661;
+  integer(kind=4) _2663;
+  real(kind=8) limit.113_2665;
+  real(kind=8) _2666;
+  unsigned long _2669;
+  unsigned long _2670;
+  unsigned int _2671;
+  real(kind=8) limit.113_2673;
+  unsigned int _2674;
+  real(kind=8) iftmp.337_2675;
+  real(kind=8) limit.116_2677;
+  real(kind=8) _2678;
+  unsigned long _2682;
+  unsigned int _2683;
+  unsigned long _2684;
+  real(kind=8) limit.116_2685;
+  real(kind=8) limit.118_2689;
+  real(kind=8) _2690;
+  unsigned long _2693;
+  unsigned long _2694;
+  unsigned int _2695;
+  unsigned long _2696;
+  real(kind=8) limit.118_2697;
+  real(kind=8) limit.120_2701;
+  real(kind=8) _2702;
+  unsigned long _2705;
+  unsigned int _2707;
+  real(kind=8) limit.120_2709;
+  real(kind=8) iftmp.337_2712;
+  real(kind=8) iftmp.337_2713;
+  real(kind=8) _2714;
+  unsigned long _2716;
+  unsigned long _2717;
+  unsigned long _2718;
+  real(kind=8) limit.128_2720;
+  real(kind=8) _2721;
+  unsigned long _2724;
+  unsigned long _2725;
+  unsigned int _2726;
+  real(kind=8) limit.128_2728;
+  real(kind=8) _2729;
+  real(kind=8) _2730;
+  unsigned int _2731;
+  sizetype _2732;
+  unsigned long size.85_2734;
+  unsigned long _2735;
+  unsigned long _2736;
+  integer(kind=8) _2737;
+  real(kind=8) limit.136_2739;
+  real(kind=8) _2740;
+  unsigned long _2744;
+  unsigned int _2745;
+  unsigned long _2746;
+  real(kind=8) limit.136_2747;
+  real(kind=8) absX.214_2748;
+  real(kind=8) scale.212_2749;
+  integer(kind=8) _2750;
+  sizetype _2751;
+  real(kind=8) * _2752;
+  real(kind=8) * _2755;
+  sizetype _2759;
+  sizetype _2760;
+  unsigned long _2763;
+  integer(kind=4) * _2764;
+  sizetype _2768;
+  sizetype _2769;
+  unsigned long _2772;
+  unsigned long _2778;
+  unsigned int _2780;
+  void * _2784;
+  unsigned long _2787;
+  unsigned long _2788;
+  void * _2791;
+  unsigned long _2796;
+  real(kind=8) _2797;
+  integer(kind=8) _2799;
+  real(kind=8) _2805;
+  integer(kind=8) _2807;
+  integer(kind=8) _2810;
+  integer(kind=8) _2818;
+  unsigned int _2819;
+  unsigned int _2821;
+  real(kind=8) _2827;
+  real(kind=8) _2835;
+  integer(kind=8) _2838;
+  integer(kind=8) prephitmp_2839;
+  integer(kind=8) _2840;
+  integer(kind=8) prephitmp_2841;
+  integer(kind=8) _2842;
+  integer(kind=8) prephitmp_2843;
+  integer(kind=8) _2844;
+  integer(kind=8) prephitmp_2845;
+  integer(kind=8) _2846;
+  integer(kind=8) prephitmp_2847;
+  integer(kind=8) _2848;
+  integer(kind=8) prephitmp_2849;
+  integer(kind=4) _2850;
+  integer(kind=8) _2852;
+  integer(kind=8) _2854;
+  integer(kind=8) _2856;
+  integer(kind=8) _2858;
+  integer(kind=8) _2860;
+  logical(kind=4) _2862;
+  integer(kind=8) _2864;
+  integer(kind=8) _2876;
+  integer(kind=4) _2877;
+  integer(kind=4) _2895;
+  sizetype _2902;
+  sizetype _2906;
+  real(kind=8) * _2907;
+  unsigned long _2913;
+  void * _2914;
+  unsigned long _2915;
+  logical(kind=4) pretmp_2917;
+  unsigned long _2919;
+  unsigned long _2921;
+  real(kind=8) _2924;
+  real(kind=8) _2926;
+  real(kind=8) _2927;
+  integer(kind=4) _2931;
+  unsigned int _2932;
+  unsigned int _2935;
+  real(kind=8) _2938;
+  unsigned long _2942;
+  real(kind=8) _2945;
+  real(kind=8) _2946;
+  real(kind=8) _2949;
+  sizetype _2950;
+  real(kind=8) * _2951;
+  real(kind=8) _2952;
+  integer(kind=8) _2953;
+  integer(kind=4) pretmp_2954;
+  real(kind=8) _2955;
+  integer(kind=8) _2956;
+  integer(kind=4) pretmp_2957;
+  integer(kind=4) pretmp_2958;
+  void * _2959;
+  integer(kind=4) pretmp_2960;
+  integer(kind=4) pretmp_2961;
+  integer(kind=4) pretmp_2962;
+  integer(kind=4) pretmp_2963;
+  integer(kind=4) pretmp_2964;
+  void * _2965;
+  integer(kind=4) pretmp_2966;
+  integer(kind=4) pretmp_2967;
+  integer(kind=4) pretmp_2975;
+  void * _2976;
+  integer(kind=4) pretmp_2977;
+  integer(kind=4) pretmp_2978;
+  integer(kind=8) _2980;
+  integer(kind=8) _2981;
+  integer(kind=8) _2982;
+  integer(kind=8) _2983;
+  integer(kind=8) _2984;
+  integer(kind=8) _2985;
+  integer(kind=8) _2986;
+  integer(kind=8) _2987;
+  integer(kind=8) _2988;
+  integer(kind=8) _2989;
+  integer(kind=8) _2990;
+  integer(kind=8) _2991;
+  integer(kind=8) _2992;
+  integer(kind=8) _2993;
+  integer(kind=8) _2994;
+  real(kind=8) pretmp_2995;
+  integer(kind=8) _2996;
+  integer(kind=8) _2997;
+  integer(kind=8) _2998;
+  integer(kind=8) _3000;
+  integer(kind=8) _3001;
+  integer(kind=8) _3002;
+  integer(kind=8) _3003;
+  void * pretmp_3006;
+  integer(kind=8) _3007;
+  void * pretmp_3008;
+  integer(kind=8) _3009;
+  integer(kind=8) _3010;
+  integer(kind=8) _3011;
+  integer(kind=8) _3012;
+  integer(kind=8) _3013;
+  integer(kind=8) _3014;
+  logical(kind=1) _3015;
+  integer(kind=4) _3016;
+  real(kind=8) _3021;
+  unsigned int _3023;
+  void * _3047;
+  unsigned int _3048;
+  unsigned int _3049;
+  integer(kind=4) _3054;
+  integer(kind=8) _3059;
+  unsigned long _3060;
+  real(kind=8) _3064;
+  real(kind=8) _3065;
+  real(kind=8) _3066;
+  void * _3068;
+  unsigned int _3069;
+  unsigned long _3074;
+  sizetype _3075;
+  integer(kind=8) _3077;
+  unsigned long _3078;
+  unsigned long _3079;
+  unsigned long _3080;
+  sizetype _3081;
+  integer(kind=4) * _3082;
+  unsigned int _3085;
+  integer(kind=8) _3090;
+  unsigned long _3091;
+  void * _3093;
+  unsigned long _3094;
+
+  <bb 2> [local count: 59]:
+  _1154 = *angmoms_1153(D).dim[0].stride;
+  if (_1154 != 0)
+    goto <bb 3>; [50.00%]
+  else
+    goto <bb 4>; [50.00%]
+
+  <bb 3> [local count: 30]:
+
+  <bb 4> [local count: 59]:
+  # iftmp.228_1056 = PHI <_1154(3), 1(2)>
+  angmoms.0_1157 = *angmoms_1153(D).data;
+  _1 = *angmoms_1153(D).dim[0].ubound;
+  _2 = *angmoms_1153(D).dim[0].lbound;
+  _3 = _1 - _2;
+  ubound.0_1158 = _3 + 1;
+  _1160 = *valuereal_1159(D).dim[0].stride;
+  if (_1160 != 0)
+    goto <bb 5>; [50.00%]
+  else
+    goto <bb 6>; [50.00%]
+
+  <bb 5> [local count: 30]:
+  _2838 = -_1160;
+
+  <bb 6> [local count: 59]:
+  # iftmp.231_1057 = PHI <_1160(5), 1(4)>
+  # prephitmp_2839 = PHI <_2838(5), -1(4)>
+  valuereal.0_1164 = *valuereal_1159(D).data;
+  _5 = *valuereal_1159(D).dim[0].ubound;
+  _6 = *valuereal_1159(D).dim[0].lbound;
+  _7 = _5 - _6;
+  ubound.72_1165 = _7 + 1;
+  stride.75_1166 = *valuereal_1159(D).dim[1].stride;
+  _8 = *valuereal_1159(D).dim[1].ubound;
+  _9 = *valuereal_1159(D).dim[1].lbound;
+  _10 = _8 - _9;
+  ubound.74_1167 = _10 + 1;
+  stride.77_1168 = *valuereal_1159(D).dim[2].stride;
+  _11 = *valuereal_1159(D).dim[2].ubound;
+  _12 = *valuereal_1159(D).dim[2].lbound;
+  _13 = _11 - _12;
+  ubound.76_1169 = _13 + 1;
+  stride.79_1170 = *valuereal_1159(D).dim[3].stride;
+  _14 = *valuereal_1159(D).dim[3].ubound;
+  _15 = *valuereal_1159(D).dim[3].lbound;
+  _16 = _14 - _15;
+  ubound.78_1171 = _16 + 1;
+  _18 = prephitmp_2839 - stride.75_1166;
+  _19 = _18 - stride.77_1168;
+  _20 = *valuecmpl_1173(D).dim[0].ubound;
+  _21 = *valuecmpl_1173(D).dim[0].lbound;
+  _23 = *valuecmpl_1173(D).dim[1].ubound;
+  _24 = *valuecmpl_1173(D).dim[1].lbound;
+  _26 = *valuecmpl_1173(D).dim[2].ubound;
+  _27 = *valuecmpl_1173(D).dim[2].lbound;
+  _29 = *valuecmpl_1173(D).dim[3].ubound;
+  _30 = *valuecmpl_1173(D).dim[3].lbound;
+  _1182 = *gridvecs_1181(D).dim[0].stride;
+  if (_1182 != 0)
+    goto <bb 7>; [50.00%]
+  else
+    goto <bb 8>; [50.00%]
+
+  <bb 7> [local count: 30]:
+  _2840 = -_1182;
+
+  <bb 8> [local count: 59]:
+  # iftmp.237_1058 = PHI <_1182(7), 1(6)>
+  # prephitmp_2841 = PHI <_2840(7), -1(6)>
+  gridvecs.0_1186 = *gridvecs_1181(D).data;
+  _33 = *gridvecs_1181(D).dim[0].ubound;
+  _34 = *gridvecs_1181(D).dim[0].lbound;
+  _35 = _33 - _34;
+  ubound.22_1187 = _35 + 1;
+  stride.25_1188 = *gridvecs_1181(D).dim[1].stride;
+  _36 = *gridvecs_1181(D).dim[1].ubound;
+  _37 = *gridvecs_1181(D).dim[1].lbound;
+  _38 = _36 - _37;
+  ubound.24_1189 = _38 + 1;
+  offset.26_1190 = prephitmp_2841 - stride.25_1188;
+  _1192 = *cutoffs_1191(D).dim[0].stride;
+  if (_1192 != 0)
+    goto <bb 9>; [50.00%]
+  else
+    goto <bb 10>; [50.00%]
+
+  <bb 9> [local count: 30]:
+
+  <bb 10> [local count: 59]:
+  # iftmp.240_1059 = PHI <_1192(9), 1(8)>
+  cutoffs.0_1196 = *cutoffs_1191(D).data;
+  _40 = *cutoffs_1191(D).dim[0].ubound;
+  _41 = *cutoffs_1191(D).dim[0].lbound;
+  _42 = _40 - _41;
+  ubound.12_1197 = _42 + 1;
+  _1199 = *species_1198(D).dim[0].stride;
+  if (_1199 != 0)
+    goto <bb 11>; [50.00%]
+  else
+    goto <bb 12>; [50.00%]
+
+  <bb 11> [local count: 30]:
+
+  <bb 12> [local count: 59]:
+  # iftmp.243_1060 = PHI <_1199(11), 1(10)>
+  species.0_1202 = *species_1198(D).data;
+  _1204 = *coords_1203(D).dim[0].stride;
+  if (_1204 != 0)
+    goto <bb 13>; [50.00%]
+  else
+    goto <bb 14>; [50.00%]
+
+  <bb 13> [local count: 30]:
+  _2842 = -_1204;
+
+  <bb 14> [local count: 59]:
+  # iftmp.246_1061 = PHI <_1204(13), 1(12)>
+  # prephitmp_2843 = PHI <_2842(13), -1(12)>
+  coords.0_1207 = *coords_1203(D).data;
+  stride.7_1208 = *coords_1203(D).dim[1].stride;
+  stride.9_1209 = *coords_1203(D).dim[2].stride;
+  _1212 = *origin_1211(D).dim[0].stride;
+  if (_1212 != 0)
+    goto <bb 15>; [50.00%]
+  else
+    goto <bb 16>; [50.00%]
+
+  <bb 15> [local count: 30]:
+
+  <bb 16> [local count: 59]:
+  # iftmp.249_1062 = PHI <_1212(15), 1(14)>
+  origin.0_1216 = *origin_1211(D).data;
+  _1218 = *recvecs2p_1217(D).dim[0].stride;
+  if (_1218 != 0)
+    goto <bb 17>; [50.00%]
+  else
+    goto <bb 18>; [50.00%]
+
+  <bb 17> [local count: 30]:
+  _2844 = -_1218;
+
+  <bb 18> [local count: 59]:
+  # iftmp.252_1063 = PHI <_1218(17), 1(16)>
+  # prephitmp_2845 = PHI <_2844(17), -1(16)>
+  recvecs2p.0_1222 = *recvecs2p_1217(D).data;
+  _45 = *recvecs2p_1217(D).dim[0].ubound;
+  _46 = *recvecs2p_1217(D).dim[0].lbound;
+  stride.51_1224 = *recvecs2p_1217(D).dim[1].stride;
+  _48 = *recvecs2p_1217(D).dim[1].ubound;
+  _49 = *recvecs2p_1217(D).dim[1].lbound;
+  _1228 = *latvecs_1227(D).dim[0].stride;
+  if (_1228 != 0)
+    goto <bb 19>; [50.00%]
+  else
+    goto <bb 20>; [50.00%]
+
+  <bb 19> [local count: 30]:
+  _2846 = -_1228;
+
+  <bb 20> [local count: 59]:
+  # iftmp.255_1064 = PHI <_1228(19), 1(18)>
+  # prephitmp_2847 = PHI <_2846(19), -1(18)>
+  latvecs.0_1232 = *latvecs_1227(D).data;
+  _52 = *latvecs_1227(D).dim[0].ubound;
+  _53 = *latvecs_1227(D).dim[0].lbound;
+  stride.41_1234 = *latvecs_1227(D).dim[1].stride;
+  _1237 = *stos_1236(D).dim[0].stride;
+  if (_1237 != 0)
+    goto <bb 21>; [50.00%]
+  else
+    goto <bb 22>; [50.00%]
+
+  <bb 21> [local count: 30]:
+
+  <bb 22> [local count: 59]:
+  # iftmp.258_1065 = PHI <_1237(21), 1(20)>
+  stos.0_1240 = *stos_1236(D).data;
+  _1242 = *istos_1241(D).dim[0].stride;
+  if (_1242 != 0)
+    goto <bb 23>; [50.00%]
+  else
+    goto <bb 24>; [50.00%]
+
+  <bb 23> [local count: 30]:
+
+  <bb 24> [local count: 59]:
+  # iftmp.261_1066 = PHI <_1242(23), 1(22)>
+  istos.0_1246 = *istos_1241(D).data;
+  _1248 = *eigvecsreal_1247(D).dim[0].stride;
+  if (_1248 != 0)
+    goto <bb 25>; [50.00%]
+  else
+    goto <bb 26>; [50.00%]
+
+  <bb 25> [local count: 30]:
+  _2848 = -_1248;
+
+  <bb 26> [local count: 59]:
+  # iftmp.264_1067 = PHI <_1248(25), 1(24)>
+  # prephitmp_2849 = PHI <_2848(25), -1(24)>
+  eigvecsreal.0_1252 = *eigvecsreal_1247(D).data;
+  stride.19_1253 = *eigvecsreal_1247(D).dim[1].stride;
+  _63 = MAX_EXPR <ubound.0_1158, 0>;
+  _64 = (integer(kind=4)) _63;
+  nuniqueorb = _64;
+  if (ubound.0_1158 <= 0)
+    goto <bb 33>; [11.00%]
+  else
+    goto <bb 27>; [89.00%]
+
+  <bb 27> [local count: 53]:
+  _3090 = iftmp.228_1056 * 4;
+  _3091 = (unsigned long) _3090;
+  ivtmp.886_3092 = (unsigned long) angmoms.0_1157;
+  _3094 = (unsigned long) _3;
+
+  <bb 28> [local count: 479]:
+  # limit.83_2229 = PHI <limit.83_1258(28), -2147483648(27)>
+  # ivtmp.883_3086 = PHI <ivtmp.883_3087(28), 0(27)>
+  # ivtmp.886_3088 = PHI <ivtmp.886_3089(28), ivtmp.886_3092(27)>
+  _3093 = (void *) ivtmp.886_3088;
+  _69 = MEM[(integer(kind=4) *)_3093];
+  limit.83_1258 = MAX_EXPR <_69, limit.83_2229>;
+  ivtmp.883_3087 = ivtmp.883_3086 + 1;
+  ivtmp.886_3089 = ivtmp.886_3088 + _3091;
+  if (ivtmp.883_3086 == _3094)
+    goto <bb 29>; [11.00%]
+  else
+    goto <bb 28>; [89.00%]
+
+  <bb 29> [local count: 53]:
+  _2850 = -limit.83_1258;
+  _2852 = (integer(kind=8)) _2850;
+  _2854 = (integer(kind=8)) limit.83_1258;
+  _2856 = _2854 - _2852;
+  _2858 = MAX_EXPR <_2856, -1>;
+  _2860 = _2858 + 1;
+  _2862 = _2856 < 0;
+  _2864 = _2854 - _2860;
+  _75 = MAX_EXPR <_64, 0>;
+  _1264 = (integer(kind=8)) _75;
+  _1267 = _1264 * _2860;
+  _87 = _64 <= 0;
+  _1270 = _87 | _2862;
+  if (_1270 != 0)
+    goto <bb 31>; [50.94%]
+  else
+    goto <bb 30>; [49.06%]
+
+  <bb 30> [local count: 27]:
+  _76 = (unsigned long) _1267;
+  size.85_1271 = _76 * 4;
+
+  <bb 31> [local count: 53]:
+  # size.85_956 = PHI <0(29), size.85_1271(30)>
+  if (_1267 > 4611686018427387903)
+    goto <bb 32>; [0.00%]
+  else
+    goto <bb 33>; [100.00%]
+
+  <bb 32> [local count: 0]:
+  _gfortran_runtime_error (&"Integer overflow when calculating the amount of memory to allocate"[1]{lb: 1 sz: 1});
+
+  <bb 33> [local count: 59]:
+  # size.85_2734 = PHI <size.85_956(31), 0(26)>
+  # prephitmp_1080 = PHI <_2852(31), -2147483648(26)>
+  # prephitmp_545 = PHI <_2854(31), -2147483648(26)>
+  # prephitmp_2389 = PHI <_2860(31), 1(26)>
+  # prephitmp_2613 = PHI <_2864(31), -2147483649(26)>
+  _97 = MAX_EXPR <size.85_2734, 1>;
+  _98 = __builtin_malloc (_97);
+  if (_98 == 0B)
+    goto <bb 34>; [0.04%]
+  else
+    goto <bb 35>; [99.96%]
+
+  <bb 34> [local count: 0]:
+  _gfortran_os_error_at (&"In file \'/home/merlin/tmpfs/dftbuild/app/waveplot/molorb2.f90\', around line 169"[1]{lb: 1 sz: 1}, &"Error allocating %lu bytes"[1]{lb: 1 sz: 1}, size.85_2734);
+
+  <bb 35> [local count: 59]:
+  if (_64 <= 0)
+    goto <bb 323>; [11.00%]
+  else
+    goto <bb 36>; [89.00%]
+
+  <bb 36> [local count: 53]:
+  _3074 = (unsigned long) prephitmp_2389;
+  _3075 = _3074 * 4;
+  _3077 = prephitmp_2389 + prephitmp_2613;
+  _3078 = (unsigned long) _3077;
+  _3079 = (unsigned long) prephitmp_1080;
+  _3080 = _3078 + _3079;
+  _3081 = _3080 * 4;
+  _3082 = _98 + _3081;
+  ivtmp.881_3076 = (unsigned long) _3082;
+  _3085 = (unsigned int) _63;
+  _2772 = (unsigned long) prephitmp_545;
+  _2213 = _2772 + 1;
+  _2769 = _2213 - _3079;
+  _2768 = _2769 * 4;
+
+  <bb 37> [local count: 479]:
+  # ivtmp.877_3070 = PHI <ivtmp.877_3071(38), 0(36)>
+  # ivtmp.881_3072 = PHI <ivtmp.881_3073(38), ivtmp.881_3076(36)>
+  if (prephitmp_545 < prephitmp_1080)
+    goto <bb 38>; [11.00%]
+  else
+    goto <bb 39>; [89.00%]
+
+  <bb 38> [local count: 479]:
+  ivtmp.877_3071 = ivtmp.877_3070 + 1;
+  ivtmp.881_3073 = ivtmp.881_3072 + _3075;
+  if (ivtmp.877_3071 == _3085)
+    goto <bb 40>; [11.00%]
+  else
+    goto <bb 37>; [89.00%]
+
+  <bb 39> [local count: 426]:
+  _2764 = (integer(kind=4) *) ivtmp.881_3072;
+  __builtin_memset (_2764, 255, _2768);
+  goto <bb 38>; [100.00%]
+
+  <bb 40> [local count: 53]:
+  dt_parm.90.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.90.common.line = 174;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.90] = { 128, 6 };
+  _gfortran_st_write (&dt_parm.90);
+  _gfortran_transfer_character_write (&dt_parm.90, &"nUniqueOrb"[1]{lb: 1 sz: 1}, 10);
+  _gfortran_transfer_integer_write (&dt_parm.90, &nuniqueorb, 4);
+  _gfortran_st_write_done (&dt_parm.90);
+  dt_parm.90 ={v} {CLOBBER(eol)};
+  iorb = 1;
+  _3059 = iftmp.228_1056 * 4;
+  _3060 = (unsigned long) _3059;
+  ivtmp.874_3061 = (unsigned long) angmoms.0_1157;
+  _3069 = (unsigned int) _63;
+
+  <bb 41> [local count: 479]:
+  # cacheind_233 = PHI <cacheind_528(45), 1(40)>
+  # ivtmp.870_3055 = PHI <ivtmp.870_3056(45), 0(40)>
+  # ivtmp.874_3057 = PHI <ivtmp.874_3058(45), ivtmp.874_3061(40)>
+  # ivtmp.876_3062 = PHI <ivtmp.876_3063(45), _3078(40)>
+  _3068 = (void *) ivtmp.874_3057;
+  _115 = MEM[(integer(kind=4) *)_3068];
+  _1291 = -_115;
+  if (_115 < _1291)
+    goto <bb 45>; [11.00%]
+  else
+    goto <bb 42>; [89.00%]
+
+  <bb 42> [local count: 426]:
+  _2073 = (sizetype) _1291;
+  _1071 = _2073 + ivtmp.876_3062;
+  _347 = _1071 * 4;
+  _2307 = _98 + _347;
+  ivtmp.867_839 = (unsigned long) _2307;
+  _3048 = (unsigned int) _115;
+  _3049 = (unsigned int) cacheind_233;
+  _2042 = _3049 + 1;
+  _2157 = _2042 + _3048;
+  _2305 = (unsigned int) _115;
+  _2270 = _2157 + _2305;
+  _3054 = (integer(kind=4)) _2270;
+
+  <bb 43> [local count: 3873]:
+  # cacheind_526 = PHI <cacheind_1293(43), cacheind_233(42)>
+  # ivtmp.867_837 = PHI <ivtmp.867_2072(43), ivtmp.867_839(42)>
+  cacheind_1293 = cacheind_526 + 1;
+  _3047 = (void *) ivtmp.867_837;
+  MEM[(integer(kind=4) *)_3047] = cacheind_1293;
+  ivtmp.867_2072 = ivtmp.867_837 + 4;
+  if (cacheind_1293 == _3054)
+    goto <bb 44>; [11.00%]
+  else
+    goto <bb 43>; [89.00%]
+
+  <bb 44> [local count: 426]:
+  _2821 = _3048 + 1;
+  im_lsm.476_2833 = (integer(kind=4)) _2821;
+
+  <bb 45> [local count: 479]:
+  # cacheind_528 = PHI <_3054(44), cacheind_233(41)>
+  # im_lsm.476_2195 = PHI <im_lsm.476_2833(44), _1291(41)>
+  ivtmp.870_3056 = ivtmp.870_3055 + 1;
+  ivtmp.874_3058 = ivtmp.874_3057 + _3060;
+  ivtmp.876_3063 = ivtmp.876_3062 + _3074;
+  if (ivtmp.870_3056 == _3069)
+    goto <bb 46>; [11.00%]
+  else
+    goto <bb 41>; [89.00%]
+
+  <bb 46> [local count: 53]:
+  _2819 = _3069 + 1;
+  _1078 = (integer(kind=4)) _2819;
+  im = im_lsm.476_2195;
+  iorb = _1078;
+  il = _115;
+
+  <bb 47> [local count: 59]:
+  # cacheind_525 = PHI <cacheind_528(46), 1(323)>
+  _123 = *treal_1297(D);
+  if (_123 != 0)
+    goto <bb 48>; [99.96%]
+  else
+    goto <bb 50>; [0.04%]
+
+  <bb 48> [local count: 59]:
+  _2876 = MAX_EXPR <ubound.72_1165, 0>;
+  _2877 = (integer(kind=4)) _2876;
+  npoints[0] = _2877;
+  _51 = MAX_EXPR <ubound.74_1167, 0>;
+  _55 = (integer(kind=4)) _51;
+  npoints[1] = _55;
+  _1081 = MAX_EXPR <ubound.76_1169, 0>;
+  _1097 = (integer(kind=4)) _1081;
+  npoints[2] = _1097;
+  _128 = MAX_EXPR <ubound.78_1171, 0>;
+  _129 = (integer(kind=4)) _128;
+  npoints[3] = _129;
+  parm.95.data = &targetresolution[0];
+  parm.95.offset = -1;
+  parm.95.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.95 + 24B] = 3302829850624;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.95 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.95 + 48B] = { 1, 3 };
+  parm.96.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.96 + 24B] = 3307124817920;
+  parm.96.span = 8;
+  parm.96.dim[0].lbound = 1;
+  parm.96.dim[0].ubound = ubound.22_1187;
+  parm.96.dim[0].stride = iftmp.237_1058;
+  parm.96.dim[1].lbound = 1;
+  parm.96.dim[1].ubound = ubound.24_1189;
+  parm.96.dim[1].stride = stride.25_1188;
+  parm.96.data = gridvecs.0_1186;
+  parm.96.offset = offset.26_1190;
+  _gfortran_norm2_r8 (&parm.95, &parm.96, &C.4797);
+  parm.95 ={v} {CLOBBER(eol)};
+  parm.96 ={v} {CLOBBER(eol)};
+  _2216 = targetresolution[0];
+  _2217 = _2216 / 2.2e+1;
+  targetresolution[0] = _2217;
+  _2223 = targetresolution[1];
+  _2224 = _2223 / 2.2e+1;
+  targetresolution[1] = _2224;
+  _2230 = targetresolution[2];
+  _2231 = _2230 / 2.2e+1;
+  targetresolution[2] = _2231;
+  parm.99.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.99 + 24B] = 3307124817920;
+  parm.99.span = 8;
+  parm.99.dim[0].lbound = 1;
+  parm.99.dim[0].ubound = ubound.22_1187;
+  parm.99.dim[0].stride = iftmp.237_1058;
+  parm.99.dim[1].lbound = 1;
+  parm.99.dim[1].ubound = ubound.24_1189;
+  parm.99.dim[1].stride = stride.25_1188;
+  parm.99.data = gridvecs.0_1186;
+  parm.99.offset = offset.26_1190;
+  atmp.101.data = &A.102;
+  atmp.101.offset = 0;
+  atmp.101.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&atmp.101 + 24B] = 3302829850624;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&atmp.101 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&atmp.101 + 48B] = { 0, 2 };
+  _gfortran_norm2_r8 (&atmp.101, &parm.99, &C.4814);
+  _142 = atmp.101.data;
+  _2927 = MEM[(real(kind=8)[3] *)_142][0];
+  _2938 = _2927 / _2217;
+  _2931 = (integer(kind=4)) _2938;
+  resolutionfactor[0] = _2931;
+  _2926 = MEM[(real(kind=8)[3] *)_142][1];
+  _2924 = _2926 / _2224;
+  _2895 = (integer(kind=4)) _2924;
+  resolutionfactor[1] = _2895;
+  _143 = MEM[(real(kind=8)[3] *)_142][2];
+  _145 = _143 / _2231;
+  _146 = (integer(kind=4)) _145;
+  resolutionfactor[2] = _146;
+  parm.99 ={v} {CLOBBER(eol)};
+  atmp.101 ={v} {CLOBBER(eol)};
+  A.102 ={v} {CLOBBER(eol)};
+  dt_parm.104.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.104.common.line = 194;
+  dt_parm.104.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.104.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.104] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.104);
+  _gfortran_transfer_character_write (&dt_parm.104, &"Target Resolution:"[1]{lb: 1 sz: 1}, 18);
+  parm.105.data = &targetresolution[0];
+  parm.105.offset = -1;
+  parm.105.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.105 + 24B] = 3302829850624;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.105 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.105 + 48B] = { 1, 3 };
+  _gfortran_transfer_array_write (&dt_parm.104, &parm.105, 8, 0);
+  parm.105 ={v} {CLOBBER(eol)};
+  _gfortran_st_write_done (&dt_parm.104);
+  dt_parm.104 ={v} {CLOBBER(eol)};
+  dt_parm.106.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.106.common.line = 195;
+  dt_parm.106.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.106.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.106] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.106);
+  _gfortran_transfer_character_write (&dt_parm.106, &"Resolution Factors:"[1]{lb: 1 sz: 1}, 19);
+  parm.107.data = &resolutionfactor[0];
+  parm.107.offset = -1;
+  parm.107.dtype.elem_len = 4;
+  MEM <unsigned long> [(void *)&parm.107 + 24B] = 1103806595072;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.107 + 32B] = { 4, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.107 + 48B] = { 1, 3 };
+  _gfortran_transfer_array_write (&dt_parm.106, &parm.107, 4, 0);
+  parm.107 ={v} {CLOBBER(eol)};
+  _gfortran_st_write_done (&dt_parm.106);
+  dt_parm.106 ={v} {CLOBBER(eol)};
+  _1423 = (real(kind=8)) _2931;
+  _100 = MEM[(real(kind=8) *)gridvecs.0_1186];
+  _95 = _100 / _1423;
+  cachegridvecs[0] = _95;
+  _1971 = iftmp.237_1058 * 8;
+  _2950 = (sizetype) _1971;
+  _2951 = gridvecs.0_1186 + _2950;
+  _2949 = *_2951;
+  _2952 = _2949 / _1423;
+  cachegridvecs[1] = _2952;
+  _151 = _2951 + _2950;
+  _152 = *_151;
+  _154 = _152 / _1423;
+  cachegridvecs[2] = _154;
+  _1426 = (real(kind=8)) _2895;
+  _156 = stride.25_1188 * 2;
+  _1427 = _156 + offset.26_1190;
+  _400 = iftmp.237_1058 + _1427;
+  _397 = _400 * 8;
+  _396 = (sizetype) _397;
+  _395 = gridvecs.0_1186 + _396;
+  _394 = *_395;
+  _391 = _394 / _1426;
+  cachegridvecs[3] = _391;
+  _363 = _400 + iftmp.237_1058;
+  _361 = _363 * 8;
+  _359 = (sizetype) _361;
+  _357 = gridvecs.0_1186 + _359;
+  _356 = *_357;
+  _352 = _356 / _1426;
+  cachegridvecs[4] = _352;
+  _158 = _363 + iftmp.237_1058;
+  _159 = _158 * 8;
+  _160 = (sizetype) _159;
+  _161 = gridvecs.0_1186 + _160;
+  _162 = *_161;
+  _164 = _162 / _1426;
+  cachegridvecs[5] = _164;
+  _1430 = (real(kind=8)) _146;
+  _1431 = stride.25_1188 + _1427;
+  _499 = iftmp.237_1058 + _1431;
+  _498 = _499 * 8;
+  _497 = (sizetype) _498;
+  _494 = gridvecs.0_1186 + _497;
+  _492 = *_494;
+  _487 = _492 / _1430;
+  cachegridvecs[6] = _487;
+  _477 = _499 + iftmp.237_1058;
+  _475 = _477 * 8;
+  _474 = (sizetype) _475;
+  _470 = gridvecs.0_1186 + _474;
+  _468 = *_470;
+  _465 = _468 / _1430;
+  cachegridvecs[7] = _465;
+  _168 = _477 + iftmp.237_1058;
+  _169 = _168 * 8;
+  _170 = (sizetype) _169;
+  _171 = gridvecs.0_1186 + _170;
+  _172 = *_171;
+  _174 = _172 / _1430;
+  cachegridvecs[8] = _174;
+  if (ubound.12_1197 <= 0)
+    goto <bb 49>; [5.50%]
+  else
+    goto <bb 53>; [94.50%]
+
+  <bb 49> [local count: 3]:
+  dt_parm.115.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.115.common.line = 204;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.115] = { 128, 6 };
+  _gfortran_st_write (&dt_parm.115);
+  _gfortran_transfer_character_write (&dt_parm.115, &"Warn: Different cutoffs (max/min):"[1]{lb: 1 sz: 1}, 34);
+  D.4887 = -1.79769313486231570814527423731704356798070567525844996599e+308;
+  _gfortran_transfer_real_write (&dt_parm.115, &D.4887, 8);
+  D.4887 ={v} {CLOBBER(eol)};
+  D.4896 = 1.79769313486231570814527423731704356798070567525844996599e+308;
+  _gfortran_transfer_real_write (&dt_parm.115, &D.4896, 8);
+  D.4896 ={v} {CLOBBER(eol)};
+  _gfortran_st_write_done (&dt_parm.115);
+  dt_parm.115 ={v} {CLOBBER(eol)};
+  goto <bb 89>; [100.00%]
+
+  <bb 50> [local count: 0]:
+  _22 = _20 - _21;
+  ubound.62_1177 = _22 + 1;
+  _25 = _23 - _24;
+  ubound.64_1178 = _25 + 1;
+  _28 = _26 - _27;
+  ubound.66_1179 = _28 + 1;
+  _31 = _29 - _30;
+  ubound.68_1180 = _31 + 1;
+  ivtmp.857_2070 = (unsigned long) &parm.94;
+
+  <bb 51> [local count: 0]:
+  # ivtmp.851_2067 = PHI <ivtmp.851_2068(51), 0(50)>
+  # ivtmp.857_2069 = PHI <ivtmp.857_833(51), ivtmp.857_2070(50)>
+  parm.94.dim[0].lbound = 1;
+  parm.94.dim[0].ubound = ubound.62_1177;
+  parm.94.dim[1].lbound = 1;
+  parm.94.dim[1].ubound = ubound.64_1178;
+  parm.94.dim[2].lbound = 1;
+  parm.94.dim[2].ubound = ubound.66_1179;
+  parm.94.dim[3].lbound = 1;
+  parm.94.dim[3].ubound = ubound.68_1180;
+  _2071 = (void *) ivtmp.857_2069;
+  _131 = MEM[(integer(kind=8) *)_2071 + 56B];
+  _132 = MEM[(integer(kind=8) *)_2071 + 48B];
+  _133 = _131 - _132;
+  _134 = _133 + 1;
+  _135 = MAX_EXPR <_134, 0>;
+  _136 = (integer(kind=4)) _135;
+  MEM[(integer(kind=4) *)&npoints + ivtmp.851_2067 * 4] = _136;
+  parm.94 ={v} {CLOBBER(eol)};
+  ivtmp.851_2068 = ivtmp.851_2067 + 1;
+  ivtmp.857_833 = ivtmp.857_2069 + 24;
+  if (ivtmp.851_2068 == 4)
+    goto <bb 52>; [20.00%]
+  else
+    goto <bb 51>; [80.00%]
+
+  <bb 52> [local count: 0]:
+  _gfortran_stop_string (&"Complex not implemented yet"[1]{lb: 1 sz: 1}, 27, 0);
+
+  <bb 53> [local count: 56]:
+  _826 = iftmp.240_1059 * 8;
+  _827 = (unsigned long) _826;
+  ivtmp.849_828 = (unsigned long) cutoffs.0_1196;
+
+  <bb 54> [local count: 522]:
+  # ivtmp.848_824 = PHI <ivtmp.848_2062(55), 1(53)>
+  # ivtmp.849_825 = PHI <ivtmp.849_2063(55), ivtmp.849_828(53)>
+  S.112_2247 = (integer(kind=8)) ivtmp.848_824;
+  _2064 = (void *) ivtmp.849_825;
+  _178 = MEM[(real(kind=8) *)_2064];
+  if (_178 >=  -Inf)
+    goto <bb 56>; [5.50%]
+  else
+    goto <bb 55>; [94.50%]
+
+  <bb 55> [local count: 494]:
+  ivtmp.848_2062 = ivtmp.848_824 + 1;
+  ivtmp.849_2063 = ivtmp.849_825 + _827;
+  if (_42 < S.112_2247)
+    goto <bb 61>; [5.50%]
+  else
+    goto <bb 54>; [94.50%]
+
+  <bb 56> [local count: 29]:
+  if (ubound.12_1197 < S.112_2247)
+    goto <bb 61>; [3.45%]
+  else
+    goto <bb 57>; [96.55%]
+
+  <bb 57> [local count: 28]:
+  _812 = S.112_2247 + -1;
+  _2059 = _812 * iftmp.240_1059;
+  _816 = _2059 * 8;
+  _2060 = (sizetype) _816;
+  _2061 = cutoffs.0_1196 + _2060;
+  ivtmp.844_811 = (unsigned long) _2061;
+  _818 = (unsigned long) _42;
+  _876 = _818 + 2;
+  _823 = _876 - ivtmp.848_824;
+
+  <bb 58> [local count: 479]:
+  # limit.111_2661 = PHI < -Inf(57), limit.111_2653(60)>
+  # ivtmp.841_2054 = PHI <0(57), ivtmp.841_808(60)>
+  # ivtmp.844_2055 = PHI <ivtmp.844_811(57), ivtmp.844_809(60)>
+  _817 = (void *) ivtmp.844_2055;
+  _2654 = MEM[(real(kind=8) *)_817];
+  if (_2654 > limit.111_2661)
+    goto <bb 60>; [50.00%]
+  else
+    goto <bb 59>; [50.00%]
+
+  <bb 59> [local count: 240]:
+
+  <bb 60> [local count: 479]:
+  # limit.111_2653 = PHI <_2654(58), limit.111_2661(59)>
+  ivtmp.841_808 = ivtmp.841_2054 + 1;
+  ivtmp.844_809 = _827 + ivtmp.844_2055;
+  if (ivtmp.841_808 == _823)
+    goto <bb 61>; [11.00%]
+  else
+    goto <bb 58>; [89.00%]
+
+  <bb 61> [local count: 56]:
+  # limit.111_1115 = PHI <limit.111_2653(60),  Nan(55),  -Inf(56)>
+
+  <bb 62> [local count: 522]:
+  # ivtmp.838_2050 = PHI <ivtmp.838_791(63), 1(61)>
+  # ivtmp.839_2051 = PHI <ivtmp.839_792(63), ivtmp.849_828(61)>
+  S.114_2254 = (integer(kind=8)) ivtmp.838_2050;
+  _799 = (void *) ivtmp.839_2051;
+  _187 = MEM[(real(kind=8) *)_799];
+  if (_187 <=  Inf)
+    goto <bb 64>; [5.50%]
+  else
+    goto <bb 63>; [94.50%]
+
+  <bb 63> [local count: 494]:
+  ivtmp.838_791 = ivtmp.838_2050 + 1;
+  ivtmp.839_792 = _827 + ivtmp.839_2051;
+  if (_42 < S.114_2254)
+    goto <bb 71>; [5.50%]
+  else
+    goto <bb 62>; [94.50%]
+
+  <bb 64> [local count: 29]:
+  if (ubound.12_1197 < S.114_2254)
+    goto <bb 69>; [11.00%]
+  else
+    goto <bb 65>; [89.00%]
+
+  <bb 65> [local count: 26]:
+  _909 = S.114_2254 + -1;
+  _2037 = _909 * iftmp.240_1059;
+  _911 = _2037 * 8;
+  _2038 = (sizetype) _911;
+  _913 = cutoffs.0_1196 + _2038;
+  ivtmp.834_2036 = (unsigned long) _913;
+  _915 = (unsigned long) _42;
+  _880 = _915 + 2;
+  _784 = _880 - ivtmp.838_2050;
+
+  <bb 66> [local count: 479]:
+  # limit.113_2673 = PHI < Inf(65), limit.113_2665(68)>
+  # ivtmp.831_904 = PHI <0(65), ivtmp.831_2031(68)>
+  # ivtmp.834_908 = PHI <ivtmp.834_2036(65), ivtmp.834_2032(68)>
+  _2039 = (void *) ivtmp.834_908;
+  _2666 = MEM[(real(kind=8) *)_2039];
+  if (_2666 < limit.113_2673)
+    goto <bb 68>; [50.00%]
+  else
+    goto <bb 67>; [50.00%]
+
+  <bb 67> [local count: 240]:
+
+  <bb 68> [local count: 479]:
+  # limit.113_2665 = PHI <_2666(66), limit.113_2673(67)>
+  ivtmp.831_2031 = ivtmp.831_904 + 1;
+  ivtmp.834_2032 = _827 + ivtmp.834_908;
+  if (_784 == ivtmp.831_2031)
+    goto <bb 69>; [11.00%]
+  else
+    goto <bb 66>; [89.00%]
+
+  <bb 69> [local count: 56]:
+  # limit.113_2253 = PHI <limit.113_2665(68),  Inf(64)>
+  if (limit.111_1115 != limit.113_2253)
+    goto <bb 71>; [33.00%]
+  else
+    goto <bb 70>; [67.00%]
+
+  <bb 70> [local count: 56]:
+  _2591 = iftmp.240_1059 * 8;
+  _2586 = (unsigned long) _2591;
+  ivtmp.809_2585 = (unsigned long) cutoffs.0_1196;
+  goto <bb 86>; [100.00%]
+
+  <bb 71> [local count: 20]:
+  dt_parm.115.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.115.common.line = 204;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.115] = { 128, 6 };
+  _gfortran_st_write (&dt_parm.115);
+  _gfortran_transfer_character_write (&dt_parm.115, &"Warn: Different cutoffs (max/min):"[1]{lb: 1 sz: 1}, 34);
+
+  <bb 72> [local count: 172]:
+  # S.117_2264 = PHI <S.117_1445(73), 1(71)>
+  # ivtmp.829_897 = PHI <ivtmp.829_898(73), ivtmp.849_828(71)>
+  _901 = (void *) ivtmp.829_897;
+  _198 = MEM[(real(kind=8) *)_901];
+  if (_198 >=  -Inf)
+    goto <bb 74>; [5.50%]
+  else
+    goto <bb 73>; [94.50%]
+
+  <bb 73> [local count: 163]:
+  S.117_1445 = S.117_2264 + 1;
+  ivtmp.829_898 = _827 + ivtmp.829_897;
+  if (_42 < S.117_2264)
+    goto <bb 74>; [5.50%]
+  else
+    goto <bb 72>; [94.50%]
+
+  <bb 74> [local count: 15]:
+  # limit.116_2188 = PHI < -Inf(72),  Nan(73)>
+  # S.117_2191 = PHI <S.117_2264(72), S.117_1445(73)>
+  if (ubound.12_1197 < S.117_2191)
+    goto <bb 327>; [3.00%]
+  else
+    goto <bb 75>; [97.00%]
+
+  <bb 75> [local count: 15]:
+  _1829 = S.117_2191 + -1;
+  _2807 = iftmp.240_1059 * _1829;
+  _887 = _2807 * 8;
+  _888 = (sizetype) _887;
+  _2026 = cutoffs.0_1196 + _888;
+  ivtmp.824_603 = (unsigned long) _2026;
+  _2027 = (unsigned long) _42;
+  _2028 = (unsigned long) S.117_2191;
+  _895 = _2027 + 2;
+  _894 = _895 - _2028;
+
+  <bb 76> [local count: 158]:
+  # limit.116_2685 = PHI <limit.116_2188(75), limit.116_2677(78)>
+  # ivtmp.821_2808 = PHI <0(75), ivtmp.821_597(78)>
+  # ivtmp.824_598 = PHI <ivtmp.824_603(75), ivtmp.824_600(78)>
+  _892 = (void *) ivtmp.824_598;
+  _2678 = MEM[(real(kind=8) *)_892];
+  if (_2678 > limit.116_2685)
+    goto <bb 78>; [50.00%]
+  else
+    goto <bb 77>; [50.00%]
+
+  <bb 77> [local count: 79]:
+
+  <bb 78> [local count: 158]:
+  # limit.116_2677 = PHI <_2678(76), limit.116_2685(77)>
+  ivtmp.821_597 = ivtmp.821_2808 + 1;
+  ivtmp.824_600 = ivtmp.824_598 + _827;
+  if (ivtmp.821_597 == _894)
+    goto <bb 327>; [11.00%]
+  else
+    goto <bb 76>; [89.00%]
+
+  <bb 79> [local count: 172]:
+  # S.119_2271 = PHI <S.119_1451(80), 1(327)>
+  # ivtmp.819_2626 = PHI <ivtmp.819_2625(80), ivtmp.819_2621(327)>
+  _2620 = (void *) ivtmp.819_2626;
+  _210 = MEM[(real(kind=8) *)_2620];
+  if (_210 <=  Inf)
+    goto <bb 81>; [5.50%]
+  else
+    goto <bb 80>; [94.50%]
+
+  <bb 80> [local count: 163]:
+  S.119_1451 = S.119_2271 + 1;
+  ivtmp.819_2625 = _2622 + ivtmp.819_2626;
+  if (_42 < S.119_2271)
+    goto <bb 81>; [5.50%]
+  else
+    goto <bb 79>; [94.50%]
+
+  <bb 81> [local count: 16]:
+  # limit.118_1127 = PHI < Inf(79),  Nan(80)>
+  # S.119_2194 = PHI <S.119_2271(79), S.119_1451(80)>
+  if (ubound.12_1197 < S.119_2194)
+    goto <bb 326>; [0.00%]
+  else
+    goto <bb 82>; [100.00%]
+
+  <bb 82> [local count: 16]:
+  _2641 = S.119_2194 + -1;
+  _2640 = iftmp.240_1059 * _2641;
+  _2638 = _2640 * 8;
+  _2637 = (sizetype) _2638;
+  _2636 = cutoffs.0_1196 + _2637;
+  ivtmp.814_2642 = (unsigned long) _2636;
+  _2631 = (unsigned long) _42;
+  _2630 = (unsigned long) S.119_2194;
+  _795 = _2631 + 2;
+  _2627 = _795 - _2630;
+
+  <bb 83> [local count: 158]:
+  # limit.118_2697 = PHI <limit.118_1127(82), limit.118_2689(85)>
+  # ivtmp.811_590 = PHI <0(82), ivtmp.811_591(85)>
+  # ivtmp.814_592 = PHI <ivtmp.814_2642(82), ivtmp.814_1824(85)>
+  _2635 = (void *) ivtmp.814_592;
+  _2690 = MEM[(real(kind=8) *)_2635];
+  if (_2690 < limit.118_2697)
+    goto <bb 85>; [50.00%]
+  else
+    goto <bb 84>; [50.00%]
+
+  <bb 84> [local count: 79]:
+
+  <bb 85> [local count: 158]:
+  # limit.118_2689 = PHI <_2690(83), limit.118_2697(84)>
+  ivtmp.811_591 = ivtmp.811_590 + 1;
+  ivtmp.814_1824 = ivtmp.814_592 + _2622;
+  if (ivtmp.811_591 == _2627)
+    goto <bb 326>; [11.00%]
+  else
+    goto <bb 83>; [89.00%]
+
+  <bb 86> [local count: 522]:
+  # S.121_2281 = PHI <S.121_1459(87), 1(70)>
+  # ivtmp.809_2593 = PHI <ivtmp.809_2592(87), ivtmp.809_2585(70)>
+  _1868 = (void *) ivtmp.809_2593;
+  _222 = MEM[(real(kind=8) *)_1868];
+  if (_222 >=  -Inf)
+    goto <bb 88>; [5.50%]
+  else
+    goto <bb 87>; [94.50%]
+
+  <bb 87> [local count: 494]:
+  S.121_1459 = S.121_2281 + 1;
+  ivtmp.809_2592 = _2586 + ivtmp.809_2593;
+  if (_42 < S.121_2281)
+    goto <bb 88>; [5.50%]
+  else
+    goto <bb 86>; [94.50%]
+
+  <bb 88> [local count: 47]:
+  # limit.120_318 = PHI < -Inf(86),  Nan(87)>
+  # S.121_323 = PHI <S.121_2281(86), S.121_1459(87)>
+  if (S.121_323 > ubound.12_1197)
+    goto <bb 89>; [3.00%]
+  else
+    goto <bb 98>; [97.00%]
+
+  <bb 89> [local count: 59]:
+  # limit.120_2280 = PHI <limit.120_2701(101), limit.120_318(88), -1.79769313486231570814527423731704356798070567525844996599e+308(49)>
+  if (_95 != 0.0)
+    goto <bb 90>; [50.00%]
+  else
+    goto <bb 93>; [50.00%]
+
+  <bb 90> [local count: 30]:
+  absX.125_984 = ABS_EXPR <_95>;
+  if (absX.125_984 > 1.0e+0)
+    goto <bb 92>; [50.00%]
+  else
+    goto <bb 91>; [50.00%]
+
+  <bb 91> [local count: 15]:
+  _981 = _95 * _95;
+  val.122_980 = _981 + 0.0;
+  goto <bb 93>; [100.00%]
+
+  <bb 92> [local count: 15]:
+  val.126_978 = 1.0e+0 / _95;
+  _977 = val.126_978 * val.126_978;
+  _976 = _977 * 0.0;
+  val.122_974 = _976 + 1.0e+0;
+
+  <bb 93> [local count: 60]:
+  # val.122_973 = PHI <0.0(89), val.122_980(91), val.122_974(92)>
+  # scale.123_972 = PHI <1.0e+0(89), 1.0e+0(91), absX.125_984(92)>
+  if (_2952 != 0.0)
+    goto <bb 94>; [50.00%]
+  else
+    goto <bb 97>; [50.00%]
+
+  <bb 94> [local count: 30]:
+  absX.125_960 = ABS_EXPR <_2952>;
+  if (absX.125_960 > scale.123_972)
+    goto <bb 96>; [50.00%]
+  else
+    goto <bb 95>; [50.00%]
+
+  <bb 95> [local count: 15]:
+  val.126_959 = _2952 / scale.123_972;
+  _958 = val.126_959 * val.126_959;
+  val.122_957 = _958 + val.122_973;
+  goto <bb 97>; [100.00%]
+
+  <bb 96> [local count: 15]:
+  val.126_955 = scale.123_972 / _2952;
+  _954 = val.126_955 * val.126_955;
+  _941 = _954 * val.122_973;
+  val.122_940 = _941 + 1.0e+0;
+
+  <bb 97> [local count: 60]:
+  # val.122_523 = PHI <val.122_973(93), val.122_957(95), val.122_940(96)>
+  # scale.123_518 = PHI <scale.123_972(93), scale.123_972(95), absX.125_960(96)>
+  if (_154 != 0.0)
+    goto <bb 102>; [50.00%]
+  else
+    goto <bb 105>; [50.00%]
+
+  <bb 98> [local count: 46]:
+  _2608 = S.121_323 + -1;
+  _2607 = iftmp.240_1059 * _2608;
+  _2606 = _2607 * 8;
+  _2605 = (sizetype) _2606;
+  _2601 = cutoffs.0_1196 + _2605;
+  ivtmp.804_2610 = (unsigned long) _2601;
+  _2599 = (unsigned long) _42;
+  _2597 = (unsigned long) S.121_323;
+  _905 = _2599 + 2;
+  _2595 = _905 - _2597;
+
+  <bb 99> [local count: 479]:
+  # limit.120_2709 = PHI <limit.120_318(98), limit.120_2701(101)>
+  # ivtmp.801_580 = PHI <0(98), ivtmp.801_1815(101)>
+  # ivtmp.804_2803 = PHI <ivtmp.804_2610(98), ivtmp.804_2614(101)>
+  _2600 = (void *) ivtmp.804_2803;
+  _2702 = MEM[(real(kind=8) *)_2600];
+  if (_2702 > limit.120_2709)
+    goto <bb 101>; [50.00%]
+  else
+    goto <bb 100>; [50.00%]
+
+  <bb 100> [local count: 240]:
+
+  <bb 101> [local count: 479]:
+  # limit.120_2701 = PHI <_2702(99), limit.120_2709(100)>
+  ivtmp.801_1815 = ivtmp.801_580 + 1;
+  ivtmp.804_2614 = _2586 + ivtmp.804_2803;
+  if (ivtmp.801_1815 == _2595)
+    goto <bb 89>; [11.00%]
+  else
+    goto <bb 99>; [89.00%]
+
+  <bb 102> [local count: 30]:
+  absX.125_1462 = ABS_EXPR <_154>;
+  if (scale.123_518 < absX.125_1462)
+    goto <bb 103>; [50.00%]
+  else
+    goto <bb 104>; [50.00%]
+
+  <bb 103> [local count: 15]:
+  val.126_1465 = scale.123_518 / _154;
+  _234 = val.126_1465 * val.126_1465;
+  _235 = _234 * val.122_523;
+  val.122_1466 = _235 + 1.0e+0;
+  goto <bb 105>; [100.00%]
+
+  <bb 104> [local count: 15]:
+  val.126_1463 = _154 / scale.123_518;
+  _236 = val.126_1463 * val.126_1463;
+  val.122_1464 = _236 + val.122_523;
+
+  <bb 105> [local count: 59]:
+  # val.122_987 = PHI <val.122_523(97), val.122_1464(104), val.122_1466(103)>
+  # scale.123_989 = PHI <scale.123_518(97), scale.123_518(104), absX.125_1462(103)>
+  _237 = __builtin_sqrt (val.122_987);
+  _238 = _237 * scale.123_989;
+  _239 = limit.120_2280 / _238;
+  _1468 = (integer(kind=4)) _239;
+  M.127_1470 = MIN_EXPR <_1468, _2877>;
+  npointshalved[0] = M.127_1470;
+  if (ubound.12_1197 <= 0)
+    goto <bb 110>; [5.50%]
+  else
+    goto <bb 106>; [94.50%]
+
+  <bb 106> [local count: 56]:
+  _2555 = iftmp.240_1059 * 8;
+  _1867 = (unsigned long) _2555;
+  ivtmp.799_2804 = (unsigned long) cutoffs.0_1196;
+
+  <bb 107> [local count: 522]:
+  # S.129_2177 = PHI <S.129_1472(108), 1(106)>
+  # ivtmp.799_2559 = PHI <ivtmp.799_2556(108), ivtmp.799_2804(106)>
+  _576 = (void *) ivtmp.799_2559;
+  _243 = MEM[(real(kind=8) *)_576];
+  if (_243 >=  -Inf)
+    goto <bb 109>; [5.50%]
+  else
+    goto <bb 108>; [94.50%]
+
+  <bb 108> [local count: 494]:
+  S.129_1472 = S.129_2177 + 1;
+  ivtmp.799_2556 = _1867 + ivtmp.799_2559;
+  if (_42 < S.129_2177)
+    goto <bb 109>; [5.50%]
+  else
+    goto <bb 107>; [94.50%]
+
+  <bb 109> [local count: 47]:
+  # limit.128_1589 = PHI < -Inf(107),  Nan(108)>
+  # S.129_61 = PHI <S.129_2177(107), S.129_1472(108)>
+  if (S.129_61 > ubound.12_1197)
+    goto <bb 110>; [3.00%]
+  else
+    goto <bb 119>; [97.00%]
+
+  <bb 110> [local count: 59]:
+  # limit.128_2178 = PHI <limit.128_2720(122), limit.128_1589(109), -1.79769313486231570814527423731704356798070567525844996599e+308(105)>
+  if (_391 != 0.0)
+    goto <bb 111>; [50.00%]
+  else
+    goto <bb 114>; [50.00%]
+
+  <bb 111> [local count: 30]:
+  absX.133_1272 = ABS_EXPR <_391>;
+  if (absX.133_1272 > 1.0e+0)
+    goto <bb 113>; [50.00%]
+  else
+    goto <bb 112>; [50.00%]
+
+  <bb 112> [local count: 15]:
+  _1145 = _391 * _391;
+  val.130_1096 = _1145 + 0.0;
+  goto <bb 114>; [100.00%]
+
+  <bb 113> [local count: 15]:
+  val.134_1095 = 1.0e+0 / _391;
+  _1094 = val.134_1095 * val.134_1095;
+  _1093 = _1094 * 0.0;
+  val.130_1091 = _1093 + 1.0e+0;
+
+  <bb 114> [local count: 60]:
+  # val.130_1090 = PHI <0.0(110), val.130_1096(112), val.130_1091(113)>
+  # scale.131_1089 = PHI <1.0e+0(110), 1.0e+0(112), absX.133_1272(113)>
+  if (_352 != 0.0)
+    goto <bb 115>; [50.00%]
+  else
+    goto <bb 118>; [50.00%]
+
+  <bb 115> [local count: 30]:
+  absX.133_1010 = ABS_EXPR <_352>;
+  if (absX.133_1010 > scale.131_1089)
+    goto <bb 117>; [50.00%]
+  else
+    goto <bb 116>; [50.00%]
+
+  <bb 116> [local count: 15]:
+  val.134_1009 = _352 / scale.131_1089;
+  _1008 = val.134_1009 * val.134_1009;
+  val.130_1006 = _1008 + val.130_1090;
+  goto <bb 118>; [100.00%]
+
+  <bb 117> [local count: 15]:
+  val.134_1004 = scale.131_1089 / _352;
+  _1003 = val.134_1004 * val.134_1004;
+  _1002 = _1003 * val.130_1090;
+  val.130_1000 = _1002 + 1.0e+0;
+
+  <bb 118> [local count: 60]:
+  # val.130_999 = PHI <val.130_1090(114), val.130_1006(116), val.130_1000(117)>
+  # scale.131_997 = PHI <scale.131_1089(114), scale.131_1089(116), absX.133_1010(117)>
+  if (_164 != 0.0)
+    goto <bb 123>; [50.00%]
+  else
+    goto <bb 126>; [50.00%]
+
+  <bb 119> [local count: 46]:
+  _2577 = S.129_61 + -1;
+  _2574 = iftmp.240_1059 * _2577;
+  _2571 = _2574 * 8;
+  _2570 = (sizetype) _2571;
+  _2569 = cutoffs.0_1196 + _2570;
+  ivtmp.794_2578 = (unsigned long) _2569;
+  _2566 = (unsigned long) _42;
+  _2564 = (unsigned long) S.129_61;
+  _889 = _2566 + 2;
+  _2562 = _889 - _2564;
+
+  <bb 120> [local count: 479]:
+  # limit.128_2728 = PHI <limit.128_1589(119), limit.128_2720(122)>
+  # ivtmp.791_1807 = PHI <0(119), ivtmp.791_2801(122)>
+  # ivtmp.794_2584 = PHI <ivtmp.794_2578(119), ivtmp.794_2582(122)>
+  _2567 = (void *) ivtmp.794_2584;
+  _2721 = MEM[(real(kind=8) *)_2567];
+  if (_2721 > limit.128_2728)
+    goto <bb 122>; [50.00%]
+  else
+    goto <bb 121>; [50.00%]
+
+  <bb 121> [local count: 240]:
+
+  <bb 122> [local count: 479]:
+  # limit.128_2720 = PHI <_2721(120), limit.128_2728(121)>
+  ivtmp.791_2801 = ivtmp.791_1807 + 1;
+  ivtmp.794_2582 = _1867 + ivtmp.794_2584;
+  if (_2562 == ivtmp.791_2801)
+    goto <bb 110>; [11.00%]
+  else
+    goto <bb 120>; [89.00%]
+
+  <bb 123> [local count: 30]:
+  absX.133_1474 = ABS_EXPR <_164>;
+  if (scale.131_997 < absX.133_1474)
+    goto <bb 124>; [50.00%]
+  else
+    goto <bb 125>; [50.00%]
+
+  <bb 124> [local count: 15]:
+  val.134_1477 = scale.131_997 / _164;
+  _251 = val.134_1477 * val.134_1477;
+  _252 = _251 * val.130_999;
+  val.130_1478 = _252 + 1.0e+0;
+  goto <bb 126>; [100.00%]
+
+  <bb 125> [local count: 15]:
+  val.134_1475 = _164 / scale.131_997;
+  _253 = val.134_1475 * val.134_1475;
+  val.130_1476 = _253 + val.130_999;
+
+  <bb 126> [local count: 59]:
+  # val.130_996 = PHI <val.130_999(118), val.130_1476(125), val.130_1478(124)>
+  # scale.131_998 = PHI <scale.131_997(118), scale.131_997(125), absX.133_1474(124)>
+  _254 = __builtin_sqrt (val.130_996);
+  _255 = _254 * scale.131_998;
+  _256 = limit.128_2178 / _255;
+  _1480 = (integer(kind=4)) _256;
+  M.135_1482 = MIN_EXPR <_55, _1480>;
+  npointshalved[1] = M.135_1482;
+  if (ubound.12_1197 <= 0)
+    goto <bb 131>; [5.50%]
+  else
+    goto <bb 127>; [94.50%]
+
+  <bb 127> [local count: 56]:
+  _2536 = iftmp.240_1059 * 8;
+  _2528 = (unsigned long) _2536;
+  ivtmp.789_2527 = (unsigned long) cutoffs.0_1196;
+
+  <bb 128> [local count: 522]:
+  # S.137_1120 = PHI <S.137_1484(129), 1(127)>
+  # ivtmp.789_2538 = PHI <ivtmp.789_2537(129), ivtmp.789_2527(127)>
+  _627 = (void *) ivtmp.789_2538;
+  _260 = MEM[(real(kind=8) *)_627];
+  if (_260 >=  -Inf)
+    goto <bb 130>; [5.50%]
+  else
+    goto <bb 129>; [94.50%]
+
+  <bb 129> [local count: 494]:
+  S.137_1484 = S.137_1120 + 1;
+  ivtmp.789_2537 = _2528 + ivtmp.789_2538;
+  if (_42 < S.137_1120)
+    goto <bb 130>; [5.50%]
+  else
+    goto <bb 128>; [94.50%]
+
+  <bb 130> [local count: 47]:
+  # limit.136_329 = PHI < -Inf(128),  Nan(129)>
+  # S.137_334 = PHI <S.137_1120(128), S.137_1484(129)>
+  if (S.137_334 > ubound.12_1197)
+    goto <bb 131>; [3.00%]
+  else
+    goto <bb 140>; [97.00%]
+
+  <bb 131> [local count: 59]:
+  # limit.136_2122 = PHI <limit.136_2739(143), limit.136_329(130), -1.79769313486231570814527423731704356798070567525844996599e+308(126)>
+  if (_487 != 0.0)
+    goto <bb 132>; [50.00%]
+  else
+    goto <bb 135>; [50.00%]
+
+  <bb 132> [local count: 30]:
+  absX.141_2351 = ABS_EXPR <_487>;
+  if (absX.141_2351 > 1.0e+0)
+    goto <bb 134>; [50.00%]
+  else
+    goto <bb 133>; [50.00%]
+
+  <bb 133> [local count: 15]:
+  _2349 = _487 * _487;
+  val.138_2348 = _2349 + 0.0;
+  goto <bb 135>; [100.00%]
+
+  <bb 134> [local count: 15]:
+  val.142_2347 = 1.0e+0 / _487;
+  _2346 = val.142_2347 * val.142_2347;
+  _2345 = _2346 * 0.0;
+  val.138_2344 = _2345 + 1.0e+0;
+
+  <bb 135> [local count: 60]:
+  # val.138_2343 = PHI <0.0(131), val.138_2348(133), val.138_2344(134)>
+  # scale.139_2342 = PHI <1.0e+0(131), 1.0e+0(133), absX.141_2351(134)>
+  if (_465 != 0.0)
+    goto <bb 136>; [50.00%]
+  else
+    goto <bb 139>; [50.00%]
+
+  <bb 136> [local count: 30]:
+  absX.141_2269 = ABS_EXPR <_465>;
+  if (absX.141_2269 > scale.139_2342)
+    goto <bb 138>; [50.00%]
+  else
+    goto <bb 137>; [50.00%]
+
+  <bb 137> [local count: 15]:
+  val.142_2261 = _465 / scale.139_2342;
+  _2258 = val.142_2261 * val.142_2261;
+  val.138_2172 = _2258 + val.138_2343;
+  goto <bb 139>; [100.00%]
+
+  <bb 138> [local count: 15]:
+  val.142_2169 = scale.139_2342 / _465;
+  _2163 = val.142_2169 * val.142_2169;
+  _2149 = _2163 * val.138_2343;
+  val.138_2144 = _2149 + 1.0e+0;
+
+  <bb 139> [local count: 60]:
+  # val.138_2141 = PHI <val.138_2343(135), val.138_2172(137), val.138_2144(138)>
+  # scale.139_2135 = PHI <scale.139_2342(135), scale.139_2342(137), absX.141_2269(138)>
+  if (_174 != 0.0)
+    goto <bb 144>; [50.00%]
+  else
+    goto <bb 147>; [50.00%]
+
+  <bb 140> [local count: 46]:
+  _1796 = S.137_334 + -1;
+  _2799 = iftmp.240_1059 * _1796;
+  _2554 = _2799 * 8;
+  _2552 = (sizetype) _2554;
+  _2551 = cutoffs.0_1196 + _2552;
+  ivtmp.784_554 = (unsigned long) _2551;
+  _2545 = (unsigned long) _42;
+  _2542 = (unsigned long) S.137_334;
+  _881 = _2545 + 2;
+  _2540 = _881 - _2542;
+
+  <bb 141> [local count: 479]:
+  # limit.136_2747 = PHI <limit.136_329(140), limit.136_2739(143)>
+  # ivtmp.781_2508 = PHI <0(140), ivtmp.781_2507(143)>
+  # ivtmp.784_2496 = PHI <ivtmp.784_554(140), ivtmp.784_2495(143)>
+  _2550 = (void *) ivtmp.784_2496;
+  _2740 = MEM[(real(kind=8) *)_2550];
+  if (_2740 > limit.136_2747)
+    goto <bb 143>; [50.00%]
+  else
+    goto <bb 142>; [50.00%]
+
+  <bb 142> [local count: 240]:
+
+  <bb 143> [local count: 479]:
+  # limit.136_2739 = PHI <_2740(141), limit.136_2747(142)>
+  ivtmp.781_2507 = ivtmp.781_2508 + 1;
+  ivtmp.784_2495 = ivtmp.784_2496 + _2528;
+  if (ivtmp.781_2507 == _2540)
+    goto <bb 131>; [11.00%]
+  else
+    goto <bb 141>; [89.00%]
+
+  <bb 144> [local count: 30]:
+  absX.141_1486 = ABS_EXPR <_174>;
+  if (absX.141_1486 > scale.139_2135)
+    goto <bb 145>; [50.00%]
+  else
+    goto <bb 146>; [50.00%]
+
+  <bb 145> [local count: 15]:
+  val.142_1489 = scale.139_2135 / _174;
+  _267 = val.142_1489 * val.142_1489;
+  _268 = _267 * val.138_2141;
+  val.138_1490 = _268 + 1.0e+0;
+  goto <bb 147>; [100.00%]
+
+  <bb 146> [local count: 15]:
+  val.142_1487 = _174 / scale.139_2135;
+  _269 = val.142_1487 * val.142_1487;
+  val.138_1488 = _269 + val.138_2141;
+
+  <bb 147> [local count: 59]:
+  # val.138_1005 = PHI <val.138_2141(139), val.138_1488(146), val.138_1490(145)>
+  # scale.139_1007 = PHI <scale.139_2135(139), scale.139_2135(146), absX.141_1486(145)>
+  _270 = __builtin_sqrt (val.138_1005);
+  _271 = _270 * scale.139_1007;
+  _272 = limit.136_2122 / _271;
+  _1492 = (integer(kind=4)) _272;
+  M.143_1494 = MIN_EXPR <_1097, _1492>;
+  npointshalved[2] = M.143_1494;
+  dt_parm.144.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.144.common.line = 224;
+  dt_parm.144.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.144.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.144] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.144);
+  _gfortran_transfer_character_write (&dt_parm.144, &"Main Grid Dimensions"[1]{lb: 1 sz: 1}, 20);
+  parm.145.data = &npoints[0];
+  parm.145.offset = -1;
+  parm.145.dtype.elem_len = 4;
+  MEM <unsigned long> [(void *)&parm.145 + 24B] = 1103806595072;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.145 + 32B] = { 4, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.145 + 48B] = { 1, 4 };
+  _gfortran_transfer_array_write (&dt_parm.144, &parm.145, 4, 0);
+  parm.145 ={v} {CLOBBER(eol)};
+  _gfortran_st_write_done (&dt_parm.144);
+  dt_parm.144 ={v} {CLOBBER(eol)};
+  dt_parm.146.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.146.common.line = 225;
+  dt_parm.146.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.146.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.146] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.146);
+  _gfortran_transfer_character_write (&dt_parm.146, &" ->"[1]{lb: 1 sz: 1}, 3);
+  size.148_2371 = _51 * _2876;
+  size.148_2360 = _1081 * size.148_2371;
+  size.148_2112 = _128 * size.148_2360;
+  _276 = (integer(kind=4)) size.148_2112;
+  D.4975 = _276;
+  _gfortran_transfer_integer_write (&dt_parm.146, &D.4975, 4);
+  D.4975 ={v} {CLOBBER(eol)};
+  _gfortran_transfer_character_write (&dt_parm.146, &"elements,"[1]{lb: 1 sz: 1}, 9);
+  _277 = MAX_EXPR <_7, -1>;
+  _278 = _277 + 1;
+  _279 = MAX_EXPR <_10, -1>;
+  _280 = _279 + 1;
+  _1213 = _278 * _280;
+  _281 = MAX_EXPR <_13, -1>;
+  _282 = _281 + 1;
+  _1214 = _282 * _1213;
+  _283 = MAX_EXPR <_16, -1>;
+  _284 = _283 + 1;
+  _1215 = _284 * _1214;
+  bytes.152_1539 = _1215 * 8;
+  _285 = (real(kind=4)) bytes.152_1539;
+  _286 = _285 / 1.0e+3;
+  _287 = _286 / 1.0e+3;
+  D.4991 = _287;
+  _gfortran_transfer_real_write (&dt_parm.146, &D.4991, 4);
+  D.4991 ={v} {CLOBBER(eol)};
+  _gfortran_transfer_character_write (&dt_parm.146, &"MB"[1]{lb: 1 sz: 1}, 2);
+  _gfortran_st_write_done (&dt_parm.146);
+  dt_parm.146 ={v} {CLOBBER(eol)};
+  tcacheinitialised.290_288 = tcacheinitialised;
+  if (tcacheinitialised.290_288 != 0)
+    goto <bb 149>; [33.00%]
+  else
+    goto <bb 148>; [67.00%]
+
+  <bb 148> [local count: 40]:
+  val.154_2205 = M.127_1470 * M.135_1482;
+  val.154_2211 = M.143_1494 * val.154_2205;
+  _291 = val.154_2211 * 64;
+  _292 = (real(kind=8)) _291;
+  val.156_2187 = _2895 * _2931;
+  val.156_2193 = _146 * val.156_2187;
+  _295 = _292 * 8.0e+0;
+  _296 = (real(kind=8)) val.156_2193;
+  _297 = _295 * _296;
+  _298 = (real(kind=8)) cacheind_525;
+  _299 = _297 * _298;
+  _300 = _299 * 1.25e-1;
+  _301 = _300 * 9.765625e-4;
+  _302 = _301 * 9.765625e-4;
+  expectedsizemb = _302;
+  dt_parm.158.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.158.common.line = 240;
+  dt_parm.158.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.158.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.158] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.158);
+  _gfortran_transfer_character_write (&dt_parm.158, &"Allocating Cache Grid of dimensions"[1]{lb: 1 sz: 1}, 35);
+  ivtmp.779_2516 = (unsigned long) &npointshalved;
+  _2510 = ivtmp.779_2516 + 12;
+  goto <bb 150>; [100.00%]
+
+  <bb 149> [local count: 20]:
+  dt_parm.153.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.153.common.line = 230;
+  dt_parm.153.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.153.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.153] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.153);
+  _gfortran_transfer_character_write (&dt_parm.153, &"Reusing saved wavefunctions"[1]{lb: 1 sz: 1}, 27);
+  _gfortran_st_write_done (&dt_parm.153);
+  dt_parm.153 ={v} {CLOBBER(eol)};
+  goto <bb 283>; [100.00%]
+
+  <bb 150> [local count: 119]:
+  # ivtmp.779_2524 = PHI <ivtmp.779_2523(150), ivtmp.779_2516(148)>
+  _2512 = (void *) ivtmp.779_2524;
+  _304 = MEM[(integer(kind=4) *)_2512];
+  _305 = _304 * 2;
+  D.5003 = _305;
+  _gfortran_transfer_integer_write (&dt_parm.158, &D.5003, 4);
+  D.5003 ={v} {CLOBBER(eol)};
+  ivtmp.779_2523 = ivtmp.779_2524 + 4;
+  if (_2510 == ivtmp.779_2523)
+    goto <bb 151>; [25.00%]
+  else
+    goto <bb 150>; [75.00%]
+
+  <bb 151> [local count: 40]:
+  _gfortran_st_write_done (&dt_parm.158);
+  dt_parm.158 ={v} {CLOBBER(eol)};
+  dt_parm.160.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.160.common.line = 241;
+  dt_parm.160.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.160.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.160] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.160);
+  _gfortran_transfer_character_write (&dt_parm.160, &"expected Cache Allocation Size"[1]{lb: 1 sz: 1}, 30);
+  _gfortran_transfer_real_write (&dt_parm.160, &expectedsizemb, 8);
+  _gfortran_transfer_character_write (&dt_parm.160, &"MB"[1]{lb: 1 sz: 1}, 2);
+  _gfortran_st_write_done (&dt_parm.160);
+  dt_parm.160 ={v} {CLOBBER(eol)};
+  if (_302 > 8.0e+3)
+    goto <bb 152>; [0.04%]
+  else
+    goto <bb 153>; [99.96%]
+
+  <bb 152> [local count: 0]:
+  _gfortran_stop_string (&"Expected cache array size exceeds 8GB"[1]{lb: 1 sz: 1}, 37, 0);
+
+  <bb 153> [local count: 40]:
+  wavefunctioncache.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&wavefunctioncache + 24B] = 3328599654400;
+  _1581 = (integer(kind=8)) M.127_1470;
+  _306 = -M.127_1470;
+  _307 = (integer(kind=8)) _306;
+  _308 = _1581 - _307;
+  _309 = MAX_EXPR <_308, -1>;
+  _1582 = _309 + 1;
+  _310 = _2931 + -1;
+  _1583 = (integer(kind=8)) _310;
+  _311 = MAX_EXPR <_1583, -1>;
+  _1584 = _311 + 1;
+  _1586 = _1582 * _1584;
+  _1587 = (integer(kind=8)) M.135_1482;
+  _312 = -M.135_1482;
+  _313 = (integer(kind=8)) _312;
+  _314 = _1587 - _313;
+  _315 = MAX_EXPR <_314, -1>;
+  _1588 = _315 + 1;
+  if (_1588 == 0)
+    goto <bb 155>; [1.00%]
+  else
+    goto <bb 154>; [99.00%]
+
+  <bb 154> [local count: 39]:
+  _320 = 9223372036854775807 / _1588;
+  _2212 = _320 < _1586;
+  _2180 = (integer(kind=4)) _2212;
+
+  <bb 155> [local count: 40]:
+  # iftmp.298_1074 = PHI <0(153), _2180(154)>
+  _1590 = _1586 * _1588;
+  _325 = _2895 + -1;
+  _1591 = (integer(kind=8)) _325;
+  _326 = MAX_EXPR <_1591, -1>;
+  _1592 = _326 + 1;
+  if (_1592 == 0)
+    goto <bb 157>; [1.00%]
+  else
+    goto <bb 156>; [99.00%]
+
+  <bb 156> [local count: 39]:
+  _331 = 9223372036854775807 / _1592;
+  _2192 = _331 < _1590;
+  _2209 = (integer(kind=4)) _2192;
+
+  <bb 157> [local count: 40]:
+  # iftmp.300_1075 = PHI <0(155), _2209(156)>
+  _1593 = iftmp.298_1074 + iftmp.300_1075;
+  _1594 = _1590 * _1592;
+  _1595 = (integer(kind=8)) M.143_1494;
+  _336 = -M.143_1494;
+  _337 = (integer(kind=8)) _336;
+  _338 = _1595 - _337;
+  _339 = MAX_EXPR <_338, -1>;
+  _1596 = _339 + 1;
+  if (_1596 == 0)
+    goto <bb 159>; [1.00%]
+  else
+    goto <bb 158>; [99.00%]
+
+  <bb 158> [local count: 39]:
+  _344 = 9223372036854775807 / _1596;
+  _522 = _344 < _1594;
+  _2206 = (integer(kind=4)) _522;
+
+  <bb 159> [local count: 40]:
+  # iftmp.302_1076 = PHI <0(157), _2206(158)>
+  _1597 = iftmp.302_1076 + _1593;
+  _1598 = _1594 * _1596;
+  _349 = _146 + -1;
+  _1599 = (integer(kind=8)) _349;
+  _350 = MAX_EXPR <_1599, -1>;
+  _1600 = _350 + 1;
+  if (_1600 == 0)
+    goto <bb 161>; [1.00%]
+  else
+    goto <bb 160>; [99.00%]
+
+  <bb 160> [local count: 39]:
+  _355 = 9223372036854775807 / _1600;
+  _1728 = _355 < _1598;
+  _520 = (integer(kind=4)) _1728;
+
+  <bb 161> [local count: 40]:
+  # iftmp.304_1077 = PHI <0(159), _520(160)>
+  _1601 = iftmp.304_1077 + _1597;
+  _1602 = _1598 * _1600;
+  _1603 = (integer(kind=8)) cacheind_525;
+  _1604 = MAX_EXPR <_1603, 0>;
+  _3009 = _313 * _1586;
+  _3010 = _1581 - _3009;
+  _3011 = _337 * _1594;
+  _3012 = _3010 - _3011;
+  _3013 = _1602 * _1604;
+  _3014 = _3012 - _1602;
+  _3015 = _3013 > 2305843009213693951;
+  _3016 = (integer(kind=4)) _3015;
+  if (_1603 <= 0)
+    goto <bb 322>; [1.00%]
+  else
+    goto <bb 162>; [99.00%]
+
+  <bb 162> [local count: 40]:
+  _364 = 9223372036854775807 / _1604;
+  _111 = _364 < _1602;
+  _2116 = (integer(kind=4)) _111;
+  _1605 = _1601 + _2116;
+  _1607 = _1605 + _3016;
+  _379 = _1583 < 0;
+  _383 = _1591 < 0;
+  _2300 = _308 | _314;
+  _2297 = _338 | _2300;
+  _2296 = _2297 < 0;
+  _387 = _1599 < 0;
+  _785 = _379 | _383;
+  _786 = _387 | _785;
+  _1609 = _786 | _2296;
+  if (_1609 != 0)
+    goto <bb 164>; [50.00%]
+  else
+    goto <bb 163>; [50.00%]
+
+  <bb 163> [local count: 20]:
+  _369 = (unsigned long) _3013;
+  size.161_1610 = _369 * 8;
+
+  <bb 164> [local count: 40]:
+  # size.161_1016 = PHI <0(162), size.161_1610(163), 0(322)>
+  # _1104 = PHI <_1607(162), _1607(163), _1129(322)>
+  _389 = wavefunctioncache.data;
+  if (_1104 != 0)
+    goto <bb 32>; [0.04%]
+  else
+    goto <bb 165>; [99.96%]
+
+  <bb 165> [local count: 40]:
+  if (_389 != 0B)
+    goto <bb 166>; [0.04%]
+  else
+    goto <bb 167>; [99.96%]
+
+  <bb 166> [local count: 0]:
+  _gfortran_runtime_error_at (&"At line 247 of file /home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1}, &"Attempting to allocate already allocated variable \'%s\'"[1]{lb: 1 sz: 1}, &"wavefunctioncache"[1]{lb: 1 sz: 1});
+
+  <bb 167> [local count: 40]:
+  _398 = MAX_EXPR <size.161_1016, 1>;
+  _399 = __builtin_malloc (_398);
+  wavefunctioncache.data = _399;
+  if (_399 == 0B)
+    goto <bb 168>; [0.04%]
+  else
+    goto <bb 169>; [99.96%]
+
+  <bb 168> [local count: 0]:
+  _gfortran_os_error_at (&"In file \'/home/merlin/tmpfs/dftbuild/app/waveplot/molorb2.f90\', around line 254"[1]{lb: 1 sz: 1}, &"Error allocating %lu bytes"[1]{lb: 1 sz: 1}, size.161_1016);
+
+  <bb 169> [local count: 40]:
+  wavefunctioncache.dim[0].lbound = _307;
+  wavefunctioncache.dim[0].ubound = _1581;
+  wavefunctioncache.dim[1].lbound = 0;
+  wavefunctioncache.dim[1].ubound = _1583;
+  wavefunctioncache.dim[1].stride = _1582;
+  wavefunctioncache.dim[2].lbound = _313;
+  wavefunctioncache.dim[2].ubound = _1587;
+  wavefunctioncache.dim[2].stride = _1586;
+  wavefunctioncache.dim[3].lbound = 0;
+  wavefunctioncache.dim[3].ubound = _1591;
+  wavefunctioncache.dim[3].stride = _1590;
+  wavefunctioncache.dim[4].lbound = _337;
+  wavefunctioncache.dim[4].ubound = _1595;
+  wavefunctioncache.dim[4].stride = _1594;
+  wavefunctioncache.dim[5].lbound = 0;
+  wavefunctioncache.dim[5].ubound = _1599;
+  wavefunctioncache.dim[5].stride = _1598;
+  wavefunctioncache.dim[6].lbound = 1;
+  wavefunctioncache.dim[6].ubound = _1603;
+  wavefunctioncache.dim[6].stride = _1602;
+  wavefunctioncache.offset = _3014;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&wavefunctioncache + 32B] = { 8, 1 };
+  if (_1603 <= 0)
+    goto <bb 170>; [11.00%]
+  else
+    goto <bb 171>; [89.00%]
+
+  <bb 170> [local count: 40]:
+  dt_parm.171.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.171.common.line = 256;
+  dt_parm.171.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.171.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.171] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.171);
+  _gfortran_transfer_character_write (&dt_parm.171, &" ->"[1]{lb: 1 sz: 1}, 3);
+  _2453 = wavefunctioncache.dim[0].ubound;
+  _2452 = wavefunctioncache.dim[0].lbound;
+  _2451 = _2453 - _2452;
+  extent.173_2450 = _2451 + 1;
+  _2449 = MAX_EXPR <extent.173_2450, 0>;
+  _2442 = wavefunctioncache.dim[1].ubound;
+  _2441 = wavefunctioncache.dim[1].lbound;
+  _2440 = _2442 - _2441;
+  extent.173_2439 = _2440 + 1;
+  _2438 = MAX_EXPR <extent.173_2439, 0>;
+  size.172_2437 = _2438 * _2449;
+  _2431 = wavefunctioncache.dim[2].ubound;
+  _2430 = wavefunctioncache.dim[2].lbound;
+  _2429 = _2431 - _2430;
+  extent.173_2428 = _2429 + 1;
+  _2427 = MAX_EXPR <extent.173_2428, 0>;
+  size.172_2426 = _2427 * size.172_2437;
+  _2420 = wavefunctioncache.dim[3].ubound;
+  _2419 = wavefunctioncache.dim[3].lbound;
+  _2418 = _2420 - _2419;
+  extent.173_2417 = _2418 + 1;
+  _2416 = MAX_EXPR <extent.173_2417, 0>;
+  size.172_2415 = _2416 * size.172_2426;
+  _2409 = wavefunctioncache.dim[4].ubound;
+  _2408 = wavefunctioncache.dim[4].lbound;
+  _2407 = _2409 - _2408;
+  extent.173_2406 = _2407 + 1;
+  _2405 = MAX_EXPR <extent.173_2406, 0>;
+  size.172_2404 = _2405 * size.172_2415;
+  _2398 = wavefunctioncache.dim[5].ubound;
+  _2397 = wavefunctioncache.dim[5].lbound;
+  _2396 = _2398 - _2397;
+  extent.173_2395 = _2396 + 1;
+  _2394 = MAX_EXPR <extent.173_2395, 0>;
+  size.172_2393 = _2394 * size.172_2404;
+  _411 = wavefunctioncache.dim[6].ubound;
+  _412 = wavefunctioncache.dim[6].lbound;
+  _413 = _411 - _412;
+  extent.173_1966 = _413 + 1;
+  _1255 = MAX_EXPR <extent.173_1966, 0>;
+  size.172_1967 = _1255 * size.172_2393;
+  _414 = (integer(kind=4)) size.172_1967;
+  D.5084 = _414;
+  _gfortran_transfer_integer_write (&dt_parm.171, &D.5084, 4);
+  D.5084 ={v} {CLOBBER(eol)};
+  _gfortran_transfer_character_write (&dt_parm.171, &"elements,"[1]{lb: 1 sz: 1}, 9);
+  _415 = wavefunctioncache.dim[0].ubound;
+  _416 = wavefunctioncache.dim[0].lbound;
+  _417 = _415 - _416;
+  _418 = MAX_EXPR <_417, -1>;
+  _419 = _418 + 1;
+  _420 = wavefunctioncache.dim[1].ubound;
+  _421 = wavefunctioncache.dim[1].lbound;
+  _422 = _420 - _421;
+  _423 = MAX_EXPR <_422, -1>;
+  _424 = _423 + 1;
+  _1219 = _419 * _424;
+  _425 = wavefunctioncache.dim[2].ubound;
+  _426 = wavefunctioncache.dim[2].lbound;
+  _427 = _425 - _426;
+  _428 = MAX_EXPR <_427, -1>;
+  _429 = _428 + 1;
+  _1220 = _429 * _1219;
+  _430 = wavefunctioncache.dim[3].ubound;
+  _431 = wavefunctioncache.dim[3].lbound;
+  _432 = _430 - _431;
+  _433 = MAX_EXPR <_432, -1>;
+  _434 = _433 + 1;
+  _1221 = _434 * _1220;
+  _435 = wavefunctioncache.dim[4].ubound;
+  _436 = wavefunctioncache.dim[4].lbound;
+  _437 = _435 - _436;
+  _438 = MAX_EXPR <_437, -1>;
+  _439 = _438 + 1;
+  _1229 = _439 * _1221;
+  _440 = wavefunctioncache.dim[5].ubound;
+  _441 = wavefunctioncache.dim[5].lbound;
+  _442 = _440 - _441;
+  _443 = MAX_EXPR <_442, -1>;
+  _444 = _443 + 1;
+  _1230 = _444 * _1229;
+  _445 = wavefunctioncache.dim[6].ubound;
+  _446 = wavefunctioncache.dim[6].lbound;
+  _447 = _445 - _446;
+  _448 = MAX_EXPR <_447, -1>;
+  _449 = _448 + 1;
+  _1231 = _449 * _1230;
+  bytes.175_1662 = _1231 * 8;
+  _450 = (real(kind=4)) bytes.175_1662;
+  _451 = _450 / 1.0e+3;
+  _452 = _451 / 1.0e+3;
+  D.5086 = _452;
+  _gfortran_transfer_real_write (&dt_parm.171, &D.5086, 4);
+  D.5086 ={v} {CLOBBER(eol)};
+  _gfortran_transfer_character_write (&dt_parm.171, &"MB"[1]{lb: 1 sz: 1}, 2);
+  _gfortran_st_write_done (&dt_parm.171);
+  dt_parm.171 ={v} {CLOBBER(eol)};
+  chunkedindices.dtype.elem_len = 4;
+  MEM <unsigned long> [(void *)&chunkedindices + 24B] = 1112396529664;
+  _453 = *natom_1673(D);
+  _454 = MAX_EXPR <_453, 0>;
+  _1674 = (integer(kind=8)) _454;
+  _1675 = _1674 * 3;
+  _455 = *ncell_1676(D);
+  _456 = MAX_EXPR <_455, 0>;
+  _1677 = (integer(kind=8)) _456;
+  if (_455 <= 0)
+    goto <bb 193>; [1.00%]
+  else
+    goto <bb 194>; [99.00%]
+
+  <bb 171> [local count: 36]:
+  _2458 = (unsigned long) _1602;
+  ivtmp.771_2457 = (unsigned long) _3012;
+  _1195 = (unsigned int) cacheind_525;
+  _2492 = (unsigned long) _336;
+  _2485 = (unsigned long) _1594;
+  _2484 = _2485 * _2492;
+  _979 = (unsigned long) _312;
+  _2260 = (unsigned long) _1586;
+  _615 = _979 * _2260;
+  _2718 = (unsigned long) _1582;
+  _2732 = _2718 * 8;
+  _1156 = (unsigned long) _306;
+  _180 = _1156 * 8;
+  _181 = (unsigned long) _399;
+  _2716 = _180 + _181;
+  _2763 = (unsigned long) M.127_1470;
+  _1133 = _2763 + 1;
+  _2760 = _1133 - _1156;
+  _2759 = _2760 * 8;
+
+  <bb 172> [local count: 66]:
+  # ivtmp.766_2476 = PHI <ivtmp.766_2475(173), 0(171)>
+  # ivtmp.771_2473 = PHI <ivtmp.771_2466(173), ivtmp.771_2457(171)>
+  if (_349 < 0)
+    goto <bb 173>; [33.08%]
+  else
+    goto <bb 174>; [66.92%]
+
+  <bb 173> [local count: 35]:
+  ivtmp.766_2475 = ivtmp.766_2476 + 1;
+  ivtmp.771_2466 = _2458 + ivtmp.771_2473;
+  if (_1195 == ivtmp.766_2475)
+    goto <bb 170>; [11.00%]
+  else
+    goto <bb 172>; [89.00%]
+
+  <bb 174> [local count: 285]:
+  # ivtmp.771_402 = PHI <ivtmp.771_2473(172), ivtmp.771_890(177)>
+  # ivtmp.766_392 = PHI <ivtmp.766_2476(172), ivtmp.766_3050(177)>
+  _871 = (unsigned long) _1598;
+  ivtmp.765_2494 = ivtmp.771_402 + _2484;
+  _2477 = (unsigned int) _146;
+
+  <bb 175> [local count: 2590]:
+  # ivtmp.762_669 = PHI <ivtmp.762_1929(176), 0(174)>
+  # ivtmp.765_2815 = PHI <ivtmp.765_864(176), ivtmp.765_2494(174)>
+  if (_337 > _1595)
+    goto <bb 176>; [11.00%]
+  else
+    goto <bb 178>; [89.00%]
+
+  <bb 176> [local count: 2590]:
+  ivtmp.762_1929 = ivtmp.762_669 + 1;
+  ivtmp.765_864 = _871 + ivtmp.765_2815;
+  if (ivtmp.762_1929 == _2477)
+    goto <bb 177>; [11.00%]
+  else
+    goto <bb 175>; [89.00%]
+
+  <bb 177> [local count: 285]:
+  ivtmp.766_3050 = ivtmp.766_392 + 1;
+  ivtmp.771_890 = ivtmp.771_402 + _2458;
+  if (_1195 == ivtmp.766_3050)
+    goto <bb 170>; [11.00%]
+  else
+    goto <bb 174>; [89.00%]
+
+  <bb 178> [local count: 2305]:
+  _1001 = _337 + 1;
+  ivtmp.758_2686 = (unsigned long) _1001;
+  _225 = (unsigned long) M.143_1494;
+  _616 = _225 + 2;
+
+  <bb 179> [local count: 4356]:
+  # ivtmp.758_2662 = PHI <ivtmp.758_2698(180), ivtmp.758_2686(178)>
+  # ivtmp.761_1485 = PHI <ivtmp.761_1011(180), ivtmp.765_2815(178)>
+  if (_325 < 0)
+    goto <bb 180>; [33.08%]
+  else
+    goto <bb 181>; [66.92%]
+
+  <bb 180> [local count: 2305]:
+  ivtmp.758_2698 = ivtmp.758_2662 + 1;
+  ivtmp.761_1011 = ivtmp.761_1485 + _2485;
+  if (_616 == ivtmp.758_2698)
+    goto <bb 176>; [11.00%]
+  else
+    goto <bb 179>; [89.00%]
+
+  <bb 181> [local count: 18650]:
+  # ivtmp.761_3052 = PHI <ivtmp.761_1485(179), ivtmp.761_2889(184)>
+  # ivtmp.758_380 = PHI <ivtmp.758_2662(179), ivtmp.758_632(184)>
+  _226 = (unsigned long) _1590;
+  ivtmp.755_1461 = _615 + ivtmp.761_3052;
+  _2674 = (unsigned int) _2895;
+
+  <bb 182> [local count: 169547]:
+  # ivtmp.752_2812 = PHI <ivtmp.752_650(183), 0(181)>
+  # ivtmp.755_1919 = PHI <ivtmp.755_2811(183), ivtmp.755_1461(181)>
+  if (_313 > _1587)
+    goto <bb 183>; [11.00%]
+  else
+    goto <bb 185>; [89.00%]
+
+  <bb 183> [local count: 169547]:
+  ivtmp.752_650 = ivtmp.752_2812 + 1;
+  ivtmp.755_2811 = _226 + ivtmp.755_1919;
+  if (ivtmp.752_650 == _2674)
+    goto <bb 184>; [11.00%]
+  else
+    goto <bb 182>; [89.00%]
+
+  <bb 184> [local count: 18650]:
+  ivtmp.758_632 = ivtmp.758_380 + 1;
+  ivtmp.761_2889 = _2485 + ivtmp.761_3052;
+  if (_616 == ivtmp.758_632)
+    goto <bb 176>; [11.00%]
+  else
+    goto <bb 181>; [89.00%]
+
+  <bb 185> [local count: 150897]:
+  _2810 = _313 + 1;
+  ivtmp.748_622 = (unsigned long) _2810;
+  _2243 = (unsigned long) M.135_1482;
+  _1437 = _2243 + 2;
+
+  <bb 186> [local count: 285194]:
+  # ivtmp.748_1266 = PHI <ivtmp.748_2645(187), ivtmp.748_622(185)>
+  # ivtmp.751_637 = PHI <ivtmp.751_641(187), ivtmp.755_1919(185)>
+  if (_310 < 0)
+    goto <bb 187>; [33.08%]
+  else
+    goto <bb 188>; [66.92%]
+
+  <bb 187> [local count: 150897]:
+  ivtmp.748_2645 = ivtmp.748_1266 + 1;
+  ivtmp.751_641 = ivtmp.751_637 + _2260;
+  if (_1437 == ivtmp.748_2645)
+    goto <bb 183>; [11.00%]
+  else
+    goto <bb 186>; [89.00%]
+
+  <bb 188> [local count: 1220893]:
+  # ivtmp.751_1317 = PHI <ivtmp.751_637(186), ivtmp.751_1635(191)>
+  # ivtmp.748_1327 = PHI <ivtmp.748_1266(186), ivtmp.748_1354(191)>
+  _2717 = ivtmp.751_1317 * 8;
+  _1863 = _2716 + _2717;
+  _629 = (unsigned int) _2931;
+
+  <bb 189> [local count: 11099031]:
+  # ivtmp.742_988 = PHI <ivtmp.742_990(190), 0(188)>
+  # ivtmp.745_991 = PHI <ivtmp.745_993(190), _1863(188)>
+  if (_307 > _1581)
+    goto <bb 190>; [11.00%]
+  else
+    goto <bb 192>; [89.00%]
+
+  <bb 190> [local count: 11099032]:
+  ivtmp.742_990 = ivtmp.742_988 + 1;
+  ivtmp.745_993 = ivtmp.745_991 + _2732;
+  if (_629 == ivtmp.742_990)
+    goto <bb 191>; [11.00%]
+  else
+    goto <bb 189>; [89.00%]
+
+  <bb 191> [local count: 1220894]:
+  ivtmp.748_1354 = ivtmp.748_1327 + 1;
+  ivtmp.751_1635 = ivtmp.751_1317 + _2260;
+  if (ivtmp.748_1354 == _1437)
+    goto <bb 183>; [11.00%]
+  else
+    goto <bb 188>; [89.00%]
+
+  <bb 192> [local count: 9878138]:
+  _2755 = (real(kind=8) *) ivtmp.745_991;
+  __builtin_memset (_2755, 0, _2759);
+  goto <bb 190>; [100.00%]
+
+  <bb 193> [local count: 0]:
+  _947 = -4 - _1675;
+  pretmp_3008 = chunkedindices.data;
+  goto <bb 197>; [100.00%]
+
+  <bb 194> [local count: 40]:
+  _461 = 9223372036854775807 / _1677;
+  _1263 = _461 < _1675;
+  _1072 = (integer(kind=4)) _1263;
+  _1679 = _1675 * _1677;
+  _1073 = _1679 > 4611686018427387903;
+  _2118 = (integer(kind=4)) _1073;
+  _1680 = _1072 + _2118;
+  _1681 = -4 - _1675;
+  if (_453 <= 0)
+    goto <bb 196>; [50.00%]
+  else
+    goto <bb 195>; [50.00%]
+
+  <bb 195> [local count: 20]:
+  _466 = (unsigned long) _1679;
+  size.176_1683 = _466 * 4;
+
+  <bb 196> [local count: 40]:
+  # size.176_1026 = PHI <0(194), size.176_1683(195)>
+  # _335 = PHI <_123(194), tcacheinitialised.290_288(195)>
+  _473 = chunkedindices.data;
+  if (_1680 != 0)
+    goto <bb 32>; [0.00%]
+  else
+    goto <bb 197>; [100.00%]
+
+  <bb 197> [local count: 40]:
+  # _1018 = PHI <_473(196), pretmp_3008(193)>
+  # size.176_1019 = PHI <size.176_1026(196), 0(193)>
+  # _343 = PHI <_1681(196), _947(193)>
+  # _333 = PHI <_335(196), _123(193)>
+  if (_1018 != 0B)
+    goto <bb 198>; [0.04%]
+  else
+    goto <bb 199>; [99.96%]
+
+  <bb 198> [local count: 0]:
+  _gfortran_runtime_error_at (&"At line 260 of file /home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1}, &"Attempting to allocate already allocated variable \'%s\'"[1]{lb: 1 sz: 1}, &"chunkedindices"[1]{lb: 1 sz: 1});
+
+  <bb 199> [local count: 40]:
+  _482 = MAX_EXPR <size.176_1019, 1>;
+  _483 = __builtin_malloc (_482);
+  chunkedindices.data = _483;
+  if (_483 == 0B)
+    goto <bb 200>; [0.04%]
+  else
+    goto <bb 201>; [99.96%]
+
+  <bb 200> [local count: 0]:
+  _gfortran_os_error_at (&"In file \'/home/merlin/tmpfs/dftbuild/app/waveplot/molorb2.f90\', around line 261"[1]{lb: 1 sz: 1}, &"Error allocating %lu bytes"[1]{lb: 1 sz: 1}, size.176_1019);
+
+  <bb 201> [local count: 40]:
+  _488 = (integer(kind=8)) _453;
+  chunkedindices.dim[1].ubound = _488;
+  chunkedindices.dim[2].lbound = 1;
+  _489 = (integer(kind=8)) _455;
+  chunkedindices.dim[2].ubound = _489;
+  chunkedindices.dim[2].stride = _1675;
+  chunkedindices.offset = _343;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&chunkedindices + 32B] = { 4, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&chunkedindices + 48B] = { 1, 3 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&chunkedindices + 64B] = { 3, 1 };
+  sliceindicesmain.dtype.elem_len = 4;
+  MEM <unsigned long> [(void *)&sliceindicesmain + 24B] = 1116691496960;
+  _1701 = _1674 * 6;
+  pretmp_3006 = sliceindicesmain.data;
+  _3007 = -10 - _1701;
+  if (_455 <= 0)
+    goto <bb 205>; [1.00%]
+  else
+    goto <bb 202>; [99.00%]
+
+  <bb 202> [local count: 40]:
+  _490 = 9223372036854775807 / _1677;
+  _2198 = _490 < _1701;
+  _1147 = (integer(kind=4)) _2198;
+  _1703 = _1677 * _1701;
+  _2186 = _1703 > 4611686018427387903;
+  _2210 = (integer(kind=4)) _2186;
+  _1704 = _1147 + _2210;
+  if (_333 != 0)
+    goto <bb 204>; [50.00%]
+  else
+    goto <bb 203>; [50.00%]
+
+  <bb 203> [local count: 20]:
+  _495 = (unsigned long) _1703;
+  size.179_1706 = _495 * 4;
+
+  <bb 204> [local count: 40]:
+  # size.179_1027 = PHI <0(202), size.179_1706(203)>
+  if (_1704 != 0)
+    goto <bb 32>; [0.00%]
+  else
+    goto <bb 205>; [100.00%]
+
+  <bb 205> [local count: 40]:
+  # size.179_1102 = PHI <size.179_1027(204), 0(201)>
+  if (pretmp_3006 != 0B)
+    goto <bb 206>; [0.04%]
+  else
+    goto <bb 207>; [99.96%]
+
+  <bb 206> [local count: 0]:
+  _gfortran_runtime_error_at (&"At line 261 of file /home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1}, &"Attempting to allocate already allocated variable \'%s\'"[1]{lb: 1 sz: 1}, &"sliceindicesmain"[1]{lb: 1 sz: 1});
+
+  <bb 207> [local count: 39]:
+  _509 = MAX_EXPR <size.179_1102, 1>;
+  _510 = __builtin_malloc (_509);
+  sliceindicesmain.data = _510;
+  if (_510 == 0B)
+    goto <bb 208>; [0.04%]
+  else
+    goto <bb 209>; [99.96%]
+
+  <bb 208> [local count: 0]:
+  _gfortran_os_error_at (&"In file \'/home/merlin/tmpfs/dftbuild/app/waveplot/molorb2.f90\', around line 262"[1]{lb: 1 sz: 1}, &"Error allocating %lu bytes"[1]{lb: 1 sz: 1}, size.179_1102);
+
+  <bb 209> [local count: 39]:
+  sliceindicesmain.dim[2].lbound = 1;
+  sliceindicesmain.dim[2].ubound = _488;
+  sliceindicesmain.dim[3].lbound = 1;
+  sliceindicesmain.dim[3].ubound = _489;
+  sliceindicesmain.dim[3].stride = _1701;
+  sliceindicesmain.offset = _3007;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicesmain + 32B] = { 4, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicesmain + 48B] = { 1, 3 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicesmain + 64B] = { 3, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicesmain + 80B] = { 2, 6 };
+  sliceindicescache.dtype.elem_len = 4;
+  MEM <unsigned long> [(void *)&sliceindicescache + 24B] = 1116691496960;
+  if (_455 <= 0)
+    goto <bb 211>; [1.00%]
+  else
+    goto <bb 210>; [99.00%]
+
+  <bb 210> [local count: 39]:
+  _515 = 9223372036854775807 / _1677;
+  if (_515 < _1701)
+    goto <bb 32>; [0.00%]
+  else
+    goto <bb 211>; [100.00%]
+
+  <bb 211> [local count: 39]:
+  _2219 = sliceindicescache.data;
+  if (_2219 != 0B)
+    goto <bb 212>; [0.04%]
+  else
+    goto <bb 213>; [99.96%]
+
+  <bb 212> [local count: 0]:
+  _gfortran_runtime_error_at (&"At line 262 of file /home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1}, &"Attempting to allocate already allocated variable \'%s\'"[1]{lb: 1 sz: 1}, &"sliceindicescache"[1]{lb: 1 sz: 1});
+
+  <bb 213> [local count: 39]:
+  _529 = __builtin_malloc (_509);
+  sliceindicescache.data = _529;
+  if (_529 == 0B)
+    goto <bb 214>; [0.04%]
+  else
+    goto <bb 215>; [99.96%]
+
+  <bb 214> [local count: 0]:
+  _gfortran_os_error_at (&"In file \'/home/merlin/tmpfs/dftbuild/app/waveplot/molorb2.f90\', around line 263"[1]{lb: 1 sz: 1}, &"Error allocating %lu bytes"[1]{lb: 1 sz: 1}, size.179_1102);
+
+  <bb 215> [local count: 39]:
+  sliceindicescache.dim[2].lbound = 1;
+  sliceindicescache.dim[2].ubound = _488;
+  sliceindicescache.dim[3].lbound = 1;
+  sliceindicescache.dim[3].ubound = _489;
+  sliceindicescache.dim[3].stride = _1701;
+  sliceindicescache.offset = _3007;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicescache + 32B] = { 4, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicescache + 48B] = { 1, 3 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicescache + 64B] = { 3, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&sliceindicescache + 80B] = { 2, 6 };
+  dt_parm.185.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.185.common.line = 264;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.185] = { 128, 6 };
+  _gfortran_st_write (&dt_parm.185);
+  _gfortran_transfer_character_write (&dt_parm.185, &"Aligning Arrays..."[1]{lb: 1 sz: 1}, 18);
+  _gfortran_st_write_done (&dt_parm.185);
+  dt_parm.185 ={v} {CLOBBER(eol)};
+  if (_455 <= 0)
+    goto <bb 216>; [11.00%]
+  else
+    goto <bb 217>; [89.00%]
+
+  <bb 216> [local count: 39]:
+  dt_parm.196.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.196.common.line = 292;
+  dt_parm.196.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.196.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.196] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.196);
+  _gfortran_transfer_character_write (&dt_parm.196, &"Caching"[1]{lb: 1 sz: 1}, 7);
+  _gfortran_transfer_integer_write (&dt_parm.196, &nuniqueorb, 4);
+  _gfortran_transfer_character_write (&dt_parm.196, &"wavefunctions:"[1]{lb: 1 sz: 1}, 14);
+  _gfortran_st_write_done (&dt_parm.196);
+  dt_parm.196 ={v} {CLOBBER(eol)};
+  iorb = 1;
+  if (_64 <= 0)
+    goto <bb 223>; [11.00%]
+  else
+    goto <bb 224>; [89.00%]
+
+  <bb 217> [local count: 35]:
+  _44 = prephitmp_2843 - stride.7_1208;
+  offset.10_1210 = _44 - stride.9_1209;
+  _2456 = (unsigned long) stride.9_1209;
+  _2684 = (unsigned long) stride.7_1208;
+  _2696 = _2684 * 8;
+  _2357 = (unsigned long) offset.10_1210;
+  _2942 = (unsigned long) iftmp.246_1061;
+  _2130 = _2684 + _2942;
+  _1295 = _2130 + _2357;
+  _1296 = _1295 * 8;
+  _1727 = (unsigned long) coords.0_1207;
+  _1869 = _1296 + _1727;
+  _2746 = (unsigned long) iftmp.249_1062;
+  _548 = _2746 * 8;
+  _2462 = origin.0_1216 + _548;
+  _862 = _2942 * 16;
+  _2362 = _2746 * 16;
+  _546 = origin.0_1216 + _2362;
+
+  <bb 218> [local count: 66]:
+  # ivtmp.740_2454 = PHI <ivtmp.740_2455(219), _2456(217)>
+  # ivtmp.741_2948 = PHI <ivtmp.741_2354(219), 1(217)>
+  iatom = 1;
+  if (_453 <= 0)
+    goto <bb 219>; [33.08%]
+  else
+    goto <bb 220>; [66.92%]
+
+  <bb 219> [local count: 35]:
+  ivtmp.740_2455 = ivtmp.740_2454 + _2456;
+  ivtmp.741_2354 = ivtmp.741_2948 + 1;
+  icell_2355 = (integer(kind=4)) ivtmp.741_2354;
+  if (_455 < icell_2355)
+    goto <bb 216>; [11.00%]
+  else
+    goto <bb 218>; [89.00%]
+
+  <bb 220> [local count: 284]:
+  # ivtmp.740_527 = PHI <ivtmp.740_2454(218), ivtmp.740_2285(222)>
+  # ivtmp.741_2790 = PHI <ivtmp.741_2948(218), ivtmp.741_1123(222)>
+  _1754 = (integer(kind=8)) ivtmp.741_2790;
+  _1143 = ivtmp.740_527 * 8;
+  _1051 = _1143 + _1869;
+
+  <bb 221> [local count: 2581]:
+  # ivtmp.728_2434 = PHI <ivtmp.728_2443(221), 1(220)>
+  # ivtmp.731_2444 = PHI <ivtmp.731_2445(221), _1051(220)>
+  _535 = (integer(kind=8)) ivtmp.728_2434;
+  _2379 = (void *) ivtmp.731_2444;
+  _2486 = MEM[(real(kind=8) *)_2379];
+  _2480 = MEM[(real(kind=8) *)origin.0_1216];
+  _2479 = _2480 + _2486;
+  _2467 = MEM[(real(kind=8) *)_2379 + _2942 * 8];
+  _2461 = *_2462;
+  _2460 = _2461 + _2467;
+  _373 = {_2479, _2460};
+  MEM <vector(2) real(kind=8)> [(real(kind=8) *)&pos] = _373;
+  _543 = MEM[(real(kind=8) *)_2379 + _862 * 1];
+  _547 = *_546;
+  _549 = _543 + _547;
+  pos[2] = _549;
+  MEM <character(kind=1)[72]> [(c_char * {ref-all})&cachebasis] = MEM <character(kind=1)[72]> [(c_char * {ref-all})&cachegridvecs];
+  parm.187.data = &cachebasis[0];
+  parm.187.offset = -4;
+  parm.187.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.187 + 24B] = 3307124817920;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.187 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.187 + 48B] = { 1, 3 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.187 + 64B] = { 3, 1 };
+  parm.187.dim[1].ubound = 3;
+  parm.188.data = &pos[0];
+  parm.188.offset = -4;
+  parm.188.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.188 + 24B] = 3307124817920;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.188 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.188 + 48B] = { 1, 3 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.188 + 64B] = { 3, 1 };
+  parm.188.dim[1].ubound = 1;
+  gesv_dble (&parm.187, &parm.188, 0B, 0B, 0B);
+  parm.187 ={v} {CLOBBER(eol)};
+  parm.188 ={v} {CLOBBER(eol)};
+  _1789 = chunkedindices.data;
+  _1790 = chunkedindices.offset;
+  _1791 = chunkedindices.dim[0].lbound;
+  _550 = chunkedindices.dim[1].stride;
+  _551 = _535 * _550;
+  _1793 = _551 + _1790;
+  _552 = chunkedindices.dim[2].stride;
+  _553 = _552 * _1754;
+  _1794 = _553 + _1793;
+  _2522 = pos[0];
+  _2521 = __builtin_fmod (_2522, 1.0e+0);
+  _2520 = resolutionfactor[0];
+  _2519 = (real(kind=8)) _2520;
+  _2518 = _2519 * _2521;
+  _2517 = (integer(kind=4)) _2518;
+  _2515 = _1791 + _1794;
+  _2514 = ABS_EXPR <_2517>;
+  (*_1789)[_2515] = _2514;
+  _2506 = pos[1];
+  _2505 = __builtin_fmod (_2506, 1.0e+0);
+  _2504 = resolutionfactor[1];
+  _2503 = (real(kind=8)) _2504;
+  _2502 = _2503 * _2505;
+  _2501 = (integer(kind=4)) _2502;
+  _2500 = _1791 + 1;
+  _2499 = _1794 + _2500;
+  _2498 = ABS_EXPR <_2501>;
+  (*_1789)[_2499] = _2498;
+  _555 = pos[2];
+  _556 = __builtin_fmod (_555, 1.0e+0);
+  _557 = resolutionfactor[2];
+  _558 = (real(kind=8)) _557;
+  _559 = _556 * _558;
+  _560 = (integer(kind=4)) _559;
+  _561 = _1791 + 2;
+  _562 = _561 + _1794;
+  _563 = ABS_EXPR <_560>;
+  (*_1789)[_562] = _563;
+  _1797 = sliceindicesmain.data;
+  _1798 = sliceindicesmain.offset;
+  _1799 = sliceindicesmain.dim[0].lbound;
+  _564 = sliceindicesmain.dim[1].stride;
+  _1801 = _564 + _1798;
+  _565 = sliceindicesmain.dim[2].stride;
+  _566 = _535 * _565;
+  _1802 = _566 + _1801;
+  _567 = sliceindicesmain.dim[3].stride;
+  _568 = _567 * _1754;
+  _1803 = _568 + _1802;
+  _2549 = (integer(kind=4)) _2522;
+  _2547 = _2549 - M.127_1470;
+  M.191_2546 = MAX_EXPR <_2547, 1>;
+  _2544 = _1799 + _1803;
+  (*_1797)[_2544] = M.191_2546;
+  _2535 = (integer(kind=4)) _2506;
+  _2533 = _2535 - M.135_1482;
+  M.191_2532 = MAX_EXPR <_2533, 1>;
+  _2531 = _1799 + 1;
+  _2530 = _1803 + _2531;
+  (*_1797)[_2530] = M.191_2532;
+  _571 = (integer(kind=4)) _555;
+  _1804 = _571 - M.143_1494;
+  M.191_1805 = MAX_EXPR <_1804, 1>;
+  _573 = _1799 + 2;
+  _574 = _573 + _1803;
+  (*_1797)[_574] = M.191_1805;
+  _1808 = _564 + _1801;
+  _1809 = _566 + _1808;
+  _1810 = _568 + _1809;
+  _2580 = npoints[0];
+  _2576 = M.127_1470 + _2549;
+  M.193_2575 = MIN_EXPR <_2576, _2580>;
+  _2573 = _1799 + _1810;
+  (*_1797)[_2573] = M.193_2575;
+  _2565 = npoints[1];
+  _2561 = M.135_1482 + _2535;
+  M.193_2560 = MIN_EXPR <_2561, _2565>;
+  _2558 = _1810 + _2531;
+  (*_1797)[_2558] = M.193_2560;
+  _1811 = npoints[2];
+  _1812 = _571 + M.143_1494;
+  M.193_1813 = MIN_EXPR <_1811, _1812>;
+  _581 = _573 + _1810;
+  (*_1797)[_581] = M.193_1813;
+  _1816 = sliceindicescache.data;
+  _1817 = sliceindicescache.offset;
+  _1818 = sliceindicescache.dim[0].lbound;
+  _582 = sliceindicescache.dim[1].stride;
+  _1820 = _582 + _1817;
+  _583 = sliceindicescache.dim[2].stride;
+  _584 = _535 * _583;
+  _1821 = _584 + _1820;
+  _585 = sliceindicescache.dim[3].stride;
+  _586 = _585 * _1754;
+  _1822 = _586 + _1821;
+  _2609 = (*_1797)[_2544];
+  _2604 = _1818 + _1822;
+  _2603 = _2609 - _2549;
+  (*_1816)[_2604] = _2603;
+  _2594 = (*_1797)[_2530];
+  _2590 = _1818 + 1;
+  _2589 = _1822 + _2590;
+  _2588 = _2594 - _2535;
+  (*_1816)[_2589] = _2588;
+  _589 = (*_1797)[_574];
+  _593 = _1818 + 2;
+  _594 = _593 + _1822;
+  _595 = _589 - _571;
+  (*_1816)[_594] = _595;
+  _1825 = _582 + _1820;
+  _1826 = _584 + _1825;
+  _1827 = _586 + _1826;
+  _2639 = (*_1797)[_2573];
+  _2634 = _1818 + _1827;
+  _2633 = _2639 - _2549;
+  (*_1816)[_2634] = _2633;
+  _2624 = (*_1797)[_2558];
+  _2619 = _1827 + _2590;
+  _2618 = _2624 - _2535;
+  (*_1816)[_2619] = _2618;
+  _599 = (*_1797)[_581];
+  _604 = _593 + _1827;
+  _605 = _599 - _571;
+  (*_1816)[_604] = _605;
+  _2251 = (unsigned int) ivtmp.728_2434;
+  _2731 = _2251 + 1;
+  _606 = (integer(kind=4)) _2731;
+  iatom = _606;
+  ivtmp.728_2443 = ivtmp.728_2434 + 1;
+  ivtmp.731_2445 = ivtmp.731_2444 + _2696;
+  _2493 = (integer(kind=4)) ivtmp.728_2443;
+  if (_453 < _2493)
+    goto <bb 222>; [11.00%]
+  else
+    goto <bb 221>; [89.00%]
+
+  <bb 222> [local count: 284]:
+  ivtmp.740_2285 = ivtmp.740_527 + _2456;
+  ivtmp.741_1123 = ivtmp.741_2790 + 1;
+  icell_2202 = (integer(kind=4)) ivtmp.741_1123;
+  if (_455 < icell_2202)
+    goto <bb 216>; [11.00%]
+  else
+    goto <bb 220>; [89.00%]
+
+  <bb 223> [local count: 39]:
+  tcacheinitialised = 1;
+  goto <bb 283>; [100.00%]
+
+  <bb 224> [local count: 35]:
+  _47 = _45 - _46;
+  ubound.48_1223 = _47 + 1;
+  _50 = _48 - _49;
+  ubound.50_1225 = _50 + 1;
+  offset.52_1226 = prephitmp_2845 - stride.51_1224;
+  _54 = _52 - _53;
+  offset.42_1235 = prephitmp_2847 - stride.41_1234;
+  _2539 = iftmp.228_1056 * 4;
+  _2553 = (unsigned long) _2539;
+  ivtmp.721_1243 = (unsigned long) angmoms.0_1157;
+  _2525 = (unsigned long) iftmp.240_1059;
+  _2181 = _2525 * 8;
+  ivtmp.722_93 = (unsigned long) cutoffs.0_1196;
+  _2796 = (unsigned long) iftmp.258_1065;
+  _1871 = _2796 * 248;
+  ivtmp.723_630 = (unsigned long) stos.0_1240;
+  _2401 = (unsigned long) prephitmp_2389;
+  _2412 = (unsigned long) prephitmp_2613;
+  ivtmp.724_2410 = _2401 + _2412;
+  _2659 = (unsigned int) _146;
+  _2671 = (unsigned int) _336;
+  _2683 = _2659 * _2671;
+  _2695 = (unsigned int) _312;
+  _2707 = (unsigned int) _2895;
+  _2726 = _2695 * _2707;
+  _2745 = (unsigned int) _306;
+  _294 = (unsigned int) _2931;
+  _536 = _294 * _2745;
+  _608 = (unsigned long) iftmp.255_1064;
+  _628 = (unsigned long) prephitmp_2847;
+  _843 = _608 + _628;
+  _845 = _843 * 8;
+  _1045 = latvecs.0_1232 + _845;
+  _1526 = _608 * 2;
+  _1755 = _628 + _1526;
+  _1756 = _1755 * 8;
+  _4 = latvecs.0_1232 + _1756;
+  _2076 = _608 * 3;
+  _2471 = _628 + _2076;
+  _2490 = _2471 * 8;
+  _2907 = latvecs.0_1232 + _2490;
+  _2658 = (unsigned long) stride.41_1234;
+  _2670 = _2658 * 2;
+  _2682 = (unsigned long) offset.42_1235;
+  _2694 = _2670 + _2682;
+  _2725 = _608 + _2694;
+  _2744 = _2725 * 8;
+  _636 = latvecs.0_1232 + _2744;
+  _107 = _608 + _2725;
+  _109 = _107 * 8;
+  _717 = latvecs.0_1232 + _109;
+  _506 = _107 + _608;
+  _517 = _506 * 8;
+  _906 = latvecs.0_1232 + _517;
+  _773 = _2658 * 3;
+  _1163 = _773 + _2682;
+  _1273 = _608 + _1163;
+  _1276 = _1273 * 8;
+  _211 = latvecs.0_1232 + _1276;
+  _1460 = _608 + _1273;
+  _1509 = _1460 * 8;
+  _201 = latvecs.0_1232 + _1509;
+  _1641 = _608 + _1460;
+  _1691 = _1641 * 8;
+  _664 = latvecs.0_1232 + _1691;
+
+  <bb 225> [local count: 319]:
+  # iorb.335_512 = PHI <_721(226), 1(224)>
+  # ivtmp.721_676 = PHI <ivtmp.721_1585(226), ivtmp.721_1243(224)>
+  # ivtmp.722_96 = PHI <ivtmp.722_2509(226), ivtmp.722_93(224)>
+  # ivtmp.723_2474 = PHI <ivtmp.723_2179(226), ivtmp.723_630(224)>
+  # ivtmp.724_2399 = PHI <ivtmp.724_2400(226), ivtmp.724_2410(224)>
+  dt_parm.197.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.197.common.line = 295;
+  dt_parm.197.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.197.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.197] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.197);
+  _gfortran_transfer_character_write (&dt_parm.197, &" -> Caching orbital "[1]{lb: 1 sz: 1}, 20);
+  _gfortran_transfer_integer_write (&dt_parm.197, &iorb, 4);
+  _gfortran_st_write_done (&dt_parm.197);
+  dt_parm.197 ={v} {CLOBBER(eol)};
+  _2421 = (void *) ivtmp.721_676;
+  _612 = MEM[(integer(kind=4) *)_2421];
+  il = _612;
+  if (_146 <= 1)
+    goto <bb 226>; [11.00%]
+  else
+    goto <bb 227>; [89.00%]
+
+  <bb 226> [local count: 319]:
+  _721 = iorb.335_512 + 1;
+  iorb = _721;
+  ivtmp.721_1585 = ivtmp.721_676 + _2553;
+  ivtmp.722_2509 = ivtmp.722_96 + _2181;
+  ivtmp.723_2179 = _1871 + ivtmp.723_2474;
+  ivtmp.724_2400 = ivtmp.724_2399 + _2401;
+  if (_64 < _721)
+    goto <bb 223>; [11.00%]
+  else
+    goto <bb 225>; [89.00%]
+
+  <bb 227> [local count: 284]:
+  _682 = (struct tslaterorbital *) ivtmp.723_2474;
+  _2238 = _2659 + 4294967295;
+  _2598 = (unsigned long) _2238;
+  _2423 = (unsigned long) _98;
+  _2432 = ivtmp.724_2399 * 4;
+  _2433 = _2423 + _2432;
+  _2784 = (void *) _2433;
+
+  <bb 228> [local count: 2581]:
+  # ivtmp.713_2289 = PHI <ivtmp.713_2628(229), 0(227)>
+  if (_336 > M.143_1494)
+    goto <bb 229>; [11.00%]
+  else
+    goto <bb 230>; [89.00%]
+
+  <bb 229> [local count: 2581]:
+  ivtmp.713_2628 = ivtmp.713_2289 + 1;
+  if (_2598 == ivtmp.713_2628)
+    goto <bb 226>; [11.00%]
+  else
+    goto <bb 228>; [89.00%]
+
+  <bb 230> [local count: 2297]:
+  _2568 = (unsigned int) ivtmp.713_2289;
+  _2583 = _2568 + _2683;
+  ivtmp.711_2338 = (unsigned long) _336;
+
+  <bb 231> [local count: 20880]:
+  # ivtmp.710_1082 = PHI <ivtmp.710_1086(232), _2583(230)>
+  # ivtmp.711_2288 = PHI <ivtmp.711_2337(232), ivtmp.711_2338(230)>
+  _614 = (integer(kind=4)) ivtmp.710_1082;
+  _1858 = (real(kind=8)) _614;
+  _2160 = _487 * _1858;
+  _2167 = _465 * _1858;
+  _2174 = _174 * _1858;
+  if (_2895 <= 1)
+    goto <bb 232>; [11.00%]
+  else
+    goto <bb 233>; [89.00%]
+
+  <bb 232> [local count: 20880]:
+  ivtmp.710_1086 = ivtmp.710_1082 + _2659;
+  ivtmp.711_2337 = ivtmp.711_2288 + 1;
+  i3_2339 = (integer(kind=4)) ivtmp.711_2337;
+  if (M.143_1494 < i3_2339)
+    goto <bb 229>; [11.00%]
+  else
+    goto <bb 231>; [89.00%]
+
+  <bb 233> [local count: 18583]:
+  _950 = _2707 + 4294967295;
+  _2788 = (unsigned long) _950;
+
+  <bb 234> [local count: 168938]:
+  # ivtmp.703_1014 = PHI <ivtmp.703_964(235), 0(233)>
+  if (_312 > M.135_1482)
+    goto <bb 235>; [11.00%]
+  else
+    goto <bb 236>; [89.00%]
+
+  <bb 235> [local count: 168938]:
+  ivtmp.703_964 = ivtmp.703_1014 + 1;
+  if (ivtmp.703_964 == _2788)
+    goto <bb 232>; [11.00%]
+  else
+    goto <bb 234>; [89.00%]
+
+  <bb 236> [local count: 150355]:
+  _1070 = (unsigned int) ivtmp.703_1014;
+  _1079 = _1070 + _2726;
+  ivtmp.701_73 = (unsigned long) _312;
+
+  <bb 237> [local count: 1366860]:
+  # ivtmp.700_2928 = PHI <ivtmp.700_2937(238), _1079(236)>
+  # ivtmp.701_1036 = PHI <ivtmp.701_1261(238), ivtmp.701_73(236)>
+  _619 = (integer(kind=4)) ivtmp.700_2928;
+  _1862 = (real(kind=8)) _619;
+  _2139 = _391 * _1862;
+  _2146 = _352 * _1862;
+  _2153 = _164 * _1862;
+  if (_2931 <= 1)
+    goto <bb 238>; [11.00%]
+  else
+    goto <bb 239>; [89.00%]
+
+  <bb 238> [local count: 1366860]:
+  ivtmp.700_2937 = _2707 + ivtmp.700_2928;
+  ivtmp.701_1261 = ivtmp.701_1036 + 1;
+  i2_72 = (integer(kind=4)) ivtmp.701_1261;
+  if (i2_72 > M.135_1482)
+    goto <bb 235>; [11.00%]
+  else
+    goto <bb 237>; [89.00%]
+
+  <bb 239> [local count: 1216505]:
+  _2780 = _294 + 4294967295;
+  _2778 = (unsigned long) _2780;
+
+  <bb 240> [local count: 11059138]:
+  # ivtmp.693_80 = PHI <ivtmp.693_321(241), 0(239)>
+  if (_306 > M.127_1470)
+    goto <bb 241>; [11.00%]
+  else
+    goto <bb 242>; [89.00%]
+
+  <bb 241> [local count: 11059139]:
+  ivtmp.693_321 = ivtmp.693_80 + 1;
+  if (ivtmp.693_321 == _2778)
+    goto <bb 238>; [11.00%]
+  else
+    goto <bb 240>; [89.00%]
+
+  <bb 242> [local count: 9842633]:
+  pretmp_2917 = *tperiodic_1874(D);
+  _2932 = (unsigned int) ivtmp.693_80;
+  _2935 = _536 + _2932;
+  ivtmp.691_457 = (unsigned long) _306;
+
+  <bb 243> [local count: 89478486]:
+  # ivtmp.690_949 = PHI <ivtmp.690_2782(279), _2935(242)>
+  # ivtmp.691_370 = PHI <ivtmp.691_403(279), ivtmp.691_457(242)>
+  _624 = (integer(kind=4)) ivtmp.690_949;
+  _1866 = (real(kind=8)) _624;
+  _183 = _95 * _1866;
+  _2125 = _1866 * _2952;
+  _2132 = _154 * _1866;
+  val.202_2239 = _183 + 0.0;
+  val.202_2242 = _2139 + val.202_2239;
+  val.202_2245 = _2160 + val.202_2242;
+  xyz[0] = val.202_2245;
+  val.202_2256 = _2125 + 0.0;
+  val.202_2259 = _2146 + val.202_2256;
+  val.202_2262 = _2167 + val.202_2259;
+  xyz[1] = val.202_2262;
+  val.202_2273 = _2132 + 0.0;
+  val.202_2276 = _2153 + val.202_2273;
+  val.202_2279 = _2174 + val.202_2276;
+  xyz[2] = val.202_2279;
+  if (pretmp_2917 != 0)
+    goto <bb 244>; [27.00%]
+  else
+    goto <bb 266>; [73.00%]
+
+  <bb 244> [local count: 24159191]:
+  _633 = MAX_EXPR <ubound.50_1225, 0>;
+  _634 = (real(kind=4)) _633;
+  _635 = _634 * 3.0e+0;
+  if (_635 <= 9.0e+2)
+    goto <bb 245>; [42.89%]
+  else
+    goto <bb 251>; [57.11%]
+
+  <bb 245> [local count: 10361877]:
+  frac = {};
+  if (ubound.50_1225 <= 0)
+    goto <bb 250>; [25.00%]
+  else
+    goto <bb 246>; [75.00%]
+
+  <bb 246> [local count: 7771408]:
+  _797 = iftmp.252_1063 + prephitmp_2845;
+  _798 = _797 * 8;
+  _945 = (sizetype) _798;
+  _1870 = recvecs2p.0_1222 + _945;
+  _800 = *_1870;
+  _801 = _800 * val.202_2245;
+  _802 = _801 + 0.0;
+  _2244 = _797 + iftmp.252_1063;
+  _1119 = _2244 * 8;
+  _805 = (sizetype) _1119;
+  _806 = recvecs2p.0_1222 + _805;
+  _807 = *_806;
+  _2056 = _807 * val.202_2262;
+  _2057 = _802 + _2056;
+  _56 = iftmp.252_1063 + _2244;
+  _813 = _56 * 8;
+  _814 = (sizetype) _813;
+  _815 = recvecs2p.0_1222 + _814;
+  _1037 = *_815;
+  _534 = _1037 * val.202_2279;
+  _829 = _534 + _2057;
+  frac[0] = _829;
+  if (ubound.50_1225 <= 1)
+    goto <bb 249>; [25.00%]
+  else
+    goto <bb 247>; [75.00%]
+
+  <bb 247> [local count: 5828556]:
+  _840 = stride.51_1224 * 2;
+  _844 = _840 + offset.52_1226;
+  _607 = _844 + iftmp.252_1063;
+  _58 = _607 * 8;
+  _1137 = (sizetype) _58;
+  _2203 = recvecs2p.0_1222 + _1137;
+  _820 = *_2203;
+  _65 = _820 * val.202_2245;
+  _1914 = _65 + 0.0;
+  _841 = _607 + iftmp.252_1063;
+  _860 = _841 * 8;
+  _2017 = (sizetype) _860;
+  _867 = recvecs2p.0_1222 + _2017;
+  _2018 = *_867;
+  _868 = _2018 * val.202_2262;
+  _869 = _868 + _1914;
+  _2019 = _841 + iftmp.252_1063;
+  _875 = _2019 * 8;
+  _2020 = (sizetype) _875;
+  _879 = recvecs2p.0_1222 + _2020;
+  _2021 = *_879;
+  _884 = _2021 * val.202_2279;
+  _2022 = _869 + _884;
+  frac[1] = _2022;
+  if (ubound.50_1225 <= 2)
+    goto <bb 249>; [25.00%]
+  else
+    goto <bb 248>; [75.00%]
+
+  <bb 248> [local count: 4371417]:
+  _640 = _844 + stride.51_1224;
+  _2737 = _640 + iftmp.252_1063;
+  _2750 = _2737 * 8;
+  _2751 = (sizetype) _2750;
+  _2752 = recvecs2p.0_1222 + _2751;
+  _1278 = *_2752;
+  _1277 = _1278 * val.202_2245;
+  _108 = _1277 + 0.0;
+  _2818 = iftmp.252_1063 + _2737;
+  _2651 = _2818 * 8;
+  _2650 = (sizetype) _2651;
+  _2649 = recvecs2p.0_1222 + _2650;
+  _2648 = *_2649;
+  _2647 = val.202_2262 * _2648;
+  _2646 = _108 + _2647;
+  _643 = iftmp.252_1063 + _2818;
+  _644 = _643 * 8;
+  _645 = (sizetype) _644;
+  _646 = recvecs2p.0_1222 + _645;
+  _647 = *_646;
+  _648 = _647 * val.202_2279;
+  _649 = _648 + _2646;
+  frac[2] = _649;
+
+  <bb 249> [local count: 7771408]:
+
+  <bb 250> [local count: 10361877]:
+  goto <bb 252>; [100.00%]
+
+  <bb 251> [local count: 13797314]:
+  parm.206.data = &frac[0];
+  parm.206.offset = -1;
+  parm.206.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.206 + 24B] = 3302829850624;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.206 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.206 + 48B] = { 1, 3 };
+  parm.207.data = &xyz[0];
+  parm.207.offset = -1;
+  parm.207.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.207 + 24B] = 3302829850624;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.207 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.207 + 48B] = { 1, 3 };
+  parm.208.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.208 + 24B] = 3307124817920;
+  parm.208.span = 8;
+  parm.208.dim[0].lbound = 1;
+  parm.208.dim[0].ubound = ubound.48_1223;
+  parm.208.dim[0].stride = iftmp.252_1063;
+  parm.208.dim[1].lbound = 1;
+  parm.208.dim[1].ubound = ubound.50_1225;
+  parm.208.dim[1].stride = stride.51_1224;
+  parm.208.data = recvecs2p.0_1222;
+  parm.208.offset = offset.52_1226;
+  _gfortran_matmul_r8 (&parm.206, &parm.207, &parm.208, 0, 0, 0B);
+  parm.206 ={v} {CLOBBER(eol)};
+  parm.207 ={v} {CLOBBER(eol)};
+  parm.208 ={v} {CLOBBER(eol)};
+
+  <bb 252> [local count: 18119393]:
+  _188 = frac[0];
+  _189 = (integer(kind=4)) _188;
+  _190 = (real(kind=8)) _189;
+  if (_188 >= _190)
+    goto <bb 254>; [50.00%]
+  else
+    goto <bb 253>; [50.00%]
+
+  <bb 253> [local count: 9059696]:
+  _191 = _189 + -1;
+  iftmp.337_2675 = (real(kind=8)) _191;
+
+  <bb 254> [local count: 18119393]:
+  # iftmp.337_971 = PHI <_190(252), iftmp.337_2675(253)>
+  _1438 = _188 - iftmp.337_971;
+  _182 = frac[1];
+  _2663 = (integer(kind=4)) _182;
+  _967 = (real(kind=8)) _2663;
+  if (_182 >= _967)
+    goto <bb 256>; [50.00%]
+  else
+    goto <bb 255>; [50.00%]
+
+  <bb 255> [local count: 9059696]:
+  _1435 = _2663 + -1;
+  iftmp.337_2712 = (real(kind=8)) _1435;
+
+  <bb 256> [local count: 18119393]:
+  # iftmp.337_2713 = PHI <_967(254), iftmp.337_2712(255)>
+  _2714 = _182 - iftmp.337_2713;
+  _1915 = frac[2];
+  _1916 = (integer(kind=4)) _1915;
+  _651 = (real(kind=8)) _1916;
+  if (_651 <= _1915)
+    goto <bb 258>; [50.00%]
+  else
+    goto <bb 257>; [50.00%]
+
+  <bb 257> [local count: 9059696]:
+  _652 = _1916 + -1;
+  iftmp.337_1917 = (real(kind=8)) _652;
+
+  <bb 258> [local count: 24159191]:
+  # iftmp.337_1085 = PHI <_651(256), iftmp.337_1917(257)>
+  xyz = {};
+  if (_54 < 0)
+    goto <bb 265>; [25.00%]
+  else
+    goto <bb 259>; [75.00%]
+
+  <bb 259> [local count: 18119393]:
+  _653 = _1915 - iftmp.337_1085;
+  _2040 = *_1045;
+  _899 = _1438 * _2040;
+  _900 = _899 + 0.0;
+  if (_54 == 0)
+    goto <bb 325>; [25.00%]
+  else
+    goto <bb 260>; [75.00%]
+
+  <bb 260> [local count: 13589545]:
+  _2058 = *_4;
+  _810 = _1438 * _2058;
+  _821 = _810 + 0.0;
+  xyz[1] = _821;
+  if (_54 <= 1)
+    goto <bb 324>; [25.00%]
+  else
+    goto <bb 261>; [75.00%]
+
+  <bb 261> [local count: 10192159]:
+  _1978 = *_2907;
+  _2827 = _1438 * _1978;
+  _2835 = _2827 + 0.0;
+  xyz[2] = _2835;
+  goto <bb 324>; [100.00%]
+
+  <bb 262> [local count: 10192159]:
+  _3066 = xyz[2];
+  _3065 = *_906;
+  _2074 = _2714 * _3065;
+  _1020 = _2074 + _3066;
+  xyz[2] = _1020;
+  _2043 = *_211;
+  _2257 = _653 * _2043;
+  _921 = _2257 + _2805;
+  xyz[0] = _921;
+  _656 = xyz[1];
+  _654 = *_201;
+  _217 = _653 * _654;
+  _1758 = _217 + _656;
+  xyz[1] = _1758;
+  _655 = xyz[2];
+  _665 = *_664;
+  _667 = _653 * _665;
+  _668 = _655 + _667;
+  xyz[2] = _668;
+  goto <bb 264>; [100.00%]
+
+  <bb 263> [local count: 3397386]:
+  _3064 = *_211;
+  _2945 = _653 * _3064;
+  _602 = _2805 + _2945;
+  xyz[0] = _602;
+  _2797 = xyz[1];
+  _1859 = *_201;
+  _293 = _653 * _1859;
+  _2660 = _293 + _2797;
+  xyz[1] = _2660;
+
+  <bb 264> [local count: 18119393]:
+
+  <bb 265> [local count: 24159191]:
+
+  <bb 266> [local count: 89478486]:
+  _2729 = xyz[0];
+  if (_2729 != 0.0)
+    goto <bb 267>; [50.00%]
+  else
+    goto <bb 270>; [50.00%]
+
+  <bb 267> [local count: 44739243]:
+  absX.214_2748 = ABS_EXPR <_2729>;
+  if (absX.214_2748 > 1.0e+0)
+    goto <bb 269>; [50.00%]
+  else
+    goto <bb 268>; [50.00%]
+
+  <bb 268> [local count: 22369622]:
+  _2129 = _2729 * _2729;
+  val.211_1452 = _2129 + 0.0;
+  goto <bb 270>; [100.00%]
+
+  <bb 269> [local count: 22369622]:
+  val.215_1206 = 1.0e+0 / _2729;
+  _261 = val.215_1206 * val.215_1206;
+  _262 = _261 * 0.0;
+  val.211_263 = _262 + 1.0e+0;
+
+  <bb 270> [local count: 89478486]:
+  # val.211_264 = PHI <0.0(266), val.211_1452(268), val.211_263(269)>
+  # scale.212_2749 = PHI <1.0e+0(266), 1.0e+0(268), absX.214_2748(269)>
+  _245 = xyz[1];
+  if (_245 != 0.0)
+    goto <bb 271>; [50.00%]
+  else
+    goto <bb 274>; [50.00%]
+
+  <bb 271> [local count: 44739243]:
+  absX.214_246 = ABS_EXPR <_245>;
+  if (absX.214_246 > scale.212_2749)
+    goto <bb 273>; [50.00%]
+  else
+    goto <bb 272>; [50.00%]
+
+  <bb 272> [local count: 22369622]:
+  val.215_247 = _245 / scale.212_2749;
+  _2730 = val.215_247 * val.215_247;
+  val.211_992 = val.211_264 + _2730;
+  goto <bb 274>; [100.00%]
+
+  <bb 273> [local count: 22369622]:
+  val.215_1473 = scale.212_2749 / _245;
+  _2284 = val.215_1473 * val.215_1473;
+  _2277 = val.211_264 * _2284;
+  val.211_1185 = _2277 + 1.0e+0;
+
+  <bb 274> [local count: 89478486]:
+  # val.211_1194 = PHI <val.211_264(270), val.211_992(272), val.211_1185(273)>
+  # scale.212_223 = PHI <scale.212_2749(270), scale.212_2749(272), absX.214_246(273)>
+  _670 = xyz[2];
+  if (_670 != 0.0)
+    goto <bb 275>; [50.00%]
+  else
+    goto <bb 278>; [50.00%]
+
+  <bb 275> [local count: 44739243]:
+  absX.214_1924 = ABS_EXPR <_670>;
+  if (scale.212_223 < absX.214_1924)
+    goto <bb 276>; [50.00%]
+  else
+    goto <bb 277>; [50.00%]
+
+  <bb 276> [local count: 22369622]:
+  val.215_1927 = scale.212_223 / _670;
+  _671 = val.215_1927 * val.215_1927;
+  _672 = _671 * val.211_1194;
+  val.211_1928 = _672 + 1.0e+0;
+  goto <bb 278>; [100.00%]
+
+  <bb 277> [local count: 22369622]:
+  val.215_1925 = _670 / scale.212_223;
+  _673 = val.215_1925 * val.215_1925;
+  val.211_1926 = _673 + val.211_1194;
+
+  <bb 278> [local count: 89478486]:
+  # val.211_1046 = PHI <val.211_1194(274), val.211_1926(277), val.211_1928(276)>
+  # scale.212_1048 = PHI <scale.212_223(274), scale.212_223(277), absX.214_1924(276)>
+  _674 = __builtin_sqrt (val.211_1046);
+  _675 = _674 * scale.212_1048;
+  xx = _675;
+  _2422 = (void *) ivtmp.722_96;
+  _679 = MEM[(real(kind=8) *)_2422];
+  if (_675 <= _679)
+    goto <bb 280>; [15.41%]
+  else
+    goto <bb 279>; [84.59%]
+
+  <bb 279> [local count: 89478486]:
+  ivtmp.690_2782 = _294 + ivtmp.690_949;
+  ivtmp.691_403 = ivtmp.691_370 + 1;
+  i1_458 = (integer(kind=4)) ivtmp.691_403;
+  if (i1_458 > M.127_1470)
+    goto <bb 241>; [11.00%]
+  else
+    goto <bb 243>; [89.00%]
+
+  <bb 280> [local count: 13788635]:
+  val ={v} {CLOBBER};
+  tslaterorbital_getvalue (_682, &xx, &val);
+  il.341_683 = il;
+  _1933 = -il.341_683;
+  im = _1933;
+  if (il.341_683 < _1933)
+    goto <bb 279>; [11.00%]
+  else
+    goto <bb 281>; [89.00%]
+
+  <bb 281> [local count: 12271885]:
+  val.345_690 = val;
+  _691 = wavefunctioncache.data;
+  _692 = wavefunctioncache.offset;
+  _694 = wavefunctioncache.dim[6].stride;
+  _697 = (integer(kind=8)) ivtmp.713_2289;
+  _698 = wavefunctioncache.dim[5].stride;
+  _699 = _697 * _698;
+  _701 = (integer(kind=8)) ivtmp.711_2288;
+  _702 = wavefunctioncache.dim[4].stride;
+  _703 = _701 * _702;
+  _705 = (integer(kind=8)) ivtmp.703_1014;
+  _706 = wavefunctioncache.dim[3].stride;
+  _707 = _705 * _706;
+  _709 = (integer(kind=8)) ivtmp.701_1036;
+  _710 = wavefunctioncache.dim[2].stride;
+  _711 = _709 * _710;
+  _713 = (integer(kind=8)) ivtmp.693_80;
+  _714 = wavefunctioncache.dim[1].stride;
+  _715 = _713 * _714;
+  _2953 = (integer(kind=8)) ivtmp.691_370;
+  _961 = 1 - il.341_683;
+  ivtmp.682_666 = (sizetype) _961;
+  _2240 = (sizetype) _1933;
+  _479 = (unsigned int) il.341_683;
+  _1860 = (unsigned int) il.341_683;
+  _1456 = _479 + _1860;
+  _502 = (sizetype) _1456;
+  _2015 = _2240 + 2;
+  _504 = _502 + _2015;
+
+  <bb 282> [local count: 111562590]:
+  # ivtmp.682_2814 = PHI <ivtmp.682_3004(282), ivtmp.682_666(281)>
+  cacheind_1935 = MEM[(integer(kind=4) *)_2784 + -4B + ivtmp.682_2814 * 4];
+  parm.216.data = &diff[0];
+  parm.216.offset = -1;
+  parm.216.dtype.elem_len = 8;
+  MEM <unsigned long> [(void *)&parm.216 + 24B] = 3302829850624;
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.216 + 32B] = { 8, 1 };
+  MEM <vector(2) integer(kind=8)> [(integer(kind=8) *)&parm.216 + 48B] = { 1, 3 };
+  _689 = realtessy (&il, &im, &parm.216, &xx);
+  _693 = (integer(kind=8)) cacheind_1935;
+  _695 = _693 * _694;
+  _696 = _692 + _695;
+  _700 = _696 + _699;
+  _704 = _700 + _703;
+  _708 = _704 + _707;
+  _712 = _708 + _711;
+  _716 = _712 + _715;
+  _718 = _716 + _2953;
+  _719 = _689 * val.345_690;
+  MEM <real(kind=8)[0:]> [(real(kind=8)[0:] *)_691][_718] = _719;
+  parm.216 ={v} {CLOBBER(eol)};
+  _720 = (integer(kind=4)) ivtmp.682_2814;
+  im = _720;
+  ivtmp.682_3004 = ivtmp.682_2814 + 1;
+  if (_504 == ivtmp.682_3004)
+    goto <bb 279>; [11.00%]
+  else
+    goto <bb 282>; [89.00%]
+
+  <bb 283> [local count: 59]:
+  dt_parm.217.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.217.common.line = 334;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.217] = { 128, 6 };
+  _gfortran_st_write (&dt_parm.217);
+  _gfortran_transfer_character_write (&dt_parm.217, &"Applying wavefunctions"[1]{lb: 1 sz: 1}, 22);
+  _gfortran_st_write_done (&dt_parm.217);
+  dt_parm.217 ={v} {CLOBBER(eol)};
+  _1991 = *ncell_1676(D);
+  if (_1991 <= 0)
+    goto <bb 284>; [11.00%]
+  else
+    goto <bb 285>; [89.00%]
+
+  <bb 284> [local count: 59]:
+  __builtin_free (_98); [tail call]
+  cachebasis ={v} {CLOBBER(eol)};
+  cachegridvecs ={v} {CLOBBER(eol)};
+  diff ={v} {CLOBBER(eol)};
+  expectedsizemb ={v} {CLOBBER(eol)};
+  frac ={v} {CLOBBER(eol)};
+  iatom ={v} {CLOBBER(eol)};
+  il ={v} {CLOBBER(eol)};
+  im ={v} {CLOBBER(eol)};
+  iorb ={v} {CLOBBER(eol)};
+  npoints ={v} {CLOBBER(eol)};
+  npointshalved ={v} {CLOBBER(eol)};
+  nuniqueorb ={v} {CLOBBER(eol)};
+  pos ={v} {CLOBBER(eol)};
+  resolutionfactor ={v} {CLOBBER(eol)};
+  targetresolution ={v} {CLOBBER(eol)};
+  val ={v} {CLOBBER(eol)};
+  xx ={v} {CLOBBER(eol)};
+  xyz ={v} {CLOBBER(eol)};
+  return;
+
+  <bb 285> [local count: 53]:
+  pretmp_2954 = *natom_1673(D);
+  _1819 = (unsigned long) iftmp.243_1060;
+  _1985 = _1819 * 4;
+  _2136 = (unsigned long) iftmp.228_1056;
+  _2214 = _2136 * 4;
+  _2359 = (unsigned long) stride.19_1253;
+  _2470 = _2359 * 8;
+  _2913 = (unsigned long) prephitmp_2849;
+  _2915 = _2913 * 8;
+  _2919 = (unsigned long) eigvecsreal.0_1252;
+  _2921 = _2915 + _2919;
+  _382 = (unsigned long) iftmp.231_1057;
+  _405 = _382 * 8;
+
+  <bb 286> [local count: 100]:
+  # ivtmp.678_2920 = PHI <ivtmp.678_1135(287), 1(285)>
+  iatom = 1;
+  if (pretmp_2954 <= 0)
+    goto <bb 287>; [33.08%]
+  else
+    goto <bb 288>; [66.92%]
+
+  <bb 287> [local count: 53]:
+  ivtmp.678_1135 = ivtmp.678_2920 + 1;
+  icell_1864 = (integer(kind=4)) ivtmp.678_1135;
+  if (icell_1864 > _1991)
+    goto <bb 284>; [11.00%]
+  else
+    goto <bb 286>; [89.00%]
+
+  <bb 288> [local count: 425]:
+  # ivtmp.678_2643 = PHI <ivtmp.678_2920(286), ivtmp.678_1458(321)>
+  _2956 = (integer(kind=8)) ivtmp.678_2643;
+  ivtmp.673_677 = (unsigned long) species.0_1202;
+
+  <bb 289> [local count: 3858]:
+  # coeffind_530 = PHI <coeffind_533(319), 1(288)>
+  # ivtmp.670_1140 = PHI <ivtmp.670_1606(319), 1(288)>
+  # ivtmp.673_2117 = PHI <ivtmp.673_375(319), ivtmp.673_677(288)>
+  _723 = (integer(kind=8)) ivtmp.670_1140;
+  _2914 = (void *) ivtmp.673_2117;
+  ispecies_1994 = MEM[(integer(kind=4) *)_2914];
+  dt_parm.218.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.218.common.line = 340;
+  dt_parm.218.format = &"(*(G0, 1X))"[1]{lb: 1 sz: 1};
+  dt_parm.218.format_len = 11;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.218] = { 4096, 6 };
+  _gfortran_st_write (&dt_parm.218);
+  _gfortran_transfer_character_write (&dt_parm.218, &" -> Adding contribution of Atom no."[1]{lb: 1 sz: 1}, 35);
+  _gfortran_transfer_integer_write (&dt_parm.218, &iatom, 4);
+  _gfortran_st_write_done (&dt_parm.218);
+  dt_parm.218 ={v} {CLOBBER(eol)};
+  _727 = chunkedindices.span;
+  _728 = chunkedindices.data;
+  _729 = chunkedindices.dim[1].lbound;
+  _730 = _723 - _729;
+  _731 = chunkedindices.dim[1].stride;
+  _732 = _730 * _731;
+  _733 = chunkedindices.dim[2].lbound;
+  _734 = _2956 - _733;
+  _735 = chunkedindices.dim[2].stride;
+  _736 = _734 * _735;
+  _737 = _732 + _736;
+  _1132 = (sizetype) _737;
+  _92 = _1132 * 4;
+  _738 = _728 + _92;
+  _739 = sliceindicesmain.span;
+  _2007 = sliceindicesmain.dim[1].stride;
+  _740 = sliceindicesmain.data;
+  _741 = sliceindicesmain.dim[2].lbound;
+  _742 = _723 - _741;
+  _743 = sliceindicesmain.dim[2].stride;
+  _744 = _742 * _743;
+  _745 = sliceindicesmain.dim[3].lbound;
+  _746 = _2956 - _745;
+  _747 = sliceindicesmain.dim[3].stride;
+  _748 = _746 * _747;
+  _749 = _744 + _748;
+  _138 = (sizetype) _749;
+  _372 = _138 * 4;
+  _750 = _740 + _372;
+  _751 = ~_2007;
+  _752 = sliceindicescache.span;
+  _753 = sliceindicescache.data;
+  _754 = sliceindicescache.dim[2].lbound;
+  _755 = _723 - _754;
+  _756 = sliceindicescache.dim[2].stride;
+  _757 = _755 * _756;
+  _758 = sliceindicescache.dim[3].lbound;
+  _759 = _2956 - _758;
+  _760 = sliceindicescache.dim[3].stride;
+  _761 = _759 * _760;
+  _762 = _757 + _761;
+  _1049 = (sizetype) _762;
+  _1128 = _1049 * 4;
+  _763 = _753 + _1128;
+  _764 = (integer(kind=8)) ispecies_1994;
+  _232 = _764 + -1;
+  _1249 = _232 * iftmp.261_1066;
+  _765 = _1249 * 4;
+  _766 = (sizetype) _765;
+  _767 = istos.0_1246 + _766;
+  _2008 = *_767;
+  _1250 = iftmp.261_1066 + _1249;
+  _768 = _1250 * 4;
+  _769 = (sizetype) _768;
+  _770 = istos.0_1246 + _769;
+  _771 = *_770;
+  iorb = _2008;
+  if (_771 <= _2008)
+    goto <bb 319>; [11.00%]
+  else
+    goto <bb 290>; [89.00%]
+
+  <bb 290> [local count: 3434]:
+  _2014 = npoints[3];
+  _384 = (unsigned long) _2007;
+  _386 = _384 * 2;
+  _388 = (unsigned long) _751;
+  _532 = _386 + _388;
+  _1125 = _532 + 1;
+  _1126 = (unsigned long) _739;
+  _1034 = _1125 * _1126;
+  _866 = _750 + _1034;
+  _1031 = _1034 + _1126;
+  _874 = _750 + _1031;
+  _2255 = _1126 * 2;
+  _878 = _750 + _2255;
+  _2196 = _1031 + _1126;
+  _883 = _750 + _2196;
+  _2023 = wavefunctioncache.data;
+  _2024 = wavefunctioncache.offset;
+  _353 = (unsigned long) _752;
+  _1114 = _353 * 2;
+  _891 = _763 + _1114;
+  _2272 = (unsigned long) _727;
+  _1055 = _2272 * 2;
+  _907 = _738 + _1055;
+  _910 = wavefunctioncache.dim[1].stride;
+  _912 = wavefunctioncache.dim[3].stride;
+  _914 = wavefunctioncache.dim[5].stride;
+  _916 = wavefunctioncache.dim[6].stride;
+  _920 = wavefunctioncache.dim[4].stride;
+  _924 = wavefunctioncache.dim[2].stride;
+  _2316 = (integer(kind=8)) _2008;
+  _872 = _2316 + -1;
+  _2310 = _872 * iftmp.228_1056;
+  _2145 = _2310 * 4;
+  _863 = (sizetype) _2145;
+  _1030 = angmoms.0_1157 + _863;
+  ivtmp.663_2324 = (unsigned long) _1030;
+  _2171 = (unsigned long) prephitmp_2389;
+  _836 = (unsigned long) _2008;
+  _848 = _836 * _2171;
+  _342 = (unsigned long) prephitmp_2613;
+  ivtmp.666_831 = _342 + _848;
+  _621 = (unsigned int) _771;
+  _617 = (unsigned int) _2008;
+  _638 = _621 - _617;
+  _1383 = (unsigned long) _924;
+  _1369 = _1383 * 8;
+
+  <bb 291> [local count: 31218]:
+  # coeffind_531 = PHI <coeffind_2233(317), coeffind_530(290)>
+  # ivtmp.659_796 = PHI <ivtmp.659_2119(317), 0(290)>
+  # ivtmp.663_374 = PHI <ivtmp.663_377(317), ivtmp.663_2324(290)>
+  # ivtmp.666_788 = PHI <ivtmp.666_790(317), ivtmp.666_831(290)>
+  _870 = (void *) ivtmp.663_374;
+  _777 = MEM[(integer(kind=4) *)_870];
+  il = _777;
+  _2011 = -_777;
+  im = _2011;
+  if (_777 < _2011)
+    goto <bb 317>; [11.00%]
+  else
+    goto <bb 292>; [89.00%]
+
+  <bb 292> [local count: 27784]:
+  _1110 = 1 - _777;
+  ivtmp.652_2425 = (sizetype) _1110;
+  _2403 = (unsigned long) iftmp.264_1067;
+  _2392 = (unsigned long) coeffind_531;
+  ivtmp.658_2402 = _2392 * _2403;
+  _2465 = (sizetype) _2011;
+  _2548 = (unsigned int) _777;
+  _324 = (unsigned int) _777;
+  _3023 = _324 + _2548;
+  _2902 = (sizetype) _3023;
+  _32 = _2465 + 2;
+  _2906 = _32 + _2902;
+  _2736 = (unsigned long) _98;
+  _2293 = ivtmp.666_788 * 4;
+  _642 = _2293 + _2736;
+  _2491 = (void *) _642;
+
+  <bb 293> [local count: 252580]:
+  # ivtmp.652_2436 = PHI <ivtmp.652_2435(294), ivtmp.652_2425(292)>
+  # ivtmp.658_2414 = PHI <ivtmp.658_2413(294), ivtmp.658_2402(292)>
+  cacheind_2013 = MEM[(integer(kind=4) *)_2491 + -4B + ivtmp.652_2436 * 4];
+  if (_2014 <= 0)
+    goto <bb 294>; [11.00%]
+  else
+    goto <bb 295>; [89.00%]
+
+  <bb 294> [local count: 252580]:
+  _937 = (integer(kind=4)) ivtmp.652_2436;
+  im = _937;
+  ivtmp.652_2435 = ivtmp.652_2436 + 1;
+  ivtmp.658_2413 = _2403 + ivtmp.658_2414;
+  if (ivtmp.652_2435 == _2906)
+    goto <bb 316>; [11.00%]
+  else
+    goto <bb 293>; [89.00%]
+
+  <bb 295> [local count: 224796]:
+  _783 = *tadddensities_2016(D);
+  _2282 = (unsigned long) _916;
+  _1138 = (unsigned long) cacheind_2013;
+  _1013 = _1138 * _2282;
+  _917 = (integer(kind=8)) _1013;
+  _1092 = ivtmp.658_2414 * 8;
+  _2227 = _1092 + _2921;
+  _2111 = (unsigned long) stride.79_1170;
+  ivtmp.646_1256 = (unsigned long) _19;
+  _2448 = (unsigned int) _2014;
+  _2447 = _2448 + 1;
+  _2446 = (integer(kind=4)) _2447;
+  pretmp_2957 = MEM <integer(kind=4)[0:]> [(integer(kind=4) *)_740][_749];
+  pretmp_2958 = MEM[(integer(kind=4) *)_866];
+  _2959 = _750 + _1126;
+  pretmp_2960 = MEM[(integer(kind=4) *)_2959];
+  pretmp_2961 = MEM[(integer(kind=4) *)_874];
+  pretmp_2962 = MEM[(integer(kind=4) *)_878];
+  pretmp_2963 = MEM[(integer(kind=4) *)_883];
+  pretmp_2964 = MEM <integer(kind=4)[0:]> [(integer(kind=4) *)_753][_762];
+  _2965 = _763 + _353;
+  pretmp_2966 = MEM[(integer(kind=4) *)_2965];
+  pretmp_2967 = MEM[(integer(kind=4) *)_891];
+  pretmp_2975 = MEM <integer(kind=4)[0:]> [(integer(kind=4) *)_728][_737];
+  _2976 = _738 + _2272;
+  pretmp_2977 = MEM[(integer(kind=4) *)_2976];
+  pretmp_2978 = MEM[(integer(kind=4) *)_907];
+  _2980 = (integer(kind=8)) pretmp_2975;
+  _2981 = _910 * _2980;
+  _2982 = (integer(kind=8)) pretmp_2977;
+  _2983 = _912 * _2982;
+  _2984 = (integer(kind=8)) pretmp_2978;
+  _2985 = _914 * _2984;
+  _2986 = (integer(kind=8)) pretmp_2957;
+  _2987 = (integer(kind=8)) pretmp_2958;
+  _2988 = (integer(kind=8)) pretmp_2960;
+  _2989 = (integer(kind=8)) pretmp_2961;
+  _2990 = (integer(kind=8)) pretmp_2962;
+  _2991 = (integer(kind=8)) pretmp_2963;
+  _2992 = (integer(kind=8)) pretmp_2964;
+  _2993 = (integer(kind=8)) pretmp_2966;
+  _2994 = (integer(kind=8)) pretmp_2967;
+  _2996 = _2992 - _2986;
+  _2997 = _2993 - _2988;
+  _2998 = _2994 - _2990;
+  _3000 = _2024 + _2981;
+  _3001 = _2983 + _3000;
+  _3002 = _2985 + _3001;
+  _3003 = _917 + _3002;
+  ivtmp.634_1265 = (unsigned long) pretmp_2962;
+  _2657 = (unsigned long) stride.77_1168;
+  _2669 = ivtmp.634_1265 * _2657;
+  _250 = (unsigned long) pretmp_2960;
+  _1479 = (unsigned long) stride.75_1166;
+  _2787 = _250 * _1479;
+  _1481 = _2669 + _2787;
+  _2693 = (unsigned long) _2998;
+  _2705 = ivtmp.634_1265 + _2693;
+  _2724 = (unsigned long) _920;
+  _2735 = _2705 * _2724;
+  _266 = (unsigned long) _2997;
+  _1491 = _250 + _266;
+  _1493 = _1383 * _1491;
+  _2387 = _1493 + _2735;
+  _2386 = (unsigned long) _3003;
+  ivtmp.637_2340 = _2386 + _2387;
+  _2385 = (unsigned long) pretmp_2963;
+  _2383 = (unsigned long) pretmp_2958;
+  _2382 = (unsigned long) _2996;
+  _2381 = _2382 + _2383;
+  _2380 = _2381 * 8;
+  _2376 = (unsigned long) _2023;
+  _2375 = _2376 + _2380;
+  _508 = (unsigned long) pretmp_2957;
+  _1282 = _405 * _508;
+  _970 = (unsigned long) valuereal.0_1164;
+  _969 = _970 + _1282;
+  _505 = _2383 * 18446744073709551608;
+  _231 = _508 * 8;
+  _1467 = _231 + _505;
+
+  <bb 296> [local count: 2043600]:
+  # ieig_2226 = PHI <ieig_2085(298), 1(295)>
+  # ivtmp.644_2372 = PHI <ivtmp.644_2370(298), _2227(295)>
+  # ivtmp.646_274 = PHI <ivtmp.646_275(298), ivtmp.646_1256(295)>
+  _2791 = (void *) ivtmp.644_2372;
+  pretmp_2995 = MEM[(real(kind=8) *)_2791];
+  if (_783 != 0)
+    goto <bb 297>; [50.00%]
+  else
+    goto <bb 307>; [50.00%]
+
+  <bb 297> [local count: 1021800]:
+  if (_2990 > _2991)
+    goto <bb 298>; [11.00%]
+  else
+    goto <bb 299>; [89.00%]
+
+  <bb 298> [local count: 2043600]:
+  ieig_2085 = ieig_2226 + 1;
+  ivtmp.644_2370 = ivtmp.644_2372 + _2470;
+  ivtmp.646_275 = ivtmp.646_274 + _2111;
+  if (ieig_2085 == _2446)
+    goto <bb 294>; [11.00%]
+  else
+    goto <bb 296>; [89.00%]
+
+  <bb 299> [local count: 909402]:
+  ivtmp.612_1763 = ivtmp.646_274 + _1481;
+
+  <bb 300> [local count: 8267290]:
+  # ivtmp.609_1879 = PHI <ivtmp.609_1878(301), ivtmp.634_1265(299)>
+  # ivtmp.611_1849 = PHI <ivtmp.611_1837(301), ivtmp.637_2340(299)>
+  # ivtmp.612_1767 = PHI <ivtmp.612_1760(301), ivtmp.612_1763(299)>
+  if (_2988 > _2989)
+    goto <bb 301>; [11.00%]
+  else
+    goto <bb 302>; [89.00%]
+
+  <bb 301> [local count: 8267291]:
+  ivtmp.609_1878 = ivtmp.609_1879 + 1;
+  ivtmp.611_1837 = ivtmp.611_1849 + _2724;
+  ivtmp.612_1760 = ivtmp.612_1767 + _2657;
+  if (ivtmp.609_1879 == _2385)
+    goto <bb 298>; [11.00%]
+  else
+    goto <bb 300>; [89.00%]
+
+  <bb 302> [local count: 7357888]:
+  _1710 = ivtmp.611_1849 * 8;
+  _2292 = _2375 + 8;
+  ivtmp.604_2887 = _1710 + _2292;
+  _1941 = (unsigned long) pretmp_2961;
+
+  <bb 303> [local count: 66889896]:
+  # ivtmp.598_1313 = PHI <ivtmp.598_1312(304), _250(302)>
+  # ivtmp.603_1269 = PHI <ivtmp.603_2857(304), ivtmp.612_1767(302)>
+  # ivtmp.604_2872 = PHI <ivtmp.604_2871(304), ivtmp.604_2887(302)>
+  if (_2986 > _2987)
+    goto <bb 304>; [11.00%]
+  else
+    goto <bb 305>; [89.00%]
+
+  <bb 304> [local count: 66889897]:
+  ivtmp.598_1312 = ivtmp.598_1313 + 1;
+  ivtmp.603_2857 = ivtmp.603_1269 + _1479;
+  ivtmp.604_2871 = _1369 + ivtmp.604_2872;
+  if (ivtmp.598_1313 == _1941)
+    goto <bb 301>; [11.00%]
+  else
+    goto <bb 303>; [89.00%]
+
+  <bb 305> [local count: 59532007]:
+  _1069 = _1467 + 18446744073709551608;
+  _1890 = _1069 + ivtmp.604_2872;
+  _1882 = ivtmp.603_1269 * 8;
+  _1875 = _969 + _1882;
+
+  <bb 306> [local count: 541200072]:
+  # ivtmp.593_2881 = PHI <ivtmp.593_2880(306), _1890(305)>
+  # ivtmp.594_2824 = PHI <ivtmp.594_2825(306), _1875(305)>
+  _1533 = (void *) ivtmp.593_2881;
+  _2079 = MEM[(real(kind=8) *)_1533];
+  _2080 = _2079 * _2079;
+  _1532 = (void *) ivtmp.594_2824;
+  _857 = MEM[(real(kind=8) *)_1532];
+  _858 = _2080 * pretmp_2995;
+  _859 = _857 + _858;
+  MEM[(real(kind=8) *)_1532] = _859;
+  ivtmp.593_2880 = ivtmp.593_2881 + 8;
+  ivtmp.594_2825 = _405 + ivtmp.594_2824;
+  if (ivtmp.604_2872 == ivtmp.593_2880)
+    goto <bb 304>; [11.00%]
+  else
+    goto <bb 306>; [89.00%]
+
+  <bb 307> [local count: 1021800]:
+  if (_2990 > _2991)
+    goto <bb 298>; [11.00%]
+  else
+    goto <bb 308>; [89.00%]
+
+  <bb 308> [local count: 909402]:
+  ivtmp.636_1015 = ivtmp.646_274 + _1481;
+
+  <bb 309> [local count: 8267290]:
+  # ivtmp.634_1292 = PHI <ivtmp.634_1290(310), ivtmp.634_1265(308)>
+  # ivtmp.636_1088 = PHI <ivtmp.636_1087(310), ivtmp.636_1015(308)>
+  # ivtmp.637_2352 = PHI <ivtmp.637_2350(310), ivtmp.637_2340(308)>
+  if (_2988 > _2989)
+    goto <bb 310>; [11.00%]
+  else
+    goto <bb 311>; [89.00%]
+
+  <bb 310> [local count: 8267291]:
+  ivtmp.634_1290 = ivtmp.634_1292 + 1;
+  ivtmp.636_1087 = ivtmp.636_1088 + _2657;
+  ivtmp.637_2350 = ivtmp.637_2352 + _2724;
+  if (ivtmp.634_1292 == _2385)
+    goto <bb 298>; [11.00%]
+  else
+    goto <bb 309>; [89.00%]
+
+  <bb 311> [local count: 7357888]:
+  _2374 = ivtmp.637_2352 * 8;
+  _2127 = _2375 + 8;
+  ivtmp.629_1368 = _2127 + _2374;
+  _1325 = (unsigned long) pretmp_2961;
+
+  <bb 312> [local count: 66889896]:
+  # ivtmp.623_1500 = PHI <ivtmp.623_2252(313), _250(311)>
+  # ivtmp.627_1442 = PHI <ivtmp.627_1441(313), ivtmp.636_1088(311)>
+  # ivtmp.629_1390 = PHI <ivtmp.629_1384(313), ivtmp.629_1368(311)>
+  if (_2986 > _2987)
+    goto <bb 313>; [11.00%]
+  else
+    goto <bb 314>; [89.00%]
+
+  <bb 313> [local count: 66889897]:
+  ivtmp.623_2252 = ivtmp.623_1500 + 1;
+  ivtmp.627_1441 = ivtmp.627_1442 + _1479;
+  ivtmp.629_1384 = _1369 + ivtmp.629_1390;
+  if (_1325 == ivtmp.623_1500)
+    goto <bb 310>; [11.00%]
+  else
+    goto <bb 312>; [89.00%]
+
+  <bb 314> [local count: 59532007]:
+  _963 = ivtmp.627_1442 * 8;
+  _962 = _963 + _969;
+  _2121 = _1467 + 18446744073709551608;
+  _1469 = ivtmp.629_1390 + _2121;
+
+  <bb 315> [local count: 541200072]:
+  # ivtmp.619_1711 = PHI <ivtmp.619_1722(315), _962(314)>
+  # ivtmp.620_1696 = PHI <ivtmp.620_1672(315), _1469(314)>
+  _1569 = (void *) ivtmp.619_1711;
+  _931 = MEM[(real(kind=8) *)_1569];
+  _1555 = (void *) ivtmp.620_1696;
+  _934 = MEM[(real(kind=8) *)_1555];
+  _935 = _934 * pretmp_2995;
+  _936 = _931 + _935;
+  MEM[(real(kind=8) *)_1569] = _936;
+  ivtmp.619_1722 = _405 + ivtmp.619_1711;
+  ivtmp.620_1672 = ivtmp.620_1696 + 8;
+  if (ivtmp.629_1390 == ivtmp.620_1672)
+    goto <bb 313>; [11.00%]
+  else
+    goto <bb 315>; [89.00%]
+
+  <bb 316> [local count: 27784]:
+  _2033 = (unsigned int) coeffind_531;
+  _2155 = _2033 + 1;
+  _137 = _2155 + _2548;
+  _822 = _137 + _2548;
+  coeffind_804 = (integer(kind=4)) _822;
+
+  <bb 317> [local count: 31218]:
+  # coeffind_2233 = PHI <coeffind_804(316), coeffind_531(291)>
+  ivtmp.659_2119 = ivtmp.659_796 + 1;
+  ivtmp.663_377 = ivtmp.663_374 + _2214;
+  ivtmp.666_790 = ivtmp.666_788 + _2171;
+  if (_638 == ivtmp.659_2119)
+    goto <bb 318>; [11.00%]
+  else
+    goto <bb 291>; [89.00%]
+
+  <bb 318> [local count: 3434]:
+  iorb = _771;
+
+  <bb 319> [local count: 3858]:
+  # coeffind_533 = PHI <coeffind_2233(318), coeffind_530(289)>
+  _2138 = (unsigned int) ivtmp.670_1140;
+  _2152 = _2138 + 1;
+  _939 = (integer(kind=4)) _2152;
+  iatom = _939;
+  ivtmp.670_1606 = ivtmp.670_1140 + 1;
+  ivtmp.673_375 = _1985 + ivtmp.673_2117;
+  _1865 = (integer(kind=4)) ivtmp.670_1606;
+  if (_1865 > pretmp_2954)
+    goto <bb 320>; [11.00%]
+  else
+    goto <bb 289>; [89.00%]
+
+  <bb 320> [local count: 424]:
+  ivtmp.678_1458 = ivtmp.678_2643 + 1;
+  icell_1457 = (integer(kind=4)) ivtmp.678_1458;
+  if (icell_1457 > _1991)
+    goto <bb 284>; [11.00%]
+  else
+    goto <bb 321>; [89.00%]
+
+  <bb 321> [local count: 377]:
+  iatom = 1;
+  goto <bb 288>; [100.00%]
+
+  <bb 322> [local count: 0]:
+  _1129 = _1601 + _3016;
+  goto <bb 164>; [100.00%]
+
+  <bb 323> [local count: 6]:
+  dt_parm.90.common.filename = &"/home/merlin/Schreibtisch/Fortran/dftbplus/app/waveplot/molorb2.F90"[1]{lb: 1 sz: 1};
+  dt_parm.90.common.line = 174;
+  MEM <vector(2) integer(kind=4)> [(integer(kind=4) *)&dt_parm.90] = { 128, 6 };
+  _gfortran_st_write (&dt_parm.90);
+  _gfortran_transfer_character_write (&dt_parm.90, &"nUniqueOrb"[1]{lb: 1 sz: 1}, 10);
+  _gfortran_transfer_integer_write (&dt_parm.90, &nuniqueorb, 4);
+  _gfortran_st_write_done (&dt_parm.90);
+  dt_parm.90 ={v} {CLOBBER(eol)};
+  iorb = 1;
+  goto <bb 47>; [100.00%]
+
+  <bb 324> [local count: 13589545]:
+  _2579 = *_636;
+  _476 = _2579 * _2714;
+  _2805 = _476 + _900;
+  _2946 = xyz[1];
+  _2955 = *_717;
+  _1992 = _2714 * _2955;
+  _2006 = _1992 + _2946;
+  xyz[1] = _2006;
+  if (_54 <= 1)
+    goto <bb 263>; [25.00%]
+  else
+    goto <bb 262>; [75.00%]
+
+  <bb 325> [local count: 4529848]:
+  _2150 = *_636;
+  _330 = _2150 * _2714;
+  _1100 = _330 + _900;
+  _789 = *_211;
+  _3021 = _653 * _789;
+  _105 = _1100 + _3021;
+  xyz[0] = _105;
+  goto <bb 264>; [100.00%]
+
+  <bb 326> [local count: 17]:
+  # limit.118_1105 = PHI <limit.118_1127(81), limit.118_2689(85)>
+  D.4896 = limit.118_1105;
+  _gfortran_transfer_real_write (&dt_parm.115, &D.4896, 8);
+  D.4896 ={v} {CLOBBER(eol)};
+  _gfortran_st_write_done (&dt_parm.115);
+  dt_parm.115 ={v} {CLOBBER(eol)};
+  goto <bb 70>; [100.00%]
+
+  <bb 327> [local count: 19]:
+  # limit.116_1130 = PHI <limit.116_2188(74), limit.116_2677(78)>
+  D.4887 = limit.116_1130;
+  _gfortran_transfer_real_write (&dt_parm.115, &D.4887, 8);
+  D.4887 ={v} {CLOBBER(eol)};
+  _2623 = iftmp.240_1059 * 8;
+  _2622 = (unsigned long) _2623;
+  ivtmp.819_2621 = (unsigned long) cutoffs.0_1196;
+  goto <bb 79>; [100.00%]
+
+}
+
+
