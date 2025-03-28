@@ -4,6 +4,7 @@ set(sources-fpp
   gridcache.F90
   initwaveplot.F90
   molorb.F90
+  molorb2.F90
   slater.F90
   waveplot.F90)
 
