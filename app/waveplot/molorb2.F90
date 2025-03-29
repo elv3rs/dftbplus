@@ -151,7 +151,7 @@ contains
 
 
     integer :: i1Chunked, i2Chunked, i3Chunked
-    integer :: coeffInd
+    integer :: coeffInd, iOffset(3)
     integer :: nPointsHalved(3)
 
 
@@ -159,6 +159,8 @@ contains
 
 
     real(dp) :: expectedSizeMB
+    real(dp) :: cacheValue
+    integer :: c1,c2,c3
 
     !---------------------------------
     
@@ -168,7 +170,7 @@ contains
     cacheIndexMap(:,:) = -1 ! Ensure we dont go oob
 
     ! Calculate nr. of cache entries <cacheSize> and populate mapping array <cacheIndexMap>
-    cacheInd = 1
+    cacheInd = 0
     print *, "nUniqueOrb", nUniqueOrb
     do iOrb = 1, nUniqueOrb
       iL = angMoms(iOrb)
@@ -217,8 +219,6 @@ contains
 
 
 
-
-
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
     print "(*(G0, 1X))", " ->", size(valueReal), "elements,",  sizeof(valueReal) / 1000.0 / 1000.0, "MB"
 
@@ -252,17 +252,6 @@ contains
     ! zero out the cache
     wavefunctionCache(:,:,:,:,:,:,:) = 0.0_dp
     print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
-
-
-
-
-
-
-
-
-
-
-  
 
 
     print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
@@ -325,48 +314,41 @@ contains
         ! Atom Offset in terms of cacheGridVecs now stored in pos.
         ! Choose closest chunk
         iChunk(:) = ABS (int(MOD(pos(:,1), 1.0_dp) * real(resolutionFactor(:), dp)))
+        iOffset(:) = int(pos(:,1))
         ! Align to main grid, clamp to bounds
-        iMain(:, 1) = MAX(1, int(pos(:,1)) - nPointsHalved(:))
-        iMain(:, 2) = MIN(nPoints(:3), int(pos(:,1)) + nPointsHalved(:))
+        iMain(:, 1) = MAX(1, iOffset(:) - nPointsHalved(:))
+        iMain(:, 2) = MIN(nPoints(:3), iOffset(:) + nPointsHalved(:))
 
-        iCache(:, 1) = iMain(:,1) - int(pos(:,1))
-        iCache(:, 2) = iMain(:,2) - int(pos(:,1))
-        
+        if (.not. tReal) then
+          stop "TODO: Complex not implemented yet"
+        end if
+
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
           do iM = -iL, iL
+
             cacheInd = cacheIndexMap(iM, iOrb)
-            do iEig = 1, nPoints(4)
-              if (tReal) then
-                if (tAddDensities) then
-                  ! Square the wavefunction
-                  valueReal(    iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
-                    & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
-                    & eigVecsReal(coeffInd, iEig) * &
-                    & wavefunctionCache(iCache(1,1):iCache(1,2), iChunk(1), &
-                                      & iCache(2,1):iCache(2,2), iChunk(2), &
-                                      & iCache(3,1):iCache(3,2), iChunk(3), &
-                                      & cacheInd) ** 2
-                else
-                  valueReal(    iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) = &
-                    & valueReal(iMain(1,1):iMain(1,2), iMain(2,1):iMain(2,2), iMain(3,1):iMain(3,2), iEig) + &
-                    & eigVecsReal(coeffInd, iEig) * &
-                    & wavefunctionCache(iCache(1,1):iCache(1,2), iChunk(1), &
-                                      & iCache(2,1):iCache(2,2), iChunk(2), &
-                                      & iCache(3,1):iCache(3,2), iChunk(3), &
-                                      & cacheInd) 
-                end if
-              else
-                !TODO: Implement complex version
-                stop "TODO: Complex not implemented yet"
-              end if
+            do i3 = iMain(3,1), iMain(3,2)
+              do i2 = iMain(2,1), iMain(2,2)
+                do iEig = 1, nPoints(4)
+                  do i1 = iMain(1,1), iMain(1,2)
+                    cacheValue = wavefunctionCache(i1 + iOffset(1), iChunk(1), &
+                                                &  i2 + iOffset(2), iChunk(2), &
+                                                &  i3 + iOffset(3), iChunk(3), cacheInd)
+                    if (tAddDensities) then
+                      cacheValue = cacheValue * cacheValue
+                    end if
+                    valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * cacheValue
+                  end do
+                end do
+              end do
             end do
             coeffInd = coeffInd + 1
           end do
         end do
-        end do
       end do
+    end do
   end subroutine localGetValue
 
 end module waveplot_molorb2
