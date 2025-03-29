@@ -271,7 +271,8 @@ contains
         ! -> offset by the atom position
         iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
         ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
-        iAtomChunks(:, iAtom, iCell) = nint(modulo(pos(:,1) * subdivisionFactor(:), real(subdivisionFactor(:), dp)))
+        ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
+        iAtomChunks(:, iAtom, iCell) = modulo( int(pos(:,1) * subdivisionFactor(:)), subdivisionFactor(:))
 
         ! Lower Main Indices need to include
         ! -> start of main grid (1)
@@ -289,7 +290,7 @@ contains
           print "(*(G0, 1X))", " o", i1, iMainIndices(i1,1, iAtom, iCell), ":" , &
                           & iMainIndices(i1,2, iAtom, iCell), "->",&
                           & iMainIndices(i1,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell), ":", &
-                          & iMainIndices(i1,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell)
+                          & iMainIndices(i1,2, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell)
         end do
       end do
     end do
@@ -371,9 +372,9 @@ contains
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4)
                   do i1 = iMain(1,1), iMain(1,2)
-                    cacheValue = wavefunctionCache(i1 + iOffset(1), iChunk(1), &
-                                                &  i2 + iOffset(2), iChunk(2), &
-                                                &  i3 + iOffset(3), iChunk(3), cacheInd)
+                    cacheValue = wavefunctionCache(i1 - iOffset(1), iChunk(1), &
+                                                &  i2 - iOffset(2), iChunk(2), &
+                                                &  i3 - iOffset(3), iChunk(3), cacheInd)
                     if (tAddDensities) then
                       cacheValue = cacheValue * cacheValue
                     end if
