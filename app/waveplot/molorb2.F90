@@ -124,14 +124,14 @@ contains
     integer, pointer :: iOffset(:), iChunk(:), iMain(:,:)
 
 
-    ! Todo: This overrides targetResolution and subdivisionFactor.
+    ! Todo: This overrides targetGridDistance and subdivisionFactor.
     integer, parameter :: subdivisionFactorLead = 5
 
-    ! Target subdivision resolution.
+    ! Target subdivision subdivision.
     ! Todo: Figure out what unit we are using here. A?
-    real(dp) :: targetResolution(3)
+    real(dp) :: targetGridDistance(3)
     
-    ! Resolution factors calculated to meet the targetResolution requirements
+    ! Subdivision factors calculated to meet the targetGridDistance requirements
     integer :: subdivisionFactor(3)
   
     ! Has the cache been populated?
@@ -153,13 +153,11 @@ contains
 
     real(dp) :: expectedSizeMB
     real(dp) :: cacheValue
+    real(dp) :: chunkSeparation(3)
 
     !---------------------------------
 
-    ! allocate Index arrays
-    allocate(iAtomOffsets(3, nAtom, nCell))
-    allocate(iAtomChunks(3, nAtom, nCell))
-    allocate(iMainIndices(3, 2, nAtom, nCell))
+
 
 
     nUniqueOrb = SIZE(angMoms)
@@ -184,10 +182,12 @@ contains
       stop "Complex not implemented yet"
     end if
 
-    targetResolution = norm2(gridVecs, dim=1) / subdivisionFactorLead
-    subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetResolution)
-    print "(*(G0, 1X))", "Target Resolution:", targetResolution
-    print "(*(G0, 1X))", "Resolution Subdivision Factors:", subdivisionFactor
+    targetGridDistance = norm2(gridVecs, dim=1) / subdivisionFactorLead
+
+    subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetGridDistance)
+    chunkSeparation = 1.0_dp / subdivisionFactor
+    print "(*(G0, 1X))", "Subdivision Distance / chunk Separation:", chunkSeparation
+    print "(*(G0, 1X))", "Subdivision Factors / chunk Count:", subdivisionFactor
     
 
 
@@ -208,7 +208,7 @@ contains
     print *, "GridVec size:", norm2(gridVecs, dim=1)
 
     ! General Todo list: 
-    ! Todo: Figure out a sensible targetResolution for testing
+    ! Todo: Figure out a sensible targetGridDistance for testing
     ! Todo: Implement Complex Version
 
 
@@ -248,13 +248,21 @@ contains
     wavefunctionCache(:,:,:,:,:,:,:) = 0.0_dp
     !print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
 
+
+    ! allocate Index arrays
+    allocate(iAtomOffsets(3, nAtom, nCell))
+    allocate(iAtomChunks(3, nAtom, nCell))
+    allocate(iMainIndices(3, 2, nAtom, nCell))
+
     do iCell = 1, nCell
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
+        print "(*(G0, 1X))", " -> Aligning Atom no.", iAtom
 
         ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        pos(:,1) = coords(:, iAtom, iCell) + origin
+        pos(:,1) = coords(:, iAtom, iCell) - origin
+        print "(*(G0, 1X))", " -> Atom Position: ", pos(:,1)
+
         tmpBasis(:,:) = gridVecs(:,:)
         ! Get the atom position in terms of the basis <gridVecs>, stored in pos
         call gesv(tmpBasis, pos)
@@ -263,7 +271,7 @@ contains
         ! -> offset by the atom position
         iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
         ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
-        iAtomChunks(:, iAtom, iCell) = nint(mod(pos(:,1), 1.0_dp) * real(subdivisionFactor(:), dp))
+        iAtomChunks(:, iAtom, iCell) = nint(modulo(pos(:,1) * subdivisionFactor, subdivisionFactor))
 
         ! Lower Main Indices need to include
         ! -> start of main grid (1)
@@ -274,9 +282,10 @@ contains
         ! -> end of cache grid (atom offset + half cache size)
         iMainIndices(:, 2, iAtom, iCell) = min(nPoints(:3), iAtomOffsets(:, iAtom, iCell) + nPointsHalved(:))
 
-        !print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
-        !print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
-        !print "(*(G0, 1X))", " -> Index Mapping: X:", iMain(1,:), "Y:", iMain(2,:), "Z:", iMain(3,:)
+        print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
+        print "(*(G0, 1X))", " -> Atom Position in Grid:", iAtomOffsets(:, iAtom, iCell), "Chunk:", iAtomChunks(:, iAtom, iCell)
+        print "(*(G0, 1X))", " -> Index Mapping: X:", iMainIndices(1,:, iAtom, iCell), &
+          & "Y:", iMainIndices(2,:, iAtom, iCell), "Z:", iMainIndices(3,:, iAtom, iCell)
       end do
     end do
 
