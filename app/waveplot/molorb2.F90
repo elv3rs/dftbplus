@@ -109,7 +109,7 @@ contains
     ! Cache variables
 
     ! Todo: This overrides targetResolution and resolutionFactor.
-    integer, parameter :: resolutionFactorLead = 22
+    integer, parameter :: resolutionFactorLead = 20
 
     ! Target subdivision resolution.
     ! Todo: Figure out what unit we are using here. A?
@@ -127,9 +127,9 @@ contains
     ! Indices : [X, XChunked, Y, YChunked, Z, ZChunked,  cacheInd ]
     real(dp), allocatable, save :: wavefunctionCache(:,:,:,:,:,:,:)
 
-    integer, allocatable, save, target :: chunkedIndices(:,:,:)
-    integer, allocatable, save, target :: sliceIndicesMain(:,:,:,:)
-    integer, allocatable, save, target :: sliceIndicesCache(:,:,:,:)
+    integer, save:: iChunk(3)
+    integer, save:: iMain(3,2)
+    integer, save:: iCache(3,2)
 
     logical, save :: tCacheInitialised = .false.
 
@@ -156,9 +156,7 @@ contains
 
 
 
-    integer, pointer :: iChunk(:)
-    integer, pointer :: iMain(:,:)
-    integer, pointer :: iCache(:,:)
+
 
     real(dp) :: expectedSizeMB
 
@@ -256,33 +254,11 @@ contains
     print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
 
 
-    ! Allocate indice arrays
-    allocate(chunkedIndices(3, nAtom, nCell))
-    allocate(sliceIndicesMain(3,2, nAtom, nCell))
-    allocate(sliceIndicesCache(3,2, nAtom, nCell))
 
-    print *, "Aligning Arrays..."
-    ! Factored this out of the main loop to get chunked information for sparse caching
-    do iCell = 1, nCell
-      coeffInd = 1
-      do iAtom = 1, nAtom
-        iSpecies = species(iAtom)
-        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        pos(:,1) = coords(:, iAtom, iCell) + origin
-        cacheBasis(:,:) = cacheGridVecs(:,:)
-        ! Decompose Atom position onto basis
-        call gesv(cacheBasis, pos)
-        ! Atom Offset in terms of cacheGridVecs now stored in pos.
-        ! Choose closest chunk
-        chunkedIndices(:, iAtom, iCell) = ABS (int(MOD(pos(:,1), 1.0_dp) * real(resolutionFactor(:), dp)))
-        ! Align to main grid, clamp to bounds
-        sliceIndicesMain(:, 1, iAtom, iCell) = MAX(1, int(pos(:,1)) - nPointsHalved(:))
-        sliceIndicesMain(:, 2, iAtom, iCell) = MIN(nPoints(:3), int(pos(:,1)) + nPointsHalved(:))
 
-        sliceIndicesCache(:, 1, iAtom, iCell) = sliceIndicesMain(:,1, iAtom, iCell) - int(pos(:,1))
-        sliceIndicesCache(:, 2, iAtom, iCell) = sliceIndicesMain(:,2, iAtom, iCell) - int(pos(:,1))
-      end do
-    end do
+
+
+
 
 
 
@@ -338,11 +314,24 @@ contains
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
         print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
+
+
+        iSpecies = species(iAtom)
+        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
+        pos(:,1) = coords(:, iAtom, iCell) + origin
+        cacheBasis(:,:) = cacheGridVecs(:,:)
+        ! Decompose Atom position onto basis
+        call gesv(cacheBasis, pos)
+        ! Atom Offset in terms of cacheGridVecs now stored in pos.
+        ! Choose closest chunk
+        iChunk(:) = ABS (int(MOD(pos(:,1), 1.0_dp) * real(resolutionFactor(:), dp)))
+        ! Align to main grid, clamp to bounds
+        iMain(:, 1) = MAX(1, int(pos(:,1)) - nPointsHalved(:))
+        iMain(:, 2) = MIN(nPoints(:3), int(pos(:,1)) + nPointsHalved(:))
+
+        iCache(:, 1) = iMain(:,1) - int(pos(:,1))
+        iCache(:, 2) = iMain(:,2) - int(pos(:,1))
         
-        ! Load Alignment
-        iChunk => chunkedIndices(:, iAtom, iCell)
-        iMain => sliceIndicesMain(:, :, iAtom, iCell)
-        iCache => sliceIndicesCache(:, :, iAtom, iCell)
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
