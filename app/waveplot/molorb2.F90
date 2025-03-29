@@ -271,7 +271,7 @@ contains
         ! -> offset by the atom position
         iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
         ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
-        iAtomChunks(:, iAtom, iCell) = nint(modulo(pos(:,1) * subdivisionFactor, subdivisionFactor))
+        iAtomChunks(:, iAtom, iCell) = nint(modulo(pos(:,1) * subdivisionFactor(:), real(subdivisionFactor(:), dp)))
 
         ! Lower Main Indices need to include
         ! -> start of main grid (1)
