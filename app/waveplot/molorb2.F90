@@ -284,8 +284,13 @@ contains
 
         print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
         print "(*(G0, 1X))", " -> Atom Position in Grid:", iAtomOffsets(:, iAtom, iCell), "Chunk:", iAtomChunks(:, iAtom, iCell)
-        print "(*(G0, 1X))", " -> Index Mapping: X:", iMainIndices(1,:, iAtom, iCell), &
-          & "Y:", iMainIndices(2,:, iAtom, iCell), "Z:", iMainIndices(3,:, iAtom, iCell)
+        print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
+        do i1 = 1, 3
+          print "(*(G0, 1X))", " o", i1, iMainIndices(i1,1, iAtom, iCell), ":" , &
+                          & iMainIndices(i1,2, iAtom, iCell), "->",&
+                          & iMainIndices(i1,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell), ":", &
+                          & iMainIndices(i1,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell)
+        end do
       end do
     end do
 
