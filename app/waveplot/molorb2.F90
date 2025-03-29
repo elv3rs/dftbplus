@@ -108,70 +108,65 @@ contains
 
     ! Cache variables
 
-    ! Todo: This overrides targetResolution and resolutionFactor.
-    integer, parameter :: resolutionFactorLead = 20
+    ! Wavefunction cache overview:
+    ! Wavefunctions are evaluated across a finer grid (subdivisionFactor as many points as the main one).
+    ! When aligned, points can simply be read using a stride of subdivisionFactor.
+    ! Main feature:
+    ! The X-coordinate is subdivided into <subdivisionFactor> chunked parts to ensure a contiguous memory layout.
+    ! Y and Z have been subdivided as well, though only for convenience.
+    ! Indices : [X, XChunked, Y, YChunked, Z, ZChunked,  cacheInd ]
+    real(dp), allocatable, save :: wavefunctionCache(:,:,:,:,:,:,:)
+    
+    ! Cache Indexing Arrays
+    integer, allocatable, target, save:: iAtomOffsets(:, :, :)
+    integer, allocatable, target, save:: iAtomChunks(:, :, :)
+    integer, allocatable, target, save:: iMainIndices(:, :, :, :)
+    integer, pointer :: iOffset(:), iChunk(:), iMain(:,:)
+
+
+    ! Todo: This overrides targetResolution and subdivisionFactor.
+    integer, parameter :: subdivisionFactorLead = 5
 
     ! Target subdivision resolution.
     ! Todo: Figure out what unit we are using here. A?
     real(dp) :: targetResolution(3)
     
     ! Resolution factors calculated to meet the targetResolution requirements
-    integer :: resolutionFactor(3)
-
-    ! Wavefunction cache overview:
-    ! Wavefunctions are evaluated across a finer grid (resolutionFactor as many points as the main one).
-    ! When aligned, points can simply be read using a stride of resolutionFactor.
-    ! Main feature:
-    ! The X-coordinate is subdivided into <resolutionFactor> chunked parts to ensure a contiguous memory layout.
-    ! Y and Z have been subdivided as well, though only for convenience.
-    ! Indices : [X, XChunked, Y, YChunked, Z, ZChunked,  cacheInd ]
-    real(dp), allocatable, save :: wavefunctionCache(:,:,:,:,:,:,:)
-
-    integer, save:: iChunk(3)
-    integer, save:: iMain(3,2)
-    integer, save:: iCache(3,2)
-
+    integer :: subdivisionFactor(3)
+  
+    ! Has the cache been populated?
     logical, save :: tCacheInitialised = .false.
 
     ! cacheInd is the index of the orbital in the cache as a running sum of (iSpecies, iOrb, iM)
     integer :: cacheInd, cacheSize
-
-    ! Cache grid vectors (x_fine, y_fine, z_fine)
-    real(dp) :: cacheGridVecs(3,3)
-
-    ! Used for decomposing Atom position into cacheGrid Basis vecs
-    real(dp) :: cacheBasis(3,3)
-    real(dp) :: pos(3, 1)
-    
-    ! Aligning the cache to the main grid for each atom position
-    integer :: nUniqueOrb
-
     ! Mapping array describing cache layout: (iM, iOrb) -> cacheInd.
     integer, allocatable :: cacheIndexMap(:,:)
 
 
-    integer :: i1Chunked, i2Chunked, i3Chunked
-    integer :: coeffInd, iOffset(3)
+    ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
+    real(dp) :: tmpBasis(3,3)
+    real(dp) :: pos(3, 1)
+    
+    integer :: nUniqueOrb
+    integer :: i1Chunked, i2Chunked, i3Chunked, coeffInd
     integer :: nPointsHalved(3)
-
-
-
-
 
     real(dp) :: expectedSizeMB
     real(dp) :: cacheValue
-    integer :: c1,c2,c3
 
     !---------------------------------
-    
+
+    ! allocate Index arrays
+    allocate(iAtomOffsets(3, nAtom, nCell))
+    allocate(iAtomChunks(3, nAtom, nCell))
+    allocate(iMainIndices(3, 2, nAtom, nCell))
+
+
     nUniqueOrb = SIZE(angMoms)
     allocate(cacheIndexMap(-MAXVAL(angMoms):MAXVAL(angMoms), nUniqueOrb))
-
-    cacheIndexMap(:,:) = -1 ! Ensure we dont go oob
-
+    cacheIndexMap(:,:) = -1000
     ! Calculate nr. of cache entries <cacheSize> and populate mapping array <cacheIndexMap>
     cacheInd = 0
-    print *, "nUniqueOrb", nUniqueOrb
     do iOrb = 1, nUniqueOrb
       iL = angMoms(iOrb)
       do iM = -iL, iL
@@ -189,15 +184,12 @@ contains
       stop "Complex not implemented yet"
     end if
 
-    targetResolution = norm2(gridVecs, dim=1) / resolutionFactorLead
-    resolutionFactor = norm2(gridVecs, dim=1) / targetResolution
+    targetResolution = norm2(gridVecs, dim=1) / subdivisionFactorLead
+    subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetResolution)
     print "(*(G0, 1X))", "Target Resolution:", targetResolution
-    print "(*(G0, 1X))", "Resolution Factors:", resolutionFactor
+    print "(*(G0, 1X))", "Resolution Subdivision Factors:", subdivisionFactor
     
-    ! Fine Grid Basis Vectors
-    cacheGridVecs(:,1) = gridVecs(:,1) / resolutionFactor(1)
-    cacheGridVecs(:,2) = gridVecs(:,2) / resolutionFactor(2)
-    cacheGridVecs(:,3) = gridVecs(:,3) / resolutionFactor(3)
+
 
     ! Print cutoff size. We assume that maxval == minval.
     if (maxval(cutoffs) /= minval(cutoffs)) then
@@ -205,22 +197,25 @@ contains
     end if
 
 
-    ! Choose Cache size as min(cutoff, nPoints). This assumes that the basis is orthogonal.
-    ! We might have to invert the Gram matrix to get the correct cutoffs.
-    nPointsHalved(1) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,1))), nPoints(1))
-    nPointsHalved(2) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,2))), nPoints(2))
-    nPointsHalved(3) = MIN(int(MAXVAL(cutoffs) / norm2(cacheGridVecs(:,3))), nPoints(3))
-    
+    ! Cache size is chosen to fit the largest orbital.
+    ! (Usually all cutoffs are identical)
+    ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
+    ! TODO: Check the farthest distance of an atom from the main grid.
+    !   -> Can we discard the atom altogether?
+    !   -> Can we reduce the cache size to the grid size?
+    nPointsHalved = ceiling(maxval(cutoffs) / norm2(gridVecs, dim=1))
+    print *, "Cutoffs:", cutoffs
+    print *, "GridVec size:", norm2(gridVecs, dim=1)
+
+    ! General Todo list: 
     ! Todo: Figure out a sensible targetResolution for testing
-    ! Todo: Extend cutoff estimation to non-orthogonal basis by building Gram matrix
     ! Todo: Implement Complex Version
-    ! Todo: Compare with non-chunked version, decide if chunking is worth the added complexity
 
 
 
 
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
-    print "(*(G0, 1X))", " ->", size(valueReal), "elements,",  sizeof(valueReal) / 1000.0 / 1000.0, "MB"
+    !print "(*(G0, 1X))", " ->", size(valueReal), "elements,",  sizeof(valueReal) / 1024.0 / 1024.0, "MB"
 
 
 
@@ -232,7 +227,7 @@ contains
 
     expectedSizeMB = 0.0_dp
     expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
-    expectedSizeMB  = expectedSizeMB * 2**3 * product(resolutionFactor) * cacheSize
+    expectedSizeMB  = expectedSizeMB * 2**3 * product(subdivisionFactor) * cacheSize
     expectedSizeMB  = expectedSizeMB / 8.0 / 1024.0 / 1024.0
 
     print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
@@ -243,15 +238,52 @@ contains
 
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
     allocate(wavefunctionCache(   -nPointsHalved(1):nPointsHalved(1), &
-                                &  0:resolutionFactor(1)-1, &
+                                &  0:subdivisionFactor(1)-1, &
                                 & -nPointsHalved(2):nPointsHalved(2),&
-                                &  0:resolutionFactor(2)-1, &
+                                &  0:subdivisionFactor(2)-1, &
                                 & -nPointsHalved(3):nPointsHalved(3), &
-                                &  0:resolutionFactor(3)-1, &
+                                &  0:subdivisionFactor(3)-1, &
                                 &  1:cacheSize))
     ! zero out the cache
     wavefunctionCache(:,:,:,:,:,:,:) = 0.0_dp
-    print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
+    !print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
+
+    do iCell = 1, nCell
+      do iAtom = 1, nAtom
+        iSpecies = species(iAtom)
+        print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
+
+        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
+        pos(:,1) = coords(:, iAtom, iCell) + origin
+        tmpBasis(:,:) = gridVecs(:,:)
+        ! Get the atom position in terms of the basis <gridVecs>, stored in pos
+        call gesv(tmpBasis, pos)
+
+        ! Cache Indices are derived from the main indices, and:
+        ! -> offset by the atom position
+        iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
+        ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
+        iAtomChunks(:, iAtom, iCell) = nint(mod(pos(:,1), 1.0_dp) * real(subdivisionFactor(:), dp))
+
+        ! Lower Main Indices need to include
+        ! -> start of main grid (1)
+        ! -> start of cache grid (atom offset - half cache size)
+        iMainIndices(:, 1, iAtom, iCell) = max(1, iAtomOffsets(:, iAtom, iCell) - nPointsHalved(:))
+        ! Upper Main Indices need to include
+        ! -> end of main grid (nPoints)
+        ! -> end of cache grid (atom offset + half cache size)
+        iMainIndices(:, 2, iAtom, iCell) = min(nPoints(:3), iAtomOffsets(:, iAtom, iCell) + nPointsHalved(:))
+
+        !print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
+        !print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
+        !print "(*(G0, 1X))", " -> Index Mapping: X:", iMain(1,:), "Y:", iMain(2,:), "Z:", iMain(3,:)
+      end do
+    end do
+
+
+
+
+
 
 
     print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
@@ -260,15 +292,15 @@ contains
       print "(*(G0, 1X))", " -> Caching orbital ", iOrb
       iL = angMoms(iOrb)
       ! For every Point on the fine grid:
-      lpI3Chunked : do i3Chunked = 0, resolutionFactor(3)-2
+      lpI3Chunked : do i3Chunked = 0, subdivisionFactor(3)-1
         lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-          curCoords(:, 3) = real(i3*resolutionFactor(3) + i3Chunked, dp) * cacheGridVecs(:, 3)
-          lpI2Chunked : do i2Chunked = 0, resolutionFactor(2)-2
+          curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor(3), dp) * gridVecs(:, 3)
+          lpI2Chunked : do i2Chunked = 0, subdivisionFactor(2)-1
             lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-              curCoords(:, 2) = real(i2*resolutionFactor(2) + i2Chunked, dp) * cacheGridVecs(:, 2)
-              lpI1Chunked : do i1Chunked = 0, resolutionFactor(1)-2
+              curCoords(:, 2) = real(i2 + i2Chunked / subdivisionFactor(2), dp) * gridVecs(:, 2)
+              lpI1Chunked : do i1Chunked = 0, subdivisionFactor(1)-1
                 lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                  curCoords(:, 1) = real(i1*resolutionFactor(1) + i1Chunked, dp) * cacheGridVecs(:, 1)
+                  curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor(1), dp) * gridVecs(:, 1)
                   
                   ! Calculate position
                   xyz(:) = sum(curCoords, dim=2)
@@ -304,20 +336,13 @@ contains
         iSpecies = species(iAtom)
         print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
 
+        ! Load Array Alignment boundarys
+        iOffset => iAtomOffsets(:, iAtom, iCell)
+        iChunk => iAtomChunks(:, iAtom, iCell)
+        iMain => iMainIndices(:, :, iAtom, iCell)
 
-        iSpecies = species(iAtom)
-        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        pos(:,1) = coords(:, iAtom, iCell) + origin
-        cacheBasis(:,:) = cacheGridVecs(:,:)
-        ! Decompose Atom position onto basis
-        call gesv(cacheBasis, pos)
-        ! Atom Offset in terms of cacheGridVecs now stored in pos.
-        ! Choose closest chunk
-        iChunk(:) = ABS (int(MOD(pos(:,1), 1.0_dp) * real(resolutionFactor(:), dp)))
-        iOffset(:) = int(pos(:,1))
-        ! Align to main grid, clamp to bounds
-        iMain(:, 1) = MAX(1, iOffset(:) - nPointsHalved(:))
-        iMain(:, 2) = MIN(nPoints(:3), iOffset(:) + nPointsHalved(:))
+
+
 
         if (.not. tReal) then
           stop "TODO: Complex not implemented yet"
@@ -327,7 +352,6 @@ contains
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
           do iM = -iL, iL
-
             cacheInd = cacheIndexMap(iM, iOrb)
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
