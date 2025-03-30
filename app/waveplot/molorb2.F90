@@ -349,7 +349,12 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        print "(*(G0, 1X))", " -> Adding contribution of Atom no.", iAtom
+        ! Update progress using carriage return (char(13))
+        WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Adding contribution from ",&
+        &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
+
+
+
 
         ! Load Array Alignment boundarys
         iOffset => iAtomOffsets(:, iAtom, iCell)
