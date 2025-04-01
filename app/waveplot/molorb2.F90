@@ -191,23 +191,37 @@ contains
 
 
     ! Print cutoff size. We assume that maxval == minval.
+    ! In the slater param sample i looked at, all cutoffs are identical. Is this always the case?
+    ! One would expect H to be smaller than e.g. Pb
+    ! If rare, is the size difference negligible?
+    ! Do we expect a large discrepancy for some atoms? 
     if (maxval(cutoffs) /= minval(cutoffs)) then
       print *, "Warn: Different cutoffs (max/min):", maxval(cutoffs), minval(cutoffs)
     end if
 
 
     ! Cache size is chosen to fit the largest orbital.
-    ! (Usually all cutoffs are identical)
+
     ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
+    ! Alternative: Warn the user / stop if user provides a stupid basis
 
     nPointsHalved = ceiling(maxval(cutoffs) / norm2(gridVecs, dim=1))
     print *, "Cutoffs:", cutoffs
     print *, "GridVec size:", norm2(gridVecs, dim=1)
 
     ! General Todo list: 
-    ! Todo: Figure out a sensible targetGridDistance for testing
+    ! Todo: Acquire a real-world example to base decisions on.
+    !        -> Figure out a sensible targetGridDistance
+    !        -> Base on available memory?
+
     ! Todo: Implement Complex Version
+
     ! Todo: Check if results align with unmodified version
+    !       -> Run both, compare
+    !       -> Investigate how subdivision affects accuracy
+
+    ! Todo: Move targetGridDistance setting etc. to waveplot in hsd
+    
 
 
 
