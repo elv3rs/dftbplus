@@ -127,7 +127,6 @@ contains
     ! Todo: This overrides targetGridDistance and subdivisionFactor.
     integer, parameter :: subdivisionFactorLead = 5
 
-    ! Target subdivision subdivision.
     ! Todo: Figure out what unit we are using here. A?
     real(dp) :: targetGridDistance(3)
     
@@ -200,9 +199,7 @@ contains
     ! Cache size is chosen to fit the largest orbital.
     ! (Usually all cutoffs are identical)
     ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
-    ! TODO: Check the farthest distance of an atom from the main grid.
-    !   -> Can we discard the atom altogether?
-    !   -> Can we reduce the cache size to the grid size?
+
     nPointsHalved = ceiling(maxval(cutoffs) / norm2(gridVecs, dim=1))
     print *, "Cutoffs:", cutoffs
     print *, "GridVec size:", norm2(gridVecs, dim=1)
@@ -210,6 +207,7 @@ contains
     ! General Todo list: 
     ! Todo: Figure out a sensible targetGridDistance for testing
     ! Todo: Implement Complex Version
+    ! Todo: Check if results align with unmodified version
 
 
 
