@@ -191,16 +191,32 @@ contains
 
 
     ! Print cutoff size. We assume that maxval == minval.
-    ! In the slater param sample i looked at, all cutoffs are identical. Is this always the case?
-    ! One would expect H to be smaller than e.g. Pb
-    ! If rare, is the size difference negligible?
-    ! Do we expect a large discrepancy for some atoms? 
+    ! One would expect H to be smaller than e.g. Pb.
+    ! https://github.com/dftbparams/matsci/releases has differing cutoffs including 5,6, and 8.
+    ! That is not neglibible, storing the small orbitals in a large buffer would be a waste of memory.
+    !
+    ! Idea: Attach the cache buffers to a derived type, one for each orbital.
+    ! We would then have \sum_{iAtom} nOrbs_iAtom objects.
+    ! This would allow different cutoffs since we no longer store everything in the same array.
+    ! They can have an attribute isInitialised and an initialisation function that populates the array.
+    !
+    ! We could hide the chunking by having a subroutine that returns a view (pointer) to the correct subgrid.
+    !
+    ! Should we also move the indices-calculation into a typebound procedure?
+    !
+    ! Or We could have a subroutine that directly adds the contribution of the wavefunction.
+    ! But the orbitals need to multiplied by the eigenvectors, and occasionally squared.
+
+    ! Can we even call those density function thingies wavefunctions? Probably not.
+    ! How about OrbitalCache%cache?
+    !
+    ! Todo: Figure out how waveplot is to be used as a library in the future.
     if (maxval(cutoffs) /= minval(cutoffs)) then
       print *, "Warn: Different cutoffs (max/min):", maxval(cutoffs), minval(cutoffs)
     end if
 
 
-    ! Cache size is chosen to fit the largest orbital.
+    ! Cache size is currently chosen to fit the largest orbital.
 
     ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
     ! Alternative: Warn the user / stop if user provides a stupid basis
