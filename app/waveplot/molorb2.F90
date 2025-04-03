@@ -6,21 +6,6 @@
 !--------------------------------------------------------------------------------------------------!
 
 ! Notes:
-! Print cutoff size. We assume that maxval == minval.
-! One would expect H to be smaller than e.g. Pb.
-! https://github.com/dftbparams/matsci/releases has differing cutoffs including 5,6, and 8.
-! That is not neglibible, storing the small orbitals in a large buffer would be a waste of memory.
-! Idea: Attach the cache buffers to a derived type, one for each orbital.
-! We would then have \sum_{iAtom} nOrbs_iAtom objects.
-! This would allow different cutoffs since we no longer store everything in the same array.
-! They can have an attribute isInitialised and an initialisation function that populates the array.
-! We could hide the chunking by having a subroutine that returns a view (pointer) to the correct subgrid.
-! Should we also move the indices-calculation into a typebound procedure?
-! Or We could have a subroutine that directly adds the contribution of the wavefunction.
-! But the orbitals need to multiplied by the eigenvectors, and occasionally squared.
-! Can we even call those density function thingies wavefunctions? Probably not.
-! How about OrbitalCache%cache?
-! Todo: Figure out how waveplot is to be used as a library in the future.
 ! General Todo list: 
 ! Todo: Acquire a real-world example to base decisions on.
 !        -> Figure out a sensible targetGridDistance
@@ -30,12 +15,11 @@
 !       -> Run both, compare
 !       -> Investigate how subdivision affects accuracy
 ! Todo: Move targetGridDistance setting etc. to waveplot in hsd
-! Use Fypp for complex/real distinction?
-! What was the name of that fancy LLM page?
 ! Ask how compiler handels realTessY
 ! Does the compiler inline the call to getValueExplicit?
 ! Quit trying to apply premature optimisations
 ! Try to get the LSP working. Will require running fypp in the background.
+! Todo: Figure out how waveplot is to be used as a library in the future.
 
 
 
@@ -57,41 +41,28 @@ module waveplot_molorb2
   public :: localGetValue
 
 
-  ! Wavefunction cache overview:
   ! Wavefunctions are evaluated across a finer grid (subdivisionFactor as many points as the main one).
-  ! When aligned, points could simply be read using a stride of subdivisionFactor.
   ! The X-coordinate is subdivided into <subdivisionFactor> chunked parts to ensure a contiguous memory layout.
   ! Y and Z have been subdivided as well, though only for convenience.
-  ! Indices : [X, XChunked, Y, YChunked, Z, ZChunked,  cacheInd ]
   type :: TOrbitalCache
     private
     !> Cache for a single orbital.
-    ! Layout: (X, XChunked, Y, YChunked, Z, ZChunked, iM)
-    !TODO: Dont forget to deallocate me!
+    !! Layout: (X, XChunked, Y, YChunked, Z, ZChunked, iM)
     real(dp), pointer :: cache(:,:,:,:,:,:,:) => null()
-
-    !> Has the cache been initialised?
-    ! (Can also be checked by looking at wavefunctionCache's allocation status)
-    logical :: isInitialised = .false.
-
-    !> The STO that is cached
-    type(TSlaterOrbital) :: sto    
-
-    !> Angular momentum (L) of the orbital
-    integer :: angMom
-
-    !> The grids basis vectors
-    real(dp) :: gridVecs(3,3)
 
     !> How many shifted copies of the main grid are stored in the cache
     integer :: subdivisionFactor(3)
 
+    !> The grids basis vectors
+    real(dp) :: gridVecs(3,3)
+
     !> Size of cache from center to cutoff
-    integer, public :: nPointsHalved(3)
+    integer :: nPointsHalved(3)
   contains
     procedure :: initialise => TOrbitalCache_initialise
     procedure :: access => TOrbitalCache_access
     procedure :: align => TOrbitalCache_align
+    final :: TOrbitalCache_finalise
   end type TOrbitalCache
 
 
@@ -99,32 +70,34 @@ module waveplot_molorb2
 
 contains
 
-  !> Initialises the cache for a given STO and its angular momentum L.
-  subroutine TOrbitalCache_initialise(this, sto, angMom, gridVecs, subdivisionFactor)
+  !> Initialises the cache at the provided subdivisionFactor for a given STO, its angular momentum L and the grid vectors.
+  subroutine TOrbitalCache_initialise(this, sto, iL, gridVecs, subdivisionFactor)
     class(TOrbitalCache), intent(inout) :: this
+    !> The Slater orbital to be cached
     type(TSlaterOrbital), intent(in) :: sto
+    !> Basis vectors of the main grid
     real(dp), intent(in) :: gridVecs(3,3)
+    !> How many shifted subgrids are to be stored in the cache.
+    !! Determines the accuracy of the approximation.
     integer, intent(in) :: subdivisionFactor(3)
-    integer, intent(in) :: angMom
+    !> Angular momentum of the Slater orbital
+    integer, intent(in) :: iL
 
     real(dp) :: curCoords(3,3), xx, val, xyz(3)
-    integer :: i1, i2, i3, iM, iL, i1Chunked, i2Chunked, i3Chunked
+    integer :: i1, i2, i3, iM,  i1Chunked, i2Chunked, i3Chunked
     integer :: nPointsHalved(3)
     real(dp) :: expectedSizeMB
     !---------------------------------
     
-    ! Skip initialisation if the cache is already populated. (Doesnt check if parameters changed)
-    if (this%isInitialised) then
+    ! Skip initialisation if the cache is already populated.
+    if (associated(this%cache)) then
       print "(*(G0, 1X))", " -> Cache already initialised, skipping."
       return
     end if
 
     ! Todo: Sprinkle in some asserts
-    this%sto = sto
-    this%angMom = angMom
     this%gridVecs = gridVecs
     this%subdivisionFactor = subdivisionFactor
-    iL = angMom
 
     ! Determine the size of the cache
     ! TODO: Currently assuming an orthogonal basis
@@ -133,8 +106,6 @@ contains
 
     nPointsHalved = ceiling(sto%cutoff / norm2(gridVecs, dim=1))
     this%nPointsHalved = nPointsHalved
-    !print *, "Cutoff:", sto%cutoff
-    !print *, "GridVec size:", norm2(gridVecs, dim=1)
 
     ! Allocate the cache
     expectedSizeMB = 0.0_dp
@@ -153,11 +124,8 @@ contains
                       & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor(2)-1, &
                       & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor(3)-1, &
                       & -iL:iL), source=0.0_dp)
-    !print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
 
-
-
-    ! For every Point on the fine grid:
+    ! For every point on the fine grid:
     lpI3Chunked : do i3Chunked = 0, subdivisionFactor(3)-1
       lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
         curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor(3), dp) * gridVecs(:, 3)
@@ -187,27 +155,25 @@ contains
       end do lpI3
     end do lpI3Chunked
 
-    this%isInitialised = .true.
-
-    ! Deallocate the radial dependence cache to free up some memory
-    ! (Add a deallocation subroutine?)
-    !deallocate(sto%gridValue)
+    ! TODO: Consider deallocating the radial dependence cache of the sto to free up some memory. Negligible?
+    ! deallocate(sto%gridValue)
 
   end subroutine TOrbitalCache_initialise
 
-  !> Accesses the cache for a given angular momentum L and chunked indices.
-  !! Returns a pointer to the requested subgrid.
+  !> Provides a view to the cache for a given angular momentum <iM> and
+  !! a requested subgrid <iChunk>. Returns a pointer to the requested subgrid.
   subroutine TOrbitalCache_access(this, cachePtr, iChunk, iM)
     class(TOrbitalCache), intent(in) :: this
+    !> Pointer to the cache providing a view to the requested (3d) subgrid.
     real(dp), pointer, intent(out)   :: cachePtr(:,:,:)
+    !> Which subgrid to access
     integer, intent(in) :: iChunk(3)
+    !> Which angular momentum to access
     integer, intent(in) :: iM
 
     ! Access the cache using the chunked indices
     ! Fortran does not support simultaneous bound mapping and rank reduction :(
     cachePtr => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
-    
-
   end subroutine TOrbitalCache_access
 
   !> Aligns the cache to the main grid.
@@ -236,7 +202,7 @@ contains
       iOffset(:) = int(pos(:,1))
       ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
       ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
-      iChunk(:) = modulo(  int( pos(:,1) * this%subdivisionFactor(:) ), this%subdivisionFactor(:)   )
+      iChunk(:) = modulo(int(pos(:,1) * this%subdivisionFactor(:)), this%subdivisionFactor(:))
 
       ! Lower Main Indices need to include
       ! -> start of main grid (1)
@@ -248,7 +214,7 @@ contains
       iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
 
       ! Quick Fix to counter lost bound mapping
-      iOffset(:) =  this%nPointsHalved(:)- iOffset(:) 
+      iOffset(:) =  this%nPointsHalved(:) - iOffset(:) 
 
       print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
       print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
@@ -261,6 +227,17 @@ contains
       end do
   end subroutine TOrbitalCache_align
 
+
+
+  !> Deallocates the cache.
+  subroutine TOrbitalCache_finalise(this)
+    type(TOrbitalCache), intent(inout) :: this
+
+    if (associated(this%cache)) then
+       deallocate(this%cache)
+    end if
+
+  end subroutine TOrbitalCache_finalise
 
 
   !> Returns the values of several molecular orbitals on grids.
@@ -374,7 +351,6 @@ contains
 
     !---------------------------------
 
-    ! TODO: Use Fypp for the complex/real distinction?
     if (.not. tReal) then
       stop "TODO: Complex not implemented yet"
     end if
@@ -428,7 +404,7 @@ contains
 
           pos = coords(:, iAtom, iCell) - origin
 
-          print "(*(G0, 1X))", " -> Atom Position: ", pos
+          print "(*(g0, 1x))", " -> Atom Position: ", pos
           call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
         !end do
       end do
@@ -441,8 +417,8 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Adding contribution from ",&
-        &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
+        write(*, '(a, i0, a, i0, a, i0, a, i0)', advance='no') char(13), &
+            & "Adding contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
         ! Load Array Alignment boundarys
         iOffset => iAtomOffsets(:, iAtom, iCell)
