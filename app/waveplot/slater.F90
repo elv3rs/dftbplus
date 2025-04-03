@@ -39,13 +39,16 @@ module waveplot_slater
     real(dp), allocatable :: alpha(:)
 
     !> STO values on the distance grid
-    real(dp), allocatable :: gridValue(:)
+    real(dp), public allocatable :: gridValue(:)
 
     !> Grid distance (resolution)
     real(dp) :: gridDist
 
     !> Number of grid points
     integer :: nGrid
+
+    !> Cutoff, after which the orbital is assumed to be zero
+    real(dp), public :: cutoff
 
   end type TSlaterOrbital
 
@@ -207,6 +210,8 @@ contains
     this%nPow = nPow
     this%nAlpha = nAlpha
     this%ll = ll
+    ! Used for cache sizing
+    this%cutoff = cutoff
 
     ! Obtain STO on a grid
     this%nGrid = floor(cutoff / resolution) + 2
