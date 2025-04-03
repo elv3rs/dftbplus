@@ -67,7 +67,8 @@ module waveplot_molorb2
     private
     !> Cache for a single orbital.
     ! Layout: (X, XChunked, Y, YChunked, Z, ZChunked, iM)
-    real(dp), allocatable :: wavefunctionCache(:,:,:,:,:,:,:)
+    !TODO: Dont forget to deallocate me!
+    real(dp), pointer :: cache(:,:,:,:,:,:,:) => null()
 
     !> Has the cache been initialised?
     ! (Can also be checked by looking at wavefunctionCache's allocation status)
@@ -84,6 +85,9 @@ module waveplot_molorb2
 
     !> How many shifted copies of the main grid are stored in the cache
     integer :: subdivisionFactor(3)
+
+    !> Size of cache from center to cutoff
+    integer :: nPointsHalved(3)
   contains
     procedure :: initialise => TOrbitalCache_initialise
     procedure :: access => TOrbitalCache_access
@@ -103,8 +107,10 @@ contains
     integer, intent(in) :: subdivisionFactor(3)
     integer, intent(in) :: angMom
 
-    real(dp) :: curCoords(3,3), xx, val
+    real(dp) :: curCoords(3,3), xx, val, xyz(3)
     integer :: i1, i2, i3, iM, iL, iOrb, i1Chunked, i2Chunked, i3Chunked
+    integer :: nPointsHalved(3)
+    real(dp) :: expectedSizeMB
     !---------------------------------
     
     ! Skip initialisation if the cache is already populated. (Doesnt check if parameters changed)
@@ -122,14 +128,15 @@ contains
     !       -> investigate using Gram matrix for correct cutoffs
     ! Alternative: Warn the user / stop if they provide a non-orthogonal basis
 
-    nPointsHalved = ceiling(maxval(sto%cutoffs) / norm2(gridVecs, dim=1))
-    print *, "Cutoff:", sto%cutoffs
+    nPointsHalved = ceiling(sto%cutoff / norm2(gridVecs, dim=1))
+    this%nPointsHalved = nPointsHalved
+    print *, "Cutoff:", sto%cutoff
     print *, "GridVec size:", norm2(gridVecs, dim=1)
 
     ! Allocate the cache
     expectedSizeMB = 0.0_dp
     expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
-    expectedSizeMB = expectedSizeMB * 2**3 * product(subdivisionFactor) * cacheSize
+    expectedSizeMB = expectedSizeMB * 2**3 * product(subdivisionFactor) * (2 * iL + 1)
     expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
     print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
     print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
@@ -139,10 +146,10 @@ contains
 
 
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
-    allocate(wavefunctionCache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor(1)-1, &
-                             & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor(2)-1, &
-                             & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor(3)-1, &
-                             & -iL:iL), source=0.0_dp)
+    allocate(this%cache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor(1)-1, &
+                      & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor(2)-1, &
+                      & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor(3)-1, &
+                      & -iL:iL), source=0.0_dp)
     !print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
 
 
@@ -160,13 +167,15 @@ contains
                 curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor(1), dp) * gridVecs(:, 1)
                 
                 ! Calculate position
-                xx = norm2(sum(curCoords, dim=2))
-                if (xx <= sto%cutoffs) then
+                xyz = sum(curCoords, dim=2)
+                xx = norm2(xyz)
+
+                if (xx <= sto%cutoff) then
                   ! Get radial dependence
                   call getValue(sto, xx, val)
                   lpIM : do iM = -iL, iL
                     ! Combine with angular dependence and add to cache
-                    wavefunctionCache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, diff, xx)
+                    this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, xyz, xx)
                   end do lpIM
                 end if
               end do lpI1
@@ -180,7 +189,7 @@ contains
 
     ! Deallocate the radial dependence cache to free up some memory
     ! (Add a deallocation subroutine?)
-    deallocate(sto%gridValue)
+    !deallocate(sto%gridValue)
 
   end subroutine TOrbitalCache_initialise
 
@@ -188,13 +197,13 @@ contains
   !! Returns a pointer to the requested subgrid.
   subroutine TOrbitalCache_access(this, cachePtr, iChunk, iM)
     class(TOrbitalCache), intent(in) :: this
-    real(dp), pointer :: cachePtr(:,:,:)
+    real(dp), pointer, intent(out)   :: cachePtr(:,:,:)
     integer, intent(in) :: iChunk(3)
     integer, intent(in) :: iM
 
     ! Access the cache using the chunked indices
     ! TODO: Can we bake in the offset here?
-    cachePtr => this%wavefunctionCache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    cachePtr => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
 
   end subroutine TOrbitalCache_access
 
@@ -209,8 +218,9 @@ contains
       integer, pointer, intent(out) :: iChunk(:)
       integer, pointer, intent(out) :: iMain(:,:)
 
-      integer :: ii
+      ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
       real(dp) :: tmpBasis(3,3), pos(3,1)
+      integer :: ii
       
 
       pos(:,1) = shiftedPos
@@ -220,28 +230,28 @@ contains
 
       ! Cache Indices are derived from the main indices, and:
       ! -> offset by the atom position
-      iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
+      iOffset(:) = int(pos(:,1))
       ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
       ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
-      iAtomChunks(:, iAtom, iCell) = modulo( int(pos(:,1) * subdivisionFactor(:)), subdivisionFactor(:))
+      iChunk(:) = modulo(  int( pos(:,1) * this%subdivisionFactor(:) ), this%subdivisionFactor(:)   )
 
       ! Lower Main Indices need to include
       ! -> start of main grid (1)
       ! -> start of cache grid (atom offset - half cache size)
-      iMainIndices(:, 1, iAtom, iCell) = max(1, iAtomOffsets(:, iAtom, iCell) - nPointsHalved(:))
+      iMain(:, 1) = max(1, iOffset(:) - this%nPointsHalved(:))
       ! Upper Main Indices need to include
       ! -> end of main grid (nPoints)
       ! -> end of cache grid (atom offset + half cache size)
-      iMainIndices(:, 2, iAtom, iCell) = min(nPoints(:3), iAtomOffsets(:, iAtom, iCell) + nPointsHalved(:))
+      iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
 
       print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
-      print "(*(G0, 1X))", " -> Atom Position in Grid:", iAtomOffsets(:, iAtom, iCell), "Chunk:", iAtomChunks(:, iAtom, iCell)
+      print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
       print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
       do ii = 1, 3
-        print "(*(G0, 1X))", " o", i1, iMainIndices(i1,1, iAtom, iCell), ":" , &
-                        & iMainIndices(ii,2, iAtom, iCell), "->",&
-                        & iMainIndices(ii,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell), ":", &
-                        & iMainIndices(ii,2, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell)
+        print "(*(G0, 1X))", " o", ii, iMain(ii,1), ":" , &
+                        & iMain(ii,2), "->",&
+                        & iMain(ii,1) - iOffset(ii), ":", &
+                        & iMain(ii,2) - iOffset(ii)
       end do
   end subroutine TOrbitalCache_align
 
@@ -323,9 +333,7 @@ contains
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
-    real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
-    real(dp) :: xx, val
     integer :: nPoints(4)
     integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
@@ -337,6 +345,7 @@ contains
     integer, allocatable, target, save:: iMainIndices(:, :, :, :)
     integer, pointer :: iOffset(:), iChunk(:), iMain(:,:)
 
+    real(dp), pointer :: cachePtr(:,:,:)
 
     ! Todo: This overrides targetGridDistance and subdivisionFactor.
     integer, parameter :: subdivisionFactorLead = 5
@@ -347,15 +356,10 @@ contains
     ! Subdivision factors calculated to meet the targetGridDistance requirements
     integer :: subdivisionFactor(3)
   
-    ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
-    real(dp) :: tmpBasis(3,3)
     real(dp) :: pos(3)
     
-    integer :: nUniqueOrb
-    integer :: i1Chunked, i2Chunked, i3Chunked, coeffInd
-    integer :: nPointsHalved(3)
+    integer :: nUniqueOrb, coeffInd
 
-    real(dp) :: expectedSizeMB
     real(dp) :: cacheValue
     real(dp) :: chunkSeparation(3)
 
@@ -404,6 +408,8 @@ contains
     do iCell = 1, nCell
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
+        ! TODO: This currently overwrite because we loop over iOrb.
+        ! The current examples have identical cutoffs, so this does not matter.
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Aligning contribution from ",&
           &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
