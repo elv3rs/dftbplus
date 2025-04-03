@@ -1,9 +1,43 @@
- !--------------------------------------------------------------------------------------------------!
+!--------------------------------------------------------------------------------------------------!
 !  DFTB+: general package for performing fast atomistic simulations                                !
 !  Copyright (C) 2006 - 2025  DFTB+ developers group                                               !
 !                                                                                                  !
 !  See the LICENSE file for terms of usage and distribution.                                       !
 !--------------------------------------------------------------------------------------------------!
+
+! Notes:
+! Print cutoff size. We assume that maxval == minval.
+! One would expect H to be smaller than e.g. Pb.
+! https://github.com/dftbparams/matsci/releases has differing cutoffs including 5,6, and 8.
+! That is not neglibible, storing the small orbitals in a large buffer would be a waste of memory.
+! Idea: Attach the cache buffers to a derived type, one for each orbital.
+! We would then have \sum_{iAtom} nOrbs_iAtom objects.
+! This would allow different cutoffs since we no longer store everything in the same array.
+! They can have an attribute isInitialised and an initialisation function that populates the array.
+! We could hide the chunking by having a subroutine that returns a view (pointer) to the correct subgrid.
+! Should we also move the indices-calculation into a typebound procedure?
+! Or We could have a subroutine that directly adds the contribution of the wavefunction.
+! But the orbitals need to multiplied by the eigenvectors, and occasionally squared.
+! Can we even call those density function thingies wavefunctions? Probably not.
+! How about OrbitalCache%cache?
+! Todo: Figure out how waveplot is to be used as a library in the future.
+! General Todo list: 
+! Todo: Acquire a real-world example to base decisions on.
+!        -> Figure out a sensible targetGridDistance
+!        -> Base on available memory?
+! Todo: Implement Complex Version
+! Todo: Check if results align with unmodified version
+!       -> Run both, compare
+!       -> Investigate how subdivision affects accuracy
+! Todo: Move targetGridDistance setting etc. to waveplot in hsd
+! Use Fypp for complex/real distinction?
+! What was the name of that fancy LLM page?
+! Ask how compiler handels realTessY
+! Does the compiler inline the call to getValueExplicit?
+! Quit trying to apply premature optimisations
+! Try to get the LSP working. Will require running fypp in the background.
+
+
 
 #:include 'common.fypp'
 
@@ -22,7 +56,131 @@ module waveplot_molorb2
   
   public :: localGetValue
 
+
+  ! Wavefunction cache overview:
+  ! Wavefunctions are evaluated across a finer grid (subdivisionFactor as many points as the main one).
+  ! When aligned, points could simply be read using a stride of subdivisionFactor.
+  ! The X-coordinate is subdivided into <subdivisionFactor> chunked parts to ensure a contiguous memory layout.
+  ! Y and Z have been subdivided as well, though only for convenience.
+  ! Indices : [X, XChunked, Y, YChunked, Z, ZChunked,  cacheInd ]
+  type :: TOrbitalCache
+    private
+    !> Cache for a single orbital.
+    ! Layout: (X, XChunked, Y, YChunked, Z, ZChunked, iM)
+    real(dp), allocatable :: wavefunctionCache(:,:,:,:,:,:,:)
+
+    !> Has the cache been initialised?
+    ! (Can also be checked by looking at wavefunctionCache's allocation status)
+    logical :: isInitialised = .false.
+
+    !> The STO that is cached
+    type(TSlaterOrbital) :: sto    
+
+    !> Angular momentum (L) of the orbital
+    integer :: angMom
+
+    !> The grids basis vectors
+    real(dp) :: gridVecs(3,3)
+
+    !> How many shifted copies of the main grid are stored in the cache
+    integer :: subdivisionFactor(3)
+  contains
+    procedure :: initialise => TOrbitalCache_initialise
+    procedure :: access => TOrbitalCache_access
+  end type TOrbitalCache
+
+
+
+
 contains
+
+  !> Initialises the cache for a given STO and its angular momentum L.
+  subroutine TOrbitalCache_initialise(this, sto, angMom, gridVecs, subdivisionFactor)
+    class(TOrbitalCache), intent(inout) :: this
+    type(TSlaterOrbital), intent(in) :: sto
+    real(dp), intent(in) :: gridVecs(3,3)
+    integer, intent(in) :: subdivisionFactor(3)
+    integer, intent(in) :: angMom
+
+    real(dp) :: curCoords(3,3), xx, val
+    integer :: i1, i2, i3, iM, iL, iOrb, i1Chunked, i2Chunked, i3Chunked
+    !---------------------------------
+
+    ! Todo: Sprinkle in some asserts
+    ! Todo: Add an if to skip initialisation if the cache is already populated
+    this%sto = sto
+    this%angMom = angMom
+    this%gridVecs = gridVecs
+    this%subdivisionFactor = subdivisionFactor
+    iL = angMom
+
+    ! Determine the size of the cache
+    ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
+    ! Alternative: Warn the user / stop if user provides a stupid basis
+
+    nPointsHalved = ceiling(maxval(sto%cutoffs) / norm2(gridVecs, dim=1))
+    print *, "Cutoff:", sto%cutoffs
+    print *, "GridVec size:", norm2(gridVecs, dim=1)
+
+    ! Allocate the cache
+    expectedSizeMB = 0.0_dp
+    expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
+    expectedSizeMB = expectedSizeMB * 2**3 * product(subdivisionFactor) * cacheSize
+    expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
+    print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
+    print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
+    if (expectedSizeMB > 8000) then
+      stop "Expected cache array size exceeds 8GB"
+    end if
+
+
+    ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
+    allocate(wavefunctionCache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor(1)-1, &
+                             & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor(2)-1, &
+                             & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor(3)-1, &
+                             & -iL:iL), source=0.0_dp)
+    !print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
+
+
+
+    print "(*(G0, 1X))", " -> Caching orbital ", iOrb
+    ! For every Point on the fine grid:
+    lpI3Chunked : do i3Chunked = 0, subdivisionFactor(3)-1
+      lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
+        curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor(3), dp) * gridVecs(:, 3)
+        lpI2Chunked : do i2Chunked = 0, subdivisionFactor(2)-1
+          lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
+            curCoords(:, 2) = real(i2 + i2Chunked / subdivisionFactor(2), dp) * gridVecs(:, 2)
+            lpI1Chunked : do i1Chunked = 0, subdivisionFactor(1)-1
+              lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
+                curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor(1), dp) * gridVecs(:, 1)
+                
+                ! Calculate position
+                xx = norm2(sum(curCoords, dim=2))
+                if (xx <= sto%cutoffs) then
+                  ! Get radial dependence
+                  call getValue(sto, xx, val)
+                  lpIM : do iM = -iL, iL
+                    ! Combine with angular dependence and add to cache
+                    wavefunctionCache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, diff, xx)
+                  end do lpIM
+                end if
+              end do lpI1
+            end do lpI1Chunked
+          end do lpI2
+        end do lpI2Chunked
+      end do lpI3
+    end do lpI3Chunked
+
+    this%isInitialised = .true.
+
+    ! Deallocate the radial dependence cache to free up some memory
+    ! (Add a deallocation subroutine?)
+    deallocate(sto%gridValue)
+
+  end subroutine TOrbitalCache_initialise
+
+
 
   !> Returns the values of several molecular orbitals on grids.
   !! Caveat: The flag tPeriodic decides if the complex or the real version is read/written for the
@@ -108,15 +266,6 @@ contains
 
     ! Cache variables
 
-    ! Wavefunction cache overview:
-    ! Wavefunctions are evaluated across a finer grid (subdivisionFactor as many points as the main one).
-    ! When aligned, points can simply be read using a stride of subdivisionFactor.
-    ! Main feature:
-    ! The X-coordinate is subdivided into <subdivisionFactor> chunked parts to ensure a contiguous memory layout.
-    ! Y and Z have been subdivided as well, though only for convenience.
-    ! Indices : [X, XChunked, Y, YChunked, Z, ZChunked,  cacheInd ]
-    real(dp), allocatable, save :: wavefunctionCache(:,:,:,:,:,:,:)
-    
     ! Cache Indexing Arrays
     integer, allocatable, target, save:: iAtomOffsets(:, :, :)
     integer, allocatable, target, save:: iAtomChunks(:, :, :)
@@ -136,12 +285,6 @@ contains
     ! Has the cache been populated?
     logical, save :: tCacheInitialised = .false.
 
-    ! cacheInd is the index of the orbital in the cache as a running sum of (iSpecies, iOrb, iM)
-    integer :: cacheInd, cacheSize
-    ! Mapping array describing cache layout: (iM, iOrb) -> cacheInd.
-    integer, allocatable :: cacheIndexMap(:,:)
-
-
     ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
     real(dp) :: tmpBasis(3,3)
     real(dp) :: pos(3, 1)
@@ -154,127 +297,40 @@ contains
     real(dp) :: cacheValue
     real(dp) :: chunkSeparation(3)
 
+    ! TOrbitalCache array, one for each unique orbital
+    type(TOrbitalCache), allocatable :: orbitalCache(:)
+
     !---------------------------------
 
-
-
-
-    nUniqueOrb = SIZE(angMoms)
-    allocate(cacheIndexMap(-MAXVAL(angMoms):MAXVAL(angMoms), nUniqueOrb))
-    cacheIndexMap(:,:) = -1000
-    ! Calculate nr. of cache entries <cacheSize> and populate mapping array <cacheIndexMap>
-    cacheInd = 0
-    do iOrb = 1, nUniqueOrb
-      iL = angMoms(iOrb)
-      do iM = -iL, iL
-        cacheInd = cacheInd + 1
-        cacheIndexMap(iM, iOrb) = cacheInd
-      end do
-    end do
-    cacheSize = cacheInd
-    
-    ! Main grid size
-    if (tReal) then
-      nPoints = shape(valueReal)
-    else
-      nPoints = shape(valueCmpl)
-      stop "Complex not implemented yet"
+    ! TODO: Use Fypp for the complex/real distinction?
+    if (.not. tReal) then
+      stop "TODO: Complex not implemented yet"
     end if
 
-    targetGridDistance = norm2(gridVecs, dim=1) / subdivisionFactorLead
 
+    ! Determine subgrid count / subdivision Factor / Grid Resolution
+    targetGridDistance = norm2(gridVecs, dim=1) / subdivisionFactorLead
     subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetGridDistance)
     chunkSeparation = 1.0_dp / subdivisionFactor
     print "(*(G0, 1X))", "Subdivision Distance / chunk Separation:", chunkSeparation
     print "(*(G0, 1X))", "Subdivision Factors / chunk Count:", subdivisionFactor
-    
+   
+
+    nUniqueOrb = SIZE(angMoms)
+    ! One TOrbitalCache for each STO.
+    ! Each TOrbitalCache has several dimensions for their respective angular Momenta.
+    allocate(orbitalCache(nUniqueOrb))
+
+    ! Go through all orbitals and initialise them (build the cache)
+    do iOrb = 1, nUniqueOrb
+      call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
+    end do
 
 
-    ! Print cutoff size. We assume that maxval == minval.
-    ! One would expect H to be smaller than e.g. Pb.
-    ! https://github.com/dftbparams/matsci/releases has differing cutoffs including 5,6, and 8.
-    ! That is not neglibible, storing the small orbitals in a large buffer would be a waste of memory.
-    !
-    ! Idea: Attach the cache buffers to a derived type, one for each orbital.
-    ! We would then have \sum_{iAtom} nOrbs_iAtom objects.
-    ! This would allow different cutoffs since we no longer store everything in the same array.
-    ! They can have an attribute isInitialised and an initialisation function that populates the array.
-    !
-    ! We could hide the chunking by having a subroutine that returns a view (pointer) to the correct subgrid.
-    !
-    ! Should we also move the indices-calculation into a typebound procedure?
-    !
-    ! Or We could have a subroutine that directly adds the contribution of the wavefunction.
-    ! But the orbitals need to multiplied by the eigenvectors, and occasionally squared.
-
-    ! Can we even call those density function thingies wavefunctions? Probably not.
-    ! How about OrbitalCache%cache?
-    !
-    ! Todo: Figure out how waveplot is to be used as a library in the future.
-    if (maxval(cutoffs) /= minval(cutoffs)) then
-      print *, "Warn: Different cutoffs (max/min):", maxval(cutoffs), minval(cutoffs)
-    end if
-
-
-    ! Cache size is currently chosen to fit the largest orbital.
-
-    ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
-    ! Alternative: Warn the user / stop if user provides a stupid basis
-
-    nPointsHalved = ceiling(maxval(cutoffs) / norm2(gridVecs, dim=1))
-    print *, "Cutoffs:", cutoffs
-    print *, "GridVec size:", norm2(gridVecs, dim=1)
-
-    ! General Todo list: 
-    ! Todo: Acquire a real-world example to base decisions on.
-    !        -> Figure out a sensible targetGridDistance
-    !        -> Base on available memory?
-
-    ! Todo: Implement Complex Version
-
-    ! Todo: Check if results align with unmodified version
-    !       -> Run both, compare
-    !       -> Investigate how subdivision affects accuracy
-
-    ! Todo: Move targetGridDistance setting etc. to waveplot in hsd
-    
-
-
-
-
+    ! Main grid size
+    nPoints = shape(valueReal)
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
     !print "(*(G0, 1X))", " ->", size(valueReal), "elements,",  sizeof(valueReal) / 1024.0 / 1024.0, "MB"
-
-
-
-    if (tCacheInitialised) then
-      print "(*(G0, 1X))", "Reusing saved wavefunctions"
-      goto 591 ! Temporary quick fix
-    end if
-
-
-    expectedSizeMB = 0.0_dp
-    expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
-    expectedSizeMB  = expectedSizeMB * 2**3 * product(subdivisionFactor) * cacheSize
-    expectedSizeMB  = expectedSizeMB / 8.0 / 1024.0 / 1024.0
-
-    print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
-    print "(*(G0, 1X))", "expected Cache Allocation Size", expectedSizeMB, "MB"
-    if (expectedSizeMB > 8000) then
-      stop "Expected cache array size exceeds 8GB"
-    end if
-
-    ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
-    allocate(wavefunctionCache(   -nPointsHalved(1):nPointsHalved(1), &
-                                &  0:subdivisionFactor(1)-1, &
-                                & -nPointsHalved(2):nPointsHalved(2),&
-                                &  0:subdivisionFactor(2)-1, &
-                                & -nPointsHalved(3):nPointsHalved(3), &
-                                &  0:subdivisionFactor(3)-1, &
-                                &  1:cacheSize))
-    ! zero out the cache
-    wavefunctionCache(:,:,:,:,:,:,:) = 0.0_dp
-    !print "(*(G0, 1X))", " ->", size(wavefunctionCache), "elements,",  sizeof(wavefunctionCache) / 1000.0 / 1000.0, "MB"
 
 
     ! allocate Index arrays
@@ -326,47 +382,10 @@ contains
 
 
 
-
-
-
     print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
     ! Loop over all wavefunctions and cache them on the fine grid
     lpOrb: do iOrb = 1, nUniqueOrb
-      print "(*(G0, 1X))", " -> Caching orbital ", iOrb
-      iL = angMoms(iOrb)
-      ! For every Point on the fine grid:
-      lpI3Chunked : do i3Chunked = 0, subdivisionFactor(3)-1
-        lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-          curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor(3), dp) * gridVecs(:, 3)
-          lpI2Chunked : do i2Chunked = 0, subdivisionFactor(2)-1
-            lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-              curCoords(:, 2) = real(i2 + i2Chunked / subdivisionFactor(2), dp) * gridVecs(:, 2)
-              lpI1Chunked : do i1Chunked = 0, subdivisionFactor(1)-1
-                lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                  curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor(1), dp) * gridVecs(:, 1)
-                  
-                  ! Calculate position
-                  xyz(:) = sum(curCoords, dim=2)
-                  if (tPeriodic) then
-                    frac(:) = matmul(xyz, recVecs2p)
-                    xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-                  end if
-                  xx = norm2(xyz)
-                  if (xx <= cutoffs(iOrb)) then
-                    ! Get radial dependence
-                    call getValue(stos(iOrb), xx, val)
-                    lpIM : do iM = -iL, iL
-                      cacheInd = cacheIndexMap(iM, iOrb)
-                      ! Combine with angular dependence and add to cache
-                      wavefunctionCache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, cacheInd) = val * realTessY(iL, iM, diff, xx)
-                    end do lpIM
-                  end if
-                end do lpI1
-              end do lpI1Chunked
-            end do lpI2
-          end do lpI2Chunked
-        end do lpI3
-      end do lpI3Chunked
+
     end do lpOrb
     tCacheInitialised = .true.
 
@@ -381,33 +400,23 @@ contains
         WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Adding contribution from ",&
         &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
-
-
-
         ! Load Array Alignment boundarys
         iOffset => iAtomOffsets(:, iAtom, iCell)
         iChunk => iAtomChunks(:, iAtom, iCell)
         iMain => iMainIndices(:, :, iAtom, iCell)
 
-
-
-
-        if (.not. tReal) then
-          stop "TODO: Complex not implemented yet"
-        end if
-
-
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
           do iM = -iL, iL
-            cacheInd = cacheIndexMap(iM, iOrb)
+            ! Access the correct subgrid
+            call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
+            
+            ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4)
                   do i1 = iMain(1,1), iMain(1,2)
-                    cacheValue = wavefunctionCache(i1 - iOffset(1), iChunk(1), &
-                                                &  i2 - iOffset(2), iChunk(2), &
-                                                &  i3 - iOffset(3), iChunk(3), cacheInd)
+                    cacheValue = cachePtr(i1 - iOffset(1),  i2 - iOffset(2), i3 - iOffset(3))
                     if (tAddDensities) then
                       cacheValue = cacheValue * cacheValue
                     end if
@@ -416,6 +425,7 @@ contains
                 end do
               end do
             end do
+
             coeffInd = coeffInd + 1
           end do
         end do
