@@ -39,7 +39,7 @@ module waveplot_slater
     real(dp), allocatable :: alpha(:)
 
     !> STO values on the distance grid
-    real(dp), public allocatable :: gridValue(:)
+    real(dp), public, allocatable :: gridValue(:)
 
     !> Grid distance (resolution)
     real(dp) :: gridDist
