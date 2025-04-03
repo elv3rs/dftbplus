@@ -108,13 +108,16 @@ contains
     integer, intent(in) :: angMom
 
     real(dp) :: curCoords(3,3), xx, val, xyz(3)
-    integer :: i1, i2, i3, iM, iL, iOrb, i1Chunked, i2Chunked, i3Chunked
+    integer :: i1, i2, i3, iM, iL, i1Chunked, i2Chunked, i3Chunked
     integer :: nPointsHalved(3)
     real(dp) :: expectedSizeMB
     !---------------------------------
     
     ! Skip initialisation if the cache is already populated. (Doesnt check if parameters changed)
-    if (this%isInitialised) return
+    if (this%isInitialised) then
+      print "(*(G0, 1X))", " -> Cache already initialised, skipping."
+      return
+    end if
 
     ! Todo: Sprinkle in some asserts
     this%sto = sto
@@ -130,8 +133,8 @@ contains
 
     nPointsHalved = ceiling(sto%cutoff / norm2(gridVecs, dim=1))
     this%nPointsHalved = nPointsHalved
-    print *, "Cutoff:", sto%cutoff
-    print *, "GridVec size:", norm2(gridVecs, dim=1)
+    !print *, "Cutoff:", sto%cutoff
+    !print *, "GridVec size:", norm2(gridVecs, dim=1)
 
     ! Allocate the cache
     expectedSizeMB = 0.0_dp
@@ -154,7 +157,6 @@ contains
 
 
 
-    print "(*(G0, 1X))", " -> Caching orbital ", iOrb
     ! For every Point on the fine grid:
     lpI3Chunked : do i3Chunked = 0, subdivisionFactor(3)-1
       lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
@@ -195,15 +197,20 @@ contains
 
   !> Accesses the cache for a given angular momentum L and chunked indices.
   !! Returns a pointer to the requested subgrid.
-  subroutine TOrbitalCache_access(this, cachePtr, iChunk, iM)
+  subroutine TOrbitalCache_access(this, cachePtr, iChunk, iOffset, iM)
     class(TOrbitalCache), intent(in) :: this
     real(dp), pointer, intent(out)   :: cachePtr(:,:,:)
+    integer, intent(in) :: iOffset(3)
     integer, intent(in) :: iChunk(3)
     integer, intent(in) :: iM
 
     ! Access the cache using the chunked indices
-    ! TODO: Can we bake in the offset here?
-    cachePtr => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    ! Bake in the offset (simply subtract it)
+    ! Fix pointer bounds defaulting to 1..n
+    cachePtr(lbound(this%cache, 1) - iOffset(1):ubound(this%cache, 1) - iOffset(1), &
+          &  lbound(this%cache, 3) - iOffset(2):ubound(this%cache, 3) - iOffset(2), &
+          &  lbound(this%cache, 5) - iOffset(3):ubound(this%cache, 5) - iOffset(3)) &
+          &  => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
 
   end subroutine TOrbitalCache_access
 
@@ -248,7 +255,7 @@ contains
       print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
       print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
       do ii = 1, 3
-        print "(*(G0, 1X))", " o", ii, iMain(ii,1), ":" , &
+        print "(*(G0, 1X))", " o", Char(ii +87), iMain(ii,1), ":" , &
                         & iMain(ii,2), "->",&
                         & iMain(ii,1) - iOffset(ii), ":", &
                         & iMain(ii,2) - iOffset(ii)
@@ -389,6 +396,7 @@ contains
 
     ! Go through all orbitals and initialise them (build the cache)
     do iOrb = 1, nUniqueOrb
+      print "(*(G0, 1X))", " -> Caching orbital ", iOrb
       call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
     end do
 
@@ -410,7 +418,8 @@ contains
         iSpecies = species(iAtom)
         ! TODO: This currently overwrite because we loop over iOrb.
         ! The current examples have identical cutoffs, so this does not matter.
-        do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+        !do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+          iOrb = iStos(iSpecies)
           WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Aligning contribution from ",&
           &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
@@ -422,7 +431,7 @@ contains
 
           print "(*(G0, 1X))", " -> Atom Position: ", pos
           call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
-        end do
+        !end do
       end do
     end do
           
@@ -446,14 +455,14 @@ contains
           iL = angMoms(iOrb)
           do iM = -iL, iL
             ! Access the correct subgrid
-            call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
+            call orbitalCache(iOrb)%access(cachePtr, iChunk, iOffset, iM)
             
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4)
                   do i1 = iMain(1,1), iMain(1,2)
-                    cacheValue = cachePtr(i1 - iOffset(1),  i2 - iOffset(2), i3 - iOffset(3))
+                    cacheValue = cachePtr(i1, i2, i3)
                     if (tAddDensities) then
                       cacheValue = cacheValue * cacheValue
                     end if
