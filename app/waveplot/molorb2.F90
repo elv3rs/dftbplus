@@ -20,6 +20,11 @@
 ! Quit trying to apply premature optimisations
 ! Try to get the LSP working. Will require running fypp in the background.
 ! Todo: Figure out how waveplot is to be used as a library in the future.
+!
+! Near term todo:
+! 1. Compare results with the old version
+! 2. Implement the complex version
+! 3. Move subdivisionFactor to waveplot_in.hsd
 
 
 
