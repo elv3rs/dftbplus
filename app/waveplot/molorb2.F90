@@ -87,6 +87,7 @@ module waveplot_molorb2
   contains
     procedure :: initialise => TOrbitalCache_initialise
     procedure :: access => TOrbitalCache_access
+    procedure :: align => TOrbitalCache_align
   end type TOrbitalCache
 
 
@@ -105,9 +106,11 @@ contains
     real(dp) :: curCoords(3,3), xx, val
     integer :: i1, i2, i3, iM, iL, iOrb, i1Chunked, i2Chunked, i3Chunked
     !---------------------------------
+    
+    ! Skip initialisation if the cache is already populated. (Doesnt check if parameters changed)
+    if (this%isInitialised) return
 
     ! Todo: Sprinkle in some asserts
-    ! Todo: Add an if to skip initialisation if the cache is already populated
     this%sto = sto
     this%angMom = angMom
     this%gridVecs = gridVecs
@@ -115,8 +118,9 @@ contains
     iL = angMom
 
     ! Determine the size of the cache
-    ! TODO: Currently assuming an orthogonal basis (-> investigate using Gram matrix for correct cutoffs)
-    ! Alternative: Warn the user / stop if user provides a stupid basis
+    ! TODO: Currently assuming an orthogonal basis
+    !       -> investigate using Gram matrix for correct cutoffs
+    ! Alternative: Warn the user / stop if they provide a non-orthogonal basis
 
     nPointsHalved = ceiling(maxval(sto%cutoffs) / norm2(gridVecs, dim=1))
     print *, "Cutoff:", sto%cutoffs
@@ -179,6 +183,67 @@ contains
     deallocate(sto%gridValue)
 
   end subroutine TOrbitalCache_initialise
+
+  !> Accesses the cache for a given angular momentum L and chunked indices.
+  !! Returns a pointer to the requested subgrid.
+  subroutine TOrbitalCache_access(this, cachePtr, iChunk, iM)
+    class(TOrbitalCache), intent(in) :: this
+    real(dp), pointer :: cachePtr(:,:,:)
+    integer, intent(in) :: iChunk(3)
+    integer, intent(in) :: iM
+
+    ! Access the cache using the chunked indices
+    ! TODO: Can we bake in the offset here?
+    cachePtr => this%wavefunctionCache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+
+  end subroutine TOrbitalCache_access
+
+  !> Aligns the cache to the main grid.
+  !! Returns the chunks to choose the correct subgrid,
+  !! as well as the indices bounds for the main grid and an offset for the cache.
+  subroutine TOrbitalCache_align(this, gridDims, shiftedPos, iOffset, iChunk, iMain)
+      class(TOrbitalCache), intent(in) :: this
+      integer, intent(in) :: gridDims(4)
+      real(dp), intent(in) :: shiftedPos(:)
+      integer, pointer, intent(out) :: iOffset(:)
+      integer, pointer, intent(out) :: iChunk(:)
+      integer, pointer, intent(out) :: iMain(:,:)
+
+      integer :: ii
+      real(dp) :: tmpBasis(3,3), pos(3,1)
+      
+
+      pos(:,1) = shiftedPos
+      tmpBasis(:,:) = this%gridVecs
+      ! Get the atom position in terms of the basis <gridVecs>, stored in pos
+      call gesv(tmpBasis, pos)
+
+      ! Cache Indices are derived from the main indices, and:
+      ! -> offset by the atom position
+      iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
+      ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
+      ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
+      iAtomChunks(:, iAtom, iCell) = modulo( int(pos(:,1) * subdivisionFactor(:)), subdivisionFactor(:))
+
+      ! Lower Main Indices need to include
+      ! -> start of main grid (1)
+      ! -> start of cache grid (atom offset - half cache size)
+      iMainIndices(:, 1, iAtom, iCell) = max(1, iAtomOffsets(:, iAtom, iCell) - nPointsHalved(:))
+      ! Upper Main Indices need to include
+      ! -> end of main grid (nPoints)
+      ! -> end of cache grid (atom offset + half cache size)
+      iMainIndices(:, 2, iAtom, iCell) = min(nPoints(:3), iAtomOffsets(:, iAtom, iCell) + nPointsHalved(:))
+
+      print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
+      print "(*(G0, 1X))", " -> Atom Position in Grid:", iAtomOffsets(:, iAtom, iCell), "Chunk:", iAtomChunks(:, iAtom, iCell)
+      print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
+      do ii = 1, 3
+        print "(*(G0, 1X))", " o", i1, iMainIndices(i1,1, iAtom, iCell), ":" , &
+                        & iMainIndices(ii,2, iAtom, iCell), "->",&
+                        & iMainIndices(ii,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell), ":", &
+                        & iMainIndices(ii,2, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell)
+      end do
+  end subroutine TOrbitalCache_align
 
 
 
@@ -282,12 +347,9 @@ contains
     ! Subdivision factors calculated to meet the targetGridDistance requirements
     integer :: subdivisionFactor(3)
   
-    ! Has the cache been populated?
-    logical, save :: tCacheInitialised = .false.
-
     ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
     real(dp) :: tmpBasis(3,3)
-    real(dp) :: pos(3, 1)
+    real(dp) :: pos(3)
     
     integer :: nUniqueOrb
     integer :: i1Chunked, i2Chunked, i3Chunked, coeffInd
@@ -326,7 +388,6 @@ contains
       call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
     end do
 
-
     ! Main grid size
     nPoints = shape(valueReal)
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
@@ -337,61 +398,31 @@ contains
     allocate(iAtomOffsets(3, nAtom, nCell))
     allocate(iAtomChunks(3, nAtom, nCell))
     allocate(iMainIndices(3, 2, nAtom, nCell))
-
+    
+    ! Alignment
+    ! Loop over all cells, atoms and their orbitals to select the appropriate cache subgrid, bounds, and offset
     do iCell = 1, nCell
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        print "(*(G0, 1X))", " -> Aligning Atom no.", iAtom
+        do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+          WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Aligning contribution from ",&
+          &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
-        ! Determine Array Offsets by aligning the wavefunction cache, then clamping to array bounds.
-        pos(:,1) = coords(:, iAtom, iCell) - origin
-        print "(*(G0, 1X))", " -> Atom Position: ", pos(:,1)
+          iOffset => iAtomOffsets(:, iAtom, iCell)
+          iChunk => iAtomChunks(:, iAtom, iCell)
+          iMain => iMainIndices(:, :, iAtom, iCell)
 
-        tmpBasis(:,:) = gridVecs(:,:)
-        ! Get the atom position in terms of the basis <gridVecs>, stored in pos
-        call gesv(tmpBasis, pos)
+          pos = coords(:, iAtom, iCell) - origin
 
-        ! Cache Indices are derived from the main indices, and:
-        ! -> offset by the atom position
-        iAtomOffsets(:, iAtom, iCell) = int(pos(:,1))
-        ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
-        ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
-        iAtomChunks(:, iAtom, iCell) = modulo( int(pos(:,1) * subdivisionFactor(:)), subdivisionFactor(:))
-
-        ! Lower Main Indices need to include
-        ! -> start of main grid (1)
-        ! -> start of cache grid (atom offset - half cache size)
-        iMainIndices(:, 1, iAtom, iCell) = max(1, iAtomOffsets(:, iAtom, iCell) - nPointsHalved(:))
-        ! Upper Main Indices need to include
-        ! -> end of main grid (nPoints)
-        ! -> end of cache grid (atom offset + half cache size)
-        iMainIndices(:, 2, iAtom, iCell) = min(nPoints(:3), iAtomOffsets(:, iAtom, iCell) + nPointsHalved(:))
-
-        print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
-        print "(*(G0, 1X))", " -> Atom Position in Grid:", iAtomOffsets(:, iAtom, iCell), "Chunk:", iAtomChunks(:, iAtom, iCell)
-        print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
-        do i1 = 1, 3
-          print "(*(G0, 1X))", " o", i1, iMainIndices(i1,1, iAtom, iCell), ":" , &
-                          & iMainIndices(i1,2, iAtom, iCell), "->",&
-                          & iMainIndices(i1,1, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell), ":", &
-                          & iMainIndices(i1,2, iAtom, iCell) - iAtomOffsets(i1, iAtom, iCell)
+          print "(*(G0, 1X))", " -> Atom Position: ", pos
+          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
         end do
       end do
     end do
+          
 
-
-
-
-    print "(*(G0, 1X))",  "Caching", nUniqueOrb,  "wavefunctions:" 
-    ! Loop over all wavefunctions and cache them on the fine grid
-    lpOrb: do iOrb = 1, nUniqueOrb
-
-    end do lpOrb
-    tCacheInitialised = .true.
-
-
-591 print *, "Applying wavefunctions"
-    ! Apply wavefunctions. For each atom, determine the offsets, then align the cache and apply using slicing.
+    print *, "Applying cached densities to grid"
+    ! For each atom, determine the offsets, then align the cache and apply using slicing.
     do iCell = 1, nCell
       coeffInd = 1
       do iAtom = 1, nAtom
