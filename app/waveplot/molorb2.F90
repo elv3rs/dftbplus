@@ -120,6 +120,7 @@ contains
 
 
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
+    ! When we access the cache via the pointer view, we need to correct the indices.
     allocate(this%cache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor(1)-1, &
                       & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor(2)-1, &
                       & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor(3)-1, &
@@ -135,11 +136,9 @@ contains
             lpI1Chunked : do i1Chunked = 0, subdivisionFactor(1)-1
               lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
                 curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor(1), dp) * gridVecs(:, 1)
-                
                 ! Calculate position
                 xyz = sum(curCoords, dim=2)
                 xx = norm2(xyz)
-
                 if (xx <= sto%cutoff) then
                   ! Get radial dependence
                   call getValue(sto, xx, val)
@@ -183,9 +182,7 @@ contains
       class(TOrbitalCache), intent(in) :: this
       integer, intent(in) :: gridDims(4)
       real(dp), intent(in) :: shiftedPos(:)
-      integer, pointer, intent(out) :: iOffset(:)
-      integer, pointer, intent(out) :: iChunk(:)
-      integer, pointer, intent(out) :: iMain(:,:)
+      integer, intent(out) :: iOffset(3), iChunk(3), iMain(3,3)
 
       ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
       real(dp) :: tmpBasis(3,3), pos(3,1)
@@ -322,11 +319,7 @@ contains
 
     ! Cache variables
 
-    ! Cache Indexing Arrays
-    integer, allocatable, target, save:: iAtomOffsets(:, :, :)
-    integer, allocatable, target, save:: iAtomChunks(:, :, :)
-    integer, allocatable, target, save:: iMainIndices(:, :, :, :)
-    integer, pointer :: iOffset(:), iChunk(:), iMain(:,:)
+    integer :: iOffset(3), iChunk(3), iMain(3,3)
 
     real(dp), pointer :: cachePtr(:,:,:)
 
@@ -357,6 +350,7 @@ contains
 
 
     ! Determine subgrid count / subdivision Factor / Grid Resolution
+    ! TODO: Squash this to subdivisionFactor alone and add it to waveplot_in.hsd
     targetGridDistance = norm2(gridVecs, dim=1) / subdivisionFactorLead
     subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetGridDistance)
     chunkSeparation = 1.0_dp / subdivisionFactor
@@ -364,9 +358,8 @@ contains
     print "(*(G0, 1X))", "Subdivision Factors / chunk Count:", subdivisionFactor
    
 
-    nUniqueOrb = SIZE(angMoms)
+    nUniqueOrb = size(angMoms)
     ! One TOrbitalCache for each STO.
-    ! Each TOrbitalCache has several dimensions for their respective angular Momenta.
     allocate(orbitalCache(nUniqueOrb))
 
     ! Go through all orbitals and initialise them (build the cache)
@@ -378,38 +371,7 @@ contains
     ! Main grid size
     nPoints = shape(valueReal)
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
-    !print "(*(G0, 1X))", " ->", size(valueReal), "elements,",  sizeof(valueReal) / 1024.0 / 1024.0, "MB"
 
-
-    ! allocate Index arrays
-    allocate(iAtomOffsets(3, nAtom, nCell))
-    allocate(iAtomChunks(3, nAtom, nCell))
-    allocate(iMainIndices(3, 2, nAtom, nCell))
-    
-    ! Alignment
-    ! Loop over all cells, atoms and their orbitals to select the appropriate cache subgrid, bounds, and offset
-    do iCell = 1, nCell
-      do iAtom = 1, nAtom
-        iSpecies = species(iAtom)
-        ! TODO: This currently overwrite because we loop over iOrb.
-        ! The current examples have identical cutoffs, so this does not matter.
-        !do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-          iOrb = iStos(iSpecies)
-          WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Aligning contribution from ",&
-          &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
-
-          iOffset => iAtomOffsets(:, iAtom, iCell)
-          iChunk => iAtomChunks(:, iAtom, iCell)
-          iMain => iMainIndices(:, :, iAtom, iCell)
-
-          pos = coords(:, iAtom, iCell) - origin
-
-          print "(*(g0, 1x))", " -> Atom Position: ", pos
-          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
-        !end do
-      end do
-    end do
-          
 
     print *, "Applying cached densities to grid"
     ! For each atom, determine the offsets, then align the cache and apply using slicing.
@@ -420,12 +382,12 @@ contains
         write(*, '(a, i0, a, i0, a, i0, a, i0)', advance='no') char(13), &
             & "Adding contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
-        ! Load Array Alignment boundarys
-        iOffset => iAtomOffsets(:, iAtom, iCell)
-        iChunk => iAtomChunks(:, iAtom, iCell)
-        iMain => iMainIndices(:, :, iAtom, iCell)
+        ! Where to shift the orbital origin to
+        pos = coords(:, iAtom, iCell) - origin
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+          ! Calculate alignment bounds and select the correct subgrid
+          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
           iL = angMoms(iOrb)
           do iM = -iL, iL
             ! Access the correct subgrid.
@@ -438,12 +400,12 @@ contains
                 do iEig = 1, nPoints(4)
                   do i1 = iMain(1,1), iMain(1,2)
 
-
                     cacheValue = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
                     if (tAddDensities) then
                       cacheValue = cacheValue * cacheValue
                     end if
                     valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * cacheValue
+
                   end do
                 end do
               end do
@@ -454,7 +416,7 @@ contains
         end do
       end do
     end do
-    ! Print Newline
+
     print "(*(G0, 1X))", " -> Done!"
   end subroutine localGetValue
 
