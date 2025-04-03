@@ -87,7 +87,7 @@ module waveplot_molorb2
     integer :: subdivisionFactor(3)
 
     !> Size of cache from center to cutoff
-    integer :: nPointsHalved(3)
+    integer, public :: nPointsHalved(3)
   contains
     procedure :: initialise => TOrbitalCache_initialise
     procedure :: access => TOrbitalCache_access
@@ -197,20 +197,16 @@ contains
 
   !> Accesses the cache for a given angular momentum L and chunked indices.
   !! Returns a pointer to the requested subgrid.
-  subroutine TOrbitalCache_access(this, cachePtr, iChunk, iOffset, iM)
+  subroutine TOrbitalCache_access(this, cachePtr, iChunk, iM)
     class(TOrbitalCache), intent(in) :: this
     real(dp), pointer, intent(out)   :: cachePtr(:,:,:)
-    integer, intent(in) :: iOffset(3)
     integer, intent(in) :: iChunk(3)
     integer, intent(in) :: iM
 
     ! Access the cache using the chunked indices
-    ! Bake in the offset (simply subtract it)
-    ! Fix pointer bounds defaulting to 1..n
-    cachePtr(lbound(this%cache, 1) - iOffset(1):ubound(this%cache, 1) - iOffset(1), &
-          &  lbound(this%cache, 3) - iOffset(2):ubound(this%cache, 3) - iOffset(2), &
-          &  lbound(this%cache, 5) - iOffset(3):ubound(this%cache, 5) - iOffset(3)) &
-          &  => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    ! Fortran does not support simultaneous bound mapping and rank reduction :(
+    cachePtr => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    
 
   end subroutine TOrbitalCache_access
 
@@ -250,6 +246,9 @@ contains
       ! -> end of main grid (nPoints)
       ! -> end of cache grid (atom offset + half cache size)
       iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
+
+      ! Quick Fix to counter lost bound mapping
+      iOffset(:) =  this%nPointsHalved(:)- iOffset(:) 
 
       print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
       print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
@@ -442,7 +441,6 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        ! Update progress using carriage return (char(13))
         WRITE (*, '(A,I0,A,I0,A,I0,A,I0)', ADVANCE='NO') CHAR(13) // "Adding contribution from ",&
         &iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
@@ -454,15 +452,18 @@ contains
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           iL = angMoms(iOrb)
           do iM = -iL, iL
-            ! Access the correct subgrid
-            call orbitalCache(iOrb)%access(cachePtr, iChunk, iOffset, iM)
+            ! Access the correct subgrid.
+            ! Modifies the Offset to compensate for the lost bound mapping.
+            call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
             
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4)
                   do i1 = iMain(1,1), iMain(1,2)
-                    cacheValue = cachePtr(i1, i2, i3)
+
+
+                    cacheValue = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
                     if (tAddDensities) then
                       cacheValue = cacheValue * cacheValue
                     end if
@@ -477,6 +478,8 @@ contains
         end do
       end do
     end do
+    ! Print Newline
+    print "(*(G0, 1X))", " -> Done!"
   end subroutine localGetValue
 
 end module waveplot_molorb2
