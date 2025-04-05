@@ -9,17 +9,20 @@
 ! General Todo list: 
 ! Todo: Acquire a real-world example to base decisions on.
 !        -> Figure out a sensible targetGridDistance
-!        -> Base on available memory?
+!        -> Base on available memory? hand
 ! Todo: Implement Complex Version
 ! Todo: Check if results align with unmodified version
 !       -> Run both, compare
 !       -> Investigate how subdivision affects accuracy
 ! Todo: Move targetGridDistance setting etc. to waveplot in hsd
-! Ask how compiler handels realTessY
+! Ask how compiler handles realTessY
 ! Does the compiler inline the call to getValueExplicit?
 ! Quit trying to apply premature optimisations
 ! Try to get the LSP working. Will require running fypp in the background.
 ! Todo: Figure out how waveplot is to be used as a library in the future.
+! Todo: Add no-subdivision option
+!        ->  Work out a better interface
+! Todo: Try intermediate-copy version
 !
 ! Near term todo:
 ! 1. Compare results with the old version
@@ -331,7 +334,7 @@ contains
     ! Todo: This overrides targetGridDistance and subdivisionFactor.
     integer, parameter :: subdivisionFactorLead = 5
 
-    ! Todo: Figure out what unit we are using here. A?
+    ! Todo: Figure out what unit we are using here. Should be A.
     real(dp) :: targetGridDistance(3)
     
     ! Subdivision factors calculated to meet the targetGridDistance requirements
@@ -348,11 +351,6 @@ contains
     type(TOrbitalCache), allocatable :: orbitalCache(:)
 
     !---------------------------------
-
-    if (.not. tReal) then
-      stop "TODO: Complex not implemented yet"
-    end if
-
 
     ! Determine subgrid count / subdivision Factor / Grid Resolution
     ! TODO: Squash this to subdivisionFactor alone and add it to waveplot_in.hsd
@@ -374,7 +372,11 @@ contains
     end do
 
     ! Main grid size
-    nPoints = shape(valueReal)
+    if (tReal) then
+      nPoints = shape(valueReal)
+    else
+      nPoints = shape(valueCmpl)
+    end if
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
 
 
@@ -402,20 +404,28 @@ contains
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
-                do iEig = 1, nPoints(4)
+                do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
-
+                    
                     cacheValue = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
-                    if (tAddDensities) then
-                      cacheValue = cacheValue * cacheValue
+
+                    if (tReal) then
+                      if (tAddDensities) then
+                        cacheValue = cacheValue * cacheValue
+                      end if
+                      valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * cacheValue
+                    else
+                      ! TODO
+                      ! Im not certain this is quite right.
+                      ! I believe the if statements in the old code were optimisations, and this should be equivalent.
+                      ! Lets take at look at the results!
+                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + phases(iCell, kIndexes(iEig)) * cacheValue
                     end if
-                    valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * cacheValue
 
                   end do
                 end do
               end do
             end do
-
             coeffInd = coeffInd + 1
           end do
         end do
