@@ -212,20 +212,22 @@ contains
       ! Lower Main Indices need to include
       ! -> start of main grid (1)
       ! -> start of cache grid (atom offset - half cache size)
-      iMain(:, 1) = max(1, iOffset(:) + 1 - this%nPointsHalved(:))
+      iMain(:, 1) = max(1, iOffset(:)  - this%nPointsHalved(:))
       ! Upper Main Indices need to include
       ! -> end of main grid (nPoints)
       ! -> end of cache grid (atom offset + half cache size)
-      iMain(:, 2) = min(gridDims(:3), iOffset(:) + 1+ this%nPointsHalved(:))
+      iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
 
-      ! Quick Fix to counter lost bound mapping
-      iOffset(:) =  this%nPointsHalved(:) - iOffset(:) 
 
       print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
       print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
       print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
+
+      ! Quick Fix to counter lost bound mapping of pointer view
+      iOffset(:) =  this%nPointsHalved(:) - iOffset(:) - 1
+
       do ii = 1, 3
-        print "(*(G0, 1X))", " o", Char(ii +87), iMain(ii,1), ":" , &
+        print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
                         & iMain(ii,2), "->",&
                         & iMain(ii,1) - iOffset(ii), ":", &
                         & iMain(ii,2) - iOffset(ii)
@@ -348,7 +350,7 @@ contains
     real(dp) :: chunkSeparation(3)
 
     ! TOrbitalCache array, one for each unique orbital
-    type(TOrbitalCache), allocatable :: orbitalCache(:)
+    type(TOrbitalCache), allocatable, save :: orbitalCache(:)
 
     !---------------------------------
 
@@ -363,14 +365,18 @@ contains
 
 
     nUniqueOrb = size(angMoms)
-    ! One TOrbitalCache for each STO.
-    allocate(orbitalCache(nUniqueOrb))
 
-    ! Go through all orbitals and initialise them (build the cache)
-    do iOrb = 1, nUniqueOrb
-      print "(*(G0, 1X))", " -> Caching orbital ", iOrb
-      call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
-    end do
+    ! One TOrbitalCache for each STO.
+    if(.not. allocated(orbitalCache)) then
+      allocate(orbitalCache(nUniqueOrb))
+      ! Go through all orbitals and initialise them (build the cache)
+      do iOrb = 1, nUniqueOrb
+        print "(*(G0, 1X))", " -> Caching orbital ", iOrb
+        call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
+      end do
+    end if
+
+
 
     ! Main grid size
     if (tReal) then
@@ -397,9 +403,8 @@ contains
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           ! Calculate alignment bounds and select the correct subgrid
-          print *, "aligning"
+          print *, "."
           call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
-          print * ,"done aligning"
           iL = angMoms(iOrb)
           do iM = -iL, iL
             ! Access the correct subgrid.
