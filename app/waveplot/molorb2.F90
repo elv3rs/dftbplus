@@ -212,11 +212,11 @@ contains
       ! Lower Main Indices need to include
       ! -> start of main grid (1)
       ! -> start of cache grid (atom offset - half cache size)
-      iMain(:, 1) = max(1, iOffset(:) - this%nPointsHalved(:))
+      iMain(:, 1) = max(1, iOffset(:) + 1 - this%nPointsHalved(:))
       ! Upper Main Indices need to include
       ! -> end of main grid (nPoints)
       ! -> end of cache grid (atom offset + half cache size)
-      iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
+      iMain(:, 2) = min(gridDims(:3), iOffset(:) + 1+ this%nPointsHalved(:))
 
       ! Quick Fix to counter lost bound mapping
       iOffset(:) =  this%nPointsHalved(:) - iOffset(:) 
@@ -359,7 +359,8 @@ contains
     chunkSeparation = 1.0_dp / subdivisionFactor
     print "(*(G0, 1X))", "Subdivision Distance / chunk Separation:", chunkSeparation
     print "(*(G0, 1X))", "Subdivision Factors / chunk Count:", subdivisionFactor
-   
+
+
 
     nUniqueOrb = size(angMoms)
     ! One TOrbitalCache for each STO.
@@ -374,8 +375,10 @@ contains
     ! Main grid size
     if (tReal) then
       nPoints = shape(valueReal)
+      print *, "Real"
     else
       nPoints = shape(valueCmpl)
+      print *, "Complex"
     end if
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
 
@@ -394,7 +397,9 @@ contains
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           ! Calculate alignment bounds and select the correct subgrid
+          print *, "aligning"
           call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
+          print * ,"done aligning"
           iL = angMoms(iOrb)
           do iM = -iL, iL
             ! Access the correct subgrid.
