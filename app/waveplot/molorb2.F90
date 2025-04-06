@@ -386,7 +386,7 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        write(*, '(a, i0, a, i0, a, i0, a, i0)', advance='no') char(13), &
+        write(*, '(a, a, i0, a, i0, a, i0, a, i0)', advance='no') char(13), &
             & "Adding contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
         ! Where to shift the orbital origin to
