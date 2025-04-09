@@ -26,8 +26,13 @@
 !
 ! Near term todo:
 ! 1. Compare results with the old version
-! 2. Implement the complex version
+! 2. Check if complex version works
 ! 3. Move subdivisionFactor to waveplot_in.hsd
+!
+! Problem: Charge Mismatch, independent of subdivisionFactor.
+! Troubleshooting ideas:
+!   - Read Code
+!   - Implement uncached version
 
 
 
@@ -205,7 +210,7 @@ contains
       ! Cache Indices are derived from the main indices, and:
       ! -> offset by the atom position
       iOffset(:) = int(pos(:,1))
-      ! -> shifted by (0...subdivisionFactor-1) to select the closest subgrid (chunk)
+      ! -> shifted by (0..subdivisionFactor-1)/subdivisionFactor to select the closest subgrid (chunk)
       ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
       iChunk(:) = modulo(int(pos(:,1) * this%subdivisionFactor(:)), this%subdivisionFactor(:))
 
@@ -342,20 +347,28 @@ contains
     ! Subdivision factors calculated to meet the targetGridDistance requirements
     integer :: subdivisionFactor(3)
   
-    real(dp) :: pos(3)
+    real(dp) :: pos(3), frac(3),xyz(3), diff(3), xx
+    real(dp) :: curCoords(3,3)
     
     integer :: nUniqueOrb, coeffInd
 
-    real(dp) :: cacheValue
+    real(dp) :: val
+    
+    ! Distance between the subgrids in A
     real(dp) :: chunkSeparation(3)
 
     ! TOrbitalCache array, one for each unique orbital
     type(TOrbitalCache), allocatable, save :: orbitalCache(:)
+    
+    ! calculate values on the fly without loss of precision
+    logical, parameter :: tBypassCache = .true.
 
     !---------------------------------
 
     ! Determine subgrid count / subdivision Factor / Grid Resolution
     ! TODO: Squash this to subdivisionFactor alone and add it to waveplot_in.hsd
+    ! Might be interesting to output the uncertainty introduced due to chunking, so perhaps keep it?
+    ! We would not want to print things here in the molorb module though.
     targetGridDistance = norm2(gridVecs, dim=1) / subdivisionFactorLead
     subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetGridDistance)
     chunkSeparation = 1.0_dp / subdivisionFactor
@@ -365,15 +378,19 @@ contains
 
 
     nUniqueOrb = size(angMoms)
-
-    ! One TOrbitalCache for each STO.
-    if(.not. allocated(orbitalCache)) then
-      allocate(orbitalCache(nUniqueOrb))
-      ! Go through all orbitals and initialise them (build the cache)
-      do iOrb = 1, nUniqueOrb
-        print "(*(G0, 1X))", " -> Caching orbital ", iOrb
-        call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
-      end do
+    if(tBypassCache) then
+      print "(*(G0, 1X))", " -> Bypassing cache, using old method."
+    else
+      print "(*(G0, 1X))", " -> Using cache method."
+      ! One TOrbitalCache for each STO.
+      if(.not. allocated(orbitalCache)) then
+        allocate(orbitalCache(nUniqueOrb))
+        ! Go through all orbitals and initialise them (build the cache)
+        do iOrb = 1, nUniqueOrb
+          print "(*(G0, 1X))", " -> Caching orbital ", iOrb
+          call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
+        end do
+      end if
     end if
 
 
@@ -388,6 +405,11 @@ contains
     end if
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
 
+    ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
+    ! below. This is fine as, in contrast to what was published, DFTB+ uses implicitly exp(-ikr) as
+    ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as
+    ! factor.
+    phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
     print *, "Applying cached densities to grid"
     ! For each atom, determine the offsets, then align the cache and apply using slicing.
@@ -401,37 +423,71 @@ contains
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
 
+        ! Todo:
+        ! We have to change the cache mapping to account for this.
+        ! Looks like it shifts would-be out of bounds coordinates back into the grid.
+        !if (tPeriodic) then
+        !  frac(:) = matmul(pos, recVecs2p)
+        !  pos(:) = matmul(latVecs, frac - real(floor(frac), dp))
+        !end if
+
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           ! Calculate alignment bounds and select the correct subgrid
           print *, "."
-          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
+          if(.not. tBypassCache) then
+            call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
+          end if
+
           iL = angMoms(iOrb)
           do iM = -iL, iL
             ! Access the correct subgrid.
             ! Modifies the Offset to compensate for the lost bound mapping.
-            call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
-            
+            if(.not. tBypassCache) then
+              call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
+            end if
+
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
                     
-                    cacheValue = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
+                    if(.not. tBypassCache) then
+                      val = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
+                    else
+                      ! Recreate the old results.
+                      ! Significantly less optimised, but should be equivalent.
+                      curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
+                      curCoords(:, 2) = real(i2 - 1, dp) * gridVecs(:, 2) 
+                      curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3) 
+                      xyz(:) = sum(curCoords, dim=2) + origin
+                      !if (tPeriodic) then
+                      !  ! Matrix multiplication in the innermost loop :)
+                      !  frac(:) = matmul(xyz, recVecs2p)
+                      !  xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
+                      !end if
+                      diff(:) = xyz - coords(:, iAtom, iCell)
+                      xx = norm2(diff)
+                      val = 0
+                      if (xx <= stos(iOrb)%cutoff) then
+                        ! Radial dependence could be moved above iM loop.
+                        call getValue(stos(iOrb), xx, val)
+                        val = val * realTessY(iL, iM, pos, xx)
+                      end if
+                    end if
 
                     if (tReal) then
                       if (tAddDensities) then
-                        cacheValue = cacheValue * cacheValue
+                        val = val * val
                       end if
-                      valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * cacheValue
+                      valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * val
                     else
                       ! TODO
                       ! Im not certain this is quite right.
                       ! I believe the if statements in the old code were optimisations, and this should be equivalent.
-                      ! Lets take at look at the results!
-                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + phases(iCell, kIndexes(iEig)) * cacheValue
+                      ! Lets take at look at the results to verfiy that!
+                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + phases(iCell, kIndexes(iEig)) * val
                     end if
-
                   end do
                 end do
               end do
