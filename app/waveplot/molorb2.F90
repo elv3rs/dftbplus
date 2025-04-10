@@ -410,7 +410,7 @@ contains
                       end if
                       valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * val
                     else
-                      ! TODO: Verify if this is correct
+                      ! TODO: Verify this is correct
                       valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + phases(iCell, kIndexes(iEig)) * val
                     end if
                   end do
