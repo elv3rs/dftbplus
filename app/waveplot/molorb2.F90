@@ -172,9 +172,48 @@ contains
 
   end subroutine TOrbitalCache_initialise
 
+
+  !> Try to recreate the old results
+  subroutine directCalculation(nPoints, sto, gridVecs, pos, iM, cachePtr)
+    !> The number of points in the main grid
+    integer, intent(in) :: nPoints(4)
+    !> The Slater orbital to be cached
+    type(TSlaterOrbital), intent(in) :: sto
+    !> Basis vectors of the main grid
+    real(dp), intent(in) :: gridVecs(3,3)
+    !> Position of the atom including any origin shift
+    real(dp), intent(in) :: pos(3)
+    !> Angular momentum
+    integer, intent(in) :: iM
+    
+    real(dp), pointer, intent(out) :: cachePtr(:,:,:)
+
+
+
+    ! Recreate the old results.
+    ! Significantly less optimised, but should be equivalent.
+    curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
+    curCoords(:, 2) = real(i2 - 1, dp) * gridVecs(:, 2) 
+    curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3) 
+    xyz(:) = sum(curCoords, dim=2) + origin
+    !if (tPeriodic) then
+    !  ! Matrix multiplication in the innermost loop :)
+    !  frac(:) = matmul(xyz, recVecs2p)
+    !  xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
+    !end if
+    diff(:) = xyz - coords(:, iAtom, iCell)
+    xx = norm2(diff)
+    val = 0
+    if (xx <= stos(iOrb)%cutoff) then
+      ! Radial dependence could be moved above iM loop.
+      call getValue(stos(iOrb), xx, val)
+      val = val * realTessY(iL, iM, pos, xx)
+    end if
+  end subroutine directCalculation
+
   !> Provides a view to the cache for a given angular momentum <iM> and
   !! a requested subgrid <iChunk>. Returns a pointer to the requested subgrid.
-  subroutine TOrbitalCache_access(this, cachePtr, iChunk, iM)
+  subroutine TOrbitalCache_access(this, cacheCopy, iChunk, iM)
     class(TOrbitalCache), intent(in) :: this
     !> Pointer to the cache providing a view to the requested (3d) subgrid.
     real(dp), pointer, intent(out)   :: cachePtr(:,:,:)
@@ -357,11 +396,12 @@ contains
     ! Distance between the subgrids in A
     real(dp) :: chunkSeparation(3)
 
+    !! correctly size the cachePtr
     ! TOrbitalCache array, one for each unique orbital
     type(TOrbitalCache), allocatable, save :: orbitalCache(:)
     
     ! calculate values on the fly without loss of precision
-    logical, parameter :: tBypassCache = .true.
+    logical, parameter :: tBypassCache = .false.
 
     !---------------------------------
 
@@ -379,7 +419,7 @@ contains
 
     nUniqueOrb = size(angMoms)
     if(tBypassCache) then
-      print "(*(G0, 1X))", " -> Bypassing cache, using old method."
+      print "(*(G0, 1X))", " -> Bypassing cache!."
     else
       print "(*(G0, 1X))", " -> Using cache method."
       ! One TOrbitalCache for each STO.
@@ -394,7 +434,6 @@ contains
     end if
 
 
-
     ! Main grid size
     if (tReal) then
       nPoints = shape(valueReal)
@@ -406,26 +445,25 @@ contains
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
-    ! below. This is fine as, in contrast to what was published, DFTB+ uses implicitly exp(-ikr) as
+    ! below. This is fine as, in contrast to what was published, DFTB+ implicitly uses exp(-ikr) as
     ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
-    print *, "Applying cached densities to grid"
     ! For each atom, determine the offsets, then align the cache and apply using slicing.
     do iCell = 1, nCell
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
         write(*, '(a, a, i0, a, i0, a, i0, a, i0)', advance='no') char(13), &
-            & "Adding contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
+            & "Applying contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
 
         ! Todo:
         ! We have to change the cache mapping to account for this.
-        ! Looks like it shifts would-be out of bounds coordinates back into the grid.
+        ! Looks like this shifts would-be out of bounds coordinates back into the grid.
         !if (tPeriodic) then
         !  frac(:) = matmul(pos, recVecs2p)
         !  pos(:) = matmul(latVecs, frac - real(floor(frac), dp))
@@ -434,15 +472,17 @@ contains
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           ! Calculate alignment bounds and select the correct subgrid
           print *, "."
-          if(.not. tBypassCache) then
+          if(tBypassCache) then
+            iOffset = 0
+          else
             call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
           end if
 
           iL = angMoms(iOrb)
           do iM = -iL, iL
-            ! Access the correct subgrid.
-            ! Modifies the Offset to compensate for the lost bound mapping.
-            if(.not. tBypassCache) then
+            if(tBypassCache) then
+              call directCalculation(nPoints, stos(iOrb), gridVecs, pos, iM, cachePtr)
+            else
               call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
             end if
 
@@ -451,31 +491,7 @@ contains
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
-                    
-                    if(.not. tBypassCache) then
-                      val = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
-                    else
-                      ! Recreate the old results.
-                      ! Significantly less optimised, but should be equivalent.
-                      curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
-                      curCoords(:, 2) = real(i2 - 1, dp) * gridVecs(:, 2) 
-                      curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3) 
-                      xyz(:) = sum(curCoords, dim=2) + origin
-                      !if (tPeriodic) then
-                      !  ! Matrix multiplication in the innermost loop :)
-                      !  frac(:) = matmul(xyz, recVecs2p)
-                      !  xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-                      !end if
-                      diff(:) = xyz - coords(:, iAtom, iCell)
-                      xx = norm2(diff)
-                      val = 0
-                      if (xx <= stos(iOrb)%cutoff) then
-                        ! Radial dependence could be moved above iM loop.
-                        call getValue(stos(iOrb), xx, val)
-                        val = val * realTessY(iL, iM, pos, xx)
-                      end if
-                    end if
-
+                    val = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
                     if (tReal) then
                       if (tAddDensities) then
                         val = val * val
@@ -492,6 +508,10 @@ contains
                 end do
               end do
             end do
+
+            if(tBypassCache .and. associated(cachePtr)) then
+              deallocate(cachePtr)
+            end if
             coeffInd = coeffInd + 1
           end do
         end do
