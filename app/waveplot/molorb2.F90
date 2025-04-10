@@ -7,32 +7,19 @@
 
 ! Notes:
 ! General Todo list: 
-! Todo: Acquire a real-world example to base decisions on.
-!        -> Figure out a sensible targetGridDistance
-!        -> Base on available memory? hand
-! Todo: Implement Complex Version
-! Todo: Check if results align with unmodified version
-!       -> Run both, compare
-!       -> Investigate how subdivision affects accuracy
-! Todo: Move targetGridDistance setting etc. to waveplot in hsd
-! Ask how compiler handles realTessY
-! Does the compiler inline the call to getValueExplicit?
 ! Quit trying to apply premature optimisations
 ! Try to get the LSP working. Will require running fypp in the background.
 ! Todo: Figure out how waveplot is to be used as a library in the future.
-! Todo: Add no-subdivision option
-!        ->  Work out a better interface
 ! Todo: Try intermediate-copy version
 !
+! Problem: Charge Mismatch, independent of subdivisionFactor.
+!
 ! Near term todo:
+! 0. Fix periodic wrapping
 ! 1. Compare results with the old version
 ! 2. Check if complex version works
 ! 3. Move subdivisionFactor to waveplot_in.hsd
-!
-! Problem: Charge Mismatch, independent of subdivisionFactor.
-! Troubleshooting ideas:
-!   - Read Code
-!   - Implement uncached version
+! 4. Add (slower) no-subdivision option
 
 
 
@@ -64,7 +51,7 @@ module waveplot_molorb2
     real(dp), pointer :: cache(:,:,:,:,:,:,:) => null()
 
     !> How many shifted copies of the main grid are stored in the cache
-    integer :: subdivisionFactor(3)
+    integer :: subdivisionFactor
 
     !> The grids basis vectors
     real(dp) :: gridVecs(3,3)
@@ -92,7 +79,7 @@ contains
     real(dp), intent(in) :: gridVecs(3,3)
     !> How many shifted subgrids are to be stored in the cache.
     !! Determines the accuracy of the approximation.
-    integer, intent(in) :: subdivisionFactor(3)
+    integer, intent(in) :: subdivisionFactor
     !> Angular momentum of the Slater orbital
     integer, intent(in) :: iL
 
@@ -123,7 +110,7 @@ contains
     ! Allocate the cache
     expectedSizeMB = 0.0_dp
     expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
-    expectedSizeMB = expectedSizeMB * 2**3 * product(subdivisionFactor) * (2 * iL + 1)
+    expectedSizeMB = expectedSizeMB * 2**3 * subdivisionFactor**3 * (2 * iL + 1)
     expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
     print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
     print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
@@ -134,21 +121,21 @@ contains
 
     ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
     ! When we access the cache via the pointer view, we need to correct the indices.
-    allocate(this%cache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor(1)-1, &
-                      & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor(2)-1, &
-                      & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor(3)-1, &
+    allocate(this%cache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor-1, &
+                      & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor-1, &
+                      & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor-1, &
                       & -iL:iL), source=0.0_dp)
 
     ! For every point on the fine grid:
-    lpI3Chunked : do i3Chunked = 0, subdivisionFactor(3)-1
+    lpI3Chunked : do i3Chunked = 0, subdivisionFactor-1
       lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-        curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor(3), dp) * gridVecs(:, 3)
-        lpI2Chunked : do i2Chunked = 0, subdivisionFactor(2)-1
+        curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor, dp) * gridVecs(:, 3)
+        lpI2Chunked : do i2Chunked = 0, subdivisionFactor-1
           lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-            curCoords(:, 2) = real(i2 + i2Chunked / subdivisionFactor(2), dp) * gridVecs(:, 2)
-            lpI1Chunked : do i1Chunked = 0, subdivisionFactor(1)-1
+            curCoords(:, 2) = real(i2 + i2Chunked / subdivisionFactor, dp) * gridVecs(:, 2)
+            lpI1Chunked : do i1Chunked = 0, subdivisionFactor-1
               lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor(1), dp) * gridVecs(:, 1)
+                curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor, dp) * gridVecs(:, 1)
                 ! Calculate position
                 xyz = sum(curCoords, dim=2)
                 xx = norm2(xyz)
@@ -173,58 +160,21 @@ contains
   end subroutine TOrbitalCache_initialise
 
 
-  !> Try to recreate the old results
-  subroutine directCalculation(nPoints, sto, gridVecs, pos, iM, cachePtr)
-    !> The number of points in the main grid
-    integer, intent(in) :: nPoints(4)
-    !> The Slater orbital to be cached
-    type(TSlaterOrbital), intent(in) :: sto
-    !> Basis vectors of the main grid
-    real(dp), intent(in) :: gridVecs(3,3)
-    !> Position of the atom including any origin shift
-    real(dp), intent(in) :: pos(3)
-    !> Angular momentum
-    integer, intent(in) :: iM
-    
-    real(dp), pointer, intent(out) :: cachePtr(:,:,:)
-
-
-
-    ! Recreate the old results.
-    ! Significantly less optimised, but should be equivalent.
-    curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
-    curCoords(:, 2) = real(i2 - 1, dp) * gridVecs(:, 2) 
-    curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3) 
-    xyz(:) = sum(curCoords, dim=2) + origin
-    !if (tPeriodic) then
-    !  ! Matrix multiplication in the innermost loop :)
-    !  frac(:) = matmul(xyz, recVecs2p)
-    !  xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-    !end if
-    diff(:) = xyz - coords(:, iAtom, iCell)
-    xx = norm2(diff)
-    val = 0
-    if (xx <= stos(iOrb)%cutoff) then
-      ! Radial dependence could be moved above iM loop.
-      call getValue(stos(iOrb), xx, val)
-      val = val * realTessY(iL, iM, pos, xx)
-    end if
-  end subroutine directCalculation
-
-  !> Provides a view to the cache for a given angular momentum <iM> and
-  !! a requested subgrid <iChunk>. Returns a pointer to the requested subgrid.
+  !> Provides a copy of the cache for a given angular momentum <iM> and
+  !! the requested subgrid <iChunk>. 
   subroutine TOrbitalCache_access(this, cacheCopy, iChunk, iM)
     class(TOrbitalCache), intent(in) :: this
     !> Pointer to the cache providing a view to the requested (3d) subgrid.
-    real(dp), pointer, intent(out)   :: cachePtr(:,:,:)
+    real(dp), allocatable, intent(out) :: cacheCopy(:,:,:)
     !> Which subgrid to access
     integer, intent(in) :: iChunk(3)
     !> Which angular momentum to access
     integer, intent(in) :: iM
+    
+    !> TODO: Try to reuse this memory.
+    allocate(cacheCopy(size(this%cache,1), size(this%cache,3), size(this%cache,5)))
 
-    ! Access the cache using the chunked indices
-    ! Fortran does not support simultaneous bound mapping and rank reduction :(
-    cachePtr => this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    cacheCopy = this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
   end subroutine TOrbitalCache_access
 
   !> Aligns the cache to the main grid.
@@ -251,7 +201,7 @@ contains
       iOffset(:) = int(pos(:,1))
       ! -> shifted by (0..subdivisionFactor-1)/subdivisionFactor to select the closest subgrid (chunk)
       ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
-      iChunk(:) = modulo(int(pos(:,1) * this%subdivisionFactor(:)), this%subdivisionFactor(:))
+      iChunk(:) = modulo(int(pos(:,1) * this%subdivisionFactor), this%subdivisionFactor)
 
       ! Lower Main Indices need to include
       ! -> start of main grid (1)
@@ -375,16 +325,10 @@ contains
 
     integer :: iOffset(3), iChunk(3), iMain(3,3)
 
-    real(dp), pointer :: cachePtr(:,:,:)
+    real(dp), allocatable :: cacheCopy(:,:,:)
 
-    ! Todo: This overrides targetGridDistance and subdivisionFactor.
-    integer, parameter :: subdivisionFactorLead = 5
-
-    ! Todo: Figure out what unit we are using here. Should be A.
-    real(dp) :: targetGridDistance(3)
-    
-    ! Subdivision factors calculated to meet the targetGridDistance requirements
-    integer :: subdivisionFactor(3)
+    !> Number of cached subgrids. Sets the accuracy of the approximation. 
+    integer, parameter :: subdivisionFactor
   
     real(dp) :: pos(3), frac(3),xyz(3), diff(3), xx
     real(dp) :: curCoords(3,3)
@@ -393,44 +337,20 @@ contains
 
     real(dp) :: val
     
-    ! Distance between the subgrids in A
-    real(dp) :: chunkSeparation(3)
-
-    !! correctly size the cachePtr
     ! TOrbitalCache array, one for each unique orbital
     type(TOrbitalCache), allocatable, save :: orbitalCache(:)
     
-    ! calculate values on the fly without loss of precision
-    logical, parameter :: tBypassCache = .false.
-
     !---------------------------------
 
-    ! Determine subgrid count / subdivision Factor / Grid Resolution
-    ! TODO: Squash this to subdivisionFactor alone and add it to waveplot_in.hsd
-    ! Might be interesting to output the uncertainty introduced due to chunking, so perhaps keep it?
-    ! We would not want to print things here in the molorb module though.
-    targetGridDistance = norm2(gridVecs, dim=1) / subdivisionFactorLead
-    subdivisionFactor = ceiling(norm2(gridVecs, dim=1) / targetGridDistance)
-    chunkSeparation = 1.0_dp / subdivisionFactor
-    print "(*(G0, 1X))", "Subdivision Distance / chunk Separation:", chunkSeparation
-    print "(*(G0, 1X))", "Subdivision Factors / chunk Count:", subdivisionFactor
-
-
-
     nUniqueOrb = size(angMoms)
-    if(tBypassCache) then
-      print "(*(G0, 1X))", " -> Bypassing cache!."
-    else
-      print "(*(G0, 1X))", " -> Using cache method."
-      ! One TOrbitalCache for each STO.
-      if(.not. allocated(orbitalCache)) then
-        allocate(orbitalCache(nUniqueOrb))
-        ! Go through all orbitals and initialise them (build the cache)
-        do iOrb = 1, nUniqueOrb
-          print "(*(G0, 1X))", " -> Caching orbital ", iOrb
-          call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
-        end do
-      end if
+    ! One TOrbitalCache for each STO.
+    if(.not. allocated(orbitalCache)) then
+      allocate(orbitalCache(nUniqueOrb))
+      ! Go through all orbitals and initialise them (build the cache)
+      do iOrb = 1, nUniqueOrb
+        print "(*(G0, 1X))", " -> Caching orbital ", iOrb
+        call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
+      end do
     end if
 
 
@@ -472,46 +392,31 @@ contains
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           ! Calculate alignment bounds and select the correct subgrid
           print *, "."
-          if(tBypassCache) then
-            iOffset = 0
-          else
-            call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
-          end if
+          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
 
           iL = angMoms(iOrb)
           do iM = -iL, iL
-            if(tBypassCache) then
-              call directCalculation(nPoints, stos(iOrb), gridVecs, pos, iM, cachePtr)
-            else
-              call orbitalCache(iOrb)%access(cachePtr, iChunk, iM)
-            end if
+            call orbitalCache(iOrb)%access(cacheCopy, iChunk, iM)
 
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
-                    val = cachePtr(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
+                    val = cacheCopy(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
                     if (tReal) then
                       if (tAddDensities) then
                         val = val * val
                       end if
                       valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * val
                     else
-                      ! TODO
-                      ! Im not certain this is quite right.
-                      ! I believe the if statements in the old code were optimisations, and this should be equivalent.
-                      ! Lets take at look at the results to verfiy that!
+                      ! TODO: Verify if this is correct
                       valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + phases(iCell, kIndexes(iEig)) * val
                     end if
                   end do
                 end do
               end do
             end do
-
-            if(tBypassCache .and. associated(cachePtr)) then
-              deallocate(cachePtr)
-            end if
             coeffInd = coeffInd + 1
           end do
         end do
