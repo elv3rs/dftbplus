@@ -170,11 +170,16 @@ contains
     integer, intent(in) :: iChunk(3)
     !> Which angular momentum to access
     integer, intent(in) :: iM
+    integer :: dims(7)
+    dims = shape(this%cache)
     
     !> TODO: Try to reuse this memory.
-    allocate(cacheCopy(size(this%cache,1), size(this%cache,3), size(this%cache,5)))
+    allocate(cacheCopy(-this%nPointsHalved(1):this%nPointsHalved(1), &
+                      &-this%nPointsHalved(2):this%nPointsHalved(2), & 
+                      &-this%nPointsHalved(3):this%nPointsHalved(3)))
 
-    cacheCopy = this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    cacheCopy(:,:,:) = this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+
   end subroutine TOrbitalCache_access
 
   !> Aligns the cache to the main grid.
@@ -206,7 +211,7 @@ contains
       ! Lower Main Indices need to include
       ! -> start of main grid (1)
       ! -> start of cache grid (atom offset - half cache size)
-      iMain(:, 1) = max(1, iOffset(:)  - this%nPointsHalved(:))
+      iMain(:, 1) = max(1, iOffset(:) - this%nPointsHalved(:))
       ! Upper Main Indices need to include
       ! -> end of main grid (nPoints)
       ! -> end of cache grid (atom offset + half cache size)
@@ -218,13 +223,13 @@ contains
       print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
 
       ! Quick Fix to counter lost bound mapping of pointer view
-      iOffset(:) =  this%nPointsHalved(:) - iOffset(:) - 1
+      iOffset(:) = -iOffset(:)
 
       do ii = 1, 3
         print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
                         & iMain(ii,2), "->",&
-                        & iMain(ii,1) - iOffset(ii), ":", &
-                        & iMain(ii,2) - iOffset(ii)
+                        & iMain(ii,1) + iOffset(ii), ":", &
+                        & iMain(ii,2) + iOffset(ii)
       end do
   end subroutine TOrbitalCache_align
 
@@ -328,7 +333,7 @@ contains
     real(dp), allocatable :: cacheCopy(:,:,:)
 
     !> Number of cached subgrids. Sets the accuracy of the approximation. 
-    integer, parameter :: subdivisionFactor
+    integer, parameter :: subdivisionFactor = 5
   
     real(dp) :: pos(3), frac(3),xyz(3), diff(3), xx
     real(dp) :: curCoords(3,3)
