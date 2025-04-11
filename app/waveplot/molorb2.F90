@@ -162,23 +162,27 @@ contains
 
   !> Provides a copy of the cache for a given angular momentum <iM> and
   !! the requested subgrid <iChunk>. 
-  subroutine TOrbitalCache_access(this, cacheCopy, iChunk, iM)
+  subroutine TOrbitalCache_access(this, cacheCopy, iChunk, iOffset, iM)
     class(TOrbitalCache), intent(in) :: this
-    !> Pointer to the cache providing a view to the requested (3d) subgrid.
+    !> Contiguous copy of the requested cache memory
     real(dp), allocatable, intent(out) :: cacheCopy(:,:,:)
     !> Which subgrid to access
     integer, intent(in) :: iChunk(3)
+    !> Offset of the cache in the main grid, to be baked into the indices 
+    integer, intent(in) :: iOffset(3)
     !> Which angular momentum to access
     integer, intent(in) :: iM
-    integer :: dims(7)
-    dims = shape(this%cache)
+    !! Indices bounds
+    integer :: nn(3,2)
+
+    nn(:,1) = -this%nPointsHalved(:) - iOffset(:)
+    nn(:,2) = this%nPointsHalved(:) - iOffset(:)
     
     !> TODO: Try to reuse this memory.
-    allocate(cacheCopy(-this%nPointsHalved(1):this%nPointsHalved(1), &
-                      &-this%nPointsHalved(2):this%nPointsHalved(2), & 
-                      &-this%nPointsHalved(3):this%nPointsHalved(3)))
+    allocate(cacheCopy(nn(1,1):nn(1,2), nn(2,1):nn(2,2), nn(3,1):nn(3,2)))
 
-    cacheCopy(:,:,:) = this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
+    cacheCopy(nn(1,1):nn(1,2), nn(2,1):nn(2,2), nn(3,1):nn(3,2)) &
+          & = this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
 
   end subroutine TOrbitalCache_access
 
@@ -401,14 +405,14 @@ contains
 
           iL = angMoms(iOrb)
           do iM = -iL, iL
-            call orbitalCache(iOrb)%access(cacheCopy, iChunk, iM)
+            call orbitalCache(iOrb)%access(cacheCopy, iChunk, iOffset, iM)
 
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
-                    val = cacheCopy(i1+iOffset(1), i2+iOffset(2), i3+iOffset(3))
+                    val = cacheCopy(i1, i2, i3)
                     if (tReal) then
                       if (tAddDensities) then
                         val = val * val
