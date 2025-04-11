@@ -16,7 +16,7 @@ module waveplot_slater
   save
 
   public :: realTessY
-  public :: TSlaterOrbital, TSlaterOrbital_init, getValue
+  public :: TSlaterOrbital, TSlaterOrbital_init, getRadial
 
 
   !> Data type for STOs.
@@ -54,8 +54,8 @@ module waveplot_slater
 
 
   !> Returns the value of a Slater orbital in a given point.
-  interface getValue
-    module procedure TSlaterOrbital_getValue
+  interface getRadial
+    module procedure TSlaterOrbital_getRadialValue
   end interface
 
 
@@ -219,7 +219,7 @@ contains
     allocate(this%gridValue(this%nGrid))
     do iGrid = 1, this%nGrid
       rr = real(iGrid - 1, dp) * resolution
-      call TSlaterOrbital_getValue_explicit(ll, nPow, nAlpha, aa, this%alpha, rr,&
+      call TSlaterOrbital_getRadialValue_explicit(ll, nPow, nAlpha, aa, this%alpha, rr,&
           & this%gridValue(iGrid))
     end do
 
@@ -227,7 +227,7 @@ contains
 
 
   !> Returns the value of the SlaterOrbital in a given point.
-  subroutine TSlaterOrbital_getValue(this, rr, sto)
+  subroutine TSlaterOrbital_getRadialValue(this, rr, sto)
 
     !> SlaterOrbital instance
     type(TSlaterOrbital), intent(in) :: this
@@ -252,11 +252,11 @@ contains
       sto = 0.0_dp
     end if
 
-  end subroutine TSlaterOrbital_getValue
+  end subroutine TSlaterOrbital_getRadialValue
 
 
   !> Calculates the value of an STO analytically.
-  subroutine TSlaterOrbital_getValue_explicit(ll, nPow, nAlpha, aa, alpha, rr, sto)
+  subroutine TSlaterOrbital_getRadialValue_explicit(ll, nPow, nAlpha, aa, alpha, rr, sto)
 
     !> Angular momentum of the STO
     integer, intent(in) :: ll
@@ -302,6 +302,6 @@ contains
       sto = sto + rTmp * exp(alpha(ii) * rr)
     end do
 
-  end subroutine TSlaterOrbital_getValue_explicit
+  end subroutine TSlaterOrbital_getRadialValue_explicit
 
 end module waveplot_slater

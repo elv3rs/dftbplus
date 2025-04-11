@@ -152,8 +152,8 @@ program waveplot
           ind = ind + mAng
         end do
       end do
-      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, orbitalOcc, atomicChrg,&
-          & addDensities=.true.)
+      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, orbitalOcc, wp%opt%subdivisionFactor, &
+          & atomicChrg, addDensities=.true.)
       sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
       buffer(:,:,:) = atomicChrg(:,:,:, 1)
 
