@@ -83,6 +83,9 @@ module waveplot_gridcache
     !> Nr. of cached grids
     integer :: nCached
 
+    !> Subdivision factor
+    integer :: subdivisionFactor
+
     !> Cache for real grids
     real(dp), allocatable :: gridCacheReal(:,:,:,:)
 
@@ -112,8 +115,8 @@ contains
 
   !> Initialises a GridCache instance.
   !! Caveat: Level index is not allowed to contain duplicate entries!
-  subroutine TGridCache_init(sf, env, levelIndexAll, nOrb, nAllLevel, nAllKPoint, nAllSpin,&
-      & nCached, nPoints, tVerbose, eigvecBin, gridVec, origin, kPointCoords, tReal, molorb)
+  subroutine TGridCache_init(sf, env, levelIndexAll, nOrb, nAllLevel, nAllKPoint, nAllSpin, nCached,&
+      & nPoints, tVerbose, eigvecBin, gridVec, origin, kPointCoords, tReal, molorb, subdivisionFactor)
 
     !> Structure to initialise
     type(TgridCache), intent(inout) :: sf
@@ -163,6 +166,9 @@ contains
     !> Molecular orbital calculator
     type(TMolecularOrbital), pointer, intent(in) :: molorb
 
+    !> Subdivision factor for the cache grid
+    integer, intent(in) :: subdivisionFactor
+
     !! Contains indexes (spin, kpoint, state) to be calculated by the current MPI process
     integer, allocatable :: levelIndex(:,:)
 
@@ -209,6 +215,7 @@ contains
     sf%kPoints(:,:) = 2.0_dp * pi * kPointCoords
     sf%nCached = nCached
     sf%tReal = tReal
+    sf%subdivisionFactor = subdivisionFactor
     if (sf%tReal) then
       allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached))
       allocate(sf%eigenvecReal(sf%nOrb, sf%nCached))
@@ -358,11 +365,11 @@ contains
       end if
       if (sf%tReal) then
         eigReal => sf%eigenvecReal(:, :iEnd)
-        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd))
+        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%subdivisionFactor, sf%gridCacheReal(:,:,:,:iEnd))
       else
         eigCmpl => sf%eigenvecCmpl(:, :iEnd)
         call getValue(sf%molorb, sf%origin, sf%gridVec, eigCmpl, sf%kPoints,&
-            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd))
+            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%subdivisionFactor, sf%gridCacheCmpl(:,:,:,:iEnd))
       end if
     end if
 
