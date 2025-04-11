@@ -16,7 +16,8 @@ module waveplot_molorb
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
-  use waveplot_slater, only : TSlaterOrbital, realTessY, getValue
+  ! TODO: Why doesnt getValue collide? Is Overloading possible?
+  use waveplot_slater, only : TSlaterOrbital, realTessY, getRadial
   use dftbp_math_lapackroutines, only: gesv
   use waveplot_molorb2, only: localGetValue
   implicit none
@@ -208,8 +209,8 @@ contains
 
 
   !> Returns molecular orbitals on a grid.
-  subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, valueOnGrid,&
-      & addDensities)
+  subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, &
+      & subdivisionFactor, valueOnGrid, addDensities)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -225,6 +226,9 @@ contains
 
     !> Molecular orbitals on a grid
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
+
+    !> Subdivision factor for the Orbital Cache
+    integer, intent(in) :: subdivisionFactor
 
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addDensities
@@ -251,14 +255,14 @@ contains
     call localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
         & this%coords, this%species, this%cutoffs, this%iStos, this%angMoms, this%stos,&
         & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-        & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
+        & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
 
   end subroutine TMolecularOrbital_getValue_real
 
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid)
+      & kIndexes, subdivisionFactor, valueOnGrid)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -277,6 +281,9 @@ contains
 
     !> Index of the k-points in kPoints for every mol.orbital
     integer, intent(in) :: kIndexes(:)
+
+    !> Subdivision factor for the Orbital Cache
+    integer, intent(in) :: subdivisionFactor
 
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
@@ -300,7 +307,7 @@ contains
     call localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
         & this%coords, this%species, this%cutoffs, this%iStos, this%angMoms, this%stos,&
         & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-        & this%cellVec, tAddDensities, valueReal, valueOnGrid)
+        & this%cellVec, tAddDensities, subdivisionFactor, valueReal, valueOnGrid)
 
   end subroutine TMolecularOrbital_getValue_cmpl
 
