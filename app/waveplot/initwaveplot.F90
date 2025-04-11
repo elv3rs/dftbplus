@@ -132,6 +132,9 @@ module waveplot_initwaveplot
     !> List of levels to plot, whereby insignificant occupations were filtered out
     integer, allocatable :: levelIndex(:,:)
 
+    !> Gridcache Subdivision Factor
+    integer :: subdivisionFactor
+
     !> File access types
     character(20) :: binaryAccessTypes(2)
 
@@ -381,7 +384,7 @@ contains
     call TGridCache_init(this%loc%grid, env, this%loc%levelIndex, this%input%nOrb, this%eig%nState,&
         & nKPoint, nSpin, nCached, this%opt%nPoints, this%opt%tVerbose, eigVecBin,&
         & this%loc%gridVec, this%opt%gridOrigin, kPointsWeights(1:3, :), this%input%tRealHam,&
-        & this%loc%pMolOrb)
+        & this%loc%pMolOrb, this%opt%subdivisionFactor)
 
   end subroutine TProgramVariables_init
 
@@ -623,6 +626,9 @@ contains
     call destruct(indexBuffer)
 
     call getChildValue(node, "NrOfCachedGrids", nCached, 1, child=field)
+
+    ! SubdivisionFactor
+    call getChildValue(node, "SubdivisionFactor", this%opt%subdivisionFactor, 1, child=field)
 
     if (nCached < 1 .and. nCached /= -1) then
       call detailedError(field, "Value must be -1 or greater than zero.")

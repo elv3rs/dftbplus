@@ -34,7 +34,7 @@ module waveplot_molorb2
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
-  use waveplot_slater, only : TSlaterOrbital, realTessY, getValue
+  use waveplot_slater, only : TSlaterOrbital, realTessY, getRadial
   use dftbp_math_lapackroutines, only: gesv
   implicit none  
   
@@ -129,19 +129,18 @@ contains
     ! For every point on the fine grid:
     lpI3Chunked : do i3Chunked = 0, subdivisionFactor-1
       lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-        curCoords(:, 3) = real(i3 + i3Chunked / subdivisionFactor, dp) * gridVecs(:, 3)
+        curCoords(:, 3) = real(i3 + real(i3Chunked, dp) / subdivisionFactor, dp) * gridVecs(:, 3)
         lpI2Chunked : do i2Chunked = 0, subdivisionFactor-1
           lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-            curCoords(:, 2) = real(i2 + i2Chunked / subdivisionFactor, dp) * gridVecs(:, 2)
+            curCoords(:, 2) = real(i2 + real(i2Chunked, dp) / subdivisionFactor, dp) * gridVecs(:, 2)
             lpI1Chunked : do i1Chunked = 0, subdivisionFactor-1
               lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                curCoords(:, 1) = real(i1 + i1Chunked / subdivisionFactor, dp) * gridVecs(:, 1)
+                curCoords(:, 1) = real(i1 + real(i1Chunked, dp) / subdivisionFactor, dp) * gridVecs(:, 1)
                 ! Calculate position
                 xyz = sum(curCoords, dim=2)
                 xx = norm2(xyz)
                 if (xx <= sto%cutoff) then
-                  ! Get radial dependence
-                  call getValue(sto, xx, val)
+                  call getRadial(sto, xx, val)
                   lpIM : do iM = -iL, iL
                     ! Combine with angular dependence and add to cache
                     this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, xyz, xx)
@@ -255,7 +254,7 @@ contains
   !! various parameters.
   subroutine localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, nAtom, nOrb, coords,&
       & species, cutoffs, iStos, angMoms, stos, tPeriodic, tReal, latVecs, recVecs2p, kPoints,&
-      & kIndexes, nCell, cellVec, tAddDensities, valueReal, valueCmpl)
+      & kIndexes, nCell, cellVec, tAddDensities, subdivisionFactor, valueReal, valueCmpl)
 
     !> Origin of the grid
     real(dp), intent(in) :: origin(:)
@@ -320,6 +319,9 @@ contains
     !> If densities should be added instead of wave funcs
     logical, intent(in) :: tAddDensities
 
+    !> Number of cached subgrids. Sets the accuracy of the approximation. 
+    integer, intent(in) :: subdivisionFactor
+
     !> Contains the real grid on exit
     real(dp), intent(out) :: valueReal(:,:,:,:)
 
@@ -336,8 +338,6 @@ contains
 
     real(dp), allocatable :: cacheCopy(:,:,:)
 
-    !> Number of cached subgrids. Sets the accuracy of the approximation. 
-    integer, parameter :: subdivisionFactor = 5
   
     real(dp) :: pos(3), frac(3),xyz(3), diff(3), xx
     real(dp) :: curCoords(3,3)
