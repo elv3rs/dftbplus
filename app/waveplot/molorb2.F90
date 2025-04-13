@@ -8,19 +8,16 @@
 ! Notes:
 ! General Todo list: 
 ! Quit trying to apply premature optimisations
-! Try to get the LSP working. Will require running fypp in the background.
 ! Todo: Figure out how waveplot is to be used as a library in the future.
-! Todo: Try intermediate-copy version
 !
-! Problem: Charge Mismatch, independent of subdivisionFactor.
+! Problem: Charge Mismatch (not converging to expected value)
 !
 ! Near term todo:
 ! 0. Fix periodic wrapping
 ! 1. Compare results with the old version
 ! 2. Check if complex version works
-! 3. Move subdivisionFactor to waveplot_in.hsd
-! 4. Add (slower) no-subdivision option
-
+! Long term:
+! Try to get the LSP working. Will require running fypp in the background.
 
 
 #:include 'common.fypp'
@@ -32,6 +29,7 @@ module waveplot_molorb2
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConditions
   use dftbp_dftb_periodic, only : getCellTranslations
+  use dftbp_common_status, only : TStatus
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
   use waveplot_slater, only : TSlaterOrbital, realTessY, getRadial
@@ -39,6 +37,7 @@ module waveplot_molorb2
   implicit none  
   
   public :: localGetValue
+  public :: findCacheSize
 
 
   ! Wavefunctions are evaluated across a finer grid (subdivisionFactor as many points as the main one).
@@ -70,6 +69,43 @@ module waveplot_molorb2
 
 contains
 
+! Finds the smallest array dimensions in terms of the basis gridVecs to fit the sphere defined by the cutoff radius.
+subroutine findCacheSize(gridVecs, cutoff, nPointsHalved)
+
+  !>  Basis vectors, where gridVecs(:,j) is the j-th vector.
+  real(dp), intent(in) :: gridVecs(3,3)
+  !>  Radius of sphere to fit within nPointsHalved.
+  real(dp), intent(in) :: cutoff
+  !>  Output array size 
+  integer, intent(out) :: nPointsHalved(3)
+  !--------------------
+  !> Basis Vectors (copy of gridVecs)
+  real(dp) :: B(3,3)
+  !> Gram matrix G = B^T * B
+  real(dp) :: G(3,3)
+  !> Inverse Gram matrix
+  real(dp) :: G_inv(3,3) 
+  !> Loop index
+  integer  :: i
+
+  @:ASSERT(cutoff > 0.0_dp)
+
+  B = gridVecs
+  ! Gram Matrix G = B^T * B
+  G = matmul(transpose(B), B)
+
+  ! Copy and invert
+  G_inv = G
+  call invert33(G_inv)
+  do i = 1, 3
+     nPointsHalved(i) = ceiling(cutoff * sqrt(G_inv(i,i)))
+  end do
+
+end subroutine findCacheSize
+
+
+
+
   !> Initialises the cache at the provided subdivisionFactor for a given STO, its angular momentum L and the grid vectors.
   subroutine TOrbitalCache_initialise(this, sto, iL, gridVecs, subdivisionFactor)
     class(TOrbitalCache), intent(inout) :: this
@@ -87,6 +123,7 @@ contains
     integer :: i1, i2, i3, iM,  i1Chunked, i2Chunked, i3Chunked
     integer :: nPointsHalved(3)
     real(dp) :: expectedSizeMB
+    real(dp) :: chunkFraction(3)
     !---------------------------------
     
     ! Skip initialisation if the cache is already populated.
@@ -104,7 +141,7 @@ contains
     !       -> investigate using Gram matrix for correct cutoffs
     ! Alternative: Warn the user / stop if they provide a non-orthogonal basis
 
-    nPointsHalved = ceiling(sto%cutoff / norm2(gridVecs, dim=1))
+    nPointsHalved = ceiling(sto%cutoff / norm2(gridVecs, dim=2))
     this%nPointsHalved = nPointsHalved
 
     ! Allocate the cache
@@ -128,14 +165,17 @@ contains
 
     ! For every point on the fine grid:
     lpI3Chunked : do i3Chunked = 0, subdivisionFactor-1
+      chunkFraction(3) = real(i3Chunked, dp) / subdivisionFactor
       lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-        curCoords(:, 3) = real(i3 + real(i3Chunked, dp) / subdivisionFactor, dp) * gridVecs(:, 3)
+        curCoords(:, 3) = (i3 + chunkFraction(3)) * gridVecs(:, 3)
         lpI2Chunked : do i2Chunked = 0, subdivisionFactor-1
+          chunkFraction(2) = real(i2Chunked, dp) / subdivisionFactor
           lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-            curCoords(:, 2) = real(i2 + real(i2Chunked, dp) / subdivisionFactor, dp) * gridVecs(:, 2)
+            curCoords(:, 2) = (i2 + chunkFraction(2)) * gridVecs(:, 2)
             lpI1Chunked : do i1Chunked = 0, subdivisionFactor-1
+              chunkFraction(1) = real(i1Chunked, dp) / subdivisionFactor
               lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                curCoords(:, 1) = real(i1 + real(i1Chunked, dp) / subdivisionFactor, dp) * gridVecs(:, 1)
+                curCoords(:, 1) = (i1 + chunkFraction(1)) * gridVecs(:, 1)
                 ! Calculate position
                 xyz = sum(curCoords, dim=2)
                 xx = norm2(xyz)
@@ -144,6 +184,12 @@ contains
                   lpIM : do iM = -iL, iL
                     ! Combine with angular dependence and add to cache
                     this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, xyz, xx)
+
+                    if(i1Chunked + i2Chunked + i3Chunked == 0) then
+                      ! Only print the first chunk
+                      print "(*(G0, 1X))", " -> Caching chunk 0 at", i1, i2, i3, "->", val * realTessY(iL, iM, xyz, xx)
+                    end if
+
                   end do lpIM
                 end if
               end do lpI1
@@ -152,10 +198,6 @@ contains
         end do lpI2Chunked
       end do lpI3
     end do lpI3Chunked
-
-    ! TODO: Consider deallocating the radial dependence cache of the sto to free up some memory. Negligible?
-    ! deallocate(sto%gridValue)
-
   end subroutine TOrbitalCache_initialise
 
 
@@ -164,7 +206,7 @@ contains
   subroutine TOrbitalCache_access(this, cacheCopy, iChunk, iOffset, iM)
     class(TOrbitalCache), intent(in) :: this
     !> Contiguous copy of the requested cache memory
-    real(dp), allocatable, intent(out) :: cacheCopy(:,:,:)
+    real(dp), allocatable, intent(inout) :: cacheCopy(:,:,:)
     !> Which subgrid to access
     integer, intent(in) :: iChunk(3)
     !> Offset of the cache in the main grid, to be baked into the indices 
@@ -176,9 +218,21 @@ contains
 
     nn(:,1) = -this%nPointsHalved(:) - iOffset(:)
     nn(:,2) = this%nPointsHalved(:) - iOffset(:)
-    
-    !> TODO: Try to reuse this memory.
-    allocate(cacheCopy(nn(1,1):nn(1,2), nn(2,1):nn(2,2), nn(3,1):nn(3,2)))
+
+    ! Check if the cache is already allocated and large enough
+    if(allocated(cacheCopy) &
+      & .and. size(cacheCopy, 1) == nn(1,2) - nn(1,1) + 1 &
+      & .and. size(cacheCopy, 2) == nn(2,2) - nn(2,1) + 1 &
+      & .and. size(cacheCopy, 3) == nn(3,2) - nn(3,1) + 1) then
+      ! Problem: Need to remap indices.
+      deallocate(cacheCopy)
+    else if (allocated(cacheCopy)) then
+      deallocate(cacheCopy)
+    end if
+
+    if (.not. allocated(cacheCopy)) then
+      allocate(cacheCopy(nn(1,1):nn(1,2), nn(2,1):nn(2,2), nn(3,1):nn(3,2)))
+    end if
 
     cacheCopy(nn(1,1):nn(1,2), nn(2,1):nn(2,2), nn(3,1):nn(3,2)) &
           & = this%cache(:, iChunk(1), :, iChunk(2), :, iChunk(3), iM)
@@ -224,8 +278,8 @@ contains
       print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
       print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
       print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
-
-      ! Quick Fix to counter lost bound mapping of pointer view
+      
+      ! Add the offset instead of subtracting it henceforth
       iOffset(:) = -iOffset(:)
 
       do ii = 1, 3
@@ -390,9 +444,7 @@ contains
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
 
-        ! Todo:
-        ! We have to change the cache mapping to account for this.
-        ! Looks like this shifts would-be out of bounds coordinates back into the grid.
+        ! Todo: Periodic systems and correct unit cell mapping
         !if (tPeriodic) then
         !  frac(:) = matmul(pos, recVecs2p)
         !  pos(:) = matmul(latVecs, frac - real(floor(frac), dp))
@@ -420,7 +472,8 @@ contains
                       valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * val
                     else
                       ! TODO: Verify this is correct
-                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + phases(iCell, kIndexes(iEig)) * val
+                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + eigVecsCmpl(coeffInd, iEig) &
+                          & * phases(iCell, kIndexes(iEig)) * val
                     end if
                   end do
                 end do
