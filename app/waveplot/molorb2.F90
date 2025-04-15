@@ -37,7 +37,7 @@ module waveplot_molorb2
   implicit none  
   
   public :: localGetValue
-  public :: findCacheSize
+  public :: gridBoxFromSphereRadius
 
 
   ! Wavefunctions are evaluated across a finer grid (subdivisionFactor as many points as the main one).
@@ -69,39 +69,39 @@ module waveplot_molorb2
 
 contains
 
-! Finds the smallest array dimensions in terms of the basis gridVecs to fit the sphere defined by the cutoff radius.
-subroutine findCacheSize(gridVecs, cutoff, nPointsHalved)
+  ! Finds the smallest integer array dimensions in terms of the basis gridVecs to fit
+  ! the sphere defined by the cutoff radius.
+  subroutine gridBoxFromSphereRadius(gridVecs, cutoff, nPointsHalved)
+    !>  Basis vectors, where gridVecs(:,j) is the j-th vector.
+    real(dp), intent(in) :: gridVecs(3,3)
+    !>  Radius of sphere to fit within nPointsHalved.
+    real(dp), intent(in) :: cutoff
+    !>  Output array size 
+    integer, intent(out) :: nPointsHalved(3)
+    !--------------------
+    !> Basis Vectors (copy of gridVecs)
+    real(dp) :: B(3,3)
+    !> Gram matrix G = B^T * B
+    real(dp) :: G(3,3)
+    !> Inverse Gram matrix
+    real(dp) :: G_inv(3,3) 
+    !> Loop index
+    integer  :: i
 
-  !>  Basis vectors, where gridVecs(:,j) is the j-th vector.
-  real(dp), intent(in) :: gridVecs(3,3)
-  !>  Radius of sphere to fit within nPointsHalved.
-  real(dp), intent(in) :: cutoff
-  !>  Output array size 
-  integer, intent(out) :: nPointsHalved(3)
-  !--------------------
-  !> Basis Vectors (copy of gridVecs)
-  real(dp) :: B(3,3)
-  !> Gram matrix G = B^T * B
-  real(dp) :: G(3,3)
-  !> Inverse Gram matrix
-  real(dp) :: G_inv(3,3) 
-  !> Loop index
-  integer  :: i
+    @:ASSERT(cutoff > 0.0_dp)
 
-  @:ASSERT(cutoff > 0.0_dp)
+    B = gridVecs
+    ! Gram Matrix G = B^T * B
+    G = matmul(transpose(B), B)
 
-  B = gridVecs
-  ! Gram Matrix G = B^T * B
-  G = matmul(transpose(B), B)
+    ! Copy and invert
+    G_inv = G
+    call invert33(G_inv)
+    do i = 1, 3
+       nPointsHalved(i) = ceiling(cutoff * sqrt(G_inv(i,i)))
+    end do
 
-  ! Copy and invert
-  G_inv = G
-  call invert33(G_inv)
-  do i = 1, 3
-     nPointsHalved(i) = ceiling(cutoff * sqrt(G_inv(i,i)))
-  end do
-
-end subroutine findCacheSize
+  end subroutine gridBoxFromSphereRadius
 
 
 
@@ -137,11 +137,8 @@ end subroutine findCacheSize
     this%subdivisionFactor = subdivisionFactor
 
     ! Determine the size of the cache
-    ! TODO: Currently assuming an orthogonal basis
-    !       -> investigate using Gram matrix for correct cutoffs
-    ! Alternative: Warn the user / stop if they provide a non-orthogonal basis
+    call gridBoxFromSphereRadius(gridVecs, sto%cutoff, nPointsHalved)
 
-    nPointsHalved = ceiling(sto%cutoff / norm2(gridVecs, dim=2))
     this%nPointsHalved = nPointsHalved
 
     ! Allocate the cache
