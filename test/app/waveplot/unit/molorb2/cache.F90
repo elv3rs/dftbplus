@@ -34,12 +34,12 @@ contains
     ! Simplest case
     cutoff = 5.0_dp
     call gridBoxFromSphereRadius(gridVecs, cutoff, nPointsHalved)
-    @:ASSERT(ALL(nPointsHalved == [5, 5, 5]))
+    @:ASSERT(all(nPointsHalved == [5, 5, 5]))
 
     ! Ensure we dont truncate the wavefunction
     cutoff = 5.1_dp
     call gridBoxFromSphereRadius(gridVecs, cutoff, nPointsHalved)
-    @:ASSERT(ALL(nPointsHalved == [6, 6, 6]))
+    @:ASSERT(all(nPointsHalved == [6, 6, 6]))
 
   $:END_TEST()
 
@@ -79,14 +79,62 @@ contains
 
 
     call gridBoxFromSphereRadius(gridVecs, cutoff, nPointsHalved)
-    @:ASSERT(ALL(nPointsHalved == [15, 10, 10]))
+    @:ASSERT(all(nPointsHalved == [15, 10, 10]))
 
     ! Ensure we dont truncate the wavefunction
     cutoff = 3.0_dp
     call gridBoxFromSphereRadius(gridVecs, cutoff, nPointsHalved)
-    @:ASSERT(ALL(nPointsHalved == [5, 3, 3]))
+    @:ASSERT(all(nPointsHalved == [5, 3, 3]))
   $:END_TEST()
 
+
+  $:TEST("TOrbitalCacheAlignOrthogonal")
+    use waveplot_molorb2, only: TOrbitalCache
+    type(TOrbitalCache) :: cache
+    real(dp) :: gridVecs(3,3)
+    integer :: gridDims(4)
+    real(dp) :: shiftedPos(3)
+    integer :: iOffset(3), iChunk(3), iMain(3,2)
+
+    ! Friendly cartesian orthonormal (identity) basis
+    gridVecs = 0.0_dp
+    gridVecs(1,1) = 1.0_dp
+    gridVecs(2,2) = 1.0_dp
+    gridVecs(3,3) = 1.0_dp
+
+    ! Main grid dimensions
+    gridDims = [20, 20, 20, 1]
+
+    ! Setup cache instance (supply parameters for align)
+    cache%gridVecs = gridVecs
+    cache%subdivisionFactor = 10
+    cache%nPointsHalved = [5, 5, 5]
+
+
+    !---- Case 1
+    shiftedPos = [0.0_dp, 0.0_dp, 0.0_dp]
+    call cache%align(gridDims, shiftedPos, iOffset, iChunk, iMain)
+    @:ASSERT(all(iOffset == [-1, -1, -1]))
+    @:ASSERT(all(iChunk == [0, 0, 0]))
+    @:ASSERT(all(iMain(:,1) == [1, 1, 1]))
+    @:ASSERT(all(iMain(:,2) == [6, 6, 6]))
+    !---- Case 2
+    shiftedPos = [2.5_dp, 3.0_dp, 4.75_dp]
+    call cache%align(gridDims, shiftedPos, iOffset, iChunk, iMain)
+    @:ASSERT(all(iOffset == [-3, -4, -5])) 
+    @:ASSERT(all(iChunk == [5, 0, 7]))
+    @:ASSERT(all(iMain(:,1) == [1, 1, 1]))
+    @:ASSERT(all(iMain(:,2) == [8, 9, 10]))
+    !---- Case 3
+    shiftedPos = [18.0_dp, 19.5_dp, 0.25_dp]
+    call cache%align(gridDims, shiftedPos, iOffset, iChunk, iMain)
+    @:ASSERT(.true.)
+    @:ASSERT(all(iOffset == [-19, -20, -1])) 
+    @:ASSERT(all(iChunk == [0, 5, 2]))
+    @:ASSERT(all(iMain(:,1) == [14, 15, 1]))
+    @:ASSERT(all(iMain(:,2) == [20, 20, 6]))
+
+  $:END_TEST()
 
 
   function tests()
