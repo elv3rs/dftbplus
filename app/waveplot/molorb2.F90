@@ -32,7 +32,7 @@ module waveplot_molorb2
   use dftbp_common_status, only : TStatus
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
-  use waveplot_slater, only : TSlaterOrbital, realTessY, getRadial
+  use waveplot_slater, only : TSlaterOrbital, realTessY
   use dftbp_math_lapackroutines, only: gesv
   implicit none  
   
@@ -44,7 +44,7 @@ module waveplot_molorb2
   ! The X-coordinate is subdivided into <subdivisionFactor> chunked parts to ensure a contiguous memory layout.
   ! Y and Z have been subdivided as well, though only for convenience.
   type :: TOrbitalCache
-    private
+    !private / TODO: was set to public to write some tests, fix this
     !> Cache for a single orbital.
     !! Layout: (X, XChunked, Y, YChunked, Z, ZChunked, iM)
     real(dp), pointer :: cache(:,:,:,:,:,:,:) => null()
@@ -106,96 +106,104 @@ contains
 
 
 
-  !> Initialises the cache at the provided subdivisionFactor for a given STO, its angular momentum L and the grid vectors.
-  subroutine TOrbitalCache_initialise(this, sto, iL, gridVecs, subdivisionFactor)
-    class(TOrbitalCache), intent(inout) :: this
-    !> The Slater orbital to be cached
-    type(TSlaterOrbital), intent(in) :: sto
-    !> Basis vectors of the main grid
-    real(dp), intent(in) :: gridVecs(3,3)
-    !> How many shifted subgrids are to be stored in the cache.
-    !! Determines the accuracy of the approximation.
-    integer, intent(in) :: subdivisionFactor
-    !> Angular momentum of the Slater orbital
-    integer, intent(in) :: iL
+    !> Initialises the cache at the provided subdivisionFactor for a given STO, its angular momentum L and the grid vectors.
+    subroutine TOrbitalCache_initialise(this, sto, iL, gridVecs, subdivisionFactor)
+      class(TOrbitalCache), intent(inout) :: this
+      !> The Slater orbital to be cached
+      type(TSlaterOrbital), intent(in) :: sto
+      !> Basis vectors of the main grid
+      real(dp), intent(in) :: gridVecs(3,3)
+      !> How many shifted subgrids are to be stored in the cache.
+      !! Determines the accuracy of the approximation.
+      integer, intent(in) :: subdivisionFactor
+      !> Angular momentum of the Slater orbital
+      integer, intent(in) :: iL
+      !> Expected size of the cache in MB
+      real(dp) :: expectedSizeMB
 
-    real(dp) :: curCoords(3,3), xx, val, xyz(3)
-    integer :: i1, i2, i3, iM,  i1Chunked, i2Chunked, i3Chunked
-    integer :: nPointsHalved(3)
-    real(dp) :: expectedSizeMB
-    real(dp) :: chunkFraction(3)
-    !---------------------------------
-    
-    ! Skip initialisation if the cache is already populated.
-    if (associated(this%cache)) then
-      print "(*(G0, 1X))", " -> Cache already initialised, skipping."
-      return
-    end if
+      integer :: nPointsHalved(3)
+      !---------------------------------
+      
+      ! Skip initialisation if the cache is already populated.
+      if (associated(this%cache)) then
+        print "(*(G0, 1X))", " -> Cache already initialised, skipping."
+        return
+      end if
 
-    ! Todo: Sprinkle in some asserts
-    this%gridVecs = gridVecs
-    this%subdivisionFactor = subdivisionFactor
+      ! Store parameters and determine cache dimensions
+      this%gridVecs = gridVecs
+      this%subdivisionFactor = subdivisionFactor
+      call gridBoxFromSphereRadius(gridVecs, sto%cutoff, nPointsHalved)
+      this%nPointsHalved = nPointsHalved
 
-    ! Determine the size of the cache
-    call gridBoxFromSphereRadius(gridVecs, sto%cutoff, nPointsHalved)
+      ! Allocate and populate the cache
+      expectedSizeMB = 0.0_dp
+      expectedSizeMB = storage_size(1.0_dp) * product(this%nPointsHalved)
+      expectedSizeMB = expectedSizeMB * 2**3 * this%subdivisionFactor**3 * (2 * iL + 1)
+      expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
+      print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", this%nPointsHalved * 2
+      print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
+      if (expectedSizeMB > 8000) then
+        stop "Expected cache array size exceeds 8GB"
+      end if
 
-    this%nPointsHalved = nPointsHalved
+      ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
+      ! When we access the cache via the pointer view, we need to correct the indices.
+      allocate(this%cache(-this%nPointsHalved(1):this%nPointsHalved(1), 0:this%subdivisionFactor-1, &
+                        & -this%nPointsHalved(2):this%nPointsHalved(2), 0:this%subdivisionFactor-1, &
+                        & -this%nPointsHalved(3):this%nPointsHalved(3), 0:this%subdivisionFactor-1, &
+                        & -iL:iL), source=0.0_dp)
+      call populateCache(this, sto, iL)
 
-    ! Allocate the cache
-    expectedSizeMB = 0.0_dp
-    expectedSizeMB = storage_size(1.0_dp) * product(nPointsHalved)
-    expectedSizeMB = expectedSizeMB * 2**3 * subdivisionFactor**3 * (2 * iL + 1)
-    expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
-    print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", nPointsHalved * 2
-    print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
-    if (expectedSizeMB > 8000) then
-      stop "Expected cache array size exceeds 8GB"
-    end if
+    end subroutine TOrbitalCache_initialise
 
 
-    ! We define (0,0,0) to be the origin using Fortrans fancy arbitrary indices feature.
-    ! When we access the cache via the pointer view, we need to correct the indices.
-    allocate(this%cache(-nPointsHalved(1):nPointsHalved(1), 0:subdivisionFactor-1, &
-                      & -nPointsHalved(2):nPointsHalved(2), 0:subdivisionFactor-1, &
-                      & -nPointsHalved(3):nPointsHalved(3), 0:subdivisionFactor-1, &
-                      & -iL:iL), source=0.0_dp)
+    !> Populates the cache by evaluating the STO on the fine grid.
+    subroutine populateCache(this, sto, iL)
+      class(TOrbitalCache), intent(in) :: this
+      type(TSlaterOrbital), intent(in) :: sto
+      integer, intent(in) :: iL
+      !----------------
+      real(dp) :: curCoords(3,3), xx, val, xyz(3)
+      integer :: i1, i2, i3, iM,  i1Chunked, i2Chunked, i3Chunked
+      real(dp) :: chunkFraction(3)
 
-    ! For every point on the fine grid:
-    lpI3Chunked : do i3Chunked = 0, subdivisionFactor-1
-      chunkFraction(3) = real(i3Chunked, dp) / subdivisionFactor
-      lpI3 : do i3 = -nPointsHalved(3), nPointsHalved(3)
-        curCoords(:, 3) = (i3 + chunkFraction(3)) * gridVecs(:, 3)
-        lpI2Chunked : do i2Chunked = 0, subdivisionFactor-1
-          chunkFraction(2) = real(i2Chunked, dp) / subdivisionFactor
-          lpI2 : do i2 = -nPointsHalved(2), nPointsHalved(2)
-            curCoords(:, 2) = (i2 + chunkFraction(2)) * gridVecs(:, 2)
-            lpI1Chunked : do i1Chunked = 0, subdivisionFactor-1
-              chunkFraction(1) = real(i1Chunked, dp) / subdivisionFactor
-              lpI1 : do i1 = -nPointsHalved(1), nPointsHalved(1)
-                curCoords(:, 1) = (i1 + chunkFraction(1)) * gridVecs(:, 1)
-                ! Calculate position
-                xyz = sum(curCoords, dim=2)
-                xx = norm2(xyz)
-                if (xx <= sto%cutoff) then
-                  call getRadial(sto, xx, val)
-                  lpIM : do iM = -iL, iL
-                    ! Combine with angular dependence and add to cache
-                    this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, xyz, xx)
+      ! For every point on the fine grid:
+      lpI3Chunked : do i3Chunked = 0, this%subdivisionFactor-1
+        chunkFraction(3) = real(i3Chunked, dp) / this%subdivisionFactor
+        lpI3 : do i3 = -this%nPointsHalved(3), this%nPointsHalved(3)
+          curCoords(:, 3) = (i3 + chunkFraction(3)) * this%gridVecs(:, 3)
+          lpI2Chunked : do i2Chunked = 0, this%subdivisionFactor-1
+            chunkFraction(2) = real(i2Chunked, dp) / this%subdivisionFactor
+            lpI2 : do i2 = -this%nPointsHalved(2), this%nPointsHalved(2)
+              curCoords(:, 2) = (i2 + chunkFraction(2)) * this%gridVecs(:, 2)
+              lpI1Chunked : do i1Chunked = 0, this%subdivisionFactor-1
+                chunkFraction(1) = real(i1Chunked, dp) / this%subdivisionFactor
+                lpI1 : do i1 = -this%nPointsHalved(1), this%nPointsHalved(1)
+                  curCoords(:, 1) = (i1 + chunkFraction(1)) * this%gridVecs(:, 1)
+                  ! Calculate position
+                  xyz = sum(curCoords, dim=2)
+                  xx = norm2(xyz)
+                  if (xx <= sto%cutoff) then
+                    call sto%getRadial(xx, val)
+                    lpIM : do iM = -iL, iL
+                      ! Combine with angular dependence and add to cache
+                      this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, xyz, xx)
 
-                    if(i1Chunked + i2Chunked + i3Chunked == 0) then
-                      ! Only print the first chunk
-                      print "(*(G0, 1X))", " -> Caching chunk 0 at", i1, i2, i3, "->", val * realTessY(iL, iM, xyz, xx)
-                    end if
+                       if(i1Chunked + i2Chunked + i3Chunked == 0) then
+                         ! Only print the first chunk
+                         !print "(*(G0, 1X))", " -> Caching chunk 0 at", i1, i2, i3, "->", val * realTessY(iL, iM, xyz, xx)
+                       end if
 
-                  end do lpIM
-                end if
-              end do lpI1
-            end do lpI1Chunked
-          end do lpI2
-        end do lpI2Chunked
-      end do lpI3
-    end do lpI3Chunked
-  end subroutine TOrbitalCache_initialise
+                    end do lpIM
+                  end if
+                end do lpI1
+              end do lpI1Chunked
+            end do lpI2
+          end do lpI2Chunked
+        end do lpI3
+      end do lpI3Chunked
+    end subroutine populateCache
 
 
   !> Provides a copy of the cache for a given angular momentum <iM> and
@@ -241,13 +249,22 @@ contains
   !! as well as the indices bounds for the main grid and an offset for the cache.
   subroutine TOrbitalCache_align(this, gridDims, shiftedPos, iOffset, iChunk, iMain)
       class(TOrbitalCache), intent(in) :: this
+      !> Extent of the main grid (x, y, z, eig)
       integer, intent(in) :: gridDims(4)
+      !> Relative position of the atom in regular coordinates
       real(dp), intent(in) :: shiftedPos(:)
-      integer, intent(out) :: iOffset(3), iChunk(3), iMain(3,3)
+      !> Relevant Main grid coordinates
+      integer, intent(out) :: iMain(3,2)
+      !> Offset to align cache with main grid
+      integer, intent(out) :: iOffset(3)
+      !> Indices to access the closest cache subgrid
+      integer, intent(out) :: iChunk(3)
 
       ! Used for decomposing Atom position into cacheGrid Basis vecs using gesv
       real(dp) :: tmpBasis(3,3), pos(3,1)
+      ! Debug loop index
       integer :: ii
+      !---------------------------------
       
 
       pos(:,1) = shiftedPos
@@ -257,7 +274,8 @@ contains
 
       ! Cache Indices are derived from the main indices, and:
       ! -> offset by the atom position
-      iOffset(:) = int(pos(:,1))
+      ! Added 1 since cache starts at 0 and main grid at 1
+      iOffset(:) = int(pos(:,1)) + 1
       ! -> shifted by (0..subdivisionFactor-1)/subdivisionFactor to select the closest subgrid (chunk)
       ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
       iChunk(:) = modulo(int(pos(:,1) * this%subdivisionFactor), this%subdivisionFactor)
@@ -385,7 +403,7 @@ contains
 
     ! Cache variables
 
-    integer :: iOffset(3), iChunk(3), iMain(3,3)
+    integer :: iOffset(3), iChunk(3), iMain(3,2)
 
     real(dp), allocatable :: cacheCopy(:,:,:)
 
@@ -430,6 +448,13 @@ contains
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
+    ! Zero the output array
+    if (tReal) then
+      valueReal(:,:,:,:) = 0.0_dp
+    else
+      valueCmpl(:,:,:,:) = 0.0_dp
+    end if
+
     ! For each atom, determine the offsets, then align the cache and apply using slicing.
     do iCell = 1, nCell
       coeffInd = 1
@@ -440,7 +465,12 @@ contains
 
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
-
+        !print *, "."
+        !print *, "Atom coords", coords(:, iAtom, iCell)
+        !print *, "Origin", origin
+        !print *, "Basis vector 1", gridVecs(:, 1)
+        !print *, "Basis vector 2", gridVecs(:, 2)
+        !print *, "Basis vector 3", gridVecs(:, 3)
         ! Todo: Periodic systems and correct unit cell mapping
         !if (tPeriodic) then
         !  frac(:) = matmul(pos, recVecs2p)
@@ -467,6 +497,7 @@ contains
                         val = val * val
                       end if
                       valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * val
+                      !print "(*(G0, 1X))", i1, i2, i3, "->", valueReal(i1, i2, i3, iEig)
                     else
                       ! TODO: Verify this is correct
                       valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + eigVecsCmpl(coeffInd, iEig) &
