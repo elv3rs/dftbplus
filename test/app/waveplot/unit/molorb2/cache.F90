@@ -136,6 +136,42 @@ contains
 
   $:END_TEST()
 
+  $:TEST("TOrbitalCacheInitialiseSimple")
+    use waveplot_molorb2, only: TOrbitalCache
+    use waveplot_slater, only : TSlaterOrbital
+    type(TOrbitalCache) :: cache
+    real(dp) :: gridVecs(3,3)
+    integer :: expectedNPointsHalved(3)
+    integer, parameter :: subdivisionFactor = 10
+    ! Sto and its init data
+    type(TSlaterOrbital) :: sto
+    integer, parameter :: sto_ll = 0
+    real(dp), parameter :: sto_resolution = 0.01_dp
+    real(dp), parameter :: sto_cutoff = 6.0_dp
+    real(dp), parameter :: sto_alpha(3) = [0.5_dp, 1.0_dp, 2.0_dp]
+    real(dp), parameter :: sto_aa(3,3) = reshape([ &
+        -2.2765228685565400_dp, 17.453716731738609_dp, -12.701455953438341_dp, &
+         0.26641083435260687_dp, -5.4229751699602433_dp, -6.5568796727250120_dp, &
+        -7.9427553748566294E-003_dp, 0.96370929548055750_dp, -0.85307020704514269_dp], [3,3])
+    ! Initialise the Hydrogen s-orbital
+    call sto%init(sto_aa, sto_alpha, sto_ll, sto_resolution, sto_cutoff)
+
+
+    ! Friendly cartesian orthonormal (identity) basis
+    gridVecs = 0.0_dp
+    gridVecs(1,1) = 1.0_dp
+    gridVecs(2,2) = 1.0_dp
+    gridVecs(3,3) = 1.0_dp
+
+
+    ! Expected cache size based on cutoff and gridVecs
+    call gridBoxFromSphereRadius(gridVecs, sto%cutoff, expectedNPointsHalved)
+    @:ASSERT(all(expectedNPointsHalved == [6, 6, 6]))
+
+    call cache%initialise(sto, sto_ll, gridVecs, subdivisionFactor)
+    ! TODO: Check that orbital matches expectations
+  $:END_TEST()
+
 
   function tests()
     type(test_list) :: tests
