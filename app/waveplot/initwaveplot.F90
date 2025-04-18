@@ -35,7 +35,6 @@ module waveplot_initwaveplot
       & readTGeometryVasp, readTGeometryXyz, writeTGeometryHSD
   use waveplot_gridcache, only : TGridCache, TGridCache_init
   use waveplot_molorb, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
-  use waveplot_slater, only : TSlaterOrbital_init
   implicit none
 
   private
@@ -856,7 +855,7 @@ contains
       allocate(coeffs(len(bufferCoeffs)))
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
-      call TSlaterOrbital_init(spBasis%stos(ii), reshape(coeffs, [size(coeffs) / size(exps),&
+      call spBasis%stos(ii)%init(reshape(coeffs, [size(coeffs) / size(exps),&
           & size(exps)]), exps, ii - 1, basisResolution, spBasis%cutoffs(ii))
       deallocate(exps, coeffs)
     end do
