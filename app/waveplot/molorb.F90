@@ -16,8 +16,7 @@ module waveplot_molorb
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
-  ! TODO: Why doesnt getValue collide? Is Overloading possible?
-  use waveplot_slater, only : TSlaterOrbital, realTessY, getRadial
+  use waveplot_slater, only : TSlaterOrbital, realTessY
   use dftbp_math_lapackroutines, only: gesv
   use waveplot_molorb2, only: localGetValue
   implicit none
