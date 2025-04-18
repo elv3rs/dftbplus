@@ -217,7 +217,7 @@ contains
     sf%tReal = tReal
     sf%subdivisionFactor = subdivisionFactor
     if (sf%tReal) then
-      allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached))
+      allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached), source=0.0_dp)
       allocate(sf%eigenvecReal(sf%nOrb, sf%nCached))
     else
       allocate(sf%gridCacheCmpl(nPoints(1), nPoints(2), nPoints(3), nCached))
