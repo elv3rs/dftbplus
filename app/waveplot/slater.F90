@@ -13,30 +13,14 @@ module waveplot_slater
   implicit none
 
   private
-  save
 
   public :: realTessY
-  public :: TSlaterOrbital, TSlaterOrbital_init, getRadial
+  public :: TSlaterOrbital
 
 
   !> Data type for STOs.
   type TSlaterOrbital
     private
-
-    !> Maximal power of the distance
-    integer :: nPow
-
-    !> Number of exponential coefficients
-    integer :: nAlpha
-
-    !> Angular momentum
-    integer :: ll
-
-    !> Summation coefficients. Shape: [nPow, nAlpha]
-    real(dp), allocatable :: aa(:,:)
-
-    !> Exponential coefficients
-    real(dp), allocatable :: alpha(:)
 
     !> STO values on the distance grid
     real(dp), public, allocatable :: gridValue(:)
@@ -50,16 +34,19 @@ module waveplot_slater
     !> Cutoff, after which the orbital is assumed to be zero
     real(dp), public :: cutoff
 
+  contains
+
+    !> Initialises a SlaterOrbital.
+    procedure :: init => TSlaterOrbital_init
+
+    !> Returns the value of the Slater orbital in a given point.
+    procedure :: getRadial => TSlaterOrbital_getRadialValue_Cached
+
   end type TSlaterOrbital
 
 
-  !> Returns the value of a Slater orbital in a given point.
-  interface getRadial
-    module procedure TSlaterOrbital_getRadialValue
-  end interface
-
-
 contains
+
 
   !> Returns the real tesseral spherical harmonics in a given point.
   !! This function only work for angular momenta between 0 and 3 (s-f).
@@ -171,7 +158,7 @@ contains
   subroutine TSlaterOrbital_init(this, aa, alpha, ll, resolution, cutoff)
 
     !> SlaterOrbital instance to initialise
-    type(TSlaterOrbital), intent(inout) :: this
+    class(TSlaterOrbital), intent(inout) :: this
 
     !> Summation coefficients (nCoeffPerAlpha, nAlpha)
     real(dp), intent(in) :: aa(:,:)
@@ -193,6 +180,23 @@ contains
     integer :: iGrid
     real(dp) :: rr
 
+    integer :: ii
+
+    
+    ! Dump the input arguments
+    print *, "TSlaterOrbital_init:"
+    print *, "  ll = ", ll
+    print *, "  resolution = ", resolution
+    print *, "  cutoff = ", cutoff
+    print *, "  alpha = ", alpha
+    print *, "  aa"
+    do ii = 1, size(aa, dim=1)
+      print *, "aa(", ii, ",:) = ", aa(ii, :)
+    end do
+
+
+
+
     nAlpha = size(alpha)
     nPow = size(aa, dim=1)
 
@@ -200,16 +204,7 @@ contains
     @:ASSERT(cutoff > 0.0_dp)
     @:ASSERT(resolution > 0.0_dp)
 
-    allocate(this%aa(nPow, nAlpha))
-    allocate(this%alpha(nAlpha))
 
-    ! Storing parameter. (This is theoretically now superfluous, since the function is calculated
-    ! only once at initialisation time and stored on a grid.)
-    this%aa(:,:) = aa
-    this%alpha(:) = -1.0_dp * alpha
-    this%nPow = nPow
-    this%nAlpha = nAlpha
-    this%ll = ll
     ! Used for cache sizing
     this%cutoff = cutoff
 
@@ -219,7 +214,7 @@ contains
     allocate(this%gridValue(this%nGrid))
     do iGrid = 1, this%nGrid
       rr = real(iGrid - 1, dp) * resolution
-      call TSlaterOrbital_getRadialValue_explicit(ll, nPow, nAlpha, aa, this%alpha, rr,&
+      call TSlaterOrbital_getRadialValue_explicit(ll, nPow, nAlpha, aa, -1.0_dp * alpha, rr,&
           & this%gridValue(iGrid))
     end do
 
@@ -227,10 +222,12 @@ contains
 
 
   !> Returns the value of the SlaterOrbital in a given point.
-  subroutine TSlaterOrbital_getRadialValue(this, rr, sto)
+  !! Builds a 1d cache grid across which the result is interpolated
+  !! in order to speed up evaluation for subsequent calls.
+  subroutine TSlaterOrbital_getRadialValue_Cached(this, rr, sto)
 
     !> SlaterOrbital instance
-    type(TSlaterOrbital), intent(in) :: this
+    class(TSlaterOrbital), intent(in) :: this
 
     !> Distance, where STO should be calculated
     real(dp), intent(in) :: rr
@@ -252,7 +249,7 @@ contains
       sto = 0.0_dp
     end if
 
-  end subroutine TSlaterOrbital_getRadialValue
+  end subroutine TSlaterOrbital_getRadialValue_Cached
 
 
   !> Calculates the value of an STO analytically.

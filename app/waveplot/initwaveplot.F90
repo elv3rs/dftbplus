@@ -856,7 +856,7 @@ contains
       allocate(coeffs(len(bufferCoeffs)))
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
-      call TSlaterOrbital_init(spBasis%stos(ii), reshape(coeffs, [size(coeffs) / size(exps),&
+      call spBasis%stos(ii)%init(reshape(coeffs, [size(coeffs) / size(exps),&
           & size(exps)]), exps, ii - 1, basisResolution, spBasis%cutoffs(ii))
       deallocate(exps, coeffs)
     end do
