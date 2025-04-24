@@ -1,0 +1,23 @@
+Options {
+  TotalChargeDensity = Yes
+  <<+ "subdivision_factor.hsd"
+  TotalChargeDifference = No
+  ChargeDensity = No
+  RealComponent = No
+  PlottedSpins = 1 -1
+  PlottedLevels = 1
+  PlottedKPoints = 1
+  PlottedRegion =  OptimalCuboid {} 
+  NrOfPoints = 100 100 100
+  NrOfCachedGrids = -1
+  Verbose = Yes
+}
+
+DetailedXml = "inp/H/detailed.xml"
+EigenvecBin = "inp/H/eigenvec.bin"
+
+
+Basis {
+  Resolution = 0.01
+  <<+ "inp/H/3ob-3-1/wfc.hsd"
+}
