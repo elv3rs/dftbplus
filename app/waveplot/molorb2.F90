@@ -433,11 +433,14 @@ contains
 
 
     ! Main grid size
+    ! Zero the output array
     if (tReal) then
       nPoints = shape(valueReal)
+      valueReal(:,:,:,:) = 0.0_dp
       print *, "Real"
     else
       nPoints = shape(valueCmpl)
+      valueCmpl(:,:,:,:) = 0.0_dp
       print *, "Complex"
     end if
     print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
@@ -448,20 +451,12 @@ contains
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
-    ! Zero the output array
-    if (tReal) then
-      valueReal(:,:,:,:) = 0.0_dp
-    else
-      valueCmpl(:,:,:,:) = 0.0_dp
-    end if
-
     ! For each atom, determine the offsets, then align the cache and apply using slicing.
     do iCell = 1, nCell
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        write(*, '(a, a, i0, a, i0, a, i0, a, i0)', advance='no') char(13), &
-            & "Applying contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
+        print "(*(G0, 1X))",  "Applying contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
 
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
