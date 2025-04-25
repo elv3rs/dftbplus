@@ -20,19 +20,23 @@ module waveplot_slater
 
   !> Data type for STOs.
   type TSlaterOrbital
-    private
-
-    !> STO values on the distance grid
-    real(dp), public, allocatable :: gridValue(:)
-
     !> Grid distance (resolution)
     real(dp) :: gridDist
 
     !> Number of grid points
     integer :: nGrid
 
+    !> STO values on the distance grid
+    real(dp), allocatable :: gridValue(:)
+
     !> Cutoff, after which the orbital is assumed to be zero
-    real(dp), public :: cutoff
+    real(dp) :: cutoff
+
+    !> Angular momentum of the orbital
+    integer :: angMom
+
+    !> Occupation of the orbital
+    real(dp) :: occupation
 
   contains
 

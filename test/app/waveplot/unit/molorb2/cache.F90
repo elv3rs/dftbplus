@@ -154,6 +154,7 @@ contains
          0.26641083435260687_dp, -5.4229751699602433_dp, -6.5568796727250120_dp, &
         -7.9427553748566294E-003_dp, 0.96370929548055750_dp, -0.85307020704514269_dp], [3,3])
     ! Initialise the Hydrogen s-orbital
+    sto%angMom = sto_ll
     call sto%init(sto_aa, sto_alpha, sto_ll, sto_resolution, sto_cutoff)
 
 
@@ -168,7 +169,7 @@ contains
     call gridBoxFromSphereRadius(gridVecs, sto%cutoff, expectedNPointsHalved)
     @:ASSERT(all(expectedNPointsHalved == [6, 6, 6]))
 
-    call cache%initialise(sto, sto_ll, gridVecs, subdivisionFactor)
+    call cache%initialise(sto, gridVecs, subdivisionFactor)
     ! TODO: Check that orbital matches expectations
   $:END_TEST()
 

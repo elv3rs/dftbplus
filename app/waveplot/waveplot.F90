@@ -66,7 +66,7 @@ program waveplot
 
   !> Auxiliary variables
   integer :: i1, i2, i3, ioStat
-  integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iAng, mAng, ind, nBox
+  integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iOrb, mAng, ind, nBox
   logical :: tFinished, tPlotLevel, hasIoError
   character(len=80) :: comments(2), fileName
   real(dp) :: mDist, dist
@@ -145,9 +145,9 @@ program waveplot
       ind = 1
       do iAtom = 1, wp%input%geo%nAtom
         iSpecies = wp%input%geo%species(iAtom)
-        do iAng = 1, size(wp%basis%basis(iSpecies)%angMoms)
-          mAng = 2 * wp%basis%basis(iSpecies)%angMoms(iAng) + 1
-          orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%basis(iSpecies)%occupations(iAng)&
+        do iOrb = 1, wp%basis%basis(iSpecies)%nOrb
+          mAng = 2 * wp%basis%basis(iSpecies)%stos(iOrb)%angMom + 1
+          orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%basis(iSpecies)%stos(iOrb)%occupation&
               & / real(mAng, dp)
           ind = ind + mAng
         end do

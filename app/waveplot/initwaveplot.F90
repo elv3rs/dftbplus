@@ -676,7 +676,10 @@ contains
       end if
       allocate(mcutoffs(this%input%geo%nSpecies))
       do iSpecies = 1 , this%input%geo%nSpecies
-        mcutoffs(iSpecies) = maxval(this%basis%basis(iSpecies)%cutoffs)
+        mCutoffs(iSpecies) = -1
+        do ii = 1, this%basis%basis(iSpecies)%nOrb
+          mCutoffs(iSpecies) = max(mCutoffs(iSpecies), this%basis%basis(iSpecies)%stos(ii)%cutoff)
+        end do
       end do
       minvals = this%input%geo%coords(:,1)
       maxvals = this%input%geo%coords(:,1)
@@ -826,16 +829,13 @@ contains
       call detailedError(node, "Missing orbital definitions")
     end if
 
-    allocate(spBasis%angMoms(spBasis%nOrb))
-    allocate(spBasis%occupations(spBasis%nOrb))
     allocate(spBasis%stos(spBasis%nOrb))
-    allocate(spBasis%cutoffs(spBasis%nOrb))
 
     do ii = 1, spBasis%nOrb
       call getItem1(children, ii, tmpNode)
-      call getChildValue(tmpNode, "AngularMomentum", spBasis%angMoms(ii))
-      call getChildValue(tmpNode, "Occupation", spBasis%occupations(ii))
-      call getChildValue(tmpNode, "Cutoff", spBasis%cutoffs(ii))
+      call getChildValue(tmpNode, "AngularMomentum", spBasis%stos(ii)%angMom)
+      call getChildValue(tmpNode, "Occupation", spBasis%stos(ii)%occupation)
+      call getChildValue(tmpNode, "Cutoff", spBasis%stos(ii)%cutoff)
       call init(bufferExps)
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)
@@ -857,7 +857,7 @@ contains
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
       call spBasis%stos(ii)%init(reshape(coeffs, [size(coeffs) / size(exps),&
-          & size(exps)]), exps, ii - 1, basisResolution, spBasis%cutoffs(ii))
+          & size(exps)]), exps, ii - 1, basisResolution, spBasis%stos(ii)%cutoff)
       deallocate(exps, coeffs)
     end do
 

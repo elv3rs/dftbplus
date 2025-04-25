@@ -106,8 +106,8 @@ contains
 
 
 
-    !> Initialises the cache at the provided subdivisionFactor for a given STO, its angular momentum L and the grid vectors.
-    subroutine TOrbitalCache_initialise(this, sto, iL, gridVecs, subdivisionFactor)
+    !> Initialises the cache at the provided subdivisionFactor for a given STO and the grid vectors.
+    subroutine TOrbitalCache_initialise(this, sto, gridVecs, subdivisionFactor)
       class(TOrbitalCache), intent(inout) :: this
       !> The Slater orbital to be cached
       type(TSlaterOrbital), intent(in) :: sto
@@ -116,8 +116,6 @@ contains
       !> How many shifted subgrids are to be stored in the cache.
       !! Determines the accuracy of the approximation.
       integer, intent(in) :: subdivisionFactor
-      !> Angular momentum of the Slater orbital
-      integer, intent(in) :: iL
       !> Expected size of the cache in MB
       real(dp) :: expectedSizeMB
 
@@ -139,7 +137,7 @@ contains
       ! Allocate and populate the cache
       expectedSizeMB = 0.0_dp
       expectedSizeMB = storage_size(1.0_dp) * product(this%nPointsHalved)
-      expectedSizeMB = expectedSizeMB * 2**3 * this%subdivisionFactor**3 * (2 * iL + 1)
+      expectedSizeMB = expectedSizeMB * 2**3 * this%subdivisionFactor**3 * (2 * sto%angMom + 1)
       expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
       print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", this%nPointsHalved * 2
       print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
@@ -152,17 +150,16 @@ contains
       allocate(this%cache(-this%nPointsHalved(1):this%nPointsHalved(1), 0:this%subdivisionFactor-1, &
                         & -this%nPointsHalved(2):this%nPointsHalved(2), 0:this%subdivisionFactor-1, &
                         & -this%nPointsHalved(3):this%nPointsHalved(3), 0:this%subdivisionFactor-1, &
-                        & -iL:iL), source=0.0_dp)
-      call populateCache(this, sto, iL)
+                        & -sto%angMom:sto%angMom), source=0.0_dp)
+      call populateCache(this, sto)
 
     end subroutine TOrbitalCache_initialise
 
 
     !> Populates the cache by evaluating the STO on the fine grid.
-    subroutine populateCache(this, sto, iL)
+    subroutine populateCache(this, sto)
       class(TOrbitalCache), intent(in) :: this
       type(TSlaterOrbital), intent(in) :: sto
-      integer, intent(in) :: iL
       !----------------
       real(dp) :: curCoords(3,3), xx, val, xyz(3)
       integer :: i1, i2, i3, iM,  i1Chunked, i2Chunked, i3Chunked
@@ -186,9 +183,9 @@ contains
                   xx = norm2(xyz)
                   if (xx <= sto%cutoff) then
                     call sto%getRadial(xx, val)
-                    lpIM : do iM = -iL, iL
+                    lpIM : do iM = -sto%angMom, sto%angMom
                       ! Combine with angular dependence and add to cache
-                      this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(iL, iM, xyz, xx)
+                      this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(sto%angMom, iM, xyz, xx)
 
                        if(i1Chunked + i2Chunked + i3Chunked == 0) then
                          ! Only print the first chunk
@@ -322,7 +319,7 @@ contains
   !! Caveat: The flag tPeriodic decides if the complex or the real version is read/written for the
   !! various parameters.
   subroutine localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, nAtom, nOrb, coords,&
-      & species, cutoffs, iStos, angMoms, stos, tPeriodic, tReal, latVecs, recVecs2p, kPoints,&
+      & species, iStos, stos, tPeriodic, tReal, latVecs, recVecs2p, kPoints,&
       & kIndexes, nCell, cellVec, tAddDensities, subdivisionFactor, valueReal, valueCmpl)
 
     !> Origin of the grid
@@ -349,14 +346,8 @@ contains
     !> Species for each atom
     integer, intent(in) :: species(:)
 
-    !> Cutoff for each STO
-    real(dp), intent(in) :: cutoffs(:)
-
     !> Starting position of the STOs for each species
     integer, intent(in) :: iStos(:)
-
-    !> Angular moment for each STO
-    integer, intent(in) :: angMoms(:)
 
     !> Array containing the STOs
     type(TSlaterOrbital), intent(in) :: stos(:)
@@ -420,14 +411,14 @@ contains
     
     !---------------------------------
 
-    nUniqueOrb = size(angMoms)
+    nUniqueOrb = size(iStos)
     ! One TOrbitalCache for each STO.
     if(.not. allocated(orbitalCache)) then
       allocate(orbitalCache(nUniqueOrb))
       ! Go through all orbitals and initialise them (build the cache)
       do iOrb = 1, nUniqueOrb
         print "(*(G0, 1X))", " -> Caching orbital ", iOrb
-        call orbitalCache(iOrb)%initialise(stos(iOrb), angMoms(iOrb), gridVecs, subdivisionFactor)
+        call orbitalCache(iOrb)%initialise(stos(iOrb), gridVecs, subdivisionFactor)
       end do
     end if
 
@@ -477,7 +468,7 @@ contains
           print *, "."
           call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
 
-          iL = angMoms(iOrb)
+          iL = stos(iOrb)%angMom
           do iM = -iL, iL
             call orbitalCache(iOrb)%access(cacheCopy, iChunk, iOffset, iM)
 

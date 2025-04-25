@@ -32,17 +32,8 @@ module waveplot_molorb
     !> Nr. of orbitals
     integer :: nOrb
 
-    !> Angular momentum for each orbital
-    integer, allocatable :: angMoms(:)
-
-    !> Cutoff for each orbital
-    real(dp), allocatable :: cutoffs(:)
-
     !> STO for each orbital
     type(TSlaterOrbital), allocatable :: stos(:)
-
-    !> Occupation for each orbital
-    real(dp), allocatable :: occupations(:)
 
   end type TSpeciesBasis
 
@@ -65,12 +56,6 @@ module waveplot_molorb
 
     !> All STOs sequentially
     type(TSlaterOrbital), allocatable :: stos(:)
-
-    !> Cutoff for each STO
-    real(dp), allocatable :: cutoffs(:)
-
-    !> Angular mometum for each STO
-    integer, allocatable :: angMoms(:)
 
     !> Nr. of orbitals in the system
     integer :: nOrb
@@ -146,15 +131,17 @@ contains
     end do
     allocate(this%iStos(this%nSpecies+1))
     allocate(this%stos(nOrb))
-    allocate(this%cutoffs(nOrb))
-    allocate(this%angMoms(nOrb))
+
+    mCutoff = -1.0_dp
+
     ind = 1
     do ii = 1, this%nSpecies
       this%iStos(ii) = ind
       nOrb = basis(ii)%nOrb
       this%stos(ind:ind+nOrb-1) = basis(ii)%stos(1:nOrb)
-      this%cutoffs(ind:ind+nOrb-1) = basis(ii)%cutoffs(1:nOrb)
-      this%angMoms(ind:ind+nOrb-1) = basis(ii)%angMoms(1:nOrb)
+      do jj = 1, basis(ii)%nOrb
+        mCutoff = max(mCutoff, basis(ii)%stos(jj)%cutoff)
+      end do
       ind = ind + nOrb
     end do
     this%iStos(ii) = ind
@@ -163,7 +150,10 @@ contains
     nOrb = 0
     do ii = 1, this%nAtom
       iSp = this%species(ii)
-      nOrb = nOrb + sum(2*this%angMoms(this%iStos(iSp):this%iStos(iSp+1)-1)+1)
+
+      do jj = 1, basis(iSp)%nOrb
+        nOrb = nOrb + 1 + 2 * basis(iSp)%stos(jj)%angMom
+      end do
     end do
     this%nOrb = nOrb
 
@@ -175,7 +165,6 @@ contains
       this%latVecs(:,:) = geometry%latVecs
       call invert33(this%recVecs2p, this%latVecs)
       this%recVecs2p(:,:) = reshape(this%recVecs2p, [3, 3], order=[2, 1])
-      mCutoff = maxval(this%cutoffs)
       call getCellTranslations(this%cellVec, rCellVec, this%latVecs, this%recVecs2p, mCutoff)
       this%nCell = size(this%cellVec,dim=2)
     else
@@ -250,7 +239,7 @@ contains
     end if
 
     call localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-        & this%coords, this%species, this%cutoffs, this%iStos, this%angMoms, this%stos,&
+        & this%coords, this%species, this%iStos, this%stos,&
         & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
         & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
 
@@ -302,7 +291,7 @@ contains
     @:ASSERT(minval(kIndexes) > 0)
 
     call localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-        & this%coords, this%species, this%cutoffs, this%iStos, this%angMoms, this%stos,&
+        & this%coords, this%species, this%iStos, this%stos,&
         & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
         & this%cellVec, tAddDensities, subdivisionFactor, valueReal, valueOnGrid)
 
