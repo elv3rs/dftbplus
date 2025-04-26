@@ -9,7 +9,8 @@
 
 module test_waveplot_cache
   use dftbp_common_accuracy, only : dp
-  use waveplot_molorb2, only: gridBoxFromSphereRadius
+  use waveplot_molorb_cached, only: gridBoxFromSphereRadius, TOrbitalCache
+  use waveplot_slater, only : TSlaterOrbital
   use fortuno_serial, only : suite => serial_suite_item, test_list, all_close
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
@@ -89,7 +90,6 @@ contains
 
 
   $:TEST("TOrbitalCacheAlignOrthogonal")
-    use waveplot_molorb2, only: TOrbitalCache
     type(TOrbitalCache) :: cache
     real(dp) :: gridVecs(3,3)
     integer :: gridDims(4)
@@ -137,8 +137,6 @@ contains
   $:END_TEST()
 
   $:TEST("TOrbitalCacheInitialiseSimple")
-    use waveplot_molorb2, only: TOrbitalCache
-    use waveplot_slater, only : TSlaterOrbital
     type(TOrbitalCache) :: cache
     real(dp) :: gridVecs(3,3)
     integer :: expectedNPointsHalved(3)
