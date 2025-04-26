@@ -7,17 +7,17 @@
 
 ! Notes:
 ! General Todo list: 
-! Quit trying to apply premature optimisations
-! Todo: Figure out how waveplot is to be used as a library in the future.
-!
-! Problem: Charge Mismatch (not converging to expected value)
+! Quit trying to apply premature optimisations!
+! Always profile first.
 !
 ! Near term todo:
-! 0. Fix periodic wrapping
-! 1. Compare results with the old version
-! 2. Check if complex version works
-! Long term:
-! Try to get the LSP working. Will require running fypp in the background.
+! Investigate radial interpolation (-> Provide way to disable)
+! Investigate periodic wrapping
+! Compare results and execution time
+! Readd pointwise molorb
+! Add option to choose molorb
+! Check complex version
+! Look into repeated cache copy allocations
 
 
 #:include 'common.fypp'

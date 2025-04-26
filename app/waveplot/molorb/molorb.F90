@@ -238,7 +238,7 @@ contains
       tAddDensities = .false.
     end if
 
-    call localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+    call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
         & this%coords, this%species, this%iStos, this%stos,&
         & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
         & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
@@ -290,7 +290,7 @@ contains
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
 
-    call localGetValue(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+    call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
         & this%coords, this%species, this%iStos, this%stos,&
         & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
         & this%cellVec, tAddDensities, subdivisionFactor, valueReal, valueOnGrid)

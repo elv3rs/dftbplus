@@ -4,5 +4,5 @@ list(APPEND fypp_flags "-I${_fortuno_incdir}" "-I${CMAKE_SOURCE_DIR}/src/dftbp/i
 
 set(unit-test-prefix "unit")
 
-add_subdirectory(molorb2)
+add_subdirectory(molorb)
 
