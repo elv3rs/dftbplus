@@ -92,6 +92,8 @@ contains
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
+    integer, allocatable :: angMoms(:)
+    real(dp), allocatable :: cutoffs(:)
     real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
     real(dp) :: atomAllOrbVal(nOrb, nCell)
     logical :: nonZeroMask(nOrb), allZero
@@ -104,13 +106,6 @@ contains
     real(dp) :: xx, val
     integer :: nPoints(4)
     integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
-
-
-    !> Angular moment for each STO
-    integer, allocatable :: angMoms(:)
-
-    !> Cutoff for each STO
-    real(dp), allocatable :: cutoffs(:)
 
 
     !! Create arrays out of sto object data for better cache locality
