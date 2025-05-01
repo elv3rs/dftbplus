@@ -189,7 +189,7 @@ contains
 
                        if(i1Chunked + i2Chunked + i3Chunked == 0) then
                          ! Only print the first chunk
-                         !print "(*(G0, 1X))", " -> Caching chunk 0 at", i1, i2, i3, "->", val * realTessY(iL, iM, xyz, xx)
+                         print  "(*(G0, 1X))", i1, i2, i3, "->", xx, "->", val, realTessY(sto%angMom, iM, xyz, xx)
                        end if
 
                     end do lpIM
@@ -399,10 +399,9 @@ contains
     real(dp), allocatable :: cacheCopy(:,:,:)
 
   
-    real(dp) :: pos(3), frac(3),xyz(3), diff(3), xx
-    real(dp) :: curCoords(3,3)
+    real(dp) :: pos(3)
     
-    integer :: nUniqueOrb, coeffInd
+    integer :: coeffInd
 
     real(dp) :: val
     
@@ -411,12 +410,12 @@ contains
     
     !---------------------------------
 
-    nUniqueOrb = size(iStos)
+    print "(*(G0, 1X))", " -> Number of unique orbitals: ", size(stos)
     ! One TOrbitalCache for each STO.
     if(.not. allocated(orbitalCache)) then
-      allocate(orbitalCache(nUniqueOrb))
+      allocate(orbitalCache(size(stos)))
       ! Go through all orbitals and initialise them (build the cache)
-      do iOrb = 1, nUniqueOrb
+      do iOrb = 1, size(stos)
         print "(*(G0, 1X))", " -> Caching orbital ", iOrb
         call orbitalCache(iOrb)%initialise(stos(iOrb), gridVecs, subdivisionFactor)
       end do
