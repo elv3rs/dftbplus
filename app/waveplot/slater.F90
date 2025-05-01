@@ -59,7 +59,7 @@ module waveplot_slater
     procedure :: getRadial => TSlaterOrbital_getRadialValue_Cached
   
     !> Non-interpolated version
-    procedure :: getRadialDirect => TSlaterOrbital_getRadialValue_Cached
+    procedure :: getRadialDirect => TSlaterOrbital_getRadialValue_explicit
 
   end type TSlaterOrbital
 

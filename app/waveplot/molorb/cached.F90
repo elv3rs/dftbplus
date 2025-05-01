@@ -189,7 +189,7 @@ contains
 
                        if(i1Chunked + i2Chunked + i3Chunked == 0) then
                          ! Only print the first chunk
-                         print  "(*(G0, 1X))", i1, i2, i3, "->", xx, "->", val, realTessY(sto%angMom, iM, xyz, xx)
+                         !print  "(*(G0, 1X))", i1, i2, i3, "->", xx, "->", val, realTessY(sto%angMom, iM, xyz, xx)
                        end if
 
                     end do lpIM
