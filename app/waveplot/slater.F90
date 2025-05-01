@@ -38,6 +38,18 @@ module waveplot_slater
     !> Occupation of the orbital
     real(dp) :: occupation
 
+    !> Maximal power of the distance
+    integer :: nPow
+
+    !> Number of exponential coefficients
+    integer :: nAlpha
+
+    !> Summation coefficients. Shape: [nPow, nAlpha]
+    real(dp), allocatable :: aa(:,:)
+
+    !> Exponential coefficients
+    real(dp), allocatable :: alpha(:)
+
   contains
 
     !> Initialises a SlaterOrbital.
@@ -45,6 +57,9 @@ module waveplot_slater
 
     !> Returns the value of the Slater orbital in a given point.
     procedure :: getRadial => TSlaterOrbital_getRadialValue_Cached
+  
+    !> Non-interpolated version
+    procedure :: getRadialDirect => TSlaterOrbital_getRadialValue_Cached
 
   end type TSlaterOrbital
 
@@ -179,12 +194,9 @@ contains
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
-    integer :: nAlpha
-    integer :: nPow
-    integer :: iGrid
+    integer :: iGrid, ii
     real(dp) :: rr
 
-    integer :: ii
 
     
     ! Dump the input arguments
@@ -201,13 +213,21 @@ contains
 
 
 
-    nAlpha = size(alpha)
-    nPow = size(aa, dim=1)
+    this%nAlpha = size(alpha)
+    this%nPow = size(aa, dim=1)
 
-    @:ASSERT(size(aa, dim=2) == nAlpha)
+    @:ASSERT(size(aa, dim=2) == this%nAlpha)
     @:ASSERT(cutoff > 0.0_dp)
     @:ASSERT(resolution > 0.0_dp)
 
+
+    allocate(this%aa(this%nPow, this%nAlpha))
+    allocate(this%alpha(this%nAlpha))
+
+    ! Store parameters in case non-interpolated version is requested
+    this%angMom = ll
+    this%aa(:,:) = aa
+    this%alpha(:) = -1.0_dp * alpha
 
     ! Used for cache sizing
     this%cutoff = cutoff
@@ -218,8 +238,7 @@ contains
     allocate(this%gridValue(this%nGrid))
     do iGrid = 1, this%nGrid
       rr = real(iGrid - 1, dp) * resolution
-      call TSlaterOrbital_getRadialValue_explicit(ll, nPow, nAlpha, aa, -1.0_dp * alpha, rr,&
-          & this%gridValue(iGrid))
+      call this%getRadialDirect(rr, this%gridValue(iGrid))
     end do
 
   end subroutine TSlaterOrbital_init
@@ -257,22 +276,10 @@ contains
 
 
   !> Calculates the value of an STO analytically.
-  subroutine TSlaterOrbital_getRadialValue_explicit(ll, nPow, nAlpha, aa, alpha, rr, sto)
+  subroutine TSlaterOrbital_getRadialValue_explicit(this, rr, sto)
 
-    !> Angular momentum of the STO
-    integer, intent(in) :: ll
-
-    !> Maximal power of the distance in the STO
-    integer, intent(in) :: nPow
-
-    !> Number of exponential coefficients
-    integer, intent(in) :: nAlpha
-
-    !> Summation coefficients (nPow, nAlpha)
-    real(dp), intent(in) :: aa(:,:)
-
-    !> Exponential coefficients
-    real(dp), intent(in) :: alpha(:)
+    !> SlaterOrbital instance
+    class(TSlaterOrbital), intent(in) :: this
 
     !> Distance, where the STO should be calculated
     real(dp), intent(in) :: rr
@@ -280,27 +287,27 @@ contains
     !> Value of the STO on return
     real(dp), intent(out) :: sto
 
-    real(dp) :: pows(nPow)
+    real(dp) :: pows(this%nPow)
     real(dp) :: rTmp
     integer :: ii, jj
 
     ! Avoid 0.0**0 as it may lead to arithmetic exception
-    if (ll == 0 .and. rr < epsilon(1.0_dp)) then
+    if (this%angMom == 0 .and. rr < epsilon(1.0_dp)) then
       rTmp = 1.0_dp
     else
-      rTmp = rr**ll
+      rTmp = rr**this%angMom
     end if
-    do ii = 1, nPow
+    do ii = 1, this%nPow
       pows(ii) = rTmp
       rTmp = rTmp * rr
     end do
     sto = 0.0_dp
-    do ii = 1, nAlpha
+    do ii = 1, this%nAlpha
       rTmp = 0.0_dp
-      do jj = 1, nPow
-        rTmp = rTmp + aa(jj, ii) * pows(jj)
+      do jj = 1, this%nPow
+        rTmp = rTmp + this%aa(jj, ii) * pows(jj)
       end do
-      sto = sto + rTmp * exp(alpha(ii) * rr)
+      sto = sto + rTmp * exp(this%alpha(ii) * rr)
     end do
 
   end subroutine TSlaterOrbital_getRadialValue_explicit
