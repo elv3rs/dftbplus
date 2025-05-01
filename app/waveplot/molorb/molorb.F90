@@ -237,11 +237,20 @@ contains
     else
       tAddDensities = .false.
     end if
+    if (subdivisionFactor > 0) then
+      print *, "Using real evaluateCached"
+      call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+          & this%coords, this%species, this%iStos, this%stos,&
+          & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+          & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
+    else
+      print *, "Using real evaluatePointwise"
+      call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+          & this%coords, this%species, this%iStos, this%stos,&
+          & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+          & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
+    end if
 
-    call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-        & this%coords, this%species, this%iStos, this%stos,&
-        & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-        & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
 
   end subroutine TMolecularOrbital_getValue_real
 
@@ -289,11 +298,21 @@ contains
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
+  
+    if (subdivisionFactor > 0) then
+      print *, "Using cmplx evaluateCached"
+      call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+          & this%coords, this%species, this%iStos, this%stos,&
+          & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+          & this%cellVec, tAddDensities, subdivisionFactor, valueReal, valueOnGrid)
+    else
+      print *, "Using cmplx evaluatePointwise"
+      call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+          & this%coords, this%species, this%iStos, this%stos,&
+          & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+          & this%cellVec, tAddDensities, valueReal, valueOnGrid)
+    end if
 
-    call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-        & this%coords, this%species, this%iStos, this%stos,&
-        & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-        & this%cellVec, tAddDensities, subdivisionFactor, valueReal, valueOnGrid)
 
   end subroutine TMolecularOrbital_getValue_cmpl
 
