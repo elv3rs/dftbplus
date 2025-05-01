@@ -132,7 +132,8 @@ module waveplot_initwaveplot
     !> List of levels to plot, whereby insignificant occupations were filtered out
     integer, allocatable :: levelIndex(:,:)
 
-    !> Gridcache Subdivision Factor
+    !> Gridcache Subdivision Factor.
+    !! Negative to choose pointwise calculation.
     integer :: subdivisionFactor
 
     !> File access types
