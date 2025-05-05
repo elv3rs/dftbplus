@@ -219,6 +219,9 @@ contains
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addDensities
 
+    !> timing variables
+    integer(dp) :: startTime, endTime, clockRate
+
     real(dp), save :: kPoints(3, 0)
     integer, save :: kIndexes(0)
     complex(dp), save :: valueCmpl(0, 0, 0, 0)
@@ -237,6 +240,9 @@ contains
     else
       tAddDensities = .false.
     end if
+
+    call system_clock(count_rate=clockRate, count=startTime)
+
     if (subdivisionFactor > 0) then
       print *, "Using real evaluateCached"
       call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
@@ -250,8 +256,10 @@ contains
           & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
           & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
     end if
+  
+    call system_clock(count=endTime)
 
-
+    print *, "MolorbTime:", real(endTime - startTime, dp) / clockRate
   end subroutine TMolecularOrbital_getValue_real
 
 

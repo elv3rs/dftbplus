@@ -109,10 +109,10 @@ contains
 
 
     !! Create arrays out of sto object data for better cache locality
-    allocate(angMoms(nOrb))
-    allocate(cutoffs(nOrb))
+    allocate(angMoms(size(iStos)))
+    allocate(cutoffs(size(iStos)))
 
-    do iOrb = 1, nOrb
+    do iOrb = 1, size(stos)
       angMoms(iOrb) = stos(iOrb)%angMom
       cutoffs(iOrb) = stos(iOrb)%cutoff
     end do
