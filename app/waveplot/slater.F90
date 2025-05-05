@@ -200,15 +200,15 @@ contains
 
     
     ! Dump the input arguments
-    print *, "TSlaterOrbital_init:"
-    print *, "  ll = ", ll
-    print *, "  resolution = ", resolution
-    print *, "  cutoff = ", cutoff
-    print *, "  alpha = ", alpha
-    print *, "  aa"
-    do ii = 1, size(aa, dim=1)
-      print *, "aa(", ii, ",:) = ", aa(ii, :)
-    end do
+    !print *, "TSlaterOrbital_init:"
+    !print *, "  ll = ", ll
+    !print *, "  resolution = ", resolution
+    !print *, "  cutoff = ", cutoff
+    !print *, "  alpha = ", alpha
+    !print *, "  aa"
+    !do ii = 1, size(aa, dim=1)
+    !  print *, "aa(", ii, ",:) = ", aa(ii, :)
+    !end do
 
 
 
