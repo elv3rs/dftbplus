@@ -287,19 +287,19 @@ contains
       iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
 
 
-      print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
-      print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
-      print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
+      !print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
+      !print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
+      !print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
       
       ! Add the offset instead of subtracting it henceforth
       iOffset(:) = -iOffset(:)
 
-      do ii = 1, 3
-        print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
-                        & iMain(ii,2), "->",&
-                        & iMain(ii,1) + iOffset(ii), ":", &
-                        & iMain(ii,2) + iOffset(ii)
-      end do
+      !do ii = 1, 3
+      !  print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
+      !                  & iMain(ii,2), "->",&
+      !                  & iMain(ii,1) + iOffset(ii), ":", &
+      !                  & iMain(ii,2) + iOffset(ii)
+      !end do
   end subroutine TOrbitalCache_align
 
 
@@ -407,8 +407,14 @@ contains
     
     ! TOrbitalCache array, one for each unique orbital
     type(TOrbitalCache), allocatable, save :: orbitalCache(:)
+
+    !> timing variables
+    integer(dp) :: startTime, endTime, clockRate
+
     
     !---------------------------------
+
+    call system_clock(count_rate=clockRate, count=startTime)
 
     print "(*(G0, 1X))", " -> Number of unique orbitals: ", size(stos)
     ! One TOrbitalCache for each STO.
@@ -420,6 +426,10 @@ contains
         call orbitalCache(iOrb)%initialise(stos(iOrb), gridVecs, subdivisionFactor)
       end do
     end if
+
+    call system_clock(count=endTime)
+    print *, "InitTime:", real(endTime - startTime, dp) / clockRate
+
 
 
     ! Main grid size
@@ -464,7 +474,6 @@ contains
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
           ! Calculate alignment bounds and select the correct subgrid
-          print *, "."
           call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
 
           iL = stos(iOrb)%angMom
