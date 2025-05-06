@@ -228,15 +228,6 @@ for (int i3 = 0; i3 < nGridZ; ++i3) {
                 frac[0] -= std::floor(frac[0]);
                 frac[1] -= std::floor(frac[1]);
                 frac[2] -= std::floor(frac[2]);
-                // The following line folds xyz into the primary cell.
-                // matvec_mult33_colmajor(latVecs, frac, xyz); 
-                // However, the original code immediately restored xyz:
-                // xyz[0] = xyz_orig[0]; xyz[1] = xyz_orig[1]; xyz[2] = xyz_orig[2];
-                // This implies the grid point xyz should remain absolute, and periodicity
-                // is handled by summing over atom images in different cells.
-                // So, this block effectively does nothing to the xyz used for diff calculation.
-                // If this is indeed the intended behavior, the block could be removed or clarified.
-                // For now, kept as in original, which means xyz is NOT changed by this block.
             }
 
             // --- Calculate AO contributions for this point ---
