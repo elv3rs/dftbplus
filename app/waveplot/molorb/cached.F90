@@ -14,7 +14,6 @@
 ! Investigate radial interpolation (-> Provide way to disable)
 ! Investigate periodic wrapping
 ! Compare results and execution time
-! Readd pointwise molorb
 ! Add option to choose molorb
 ! Check complex version
 ! Look into repeated cache copy allocations
