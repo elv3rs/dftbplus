@@ -20,6 +20,7 @@ module waveplot_molorb
   use dftbp_math_lapackroutines, only: gesv
   use waveplot_molorb_cached, only: evaluateCached
   use waveplot_molorb_pointwise, only: evaluatePointwise
+  use waveplot_molorb_cpp_interface, only: evaluatePointwise_cpp_real_wrapper
   implicit none
 
   private
@@ -252,6 +253,12 @@ contains
           & this%coords, this%species, this%iStos, this%stos,&
           & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
           & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
+    else if (subdivisionFactor == -1) then
+      print *, "Using real cpp bound poinwise implementation"
+      call evaluatePointwise_cpp_real_wrapper(origin, gridVecs, eigVecsReal, this%nAtom, this%nOrb,&
+          & this%coords, this%species, this%iStos, this%stos,&
+          & this%tPeriodic, this%latVecs, this%recVecs2p, this%nCell,&
+          & this%cellVec, tAddDensities, valueOnGrid)
     else
       print *, "Using real evaluatePointwise"
       call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
