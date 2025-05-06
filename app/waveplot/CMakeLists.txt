@@ -23,9 +23,6 @@ add_library(waveplot_lib STATIC ${sources_lib_f90_preproc})
 target_include_directories(waveplot_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/molorb>
-  # Do we need the source for anything?
-  #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/molorb> 
 )
 
 target_link_libraries(waveplot_lib PUBLIC dftbplus)
