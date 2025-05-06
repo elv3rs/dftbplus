@@ -1,6 +1,6 @@
 Options {
   TotalChargeDensity = Yes
-  <<+ "subdivision_factor.hsd"
+  SubdivisionFactor = -1
   TotalChargeDifference = No
   ChargeDensity = No
   RealComponent = No
