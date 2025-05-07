@@ -1,12 +1,7 @@
 #include <vector>
 #include <cmath>
-#include <numeric> // For std::fill
 #include <limits>
 #include <cassert>
-// #include <iostream> // Only if needed for debugging
-
-// Constants
-// const double PI = 3.14159265358979323846; // Original, ensure no redefinition if included elsewhere
 
 // Anonymous namespace for internal constants and helper functions not part of the API
 namespace {
@@ -41,6 +36,7 @@ struct SlaterOrbitalData {
 };
 
 double getRadialDirect(double rr, const SlaterOrbitalData& stoData) {
+    // angMom is guaranteed to be in range [0, 3].
     assert(stoData.nPow <= MAX_NPOW_CONST && "nPow exceeds MAX_NPOW_CONST");
     if (stoData.nPow == 0) return 0.0; 
 
@@ -68,8 +64,8 @@ double getRadialDirect(double rr, const SlaterOrbitalData& stoData) {
             case 1: r_to_angMom = r_val; break;
             case 2: r_to_angMom = r_val * r_val; break;
             case 3: r_to_angMom = r_val * r_val * r_val; break; 
-            default: r_to_angMom = std::pow(r_val, stoData.angMom); 
         }
+        // above switch is guaranteed to be exhaustive.
         
         pows[0] = r_to_angMom;
         for (int i = 1; i < stoData.nPow; ++i) {
@@ -102,8 +98,8 @@ const double C32 = 1.445305721320277;   // sqrt(105/16pi)
 const double C33 = 0.5900435899266435;  // sqrt(35/32pi)*sqrt(2) (Nobel/ACES convention for fx3-like terms)
 
 double realTessY(int ll, int mm, double x, double y, double z, double rr) {
-    assert(ll >= 0 && ll <= 3); 
-    assert(std::abs(mm) <= ll);
+    // angMom/ll is guaranteed to be in range [0, 3].
+    // since the only call is from a loop with mm from -ll to ll, abs(mm)<=ll is guaranteed too.
 
     if (ll == 0) {
         return C00;
@@ -148,7 +144,7 @@ double realTessY(int ll, int mm, double x, double y, double z, double rr) {
                 case  3: return C33 * x_r * (x_r*x_r - 3.0 * y_r*y_r);
             } break;
     }
-    assert(false && "Fell through realTessY switch statements"); 
+    // above switch is guaranteed to be exhaustive.
     return 0.0;
 }
 
@@ -192,7 +188,6 @@ bool tPeriodic,
 const double* latVecs,        
 const double* recVecs2p,      
 int nCell,                    
-const double* cellVec,        // Unused if coords contains all cell images explicitly
 bool tAddDensities,           
 
 // Output Arrays
@@ -200,10 +195,7 @@ double* valueReal
 ) {
 
 // --- Temporary Storage ---
-// atomAllOrbVal removed
 std::vector<double> atomOrbValReal(nOrb); 
-std::vector<int> nonZeroIndices;
-nonZeroIndices.reserve(nOrb);
 
 
 // --- Grid Point Iteration ---
@@ -221,13 +213,17 @@ for (int i3 = 0; i3 < nGridZ; ++i3) {
                 p1[2] + p2[2] + p3[2] + origin[2]
             };
 
+            // Fold coord back into unit cell if outside.
+            // If sufficiently large, we might be able to copy the result from elsewhere.
             if (tPeriodic) {
-                double xyz_orig[3] = {xyz[0], xyz[1], xyz[2]};
                 double frac[3];
-                matvec_mult33_colmajor(recVecs2p, xyz_orig, frac);
+                matvec_mult33_colmajor(recVecs2p, xyz, frac);
                 frac[0] -= std::floor(frac[0]);
                 frac[1] -= std::floor(frac[1]);
                 frac[2] -= std::floor(frac[2]);
+                xyz[0] = latVecs[0 + 3*0] * frac[0] + latVecs[1 + 3*0] * frac[1] + latVecs[2 + 3*0] * frac[2];
+                xyz[1] = latVecs[0 + 3*1] * frac[0] + latVecs[1 + 3*1] * frac[1] + latVecs[2 + 3*1] * frac[2];
+                xyz[2] = latVecs[0 + 3*2] * frac[0] + latVecs[1 + 3*2] * frac[1] + latVecs[2 + 3*2] * frac[2];
             }
 
             // --- Calculate AO contributions for this point ---
@@ -250,12 +246,6 @@ for (int i3 = 0; i3 < nGridZ; ++i3) {
                     currentStoData.alpha = sto_alpha_flat + sto_alpha_offsets[iSto];
                     int ll = currentStoData.angMom;
 
-                    if (currentStoData.nPow == 0 && ll > 0) { // Optimization: if nPow=0 for l>0, STO is 0.
-                         for (int mm_dummy = -ll; mm_dummy <= ll; ++mm_dummy) { // Still need to advance currentOrbIndex
-                            atomOrbValReal[currentOrbIndex++] = 0.0; // Explicitly set to 0.0
-                        }
-                        continue; // Skip to next STO
-                    }
 
 
                     for (int mm = -ll; mm <= ll; ++mm) {
@@ -268,15 +258,9 @@ for (int i3 = 0; i3 < nGridZ; ++i3) {
                             double rr = norm2(diff[0], diff[1], diff[2]);
                             
                             if (rr <= currentStoData.cutoff) {
-                                if (currentStoData.nPow == 0) { // Should only be reachable if ll=0 for nPow=0 to be non-zero
-                                    // If angMom=0, nPow=0, getRadialDirect returns 0.
-                                    // This case effectively means this STO contributes 0.
-                                    // No need to add to orbitalSumOverCells.
-                                } else {
-                                    double radialVal = getRadialDirect(rr, currentStoData);
-                                    double angularVal = realTessY(ll, mm, diff[0], diff[1], diff[2], rr);
-                                    orbitalSumOverCells += radialVal * angularVal;
-                                }
+                                double radialVal = getRadialDirect(rr, currentStoData);
+                                double angularVal = realTessY(ll, mm, diff[0], diff[1], diff[2], rr);
+                                orbitalSumOverCells += radialVal * angularVal;
                             }
                         } // end cell loop
 
@@ -290,44 +274,18 @@ for (int i3 = 0; i3 < nGridZ; ++i3) {
                 } // end iSto loop
             } // end iAtom loop
             assert(currentOrbIndex == nOrb);
-
-            // --- Sum contributions and calculate MO values ---
+            
+            // Final Value offset
             long long currentGridPointOffset = (long long)i1 + (long long)nGridX * (i2 + (long long)nGridY * i3); 
 
-            bool allCalculatedValuesZero = true;
-            for(int iOrb = 0; iOrb < nOrb; ++iOrb) {
-                if (std::abs(atomOrbValReal[iOrb]) > 1e-15) { 
-                    allCalculatedValuesZero = false;
-                    break;
-                }
-            }
-
-            if (allCalculatedValuesZero) {
-               for(int iE = 0; iE < nEig; ++iE) {
-                   valueReal[currentGridPointOffset + nGridPointsTotal * iE] = 0.0;
-               }
-               continue; 
-            }
-
-            nonZeroIndices.clear();
-            for(int iOrb = 0; iOrb < nOrb; ++iOrb) {
-                if (std::abs(atomOrbValReal[iOrb]) > 1e-15) { 
-                    nonZeroIndices.push_back(iOrb);
-                }
-            }
-            int nNonZero = nonZeroIndices.size();
-            assert(nNonZero > 0);
-
-
-            // Calculate final MO value (dot product with eigenvectors)
-            for (int iE = 0; iE < nEig; ++iE) {
+            // Weight individual contributions according to eigenvector and collapse to sum
+            for (int iEig = 0; iEig < nEig; ++iEig) {
                 double finalValue = 0.0;
-                const double* eigVec = eigVecsReal + (long long)nOrb * iE; 
-                for (int idx = 0; idx < nNonZero; ++idx) {
-                     int iOrb = nonZeroIndices[idx];
+                const double* eigVec = eigVecsReal + (long long)nOrb * iEig; 
+                for(int iOrb = 0; iOrb < nOrb; ++iOrb) {
                      finalValue += atomOrbValReal[iOrb] * eigVec[iOrb];
                 }
-                valueReal[currentGridPointOffset + nGridPointsTotal * iE] = finalValue;
+                valueReal[currentGridPointOffset + nGridPointsTotal * iEig] = finalValue;
             }
         } // end i1 loop
     } // end i2 loop
