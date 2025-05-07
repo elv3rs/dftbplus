@@ -27,8 +27,7 @@ module waveplot_molorb_cpp_interface
         sto_angMom, sto_cutoff, sto_nPow, sto_nAlpha, & ! STO Data (flat)
         sto_aa_flat, sto_alpha_flat, sto_aa_offsets, sto_alpha_offsets, & ! STO Data (flat)
         nTotalStos, &                                 ! STO Data (flat)
-        tPeriodic, latVecs, recVecs2p, &              ! Periodicity
-        nCell, cellVec, &                             ! Periodicity
+        tPeriodic, latVecs, recVecs2p, nCell, &       ! Periodicity
         tAddDensities, &                              ! Calculation Type
         valueReal &                                   ! Output Arrays (Real)
       ) bind(C, name='evaluatePointwise_cpp_real')
@@ -58,7 +57,6 @@ module waveplot_molorb_cpp_interface
       real(c_double), intent(in) :: latVecs(3, 3)
       real(c_double), intent(in) :: recVecs2p(3, 3)
       integer(c_int), value, intent(in) :: nCell
-      real(c_double), intent(in) :: cellVec(3, nCell)
       logical(c_bool), value, intent(in) :: tAddDensities
       real(c_double), intent(out) :: valueReal(nGridX, nGridY, nGridZ, nEig)
 
@@ -73,14 +71,13 @@ contains
   !! Arguments mostly match the original Fortran evaluatePointwise, but complex args removed.
   subroutine evaluatePointwise_cpp_real_wrapper(origin, gridVecs, eigVecsReal, & ! REMOVED eigVecsCmpl
       & nAtom, nOrb, coords, species, iStos, stos, tPeriodic, &
-      & latVecs, recVecs2p, & ! REMOVED kPoints
-      & nCell, cellVec, tAddDensities, valueReal & ! REMOVED kIndexes, valueCmpl
+      & latVecs, recVecs2p, &
+      & nCell,  tAddDensities, valueReal & 
      )
 
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3, 3)
     real(dp), intent(in), target :: eigVecsReal(:,:)
-    ! complex(dp), intent(in), target :: eigVecsCmpl(:,:) ! REMOVED
     integer, intent(in) :: nAtom
     integer, intent(in) :: nOrb
     real(dp), intent(in), target :: coords(:,:,:)
@@ -90,13 +87,9 @@ contains
     logical, intent(in) :: tPeriodic
     real(dp), intent(in), target :: latVecs(:,:)
     real(dp), intent(in), target :: recVecs2p(:,:)
-    ! real(dp), intent(in), target :: kPoints(:,:) ! REMOVED
-    ! integer, intent(in), target :: kIndexes(:) ! REMOVED
     integer, intent(in) :: nCell
-    real(dp), intent(in), target :: cellVec(:,:)
     logical, intent(in) :: tAddDensities
     real(dp), intent(out) :: valueReal(:,:,:,:)
-    ! complex(dp), intent(out) :: valueCmpl(:,:,:,:) ! REMOVED
 
     ! Local variables for flattened STO data
     integer :: nTotalStos, nSpecies
@@ -166,8 +159,7 @@ contains
         sto_angMom, sto_cutoff, sto_nPow, sto_nAlpha, &
         sto_aa_flat, sto_alpha_flat, sto_aa_offsets, sto_alpha_offsets, &
         nTotalStos, &
-        logical(tPeriodic, kind=c_bool), latVecs, recVecs2p, &
-        nCell, cellVec, &
+        logical(tPeriodic, kind=c_bool), latVecs, recVecs2p, nCell,  &
         logical(tAddDensities, kind=c_bool), &
         valueReal &
         )
