@@ -4,16 +4,14 @@ import typing
 import subprocess
 import re
 import json
-import shutil
 import sys
 
 from cubelib import load_cube, set_system, clean_output_files
 
 # --- Configuration ---
 WAVEPLOT_EXECUTABLE = "/home/merlin/tmpfs/dftbuild/app/waveplot/waveplot"
-SUBDIVISION_FACTOR_HSD = "subdivision_factor.hsd"
 RESULTS_JSON_FILE = "output/results.json"
-TIMEOUT = 600  # seconds
+TIMEOUT = 600
 
 # --- ANSI Colors ---
 RESET = "\033[0m"
@@ -78,56 +76,40 @@ def save_results(results_dict: dict, filename: str = RESULTS_JSON_FILE):
 
 
 # --- Program Execution Logic ---
+
+
 def _parse_waveplot_output(output: str, subdivision_factor: int) -> dict:
     """Parses the combined stdout/stderr from waveplot and /usr/bin/time."""
-    parsed_data = {}
-    mem_match = re.search(r"MaxMemoryKB:\s*(\d+)", output)
-    wall_match = re.search(r"WallTimeSecs:\s*([\d.]+)", output)
-    init_match = re.search(r"InitTime:\s*([\d.eE+-]+)", output)
-    molorb_match = re.search(r"MolorbTime:\s*([\d.eE+-]+)", output)
-    charge_match = re.search(r"Total charge:\s*([\d.eE+-]+)", output)
+    try:
+        parsed_data = {
+            "max_ram_mb": int(re.search(r"MaxMemoryKB:\s*(\d+)", output).group(1)) / 1000,
+            "time_wall": float(re.search(r"WallTimeSecs:\s*([\d.]+)", output).group(1)),
+            "charge": float(re.search(r"Total charge:\s*([\d.eE+-]+)", output).group(1)),
+            "time_molorb": round(float(re.search(r"MolorbTime:\s*([\d.eE+-]+)", output).group(1)), 2),
+            "time_init": 0.0,
+        }
+        # optional field
+        init_match = re.search(r"InitTime:\s*([\d.eE+-]+)", output)
+        if init_match:
+            parsed_data["time_init"] = round(float(init_match.group(1)), 2)
 
-    if mem_match:
-        parsed_data["max_ram_mb"] = int(mem_match.group(1)) / 1000
-    else:
-        # _print_error(f"Could not parse 'MaxMemoryKB'. Output:\n{output}")
-        raise ValueError("Could not parse 'MaxMemoryKB' from waveplot output.")
+        return parsed_data
 
-    if wall_match:
-        parsed_data["time_wall"] = float(wall_match.group(1))
-    else:
-        # _print_error(f"Could not parse 'WallTimeSecs'. Output:\n{output}")
-        raise ValueError("Could not parse 'WallTimeSecs' from waveplot output.")
-
-    # InitTime might be missing for subdivision 0 if it's negligible
-    parsed_data["time_init"] = round(float(init_match.group(1)), 2) if init_match else 0.0
-
-    if molorb_match:
-        parsed_data["time_molorb"] = round(float(molorb_match.group(1)), 2)
-    else:
-        _print_warning("'MolorbTime' not found in output, defaulting to 0.0.")
-        parsed_data["time_molorb"] = 0.0
-
-    if charge_match:
-        parsed_data["charge"] = float(charge_match.group(1))
-    else:
-        # _print_error(f"Could not parse 'Total charge'. Output:\n{output}")
-        raise ValueError("Could not parse 'Total charge' from waveplot output.")
-
-    return parsed_data
+    except AttributeError as e:
+        raise ValueError("Missing required field in waveplot output.") from e
 
 
-def run_waveplot(system: str, subdivision_factor: int, output_cube_path: typing.Optional[str] = None) -> typing.Tuple[dict, np.ndarray]:
+def run_waveplot(system: str, subdivision_factor: int) -> typing.Tuple[dict, np.ndarray]:
     """
     Runs waveplot, parses output, handles cube file, returns info and data.
     """
     run_info = {"system": system, "subdivision_factor": subdivision_factor}
 
     # --- Prepare ---
-    _print_status(f"Running: System='{system}', Subdivision={subdivision_factor}", MAGENTA if subdivision_factor == 0 else BLUE)
+    _print_status(f"Running: System='{system}', Subdivision={subdivision_factor}", BLUE)
     set_system(system, subdivision_factor)
     clean_output_files()
-    output_cube_file = "wp-abs2.cube"  # Expected output
+    output_cube_file = "wp-abs2.cube"
 
     # --- Execute ---
     cmd = f'/usr/bin/time -f "MaxMemoryKB: %M\\nWallTimeSecs: %e" {WAVEPLOT_EXECUTABLE}'
@@ -155,25 +137,7 @@ def run_waveplot(system: str, subdivision_factor: int, output_cube_path: typing.
         print(f"--- Waveplot Output ---\n{output}\n--- End Output ---")
         raise ValueError(f"Output file {output_cube_file} not generated.")
 
-    volume_data, _ = load_cube(output_cube_file)  # Ignore metadata for now
-
-    # Handle the output cube file
-    if output_cube_path:
-        try:
-            target_dir = os.path.dirname(output_cube_path)
-            if target_dir:
-                os.makedirs(target_dir, exist_ok=True)
-            shutil.move(output_cube_file, output_cube_path)
-            # print(f"Moved output to: {output_cube_path}") # Keep it concise
-        except Exception as e:
-            _print_error(f"Moving {output_cube_file} to {output_cube_path}: {e}")
-            # Decide if this is critical - maybe just warn and delete?
-            # For now, let's still try to remove the original if it exists
-            if os.path.exists(output_cube_file):
-                os.remove(output_cube_file)
-            raise  # Re-raise move error
-    elif os.path.exists(output_cube_file):
-        os.remove(output_cube_file)  # Delete if not saved
+    volume_data, _ = load_cube(output_cube_file)
 
     clean_output_files()
 
@@ -198,14 +162,13 @@ def main():
         reference_info = None
 
         try:
-            # Warmup run (optional, helps with caching/timing consistency)
+            # Warmup run
             _print_status("Warmup Run (S=0)", YELLOW)
             run_waveplot(system, 0)
 
             # Get reference output (Subdivision 0)
             _print_status("Reference Run (S=0)", YELLOW)
-            ref_output_path = f"output/{system}_ref_s0.cube"
-            reference_info, reference_vol = run_waveplot(system, 0, output_cube_path=ref_output_path)
+            reference_info, reference_vol = run_waveplot(system, 0)
 
             # Calculate "errors" for reference vs reference (should be ~0)
             ref_errors = calculate_errors(reference_vol, reference_vol)
@@ -214,10 +177,9 @@ def main():
             print(f"{GREEN}Reference (S=0) saved.{RESET} Errors: mse={ref_errors['mean_sq_err']:.2e}, rel={ref_errors['mean_rel_err']:.2e}")
 
             # Run with increasing subdivision factors
-            for i in range(1, 100):
+            for i in [-1] + list(range(1, 100)):
                 try:
-                    approx_output_path = f"output/{system}_approx_s{i}.cube"
-                    run_info, approx_vol = run_waveplot(system, i, output_cube_path=approx_output_path)
+                    run_info, approx_vol = run_waveplot(system, i)
 
                     errors = calculate_errors(approx_vol, reference_vol)
                     run_info.update(errors)
@@ -241,9 +203,6 @@ def main():
         print(f"{MAGENTA}===== Finished System: {system} ====={RESET}")
 
     print(f"\n{GREEN}Benchmarking complete. Results saved in: {RESULTS_JSON_FILE}{RESET}")
-    import visualiseV2
-
-    visualiseV2.main()
 
 
 if __name__ == "__main__":

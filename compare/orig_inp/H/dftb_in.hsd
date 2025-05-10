@@ -1,15 +1,10 @@
 Geometry = GenFormat {
- 3  C
-  O H
-     1    1    0.00000000000  -1.00000000000   0.00000000000
-     2    2    0.00000000000   0.00000000000   0.78306400000
-     3    2    0.00000000000   0.00000000000  -0.78306400000
+  <<< geometry.gen
 }
 
 Hamiltonian = DFTB {
   SCC = Yes
   MaxAngularMomentum = {
-    O = "p"
     H = "s"
   }
   SlaterKosterFiles = Type2FileNames {
