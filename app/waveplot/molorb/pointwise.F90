@@ -159,7 +159,7 @@ contains
                 ! Calculate wave function only if atom is inside the cutoff
                 if (xx <= cutoffs(iOrb)) then
                   allZero = .false.
-                  call stos(iOrb)%getRadial(xx, val)
+                  call stos(iOrb)%getRadialDirect(xx, val)
                   do iM = -iL, iL
                     atomAllOrbVal(ind, iCell) = val * realTessY(iL, iM, diff, xx)
                     ind = ind + 1
