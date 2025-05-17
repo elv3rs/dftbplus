@@ -140,7 +140,7 @@ contains
       expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
       print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", this%nPointsHalved * 2
       print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
-      if (expectedSizeMB > 8000) then
+      if (expectedSizeMB > 12000) then
         stop "Expected cache array size exceeds 8GB"
       end if
 
@@ -181,7 +181,7 @@ contains
                   xyz = sum(curCoords, dim=2)
                   xx = norm2(xyz)
                   if (xx <= sto%cutoff) then
-                    call sto%getRadial(xx, val)
+                    call sto%getRadialDirect(xx, val)
                     lpIM : do iM = -sto%angMom, sto%angMom
                       ! Combine with angular dependence and add to cache
                       this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(sto%angMom, iM, xyz, xx)
@@ -221,13 +221,9 @@ contains
     nn(:,2) = this%nPointsHalved(:) - iOffset(:)
 
     ! Check if the cache is already allocated and large enough
-    if(allocated(cacheCopy) &
-      & .and. size(cacheCopy, 1) == nn(1,2) - nn(1,1) + 1 &
-      & .and. size(cacheCopy, 2) == nn(2,2) - nn(2,1) + 1 &
-      & .and. size(cacheCopy, 3) == nn(3,2) - nn(3,1) + 1) then
-      ! Problem: Need to remap indices.
-      deallocate(cacheCopy)
-    else if (allocated(cacheCopy)) then
+    ! Currently unable to reduce because that would break indices mapping
+
+    if(allocated(cacheCopy)) then
       deallocate(cacheCopy)
     end if
 
@@ -261,6 +257,7 @@ contains
       ! Debug loop index
       integer :: ii
       !---------------------------------
+      real(dp) :: curCoords(3,3), xyz(3)
       
 
       pos(:,1) = shiftedPos
@@ -268,30 +265,34 @@ contains
       ! Get the atom position in terms of the basis <gridVecs>, stored in pos
       call gesv(tmpBasis, pos)
 
+
+
       ! Cache Indices are derived from the main indices, and:
       ! -> offset by the atom position
       ! Added 1 since cache starts at 0 and main grid at 1
-      iOffset(:) = int(pos(:,1)) + 1
-      ! -> shifted by (0..subdivisionFactor-1)/subdivisionFactor to select the closest subgrid (chunk)
-      ! TODO: By replacing int with nint we get the closest one, but would need to adjust the main indices.
-      iChunk(:) = modulo(int(pos(:,1) * this%subdivisionFactor), this%subdivisionFactor)
+      iOffset(:) = 1 + nint(pos(:,1)*this%subdivisionFactor ) / this%subdivisionFactor
+      iChunk(:) = modulo(nint(pos(:,1) * this%subdivisionFactor), this%subdivisionFactor)
 
-      ! Lower Main Indices need to include
+      
+      ! Lower Main Indices should not exceed:
       ! -> start of main grid (1)
       ! -> start of cache grid (atom offset - half cache size)
       iMain(:, 1) = max(1, iOffset(:) - this%nPointsHalved(:))
-      ! Upper Main Indices need to include
-      ! -> end of main grid (nPoints)
+      ! Upper Main Indices should not exceed:
+      ! -> end of main grid (gridDims)
       ! -> end of cache grid (atom offset + half cache size)
       iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
 
+      ! DEBUG
+      curCoords(:, 1) = (real(iOffset(1),dp)  -1 + real(iChunk(1)) / this%subdivisionFactor) * this%gridVecs(:, 1)
+      curCoords(:, 2) = (real(iOffset(2), dp) -1 + real(iChunk(2)) / this%subdivisionFactor) * this%gridVecs(:, 2)
+      curCoords(:, 3) = (real(iOffset(3), dp) -1 + real(iChunk(3)) / this%subdivisionFactor) * this%gridVecs(:, 3)
+      xyz = sum(curCoords, dim=2)
+      print *, "Actual position",  shiftedPos(:)
+      print *, "Asumed position", xyz
 
-      !print "(*(G0, 1X))", " -> Atom Position in Basis vectors:", pos(:,1)
-      !print "(*(G0, 1X))", " -> Atom Position in Grid:", iOffset(:), "Chunk:", iChunk(:)
-      !print "(*(G0, 1X))", "Indices Mapping Main -> Cache:"
-      
-      ! Add the offset instead of subtracting it henceforth
-      iOffset(:) = -iOffset(:)
+      print *, "In Basis vectors", pos(:,1)
+      print *, "Truncated to grid", iOffset(:)-1, "Chunk:", iChunk(:)
 
       !do ii = 1, 3
       !  print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
@@ -299,6 +300,8 @@ contains
       !                  & iMain(ii,1) + iOffset(ii), ":", &
       !                  & iMain(ii,2) + iOffset(ii)
       !end do
+      ! Add the offset instead of subtracting it henceforth
+      iOffset(:) = -iOffset(:)
   end subroutine TOrbitalCache_align
 
 
@@ -430,6 +433,9 @@ contains
     print *, "InitTime:", real(endTime - startTime, dp) / clockRate
 
 
+        print *, "Basis vector 1", gridVecs(:, 1)
+        print *, "Basis vector 2", gridVecs(:, 2)
+        print *, "Basis vector 3", gridVecs(:, 3)
 
     ! Main grid size
     ! Zero the output array
@@ -459,21 +465,20 @@ contains
 
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
-        !print *, "."
-        !print *, "Atom coords", coords(:, iAtom, iCell)
-        !print *, "Origin", origin
-        !print *, "Basis vector 1", gridVecs(:, 1)
-        !print *, "Basis vector 2", gridVecs(:, 2)
-        !print *, "Basis vector 3", gridVecs(:, 3)
+        print *, "."
+        print *, "Atom coords", coords(:, iAtom, iCell)
+        print *, "Origin", origin
         ! Todo: Periodic systems and correct unit cell mapping
         !if (tPeriodic) then
         !  frac(:) = matmul(pos, recVecs2p)
         !  pos(:) = matmul(latVecs, frac - real(floor(frac), dp))
         !end if
 
+
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-          ! Calculate alignment bounds and select the correct subgrid
-          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
+
+                ! Calculate alignment bounds and select the correct subgrid
+                call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
 
           iL = stos(iOrb)%angMom
           do iM = -iL, iL
