@@ -114,7 +114,7 @@ else()
 endif()
 
 # Turn it on to include the unit tests (needs the Fortuno unit testing framework)
-option(WITH_UNIT_TESTS "Whether the unit tests should be built" FALSE)
+option(WITH_UNIT_TESTS "Whether the unit tests should be built" TRUE)
 
 
 #
