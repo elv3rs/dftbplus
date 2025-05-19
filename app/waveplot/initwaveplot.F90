@@ -11,7 +11,6 @@
 module waveplot_initwaveplot
   use waveplot_gridcache, only : TGridCache, TGridCache_init
   use waveplot_molorb, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
-  use waveplot_slater, only : TSlaterOrbital_init
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
   use dftbp_common_file, only : closeFile, openFile, setDefaultBinaryAccess, TFileDescr
