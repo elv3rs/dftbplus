@@ -10,13 +10,18 @@
 !> Contains routines to calculate the value of one or more molecular orbitals composed from STOs on
 !! an equidistant grid.
 module waveplot_molorb
-  use waveplot_slater, only : getValue, realTessY, TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
+  use waveplot_slater, only : TSlaterOrbital, realTessY
+  use dftbp_math_lapackroutines, only: gesv
+  use waveplot_molorb_cached, only: evaluateCached
+  use waveplot_molorb_pointwise, only: evaluatePointwise
+  use waveplot_molorb_parallel, only: evaluateParallel
+
   implicit none
 
   private
@@ -249,6 +254,12 @@ contains
           & this%coords, this%species, this%iStos, this%stos,&
           & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
           & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
+    else if (subdivisionFactor == -1) then
+      print *, "Using real parallel"
+      call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+          & this%coords, this%species, this%iStos, this%stos,&
+          & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+          & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
     else
       print *, "Using real evaluatePointwise"
       call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
