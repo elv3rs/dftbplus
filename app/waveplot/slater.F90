@@ -16,6 +16,7 @@ module waveplot_slater
 
   public :: realTessY
   public :: TSlaterOrbital
+  public :: getVerboseRadial
 
 
   !> Data type for STOs.
@@ -62,6 +63,11 @@ module waveplot_slater
     procedure :: getRadialDirect => TSlaterOrbital_getRadialValue_explicit
 
   end type TSlaterOrbital
+
+
+  interface getVerboseRadial
+    module procedure TSlaterOrbital_getVerboseRadial
+  end interface
 
 
 contains
@@ -311,5 +317,65 @@ contains
     end do
 
   end subroutine TSlaterOrbital_getRadialValue_explicit
+
+
+
+  !> Calculates the value of an STO analytically.
+  subroutine TSlaterOrbital_getVerboseRadial(ll, nPow, nAlpha, aa, alpha, rr, sto)
+
+    !> Angular momentum of the STO
+    integer, intent(in) :: ll
+
+    !> Maximal power of the distance in the STO
+    integer, intent(in) :: nPow
+
+    !> Number of exponential coefficients
+    integer, intent(in) :: nAlpha
+
+    !> Summation coefficients
+    real(dp), intent(in) :: aa(nPow, nAlpha)
+
+    !> Exponential coefficients
+    real(dp), intent(in) :: alpha(nAlpha)
+
+    !> Distance, where the STO should be calculated
+    real(dp), intent(in) :: rr
+
+    !> Value of the STO on return
+    real(dp), intent(out) :: sto
+    
+    real(dp) :: pows(nPow)
+    real(dp) :: rTmp
+    integer :: ii, jj
+
+    ! Avoid 0.0**0 as it may lead to arithmetic exception
+    if (ll == 0 .and. rr < epsilon(1.0_dp)) then
+      rTmp = 1.0_dp
+    else
+      rTmp = rr**ll
+    end if
+
+    ! Compute radial powers
+    do ii = 1, nPow
+      pows(ii) = rTmp
+      rTmp = rTmp * rr
+    end do
+
+    sto = 0.0_dp
+    do ii = 1, nAlpha
+      rTmp = 0.0_dp
+      do jj = 1, nPow
+        rTmp = rTmp + aa(jj, ii) * pows(jj)
+      end do
+      sto = sto + rTmp * exp(alpha(ii) * rr)
+    end do
+
+  end subroutine TSlaterOrbital_getVerboseRadial
+
+
+
+
+
+
 
 end module waveplot_slater

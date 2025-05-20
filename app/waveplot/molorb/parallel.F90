@@ -9,13 +9,7 @@
 module waveplot_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
-  use dftbp_dftb_boundarycond, only : TBoundaryConditions
-  use dftbp_dftb_periodic, only : getCellTranslations
-  use dftbp_common_status, only : TStatus
-  use dftbp_math_simplealgebra, only : invert33
-  use dftbp_type_typegeometry, only : TGeometry
-  use waveplot_slater, only : TSlaterOrbital, realTessY
-  use dftbp_math_lapackroutines, only: gesv
+  use waveplot_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
   implicit none  
   
   public :: evaluateParallel
@@ -92,8 +86,6 @@ contains
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
-    integer, allocatable :: angMoms(:)
-    real(dp), allocatable :: cutoffs(:)
     real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
     real(dp) :: atomAllOrbVal(nOrb, nCell)
     real(dp), allocatable :: atomOrbValReal(:)
@@ -103,14 +95,40 @@ contains
     integer :: nPoints(4)
     integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
+    !! SOA for stos contents
+    integer, allocatable :: angMoms(:)
+    real(dp), allocatable :: cutoffs(:)
 
-    !! Create arrays out of sto object data for better cache locality
+    integer, allocatable :: sto_nPows(:)
+    integer, allocatable :: sto_nAlphas(:)
+    real(dp), allocatable :: sto_coeffs(:,:,:)
+    real(dp), allocatable :: sto_alphas(:,:)
+    integer :: maxNPows, maxNAlphas
+
+
+
+    !! Create arrays out of sto object data to simplify OMP parallelization
     allocate(angMoms(size(iStos)))
     allocate(cutoffs(size(iStos)))
-
+    allocate(sto_nPows(size(iStos)))
+    allocate(sto_nAlphas(size(iStos)))
     do iOrb = 1, size(stos)
       angMoms(iOrb) = stos(iOrb)%angMom
       cutoffs(iOrb) = stos(iOrb)%cutoff
+      sto_nPows(iOrb) = stos(iOrb)%nPow
+      sto_nAlphas(iOrb) = stos(iOrb)%nAlpha
+    end do
+    !! Determine max power/ coefficient array size
+    maxNPows = maxval(sto_nPows)
+    maxNAlphas = maxval(sto_nAlphas)
+
+    allocate(sto_coeffs(maxNPows, maxNAlphas, size(iStos)))
+    allocate(sto_alphas(maxNAlphas, size(iStos)))
+
+    ! Copy data from the sto objects to the arrays
+    do iOrb = 1, size(stos)
+      sto_coeffs(1:sto_nPows(iOrb), 1:sto_nAlphas(iOrb), iOrb) = stos(iOrb)%aa
+      sto_alphas(1:sto_nAlphas(iOrb), iOrb) = stos(iOrb)%alpha
     end do
 
 
@@ -161,7 +179,15 @@ contains
                 end if
 
                 ! Calculate contribution
-                call stos(iOrb)%getRadialDirect(xx, radialVal)
+                call getVerboseRadial(iL, &
+                                    & sto_nPows(iOrb), &
+                                    & sto_nAlphas(iOrb), &
+                                    & sto_coeffs(1:sto_nPows(iOrb), 1:sto_nAlphas(iOrb), iOrb), &
+                                    & sto_alphas(1:sto_nAlphas(iOrb), iOrb), &
+                                    & xx, &
+                                    & radialVal)
+
+
                 do iM = -iL, iL
                   ind = ind + 1
                   val = radialVal * realTessY(iL, iM, diff, xx)
