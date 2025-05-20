@@ -17,6 +17,7 @@
 
 
 #:include 'common.fypp'
+#:set DPRINT = False
 
 !> Contains routines to calculate the value of one or more molecular orbitals composed from STOs on
 !! an equidistant grid.
@@ -135,8 +136,10 @@ contains
       expectedSizeMB = storage_size(1.0_dp) * product(this%nPointsHalved)
       expectedSizeMB = expectedSizeMB * 2**3 * this%subdivisionFactor**3 * (2 * sto%angMom + 1)
       expectedSizeMB = expectedSizeMB / 8.0 / 1024.0 / 1024.0
-      print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", this%nPointsHalved * 2
-      print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
+      #:if DPRINT
+        print "(*(G0, 1X))", "Allocating Cache Grid of dimensions", this%nPointsHalved * 2
+        print "(*(G0, 1X))", "Expected Cache Allocation Size", expectedSizeMB, "MB"
+      #:endif
       if (expectedSizeMB > 12000) then
         stop "Expected cache array size exceeds 8GB"
       end if
@@ -182,12 +185,6 @@ contains
                     lpIM : do iM = -sto%angMom, sto%angMom
                       ! Combine with angular dependence and add to cache
                       this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(sto%angMom, iM, xyz, xx)
-
-                       if(i1Chunked + i2Chunked + i3Chunked == 0) then
-                         ! Only print the first chunk
-                         !print  "(*(G0, 1X))", i1, i2, i3, "->", xx, "->", val, realTessY(sto%angMom, iM, xyz, xx)
-                       end if
-
                     end do lpIM
                   end if
                 end do lpI1
@@ -285,21 +282,25 @@ contains
       curCoords(:, 2) = (real(iOffset(2), dp) -1 + real(iChunk(2), dp) / this%subdivisionFactor) * this%gridVecs(:, 2)
       curCoords(:, 3) = (real(iOffset(3), dp) -1 + real(iChunk(3), dp) / this%subdivisionFactor) * this%gridVecs(:, 3)
       xyz = sum(curCoords, dim=2)
-      print "(*(G0, 1X))", "Actual position",  shiftedPos(:)
-      print "(*(G0, 1X))", "Asumed position", xyz
-
-      print "(*(G0, 1X))", "In Basis vectors", pos(:,1)
-      print "(*(G0, 1X))", "Truncated to grid", iOffset(:)-1, "Chunk:", iChunk(:)
+      #:if DPRINT
+        print "(*(G0, 1X))", "Actual position",  shiftedPos(:)
+        print "(*(G0, 1X))", "Asumed position", xyz
+  
+        print "(*(G0, 1X))", "In Basis vectors", pos(:,1)
+        print "(*(G0, 1X))", "Truncated to grid", iOffset(:)-1, "Chunk:", iChunk(:)
+      #:endif
 
       ! Add the offset instead of subtracting it henceforth
       iOffset(:) = -iOffset(:)
+      #:if DPRINT
+        do ii = 1, 3
+          print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
+                          & iMain(ii,2), "->",&
+                          & iMain(ii,1) + iOffset(ii), ":", &
+                          & iMain(ii,2) + iOffset(ii)
+        end do
+      #:endif
 
-      do ii = 1, 3
-        print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
-                        & iMain(ii,2), "->",&
-                        & iMain(ii,1) + iOffset(ii), ":", &
-                        & iMain(ii,2) + iOffset(ii)
-      end do
   end subroutine TOrbitalCache_align
 
 
@@ -430,10 +431,11 @@ contains
     call system_clock(count=endTime)
     print *, "InitTime:", real(endTime - startTime, dp) / clockRate
 
-
+    #:if DPRINT
         print *, "Basis vector 1", gridVecs(:, 1)
         print *, "Basis vector 2", gridVecs(:, 2)
         print *, "Basis vector 3", gridVecs(:, 3)
+    #:endif
 
     ! Main grid size
     ! Zero the output array
@@ -446,7 +448,9 @@ contains
       valueCmpl(:,:,:,:) = 0.0_dp
       print *, "Complex"
     end if
-    print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
+    #:if DPRINT
+      print "(*(G0, 1X))", "Main Grid Dimensions", nPoints
+    #:endif
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
     ! below. This is fine as, in contrast to what was published, DFTB+ implicitly uses exp(-ikr) as
@@ -459,13 +463,17 @@ contains
       coeffInd = 1
       do iAtom = 1, nAtom
         iSpecies = species(iAtom)
-        print "(*(G0, 1X))",  "Applying contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
+        #:if DPRINT
+          print "(*(G0, 1X))",  "Applying contribution from ", iAtom, " of ", nAtom, " in cell ", iCell, " of ", nCell
+        #:endif
 
         ! Where to shift the orbital origin to
         pos = coords(:, iAtom, iCell) - origin
+        #:if DPRINT
         print *, "."
         print *, "Atom coords", coords(:, iAtom, iCell)
         print *, "Origin", origin
+        #:endif
         ! Todo: Periodic systems and correct unit cell mapping
         !if (tPeriodic) then
         !  frac(:) = matmul(pos, recVecs2p)
@@ -497,7 +505,6 @@ contains
                         val = val * val
                       end if
                       valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + eigVecsReal(coeffInd, iEig) * val
-                      !print "(*(G0, 1X))", i1, i2, i3, "->", valueReal(i1, i2, i3, iEig)
                     else
                       ! TODO: Verify this is correct
                       valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + eigVecsCmpl(coeffInd, iEig) &
