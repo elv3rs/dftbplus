@@ -11,10 +11,7 @@
 ! Always profile first.
 !
 ! Near term todo:
-! Investigate radial interpolation (-> Provide way to disable)
 ! Investigate periodic wrapping
-! Compare results and execution time
-! Add option to choose molorb
 ! Check complex version
 ! Look into repeated cache copy allocations
 
@@ -168,20 +165,20 @@ contains
       lpI3Chunked : do i3Chunked = 0, this%subdivisionFactor-1
         chunkFraction(3) = real(i3Chunked, dp) / this%subdivisionFactor
         lpI3 : do i3 = -this%nPointsHalved(3), this%nPointsHalved(3)
-          curCoords(:, 3) = (i3 + chunkFraction(3)) * this%gridVecs(:, 3)
+          curCoords(:, 3) = (real(i3, dp) - chunkFraction(3)) * this%gridVecs(:, 3)
           lpI2Chunked : do i2Chunked = 0, this%subdivisionFactor-1
             chunkFraction(2) = real(i2Chunked, dp) / this%subdivisionFactor
             lpI2 : do i2 = -this%nPointsHalved(2), this%nPointsHalved(2)
-              curCoords(:, 2) = (i2 + chunkFraction(2)) * this%gridVecs(:, 2)
+              curCoords(:, 2) = (real(i2, dp) - chunkFraction(2)) * this%gridVecs(:, 2)
               lpI1Chunked : do i1Chunked = 0, this%subdivisionFactor-1
                 chunkFraction(1) = real(i1Chunked, dp) / this%subdivisionFactor
                 lpI1 : do i1 = -this%nPointsHalved(1), this%nPointsHalved(1)
-                  curCoords(:, 1) = (i1 + chunkFraction(1)) * this%gridVecs(:, 1)
+                  curCoords(:, 1) = (real(i1, dp) - chunkFraction(1)) * this%gridVecs(:, 1)
                   ! Calculate position
                   xyz = sum(curCoords, dim=2)
                   xx = norm2(xyz)
                   if (xx <= sto%cutoff) then
-                    call sto%getRadialDirect(xx, val)
+                    call sto%getRadial(xx, val)
                     lpIM : do iM = -sto%angMom, sto%angMom
                       ! Combine with angular dependence and add to cache
                       this%cache(i1, i1Chunked, i2, i2Chunked, i3, i3Chunked, iM) = val * realTessY(sto%angMom, iM, xyz, xx)
@@ -221,7 +218,7 @@ contains
     nn(:,2) = this%nPointsHalved(:) - iOffset(:)
 
     ! Check if the cache is already allocated and large enough
-    ! Currently unable to reduce because that would break indices mapping
+    ! Currently unable to reuse because that would break indices mapping
 
     if(allocated(cacheCopy)) then
       deallocate(cacheCopy)
@@ -284,24 +281,25 @@ contains
       iMain(:, 2) = min(gridDims(:3), iOffset(:) + this%nPointsHalved(:))
 
       ! DEBUG
-      curCoords(:, 1) = (real(iOffset(1),dp)  -1 + real(iChunk(1)) / this%subdivisionFactor) * this%gridVecs(:, 1)
-      curCoords(:, 2) = (real(iOffset(2), dp) -1 + real(iChunk(2)) / this%subdivisionFactor) * this%gridVecs(:, 2)
-      curCoords(:, 3) = (real(iOffset(3), dp) -1 + real(iChunk(3)) / this%subdivisionFactor) * this%gridVecs(:, 3)
+      curCoords(:, 1) = (real(iOffset(1), dp)  -1 + real(iChunk(1), dp) / this%subdivisionFactor) * this%gridVecs(:, 1)
+      curCoords(:, 2) = (real(iOffset(2), dp) -1 + real(iChunk(2), dp) / this%subdivisionFactor) * this%gridVecs(:, 2)
+      curCoords(:, 3) = (real(iOffset(3), dp) -1 + real(iChunk(3), dp) / this%subdivisionFactor) * this%gridVecs(:, 3)
       xyz = sum(curCoords, dim=2)
-      print *, "Actual position",  shiftedPos(:)
-      print *, "Asumed position", xyz
+      print "(*(G0, 1X))", "Actual position",  shiftedPos(:)
+      print "(*(G0, 1X))", "Asumed position", xyz
 
-      print *, "In Basis vectors", pos(:,1)
-      print *, "Truncated to grid", iOffset(:)-1, "Chunk:", iChunk(:)
+      print "(*(G0, 1X))", "In Basis vectors", pos(:,1)
+      print "(*(G0, 1X))", "Truncated to grid", iOffset(:)-1, "Chunk:", iChunk(:)
 
-      !do ii = 1, 3
-      !  print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
-      !                  & iMain(ii,2), "->",&
-      !                  & iMain(ii,1) + iOffset(ii), ":", &
-      !                  & iMain(ii,2) + iOffset(ii)
-      !end do
       ! Add the offset instead of subtracting it henceforth
       iOffset(:) = -iOffset(:)
+
+      do ii = 1, 3
+        print "(*(G0, 1X))", " o", Char(ii + 87), iMain(ii,1), ":" , &
+                        & iMain(ii,2), "->",&
+                        & iMain(ii,1) + iOffset(ii), ":", &
+                        & iMain(ii,2) + iOffset(ii)
+      end do
   end subroutine TOrbitalCache_align
 
 
@@ -477,19 +475,23 @@ contains
 
         do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
 
-                ! Calculate alignment bounds and select the correct subgrid
-                call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
+          ! Calculate alignment bounds and select the correct subgrid
+          call orbitalCache(iOrb)%align(nPoints, pos, iOffset, iChunk, iMain)
 
           iL = stos(iOrb)%angMom
           do iM = -iL, iL
-            call orbitalCache(iOrb)%access(cacheCopy, iChunk, iOffset, iM)
+            !call orbitalCache(iOrb)%access(cacheCopy, iChunk, iOffset, iM)
 
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
-                    val = cacheCopy(i1, i2, i3)
+                    !val = cacheCopy(i1, i2, i3)
+                    val = orbitalCache(iOrb)%cache(i1 + iOffset(1), iChunk(1), &
+                                                 & i2 + iOffset(2), iChunk(2), &
+                                                 & i3 + iOffset(3), iChunk(3), iM)
+
                     if (tReal) then
                       if (tAddDensities) then
                         val = val * val
