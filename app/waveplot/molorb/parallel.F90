@@ -96,14 +96,10 @@ contains
     real(dp), allocatable :: cutoffs(:)
     real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
     real(dp) :: atomAllOrbVal(nOrb, nCell)
-    logical :: nonZeroMask(nOrb), allZero
-    integer :: nNonZero
-    integer, target :: nonZeroIndContainer(nOrb)
-    integer, pointer :: nonZeroIndices(:)
     real(dp), allocatable :: atomOrbValReal(:)
     complex(dp), allocatable :: atomOrbValCmpl(:)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
-    real(dp) :: xx, val
+    real(dp) :: xx, val, radialVal
     integer :: nPoints(4)
     integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
@@ -123,9 +119,11 @@ contains
     if (tReal) then
       allocate(atomOrbValReal(nOrb))
       nPoints = shape(valueReal)
+      valueReal(:,:,:,:) = 0.0_dp
     else
       allocate(atomOrbValCmpl(nOrb))
       nPoints = shape(valueCmpl)
+      valueCmpl(:,:,:,:) = (0.0_dp, 0.0_dp)
     end if
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
@@ -147,9 +145,8 @@ contains
             xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
           end if
           ! Get contribution from every atom in every cell for current point
-          allZero = .true.
           lpCell: do iCell = 1, nCell
-            ind = 1
+            ind = 0
             lpAtom: do iAtom = 1, nAtom
               iSpecies = species(iAtom)
               diff(:) = xyz - coords(:, iAtom, iCell)
@@ -157,67 +154,36 @@ contains
               lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
                 iL = angMoms(iOrb)
                 ! Calculate wave function only if atom is inside the cutoff
-                if (xx <= cutoffs(iOrb)) then
-                  allZero = .false.
-                  call stos(iOrb)%getRadialDirect(xx, val)
-                  do iM = -iL, iL
-                    atomAllOrbVal(ind, iCell) = val * realTessY(iL, iM, diff, xx)
-                    ind = ind + 1
-                  end do
-                else
-                  atomAllOrbVal(ind:ind+2*iL, iCell) = 0.0_dp
-                  ind = ind + 2 * iL + 1
+                if (xx > cutoffs(iOrb)) then
+                  ! Skip this orbital
+                  ind = ind + 2*iL + 1
+                  cycle lpOrb
                 end if
+
+                ! Calculate contribution
+                call stos(iOrb)%getRadialDirect(xx, radialVal)
+                do iM = -iL, iL
+                  ind = ind + 1
+                  val = radialVal * realTessY(iL, iM, diff, xx)
+
+                  ! Store Value
+                  if (tReal) then
+                    if (tAddDensities) then
+                      val = val * val
+                    end if
+                    do iEig = 1, nPoints(4)
+                      valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
+                    end do
+                  else ! Complex
+                    do iEig = 1, nPoints(4)
+                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + val &
+                        & * phases(iCell, kIndexes(iEig)) * eigVecsCmpl(ind, iEig)
+                    end do
+                  end if
+                end do
               end do lpOrb
             end do lpAtom
           end do lpCell
-
-          if (allZero) then
-            if (tReal) then
-              valueReal(i1, i2, i3, :) = 0.0_dp
-            else
-              valueCmpl(i1, i2, i3, :) = 0.0_dp
-            end if
-            cycle lpI1
-          end if
-
-          ! Establish mask and index of nonzero elements
-          nonZeroMask = any(atomAllOrbVal /= 0.0_dp, dim=2)
-          nNonZero = 0
-          do iOrb = 1, nOrb
-            if (nonZeroMask(iOrb)) then
-              nNonZero = nNonZero + 1
-              nonZeroIndContainer(nNonZero) = iOrb
-            end if
-          end do
-          nonZeroIndices => nonZeroIndContainer(1:nNonZero)
-
-          ! Sum the contribution from all cells and multiply by the provided coefficients (usually
-          ! the eigenvector)
-          if (tReal) then
-            if (tAddDensities) then
-              atomAllOrbVal(:,:) = atomAllOrbVal**2
-            end if
-            atomOrbValReal(:) = sum(atomAllOrbVal, dim=2)
-            do iEig = 1, nPoints(4)
-              valueReal(i1, i2, i3, iEig) = dot_product(atomOrbValReal(nonZeroIndices),&
-                  & eigVecsReal(nonZeroIndices, iEig))
-            end do
-          else
-            ind = 0
-            do iEig = 1, nPoints(4)
-              if (kIndexes(iEig) /= ind) then
-                ind = kIndexes(iEig)
-                atomOrbValCmpl(nonZeroIndices) = (0.0_dp, 0.0_dp)
-                do iCell = 1, nCell
-                  atomOrbValCmpl(nonZeroIndices) = atomOrbValCmpl(nonZeroIndices)&
-                      & + atomAllOrbVal(nonZeroIndices, iCell) * phases(iCell, ind)
-                end do
-              end if
-              valueCmpl(i1, i2, i3, iEig) = dot_product(atomOrbValCmpl(nonZeroIndices),&
-                  & eigVecsCmpl(nonZeroIndices, iEig))
-            end do
-          end if
         end do lpI1
       end do lpI2
     end do lpI3
