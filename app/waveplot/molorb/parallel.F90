@@ -150,6 +150,25 @@ contains
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
+
+
+
+    !$omp target data map(to: nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
+    !$omp&                  nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
+    !$omp&                  sto_nPows, sto_nAlphas, sto_coeffs, sto_alphas, &
+    !$omp&                  tReal, tAddDensities, eigVecsReal, eigVecsCmpl, phases, kIndexes) &
+    !$omp&           map(tofrom: valueReal, valueCmpl)
+
+    !$omp target teams distribute parallel do collapse(3) &
+    !$omp&    private(i1, i2, i3, curCoords, xyz, frac, diff, &
+    !$omp&            iCell, iAtom, iOrb, iM, ind, iSpecies, iL, &
+    !$omp&            xx, radialVal, val, iEig) &
+    !$omp&    default(none) &
+    !$omp&    shared(nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
+    !$omp&           nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
+    !$omp&           sto_nPows, sto_nAlphas, sto_coeffs, sto_alphas, &
+    !$omp&           tReal, tAddDensities, eigVecsReal, eigVecsCmpl, phases, kIndexes, &
+    !$omp&           valueReal, valueCmpl)
     ! Loop over all grid points
     lpI3: do i3 = 1, nPoints(3)
       curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
@@ -213,6 +232,8 @@ contains
         end do lpI1
       end do lpI2
     end do lpI3
+    !$omp end target teams distribute parallel do
+    !$omp end target data
 
   end subroutine evaluateParallel
 end module waveplot_molorb_parallel

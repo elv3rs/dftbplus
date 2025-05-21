@@ -13,7 +13,7 @@ option(WITH_MPI "Whether DFTB+ should support MPI-parallelism" FALSE)
 # If you build an MPI-parallised binary, consider to set WITH_OMP (OpenMP thread parallelisaton) to
 # FALSE unless you want hybrid parallelisation (for experts only).
 
-option(WITH_GPU "Whether DFTB+ should support GPU-acceleration" FALSE)
+option(WITH_GPU "Whether DFTB+ should support GPU-acceleration" TRUE)
 # For serial builds, the GPU support requires the MAGMA library. For MPI parallel builds it
 # requires the ELSI library built with GPU support.
 
