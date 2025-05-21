@@ -10,6 +10,7 @@ module waveplot_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use waveplot_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
+  use omp_lib, only : omp_is_initial_device
   implicit none  
   
   public :: evaluateParallel
@@ -150,8 +151,12 @@ contains
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
-
-
+    ! Look into SIMD
+    ! First: Ensure we are actually offloading to gpu
+    ! Consider inlining radial /realTessY
+    ! https://www.olcf.ornl.gov/wp-content/uploads/OLCF_Intro_to_OpenMP_Aug11.pdf
+    ! https://passlab.github.io/Examples/contents/Chap_parallel_execution/2_parallel_Construct.html
+    ! https://www.nas.nasa.gov/hecc/assets/pdf/training/OpenMP4.5_3-20-19.pdf
 
     !$omp target data map(to: nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
     !$omp&                  nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
@@ -171,10 +176,19 @@ contains
     !$omp&           valueReal, valueCmpl)
     ! Loop over all grid points
     lpI3: do i3 = 1, nPoints(3)
-      curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
       lpI2: do i2 = 1, nPoints(2)
-        curCoords(:, 2) =  real(i2 - 1, dp) * gridVecs(:, 2)
         lpI1: do i1 = 1, nPoints(1)
+
+    
+    if (i3+i2+i1 == 3) then
+      if(omp_is_initial_device()) then
+        print *, "Running on Initial device"
+      else
+        print *, "Running on target"
+      endif
+    endif 
+          curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
+          curCoords(:, 2) =  real(i2 - 1, dp) * gridVecs(:, 2)
           curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
           xyz(:) = sum(curCoords, dim=2) + origin
           if (tPeriodic) then
