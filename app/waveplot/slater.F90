@@ -76,6 +76,7 @@ contains
   !> Returns the real tesseral spherical harmonics in a given point.
   !! This function only work for angular momenta between 0 and 3 (s-f).
   function realTessY(ll, mm, coord, rrOpt) result(rty)
+    !$omp declare target
 
     !> Angular momentum of the spherical harmonics (0 <= ll <= 3)
     integer, intent(in) :: ll
@@ -322,6 +323,7 @@ contains
 
   !> Calculates the value of an STO analytically.
   subroutine TSlaterOrbital_getVerboseRadial(ll, nPow, nAlpha, aa, alpha, rr, sto)
+    !$omp declare target
 
     !> Angular momentum of the STO
     integer, intent(in) :: ll
