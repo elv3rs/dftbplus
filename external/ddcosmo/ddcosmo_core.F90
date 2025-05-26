@@ -657,7 +657,7 @@ contains
 
 
   !> Compute first derivatives of spherical harmonics
-  pure subroutine dbasis(self, x, basloc, dbsloc, vplm, vcos, vsin)
+  subroutine dbasis(self, x, basloc, dbsloc, vplm, vcos, vsin)
 
     type(TDomainDecomposition), intent(in) :: self
     real(dp), intent(in) :: x(:) ! [3]
@@ -1071,7 +1071,7 @@ contains
 
 
   !> Compute the first part of <S, L^(x)X>
-  pure subroutine fdoka(self, iat, sigma, xi, basloc, dbsloc, vplm, vcos, vsin, fx)
+  subroutine fdoka(self, iat, sigma, xi, basloc, dbsloc, vplm, vcos, vsin, fx)
 
     type(TDomainDecomposition), intent(in) :: self
     integer, intent(in) :: iat
@@ -1139,7 +1139,7 @@ contains
 
 
   !> Compute the the second part of <S, L^(x)X>
-  pure subroutine fdokb(self, iat, sigma, xi, basloc, dbsloc, vplm, vcos, vsin, fx)
+  subroutine fdokb(self, iat, sigma, xi, basloc, dbsloc, vplm, vcos, vsin, fx)
 
     type(TDomainDecomposition), intent(in) :: self
     integer, intent(in) :: iat

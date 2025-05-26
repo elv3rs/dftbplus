@@ -16,12 +16,20 @@ module dftbp_common_filesystem
 
   public :: getEnvVar, isAbsolutePath, joinPaths, findFile, getParamSearchPaths, joinPathsPrettyErr
 
+! make nvfortran happy
+#:if defined('WINDOWS') 
+  !> Whether the operating system we are using is UNIX
+  logical, parameter :: is_unix = .false.
 
-  !> Whether the operating system we are using is UNIX (FIXME: use preprocessor here instead)
+  !> Path separator for this platform
+  character(len=*), parameter :: separator = "\\"
+#:else
+  !> Whether the operating system we are using is UNIX
   logical, parameter :: is_unix = .true.
 
   !> Path separator for this platform
-  character(len=*), parameter :: separator = merge("/", "\", is_unix)
+  character(len=*), parameter :: separator = "/"
+#:endif
 
   !> Environment variable containing parameter directory for DFTB+
   character(len=*), parameter :: paramEnv = "DFTBPLUS_PARAM_DIR"

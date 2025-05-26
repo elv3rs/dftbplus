@@ -134,7 +134,7 @@ module dftbp_dftbplus_parser
   integer, parameter :: minVersion = 1
 
   !> Version of the current parser (as latest version)
-  integer, parameter :: parserVersion = maxval(versionMaps(:)%parserVersion)
+  integer, parameter :: parserVersion = 14 !maxval(versionMaps(:)%parserVersion)
 
 
 contains

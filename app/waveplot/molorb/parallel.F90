@@ -162,7 +162,7 @@ contains
     !$omp&                  nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
     !$omp&                  sto_nPows, sto_nAlphas, sto_coeffs, sto_alphas, &
     !$omp&                  tReal, tAddDensities, eigVecsReal, eigVecsCmpl, phases, kIndexes) &
-    !$omp&           map(tofrom: valueReal, valueCmpl)
+    !$omp&           map(from: valueReal, valueCmpl)
 
     !$omp target teams distribute parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, curCoords, xyz, frac, diff, &
@@ -182,9 +182,9 @@ contains
     
     if (i3+i2+i1 == 3) then
       if(omp_is_initial_device()) then
-        print *, "Running on Initial device"
+        print *, "Running on Initial device :("
       else
-        print *, "Running on target"
+        print *, "Running on target :)"
       endif
     endif 
           curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
