@@ -316,6 +316,9 @@ contains
 
     integer :: iStart, iError, tokStart, tokEnd, tokLen, sepPos
 
+    ! Temporary imaginary / real part
+    real(dp) :: tmpRe, tmpIm
+
     tokenValue = (0.0_dp, 0.0_dp)
     iStart = start
     processComplexToken: block
@@ -327,18 +330,22 @@ contains
       if (sepPos < tokStart) then
         ! Token contains only one number, either the imaginary or the real part
         if (str(tokEnd:tokEnd) == "i") then
-          read(str(tokStart : tokEnd - 1), *, iostat=iError) tokenValue%im
+          read(str(tokStart : tokEnd - 1), *, iostat=iError) tmpIm
+          tokenValue%im = tmpIm
         else
-          read(str(tokStart : tokEnd), *, iostat=iError) tokenValue%re
+          read(str(tokStart : tokEnd), *, iostat=iError) tmpRe
+          tokenValue%re = tmpRe
         end if
         if (iError /= 0) exit processComplexToken
       else
         ! Token contains two numbers, the real part and the imaginary part
         if (str(tokEnd:tokEnd) /= "i") exit processComplexToken
         if (findComplexSeparator_(str(sepPos + 1 : tokEnd)) /= 0) exit processComplexToken
-        read(str(tokStart : sepPos - 1), *, iostat=iError) tokenValue%re
+        read(str(tokStart : sepPos - 1), *, iostat=iError) tmpRe
+        tokenValue%re = tmpRe
         if (iError /= 0) exit processComplexToken
-        read(str(sepPos : tokEnd - 1), *, iostat=iError) tokenValue%im
+        read(str(sepPos : tokEnd - 1), *, iostat=iError) tmpIm
+        tokenValue%im = tmpIm
         if (iError /= 0) exit processComplexToken
       end if
       iError = TOKEN_OK

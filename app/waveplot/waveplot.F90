@@ -357,9 +357,9 @@ program waveplot
     else
       write(stdOut, "(A)") "File '" // trim(fileName) // "' written"
     end if
-    if (wp%opt%tVerbose) then
+    !if (wp%opt%tVerbose) then
       write(stdOut, "(/,'Total charge:',F12.6,/)") sumTotChrg
-    end if
+    !end if
   end if
 
   ! Dump total charge difference
