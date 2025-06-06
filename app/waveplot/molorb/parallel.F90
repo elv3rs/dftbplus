@@ -163,13 +163,13 @@ contains
     ! https://passlab.github.io/Examples/contents/Chap_parallel_execution/2_parallel_Construct.html
     ! https://www.nas.nasa.gov/hecc/assets/pdf/training/OpenMP4.5_3-20-19.pdf
 
-    !$omp target data map(to: nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
+
+    !$omp target teams distribute parallel do collapse(3) &
+    !$omp&    map(to: nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
     !$omp&                  nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
     !$omp&                  sto_nPows, sto_nAlphas, sto_coeffs, sto_alphas, &
     !$omp&                  tReal, tAddDensities, eigVecsReal, eigVecsCmpl, phases, kIndexes) &
-    !$omp&           map(from: valueReal, valueCmpl)
-
-    !$omp target teams distribute parallel do collapse(3) &
+    !$omp&    map(from: valueReal, valueCmpl) &
     !$omp&    private(i1, i2, i3, curCoords, xyz, frac, diff, &
     !$omp&            iCell, iAtom, iOrb, iM, ind, iSpecies, iL, &
     !$omp&            xx, radialVal, val, iEig, ii, jj, sto_tmp_pows, sto_tmp_rexp) &
@@ -188,10 +188,10 @@ contains
           curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
           xyz(:) = sum(curCoords, dim=2) + origin
           ! TODO: Matmul not working on gpu
-          if (tPeriodic) then
-            frac(:) = matmul(xyz, recVecs2p)
-            xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-          end if
+          !if (tPeriodic) then
+          !  frac(:) = matmul(xyz, recVecs2p)
+          !  xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
+          !end if
           ! Get contribution from every atom in every cell for current point
           lpCell: do iCell = 1, nCell
             ind = 0
@@ -270,7 +270,6 @@ contains
       end do lpI2
     end do lpI3
     !$omp end target teams distribute parallel do
-    !$omp end target data
 
   end subroutine evaluateParallel
 end module waveplot_molorb_parallel
