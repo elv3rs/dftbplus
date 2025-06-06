@@ -106,6 +106,10 @@ contains
     real(dp), allocatable :: sto_alphas(:,:)
     integer :: maxNPows, maxNAlphas
 
+    !!  sto inlining tmp variables
+    real(dp) :: sto_tmp_pows(16) ! todo: dont hardcode max sto size 
+    real(dp) :: sto_tmp_rexp
+    integer :: ii, jj
 
 
     !! Create arrays out of sto object data to simplify OMP parallelization
@@ -152,6 +156,7 @@ contains
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
 
     ! Look into SIMD
+    ! What about openacc?
     ! First: Ensure we are actually offloading to gpu
     ! Consider inlining radial /realTessY
     ! https://www.olcf.ornl.gov/wp-content/uploads/OLCF_Intro_to_OpenMP_Aug11.pdf
@@ -167,7 +172,7 @@ contains
     !$omp target teams distribute parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, curCoords, xyz, frac, diff, &
     !$omp&            iCell, iAtom, iOrb, iM, ind, iSpecies, iL, &
-    !$omp&            xx, radialVal, val, iEig) &
+    !$omp&            xx, radialVal, val, iEig, ii, jj, sto_tmp_pows, sto_tmp_rexp) &
     !$omp&    default(none) &
     !$omp&    shared(nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
     !$omp&           nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
@@ -178,19 +183,11 @@ contains
     lpI3: do i3 = 1, nPoints(3)
       lpI2: do i2 = 1, nPoints(2)
         lpI1: do i1 = 1, nPoints(1)
-
-    
-    if (i3+i2+i1 == 3) then
-      if(omp_is_initial_device()) then
-        print *, "Running on Initial device :("
-      else
-        print *, "Running on target :)"
-      endif
-    endif 
           curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
-          curCoords(:, 2) =  real(i2 - 1, dp) * gridVecs(:, 2)
+          curCoords(:, 2) = real(i2 - 1, dp) * gridVecs(:, 2)
           curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
           xyz(:) = sum(curCoords, dim=2) + origin
+          ! TODO: Matmul not working on gpu
           if (tPeriodic) then
             frac(:) = matmul(xyz, recVecs2p)
             xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
@@ -212,13 +209,39 @@ contains
                 end if
 
                 ! Calculate contribution
-                call getVerboseRadial(iL, &
-                                    & sto_nPows(iOrb), &
-                                    & sto_nAlphas(iOrb), &
-                                    & sto_coeffs(1:sto_nPows(iOrb), 1:sto_nAlphas(iOrb), iOrb), &
-                                    & sto_alphas(1:sto_nAlphas(iOrb), iOrb), &
-                                    & xx, &
-                                    & radialVal)
+                !call getVerboseRadial(iL, &
+                !                    & sto_nPows(iOrb), &
+                !                    & sto_nAlphas(iOrb), &
+                !                    & sto_coeffs(1:sto_nPows(iOrb), 1:sto_nAlphas(iOrb), iOrb), &
+                !                    & sto_alphas(1:sto_nAlphas(iOrb), iOrb), &
+                !                    & xx, &
+                !                    & radialVal)
+                !---- Inlined Radial Calculation from slater.f90 ----!
+
+
+                ! Avoid 0.0**0 as it may lead to arithmetic exception
+                if (iL == 0 .and. xx < epsilon(1.0_dp)) then
+                   sto_tmp_rexp = 1.0_dp
+                else
+                  sto_tmp_rexp = xx**iL
+                end if
+
+                ! Compute radial powers
+                do ii = 1, sto_nPows(iOrb)
+                  sto_tmp_pows(ii) = sto_tmp_rexp
+                  sto_tmp_rexp = sto_tmp_rexp * xx
+                end do
+
+                radialVal = 0.0_dp
+                do ii = 1, sto_nAlphas(iOrb)
+                  sto_tmp_rexp = 0.0_dp
+                  do jj = 1, sto_nPows(iOrb)
+                    sto_tmp_rexp = sto_tmp_rexp + sto_coeffs(jj, ii, iOrb) * sto_tmp_pows(jj)
+                  end do
+                  radialVal = radialVal + sto_tmp_rexp * exp(sto_alphas(ii, iOrb) * xx)
+                end do
+                !---- End inlined radial calculation ---!
+
 
 
                 do iM = -iL, iL

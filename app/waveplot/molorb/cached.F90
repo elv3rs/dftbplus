@@ -488,17 +488,17 @@ contains
 
           iL = stos(iOrb)%angMom
           do iM = -iL, iL
-            !call orbitalCache(iOrb)%access(cacheCopy, iChunk, iOffset, iM)
+            call orbitalCache(iOrb)%access(cacheCopy, iChunk, iOffset, iM)
 
             ! Loop over the aligned gridpoints and add the contribution
             do i3 = iMain(3,1), iMain(3,2)
               do i2 = iMain(2,1), iMain(2,2)
                 do iEig = 1, nPoints(4) 
                   do i1 = iMain(1,1), iMain(1,2)
-                    !val = cacheCopy(i1, i2, i3)
-                    val = orbitalCache(iOrb)%cache(i1 + iOffset(1), iChunk(1), &
-                                                 & i2 + iOffset(2), iChunk(2), &
-                                                 & i3 + iOffset(3), iChunk(3), iM)
+                    val = cacheCopy(i1, i2, i3)
+                    !val = orbitalCache(iOrb)%cache(i1 + iOffset(1), iChunk(1), &
+                    !                             & i2 + iOffset(2), iChunk(2), &
+                    !                             & i3 + iOffset(3), iChunk(3), iM)
 
                     if (tReal) then
                       if (tAddDensities) then
