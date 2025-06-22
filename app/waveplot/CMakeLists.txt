@@ -10,13 +10,22 @@ set(sources_main_fpp
 )
 add_subdirectory(molorb)
 
+# MODIFICATION: Add the CUDA source file
+set(sources_lib_cuda
+  molorb/kernel.cu
+)
+
 set(fypp_flags ${FYPP_BUILD_FLAGS})
 list(APPEND fypp_flags -I${projectdir}/src/dftbp/include)
 
 dftbp_preprocess("${FYPP}" "${fypp_flags}" "F90" "f90" "${sources_lib_fpp}" sources_lib_f90_preproc)
 dftbp_preprocess("${FYPP}" "${fypp_flags}" "F90" "f90" "${sources_main_fpp}" sources_main_f90_preproc)
 
-add_library(waveplot_lib STATIC ${sources_lib_f90_preproc})
+# MODIFICATION: Add the CUDA source to the library
+add_library(waveplot_lib STATIC
+  ${sources_lib_f90_preproc}
+  ${sources_lib_cuda}
+)
 
 # Library targets public such that we can link against this from elsewhere
 # Unveil the module and source directories as well
@@ -35,5 +44,8 @@ add_executable(waveplot ${sources_main_f90_preproc})
 target_link_libraries(waveplot PRIVATE waveplot_lib)
 
 install(TARGETS waveplot DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+
+
 
 

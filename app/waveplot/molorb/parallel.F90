@@ -10,7 +10,7 @@ module waveplot_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use waveplot_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
-  use omp_lib, only : omp_is_initial_device
+  use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   implicit none  
   
   public :: evaluateParallel
@@ -87,14 +87,15 @@ contains
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
-    real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
-    real(dp) :: atomAllOrbVal(nOrb, nCell)
-    real(dp), allocatable :: atomOrbValReal(:)
+    !!Complex
     complex(dp), allocatable :: atomOrbValCmpl(:)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
-    real(dp) :: xx, val, radialVal
     integer :: nPoints(4)
-    integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
+
+
+
+    real(dp), allocatable :: atomOrbValReal(:)
+    integer :: i1, i2, i3
 
     !! SOA for stos contents
     integer, allocatable :: angMoms(:)
@@ -104,31 +105,29 @@ contains
     integer, allocatable :: sto_nAlphas(:)
     real(dp), allocatable :: sto_coeffs(:,:,:)
     real(dp), allocatable :: sto_alphas(:,:)
-    integer :: maxNPows, maxNAlphas
-
-    !!  sto inlining tmp variables
-    real(dp) :: sto_tmp_pows(16) ! todo: dont hardcode max sto size 
-    real(dp) :: sto_tmp_rexp
-    integer :: ii, jj
-
+    integer :: maxNPows, maxNAlphas, iOrb
 
     !! Create arrays out of sto object data to simplify OMP parallelization
-    allocate(angMoms(size(iStos)))
-    allocate(cutoffs(size(iStos)))
-    allocate(sto_nPows(size(iStos)))
-    allocate(sto_nAlphas(size(iStos)))
+    allocate(angMoms(size(stos)), source=0)
+    allocate(sto_nPows(size(stos)), source=0)
+    allocate(sto_nAlphas(size(stos)), source=0)
+    allocate(cutoffs(size(stos)), source=0.0_dp)
+
+
     do iOrb = 1, size(stos)
       angMoms(iOrb) = stos(iOrb)%angMom
       cutoffs(iOrb) = stos(iOrb)%cutoff
       sto_nPows(iOrb) = stos(iOrb)%nPow
       sto_nAlphas(iOrb) = stos(iOrb)%nAlpha
     end do
+
+
     !! Determine max power/ coefficient array size
     maxNPows = maxval(sto_nPows)
     maxNAlphas = maxval(sto_nAlphas)
 
-    allocate(sto_coeffs(maxNPows, maxNAlphas, size(iStos)))
-    allocate(sto_alphas(maxNAlphas, size(iStos)))
+    allocate(sto_coeffs(maxNPows, maxNAlphas, size(stos)))
+    allocate(sto_alphas(maxNAlphas, size(stos)))
 
     ! Copy data from the sto objects to the arrays
     do iOrb = 1, size(stos)
@@ -137,139 +136,215 @@ contains
     end do
 
 
-
     ! Array for the contribution of each orbital (and its periodic images)
-    if (tReal) then
-      allocate(atomOrbValReal(nOrb))
-      nPoints = shape(valueReal)
-      valueReal(:,:,:,:) = 0.0_dp
-    else
-      allocate(atomOrbValCmpl(nOrb))
-      nPoints = shape(valueCmpl)
-      valueCmpl(:,:,:,:) = (0.0_dp, 0.0_dp)
-    end if
-
-    ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
-    ! below. This is fine as, in contrast to what was published, DFTB+ uses implicitly exp(-ikr) as
-    ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as
-    ! factor.
-    phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
-
-    ! Look into SIMD
-    ! What about openacc?
-    ! First: Ensure we are actually offloading to gpu
-    ! Consider inlining radial /realTessY
-    ! https://www.olcf.ornl.gov/wp-content/uploads/OLCF_Intro_to_OpenMP_Aug11.pdf
-    ! https://passlab.github.io/Examples/contents/Chap_parallel_execution/2_parallel_Construct.html
-    ! https://www.nas.nasa.gov/hecc/assets/pdf/training/OpenMP4.5_3-20-19.pdf
+    allocate(atomOrbValReal(nOrb))
+    nPoints = shape(valueReal)
+    valueReal(:,:,:,:) = 0.0_dp
 
 
+    !print *, "Devices:", omp_get_num_devices()
+    !print *, "maxNPows:", maxNPows, "maxNAlphas:", maxNAlphas
+    !print *, "Max sto_nPows in data:", maxval(sto_nPows)
+    !print *, "iStos", iStos
+    !print *, "Stos:", size(stos), "nOrb:", nOrb
+    !print *, "species", species
+    !print *, "sto_alphas:", sto_alphas
+    !print *, "sto_nalphas:", sto_nAlphas
+    !print *, "sto_nPows:", sto_nPows
+
+
+      
+    print *, "nAtom:", nAtom, "nSpecies:", size(iStos)-1, "nOrb:", nOrb, "nStos:", size(stos)
+    print *, "species(:)    = ", species(:nAtom)
+    print *, "iStos(:)      = ", iStos(:)
+    print *, "sto_angMoms(:) = ", angMoms(:)
+    
+    call evaluateCuda(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
+        & nEig=nPoints(4), nOrb=nOrb, nStos=size(stos), maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
+        & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), origin=origin, gridVecs=gridVecs, eigVecsReal=eigVecsReal, &
+        & coords=coords, species=species, iStos=iStos, &
+        & sto_angMoms=angMoms, sto_nPows=sto_nPows, sto_nAlphas=sto_nAlphas, &
+        & sto_cutoffs=cutoffs, sto_coeffs=sto_coeffs, sto_alphas=sto_alphas, &
+        & valueReal=valueReal)
+
+  end subroutine evaluateParallel
+
+
+
+  subroutine evaluateCuda(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
+      & origin, gridVecs, eigVecsReal, coords, species, iStos, &
+      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, &
+      & valueReal)
+    ! This subroutine is now a wrapper that calls a C++/CUDA implementation.
+    use, intrinsic :: iso_c_binding, only : c_int, c_double
+    implicit none
+
+    integer, intent(in) :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies
+    real(dp), intent(in) :: origin(3)
+    real(dp), intent(in) :: gridVecs(3,3)
+    real(dp), intent(in) :: eigVecsReal(nOrb, nEig)
+    real(dp), intent(in) :: coords(3, nAtom, nCell)
+    integer, intent(in) :: species(nAtom)
+    integer, intent(in) :: iStos(nSpecies + 1)
+    integer, intent(in) :: sto_angMoms(nStos)
+    integer, intent(in) :: sto_nPows(nStos)
+    integer, intent(in)  :: sto_nAlphas(nStos)
+    real(dp), intent(in) :: sto_cutoffs(nStos)
+    real(dp), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
+    real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
+    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
+
+    ! Interface to the C-function defined in kernel.cu
+    interface
+       subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
+            & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
+            & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, valueReal) &
+            & bind(C, name='evaluate_on_device_c')
+         import :: c_int, c_double
+         integer(c_int), intent(in) :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
+            & maxNAlphas, nAtom, nCell, nSpecies
+         real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEig)
+         real(c_double), intent(in) :: coords(3, nAtom, nCell)
+         integer(c_int), intent(in) :: species(nAtom), iStos(nSpecies + 1)
+         integer(c_int), intent(in) :: sto_angMoms(nStos), sto_nPows(nStos), sto_nAlphas(nStos)
+         real(c_double), intent(in) :: sto_cutoffs(nStos)
+         real(c_double), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
+         real(c_double), intent(in) :: sto_alphas(maxNAlphas, nStos)
+         real(c_double), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
+       end subroutine evaluate_on_device_c
+    end interface
+
+    ! Call the external CUDA routine
+    call evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
+        & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
+        & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, valueReal)
+
+  end subroutine evaluateCuda
+
+
+
+  subroutine evaluateOMP(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell,&
+      & nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
+      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, &
+      & valueReal)
+
+    integer, intent(in) :: nPointsX ! number of grid points in x direction
+    integer, intent(in) :: nPointsY ! number of grid points in y direction
+    integer, intent(in) :: nPointsZ ! number of grid points in z direction
+    integer, intent(in) :: nEig ! number of eigenvalues
+    integer, intent(in) :: nOrb ! total number of orbitals
+    integer, intent(in) :: nStos ! num of unique stos 
+    integer, intent(in) :: maxNPows ! max number of powers in a sto
+    integer, intent(in) :: maxNAlphas ! max number of alphas in a sto
+    integer, intent(in) :: nAtom ! number of atoms
+    integer, intent(in) :: nCell ! number of adjacent cells
+    integer, intent(in) :: nSpecies ! number of different atom kinds
+
+    real(dp), intent(in) :: origin(3)
+    real(dp), intent(in) :: gridVecs(3,3)
+    real(dp), intent(in) :: eigVecsReal(nOrb, nEig)
+    real(dp), intent(in) :: coords(3, nAtom, nCell)
+    integer, intent(in) :: species(nAtom)
+    integer, intent(in) :: iStos(nSpecies + 1)
+
+    ! STO data
+    integer, intent(in) :: sto_angMoms(nStos)
+    integer, intent(in) :: sto_nPows(nStos)
+    integer, intent(in)  :: sto_nAlphas(nStos)
+    real(dp), intent(in) :: sto_cutoffs(nStos)
+    real(dp), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
+    real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
+
+    !> Contains the real grid on exit
+    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
+
+    
+
+    !! Thread private variables
+    integer ::  ind, iSpecies
+    real(dp) :: sto_tmp_pows(16), xyz(3), diff(3)
+    real(dp) :: r, val, radialVal, sto_tmp_rexp
+
+    !! Loop Variables
+    integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iL, iCell, ii, jj
+    
     !$omp target teams distribute parallel do collapse(3) &
-    !$omp&    map(to: nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
-    !$omp&                  nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
-    !$omp&                  sto_nPows, sto_nAlphas, sto_coeffs, sto_alphas, &
-    !$omp&                  tReal, tAddDensities, eigVecsReal, eigVecsCmpl, phases, kIndexes) &
-    !$omp&    map(from: valueReal, valueCmpl) &
-    !$omp&    private(i1, i2, i3, curCoords, xyz, frac, diff, &
-    !$omp&            iCell, iAtom, iOrb, iM, ind, iSpecies, iL, &
-    !$omp&            xx, radialVal, val, iEig, ii, jj, sto_tmp_pows, sto_tmp_rexp) &
-    !$omp&    default(none) &
-    !$omp&    shared(nPoints, gridVecs, origin, tPeriodic, recVecs2p, latVecs, &
-    !$omp&           nCell, nAtom, species, coords, cutoffs, angMoms, iStos, &
-    !$omp&           sto_nPows, sto_nAlphas, sto_coeffs, sto_alphas, &
-    !$omp&           tReal, tAddDensities, eigVecsReal, eigVecsCmpl, phases, kIndexes, &
-    !$omp&           valueReal, valueCmpl)
-    ! Loop over all grid points
-    lpI3: do i3 = 1, nPoints(3)
-      lpI2: do i2 = 1, nPoints(2)
-        lpI1: do i1 = 1, nPoints(1)
-          curCoords(:, 3) = real(i3 - 1, dp) * gridVecs(:, 3)
-          curCoords(:, 2) = real(i2 - 1, dp) * gridVecs(:, 2)
-          curCoords(:, 1) = real(i1 - 1, dp) * gridVecs(:, 1)
-          xyz(:) = sum(curCoords, dim=2) + origin
-          ! TODO: Matmul not working on gpu
-          !if (tPeriodic) then
-          !  frac(:) = matmul(xyz, recVecs2p)
-          !  xyz(:) = matmul(latVecs, frac - real(floor(frac), dp))
-          !end if
-          ! Get contribution from every atom in every cell for current point
-          lpCell: do iCell = 1, nCell
-            ind = 0
-            lpAtom: do iAtom = 1, nAtom
-              iSpecies = species(iAtom)
-              diff(:) = xyz - coords(:, iAtom, iCell)
-              xx = norm2(diff)
-              lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
-                iL = angMoms(iOrb)
-                ! Calculate wave function only if atom is inside the cutoff
-                if (xx > cutoffs(iOrb)) then
-                  ! Skip this orbital
-                  ind = ind + 2*iL + 1
-                  cycle lpOrb
-                end if
+    !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, ii, jj, &
+    !$omp&              xyz, diff, r, val, radialVal, sto_tmp_pows, sto_tmp_rexp, &
+    !$omp&              ind, iSpecies) &
+    !$omp&    shared(gridVecs, origin, species, nPointsX, nPointsY, nPointsZ, &
+    !$omp&              sto_angMoms, sto_nPows, sto_cutoffs, sto_nAlphas) &
+    !$omp&    map(to: gridVecs, origin, nCell, nAtom, species, coords, iStos, &
+    !$omp&            sto_angMoms, sto_cutoffs, sto_nPows, sto_nAlphas, &
+    !$omp&            sto_coeffs, sto_alphas, maxNAlphas, eigVecsReal, nEig, &
+    !$omp&            nPointsZ, nPointsY, nPointsX) &
+    !$omp&    map(tofrom: valueReal)
+    lpI3: do i3 = 1, nPointsZ
+      lpI2: do i2 = 1, nPointsY
+        lpI1: do i1 = 1, nPointsX
+            valueReal(i1, i2, i3, :) = 0.0_dp
+            xyz(:) = origin(:) + real(i1 - 1, dp) * gridVecs(:, 1) &                                                               
+                             & + real(i2 - 1, dp) * gridVecs(:, 2) &
+                             & + real(i3 - 1, dp) * gridVecs(:, 3)
 
-                ! Calculate contribution
-                !call getVerboseRadial(iL, &
-                !                    & sto_nPows(iOrb), &
-                !                    & sto_nAlphas(iOrb), &
-                !                    & sto_coeffs(1:sto_nPows(iOrb), 1:sto_nAlphas(iOrb), iOrb), &
-                !                    & sto_alphas(1:sto_nAlphas(iOrb), iOrb), &
-                !                    & xx, &
-                !                    & radialVal)
-                !---- Inlined Radial Calculation from slater.f90 ----!
+            ! Get contribution from every atom in every cell for current point
+            lpCell: do iCell = 1, nCell
+              ind = 0
+              lpAtom: do iAtom = 1, nAtom
+                iSpecies = species(iAtom)
+                diff(:) = xyz - coords(:, iAtom, iCell)
+                r = norm2(diff)
 
 
-                ! Avoid 0.0**0 as it may lead to arithmetic exception
-                if (iL == 0 .and. xx < epsilon(1.0_dp)) then
-                   sto_tmp_rexp = 1.0_dp
-                else
-                  sto_tmp_rexp = xx**iL
-                end if
+                lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
+                  iL = sto_angMoms(iOrb)
+                  ! Calculate wave function only if atom is inside the cutoff
+                  if (r > sto_cutoffs(iOrb)) then
+                    ! Skip this orbital
+                    ind = ind + 2*iL + 1
+                    cycle lpOrb
+                  end if
 
-                ! Compute radial powers
-                do ii = 1, sto_nPows(iOrb)
-                  sto_tmp_pows(ii) = sto_tmp_rexp
-                  sto_tmp_rexp = sto_tmp_rexp * xx
-                end do
+                  !---- Inlined radial calculation ---!
+                  ! Avoid 0.0**0 as it may lead to arithmetic exception
+                  if (iL == 0 .and. r < epsilon(1.0_dp)) then
+                     sto_tmp_rexp = 1.0_dp
+                  else
+                    sto_tmp_rexp = r**iL
+                  end if
 
-                radialVal = 0.0_dp
-                do ii = 1, sto_nAlphas(iOrb)
-                  sto_tmp_rexp = 0.0_dp
-                  do jj = 1, sto_nPows(iOrb)
-                    sto_tmp_rexp = sto_tmp_rexp + sto_coeffs(jj, ii, iOrb) * sto_tmp_pows(jj)
+                  ! Compute radial powers
+                  do ii = 1, sto_nPows(iOrb)
+                    sto_tmp_pows(ii) = sto_tmp_rexp
+                    sto_tmp_rexp = sto_tmp_rexp * r
                   end do
-                  radialVal = radialVal + sto_tmp_rexp * exp(sto_alphas(ii, iOrb) * xx)
-                end do
-                !---- End inlined radial calculation ---!
 
+                  radialVal = 0.0_dp
+                  do ii = 1, sto_nAlphas(iOrb)
+                    sto_tmp_rexp = 0.0_dp
+                    do jj = 1, sto_nPows(iOrb)
+                      sto_tmp_rexp = sto_tmp_rexp + sto_coeffs(jj, ii, iOrb) * sto_tmp_pows(jj)
+                    end do
+                    radialVal = radialVal + sto_tmp_rexp *  exp(sto_alphas(ii, iOrb) * r) 
+                  end do
+                  !---- End inlined radial calculation ---!
 
+                  lpM : do iM = -iL, iL
+                    ind = ind + 1
+                    val =  radialVal * realTessY(iL, iM, diff, r)
 
-                do iM = -iL, iL
-                  ind = ind + 1
-                  val = radialVal * realTessY(iL, iM, diff, xx)
-
-                  ! Store Value
-                  if (tReal) then
-                    if (tAddDensities) then
-                      val = val * val
-                    end if
-                    do iEig = 1, nPoints(4)
+                    do iEig = 1, nEig
                       valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
                     end do
-                  else ! Complex
-                    do iEig = 1, nPoints(4)
-                      valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + val &
-                        & * phases(iCell, kIndexes(iEig)) * eigVecsCmpl(ind, iEig)
-                    end do
-                  end if
-                end do
-              end do lpOrb
-            end do lpAtom
-          end do lpCell
+                    
+                  end do lpM
+                end do lpOrb
+              end do lpAtom
+            end do lpCell
         end do lpI1
       end do lpI2
     end do lpI3
     !$omp end target teams distribute parallel do
+    end subroutine evaluateOMP
 
-  end subroutine evaluateParallel
 end module waveplot_molorb_parallel
