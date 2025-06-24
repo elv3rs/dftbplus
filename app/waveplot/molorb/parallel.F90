@@ -99,7 +99,7 @@ contains
 
     !! SOA for stos contents
     integer, allocatable :: angMoms(:)
-    real(dp), allocatable :: cutoffs(:)
+    real(dp), allocatable :: cutoffsSq(:)
 
     integer, allocatable :: sto_nPows(:)
     integer, allocatable :: sto_nAlphas(:)
@@ -111,12 +111,12 @@ contains
     allocate(angMoms(size(stos)), source=0)
     allocate(sto_nPows(size(stos)), source=0)
     allocate(sto_nAlphas(size(stos)), source=0)
-    allocate(cutoffs(size(stos)), source=0.0_dp)
+    allocate(cutoffsSq(size(stos)), source=0.0_dp)
 
 
     do iOrb = 1, size(stos)
       angMoms(iOrb) = stos(iOrb)%angMom
-      cutoffs(iOrb) = stos(iOrb)%cutoff
+      cutoffsSq(iOrb) = stos(iOrb)%cutoff ** 2
       sto_nPows(iOrb) = stos(iOrb)%nPow
       sto_nAlphas(iOrb) = stos(iOrb)%nAlpha
     end do
@@ -154,17 +154,14 @@ contains
 
 
       
-    print *, "nAtom:", nAtom, "nSpecies:", size(iStos)-1, "nOrb:", nOrb, "nStos:", size(stos)
-    print *, "species(:)    = ", species(:nAtom)
-    print *, "iStos(:)      = ", iStos(:)
-    print *, "sto_angMoms(:) = ", angMoms(:)
+
     
     call evaluateCuda(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
         & nEig=nPoints(4), nOrb=nOrb, nStos=size(stos), maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
         & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), origin=origin, gridVecs=gridVecs, eigVecsReal=eigVecsReal, &
         & coords=coords, species=species, iStos=iStos, &
         & sto_angMoms=angMoms, sto_nPows=sto_nPows, sto_nAlphas=sto_nAlphas, &
-        & sto_cutoffs=cutoffs, sto_coeffs=sto_coeffs, sto_alphas=sto_alphas, &
+        & sto_cutoffsSq=cutoffsSq, sto_coeffs=sto_coeffs, sto_alphas=sto_alphas, &
         & valueReal=valueReal)
 
   end subroutine evaluateParallel
@@ -173,7 +170,7 @@ contains
 
   subroutine evaluateCuda(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
       & origin, gridVecs, eigVecsReal, coords, species, iStos, &
-      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, &
+      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
       & valueReal)
     ! This subroutine is now a wrapper that calls a C++/CUDA implementation.
     use, intrinsic :: iso_c_binding, only : c_int, c_double
@@ -189,7 +186,7 @@ contains
     integer, intent(in) :: sto_angMoms(nStos)
     integer, intent(in) :: sto_nPows(nStos)
     integer, intent(in)  :: sto_nAlphas(nStos)
-    real(dp), intent(in) :: sto_cutoffs(nStos)
+    real(dp), intent(in) :: sto_cutoffsSq(nStos)
     real(dp), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
     real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
     real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
@@ -198,7 +195,7 @@ contains
     interface
        subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
             & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
-            & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, valueReal) &
+            & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, valueReal) &
             & bind(C, name='evaluate_on_device_c')
          import :: c_int, c_double
          integer(c_int), intent(in) :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
@@ -207,7 +204,7 @@ contains
          real(c_double), intent(in) :: coords(3, nAtom, nCell)
          integer(c_int), intent(in) :: species(nAtom), iStos(nSpecies + 1)
          integer(c_int), intent(in) :: sto_angMoms(nStos), sto_nPows(nStos), sto_nAlphas(nStos)
-         real(c_double), intent(in) :: sto_cutoffs(nStos)
+         real(c_double), intent(in) :: sto_cutoffsSq(nStos)
          real(c_double), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
          real(c_double), intent(in) :: sto_alphas(maxNAlphas, nStos)
          real(c_double), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
@@ -217,7 +214,7 @@ contains
     ! Call the external CUDA routine
     call evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
         & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
-        & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, valueReal)
+        & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, valueReal)
 
   end subroutine evaluateCuda
 
@@ -225,7 +222,7 @@ contains
 
   subroutine evaluateOMP(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell,&
       & nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
-      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffs, sto_coeffs, sto_alphas, &
+      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
       & valueReal)
 
     integer, intent(in) :: nPointsX ! number of grid points in x direction
@@ -251,7 +248,7 @@ contains
     integer, intent(in) :: sto_angMoms(nStos)
     integer, intent(in) :: sto_nPows(nStos)
     integer, intent(in)  :: sto_nAlphas(nStos)
-    real(dp), intent(in) :: sto_cutoffs(nStos)
+    real(dp), intent(in) :: sto_cutoffsSq(nStos)
     real(dp), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
     real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
 
@@ -263,7 +260,7 @@ contains
     !! Thread private variables
     integer ::  ind, iSpecies
     real(dp) :: sto_tmp_pows(16), xyz(3), diff(3)
-    real(dp) :: r, val, radialVal, sto_tmp_rexp
+    real(dp) :: rSq, r, val, radialVal, sto_tmp_rexp
 
     !! Loop Variables
     integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iL, iCell, ii, jj
@@ -271,11 +268,11 @@ contains
     !$omp target teams distribute parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, ii, jj, &
     !$omp&              xyz, diff, r, val, radialVal, sto_tmp_pows, sto_tmp_rexp, &
-    !$omp&              ind, iSpecies) &
+    !$omp&              ind, iSpecies, rSq) &
     !$omp&    shared(gridVecs, origin, species, nPointsX, nPointsY, nPointsZ, &
-    !$omp&              sto_angMoms, sto_nPows, sto_cutoffs, sto_nAlphas) &
+    !$omp&              sto_angMoms, sto_nPows, sto_cutoffsSq, sto_nAlphas) &
     !$omp&    map(to: gridVecs, origin, nCell, nAtom, species, coords, iStos, &
-    !$omp&            sto_angMoms, sto_cutoffs, sto_nPows, sto_nAlphas, &
+    !$omp&            sto_angMoms, sto_cutoffsSq, sto_nPows, sto_nAlphas, &
     !$omp&            sto_coeffs, sto_alphas, maxNAlphas, eigVecsReal, nEig, &
     !$omp&            nPointsZ, nPointsY, nPointsX) &
     !$omp&    map(tofrom: valueReal)
@@ -293,17 +290,18 @@ contains
               lpAtom: do iAtom = 1, nAtom
                 iSpecies = species(iAtom)
                 diff(:) = xyz - coords(:, iAtom, iCell)
-                r = norm2(diff)
+                rSq = dot_product(diff, diff)
 
 
                 lpOrb: do iOrb = iStos(iSpecies), iStos(iSpecies + 1) - 1
                   iL = sto_angMoms(iOrb)
                   ! Calculate wave function only if atom is inside the cutoff
-                  if (r > sto_cutoffs(iOrb)) then
+                  if (rSq > sto_cutoffsSq(iOrb)) then
                     ! Skip this orbital
                     ind = ind + 2*iL + 1
                     cycle lpOrb
                   end if
+                  r = sqrt(rSq)
 
                   !---- Inlined radial calculation ---!
                   ! Avoid 0.0**0 as it may lead to arithmetic exception

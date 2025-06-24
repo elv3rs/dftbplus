@@ -1,7 +1,8 @@
 #ifndef KERNEL_CUH_
 #define KERNEL_CUH_
 
-// Use extern "C" to make this function callable from Fortran
+// Use extern "C" to make this function callable from Fortran.
+// This interface remains unchanged from the original.
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,7 +14,7 @@ void evaluate_on_device_c(
     const double* origin, const double* gridVecs, const double* eigVecsReal,
     const double* coords, const int* species, const int* iStos,
     const int* sto_angMoms, const int* sto_nPows, const int* sto_nAlphas,
-    const double* sto_cutoffs, const double* sto_coeffs, const double* sto_alphas,
+    const double* sto_cutoffsSq, const double* sto_coeffs, const double* sto_alphas,
     double* valueReal_out);
 
 #ifdef __cplusplus
