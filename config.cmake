@@ -7,6 +7,8 @@
 # automatically default to RelWithDebInfo if used in a single configuration build. Uncomment or
 # override it only if you want a non-default single configuration build.
 
+option(WITH_CUDA "Whether CUDA support should be enabled" FALSE)
+
 option(WITH_OMP "Whether OpenMP thread parallisation should be enabled" TRUE)
 
 option(WITH_MPI "Whether DFTB+ should support MPI-parallelism" FALSE)
