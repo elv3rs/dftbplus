@@ -9,8 +9,14 @@ dftbp_load_build_settings()
 
 set(DFTBPLUS_VERSION "24.1")
 
-project(dftbplus VERSION ${DFTBPLUS_VERSION} LANGUAGES Fortran C CXX CUDA)
-set(CMAKE_CUDA_ARCHITECTURES 70)
+project(dftbplus VERSION ${DFTBPLUS_VERSION} LANGUAGES Fortran C)
+
+if(WITH_CUDA)
+    enable_language(CXX)
+    enable_language(CUDA)
+    set(CMAKE_CUDA_ARCHITECTURES "70")
+endif()
+
 
 
 dftbp_setup_build_type()

@@ -5,6 +5,7 @@
 !  See the LICENSE file for terms of usage and distribution.                                       !
 !--------------------------------------------------------------------------------------------------! 
 
+#:include 'common.fypp'
 
 module waveplot_molorb_parallel
   use dftbp_common_accuracy, only : dp
@@ -156,7 +157,10 @@ contains
       
 
     
-    call evaluateCuda(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
+    #: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
+    print *, "Running molorb using ${VARIANT}$ kernel."
+
+    call evaluate${VARIANT}$(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
         & nEig=nPoints(4), nOrb=nOrb, nStos=size(stos), maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
         & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), origin=origin, gridVecs=gridVecs, eigVecsReal=eigVecsReal, &
         & coords=coords, species=species, iStos=iStos, &
@@ -168,6 +172,7 @@ contains
 
 
 
+#:if WITH_CUDA
   subroutine evaluateCuda(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
       & origin, gridVecs, eigVecsReal, coords, species, iStos, &
       & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
@@ -217,6 +222,7 @@ contains
         & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, valueReal)
 
   end subroutine evaluateCuda
+#:endif
 
 
 

@@ -9,11 +9,11 @@ set(sources_main_fpp
     waveplot.F90
 )
 add_subdirectory(molorb)
-
-# MODIFICATION: Add the CUDA source file
-set(sources_lib_cuda
-  molorb/kernel.cu
-)
+if(WITH_CUDA)
+    set(sources_lib_cuda
+    molorb/kernel.cu
+    )
+endif()
 
 set(fypp_flags ${FYPP_BUILD_FLAGS})
 list(APPEND fypp_flags -I${projectdir}/src/dftbp/include)
@@ -21,7 +21,6 @@ list(APPEND fypp_flags -I${projectdir}/src/dftbp/include)
 dftbp_preprocess("${FYPP}" "${fypp_flags}" "F90" "f90" "${sources_lib_fpp}" sources_lib_f90_preproc)
 dftbp_preprocess("${FYPP}" "${fypp_flags}" "F90" "f90" "${sources_main_fpp}" sources_main_f90_preproc)
 
-# MODIFICATION: Add the CUDA source to the library
 add_library(waveplot_lib STATIC
   ${sources_lib_f90_preproc}
   ${sources_lib_cuda}
