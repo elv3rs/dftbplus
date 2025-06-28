@@ -18,7 +18,6 @@ module waveplot_molorb
   use dftbp_type_typegeometry, only : TGeometry
   use waveplot_slater, only : TSlaterOrbital, realTessY
   use dftbp_math_lapackroutines, only: gesv
-  use waveplot_molorb_cached, only: evaluateCached
   use waveplot_molorb_pointwise, only: evaluatePointwise
   use waveplot_molorb_parallel, only: evaluateParallel
 
@@ -248,13 +247,7 @@ contains
 
     call system_clock(count_rate=clockRate, count=startTime)
 
-    if (subdivisionFactor > 0) then
-      print *, "Using real evaluateCached"
-      call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-          & this%coords, this%species, this%iStos, this%stos,&
-          & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-          & this%cellVec, tAddDensities, subdivisionFactor, valueOnGrid, valueCmpl)
-    else if (subdivisionFactor == -1) then
+    if (subdivisionFactor == -1) then
       print *, "Using real parallel"
       call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
           & this%coords, this%species, this%iStos, this%stos,&
@@ -318,19 +311,11 @@ contains
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
   
-    if (subdivisionFactor > 0) then
-      print *, "Using cmplx evaluateCached"
-      call evaluateCached(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-          & this%coords, this%species, this%iStos, this%stos,&
-          & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-          & this%cellVec, tAddDensities, subdivisionFactor, valueReal, valueOnGrid)
-    else
       print *, "Using cmplx evaluatePointwise"
       call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
           & this%coords, this%species, this%iStos, this%stos,&
           & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
           & this%cellVec, tAddDensities, valueReal, valueOnGrid)
-    end if
 
 
   end subroutine TMolecularOrbital_getValue_cmpl
