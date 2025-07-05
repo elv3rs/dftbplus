@@ -318,14 +318,14 @@ contains
     !! Thread private variables
     integer ::  ind, iSpecies
     real(dp) :: sto_tmp_pows(16), xyz(3), diff(3)
-    real(dp) :: rSq, val, radialVal, sto_tmp_rexp, frac(3)
+    real(dp) :: rSq, r, val, radialVal, sto_tmp_rexp, frac(3)
 
     !! Loop Variables
     integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iL, iCell, ii, jj
     
     !$omp parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, ii, jj, &
-    !$omp&              xyz, diff, val, radialVal, sto_tmp_pows, sto_tmp_rexp, &
+    !$omp&              xyz, diff, r, val, radialVal, sto_tmp_pows, sto_tmp_rexp, &
     !$omp&              ind, iSpecies, rSq) &
     !$omp&    shared(gridVecs, origin, species, nPointsX, nPointsY, nPointsZ, &
     !$omp&              sto_angMoms, sto_nPows, sto_cutoffsSq, sto_nAlphas, &
@@ -362,17 +362,19 @@ contains
                     ind = ind + 2*iL + 1
                     cycle lpOrb
                   end if
+                  r = sqrt(rSq)
+
                 call getVerboseRadial(iL, &
                                     & sto_nPows(iOrb), &
                                     & sto_nAlphas(iOrb), &
                                     & sto_coeffs(1:sto_nPows(iOrb), 1:sto_nAlphas(iOrb), iOrb), &
                                     & sto_alphas(1:sto_nAlphas(iOrb), iOrb), &
-                                    & sqrt(rSq), &
+                                    & r, &
                                     & radialVal)
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1
-                    val = radialVal * realTessY(iL, iM, diff, r)
+                    val =  radialVal * realTessY(iL, iM, diff, r)
 
                     if (isReal) then
                       if (isDensityCalc) then
