@@ -8,7 +8,7 @@
 #:include 'common.fypp'
 
 !> Routines to calculate a Slater type orbital (STO).
-module waveplot_slater
+module libwavegrid_slater
   use dftbp_common_accuracy, only : dp
   implicit none
 
@@ -375,9 +375,4 @@ contains
   end subroutine TSlaterOrbital_getVerboseRadial
 
 
-
-
-
-
-
-end module waveplot_slater
+end module libwavegrid_slater

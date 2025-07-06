@@ -7,10 +7,10 @@
 
 #:include 'common.fypp'
 
-module waveplot_molorb_parallel
+module libwavegrid_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
-  use waveplot_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
+  use libwavegrid_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
   use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   implicit none  
@@ -399,4 +399,4 @@ contains
     !$omp end parallel do
     end subroutine evaluateOMP
 
-end module waveplot_molorb_parallel
+end module libwavegrid_molorb_parallel
