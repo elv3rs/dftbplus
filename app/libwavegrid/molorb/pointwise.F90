@@ -6,7 +6,7 @@
 !--------------------------------------------------------------------------------------------------! 
 
 
-module waveplot_molorb_pointwise
+module libwavegrid_molorb_pointwise
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConditions
@@ -14,7 +14,7 @@ module waveplot_molorb_pointwise
   use dftbp_common_status, only : TStatus
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
-  use waveplot_slater, only : TSlaterOrbital, realTessY
+  use libwavegrid_slater, only : TSlaterOrbital, realTessY
   use dftbp_math_lapackroutines, only: gesv
   implicit none  
   
@@ -223,4 +223,4 @@ contains
     end do lpI3
 
   end subroutine evaluatePointwise
-end module waveplot_molorb_pointwise
+end module libwavegrid_molorb_pointwise

@@ -2,6 +2,7 @@ add_subdirectory(dftb+)
 if(NOT BUILD_EXPORTED_TARGETS_ONLY)
   add_subdirectory(misc)
   add_subdirectory(modes)
+  add_subdirectory(libwavegrid)
   add_subdirectory(waveplot)
 
   if(WITH_TRANSPORT)
