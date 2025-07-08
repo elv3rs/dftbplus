@@ -240,7 +240,7 @@ contains
             & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, valueReal) &
             & bind(C, name='evaluate_on_device_c')
          import :: c_int, c_double
-         integer(c_int), intent(in) :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
+         integer(c_int), intent(in), value :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
             & maxNAlphas, nAtom, nCell, nSpecies
          real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEig)
          real(c_double), intent(in) :: coords(3, nAtom, nCell)

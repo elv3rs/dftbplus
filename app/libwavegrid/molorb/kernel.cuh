@@ -8,9 +8,9 @@ extern "C" {
 #endif
 
 void evaluate_on_device_c(
-    const int* nPointsX, const int* nPointsY, const int* nPointsZ, const int* nEig,
-    const int* nOrb, const int* nStos, const int* maxNPows, const int* maxNAlphas,
-    const int* nAtom, const int* nCell, const int* nSpecies,
+    const int nPointsX, const int nPointsY, const int nPointsZ, const int nEig,
+    const int nOrb, const int nStos, const int maxNPows, const int maxNAlphas,
+    const int nAtom, const int nCell, const int nSpecies,
     const double* origin, const double* gridVecs, const double* eigVecsReal,
     const double* coords, const int* species, const int* iStos,
     const int* sto_angMoms, const int* sto_nPows, const int* sto_nAlphas,
