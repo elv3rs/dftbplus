@@ -15,10 +15,18 @@
     } \
 } while (0)
 
+
+// Helper macros for column-major (Fortran-style) indexing.
+#define IDX2F(i, j, lda) ((j) * (size_t)(lda) + (i))
+#define IDX3F(i, j, k, lda, ldb) (((k) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
+#define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
+
+
+
 // =========================================================================
 //  CUDA Device Functions
 // =========================================================================
-__device__ double realTessY_device_opt(int ll, int mm, const double* diff, double inv_r, double inv_r2) {
+__device__ __forceinline__ double realTessY_device_opt(int ll, int mm, const double* diff, double inv_r, double inv_r2) {
     const double x = diff[0];
     const double y = diff[1];
     const double z = diff[2];
@@ -73,15 +81,33 @@ __device__ double realTessY_device_opt(int ll, int mm, const double* diff, doubl
     return 0.0;
 }
 
+__device__ __forceinline__ double getRadialValue(
+    double r, int iL, int nPows, int nAlphas,
+    const double* coeffs, const double* alphas)
+{
+    constexpr int STO_TMP_POWS_SIZE = 16;
+    double sto_tmp_pows[STO_TMP_POWS_SIZE];
+    double sto_tmp_rexp = (iL == 0 && r < 1.0e-12) ? 1.0 : pow(r, iL);
+    for (int ii = 0; ii < nPows; ++ii) {
+        sto_tmp_pows[ii] = sto_tmp_rexp;
+        sto_tmp_rexp *= r;
+    }
+    double radialVal = 0.0;
+    for (int ii = 0; ii < nAlphas; ++ii) {
+        double term = 0.0;
+        for (int jj = 0; jj < nPows; ++jj) {
+            term += coeffs[IDX3F(jj, ii, iL, nPows, nAlphas)] * sto_tmp_pows[jj];
+        }
+        radialVal += term * exp(alphas[IDX2F(ii, iL, nAlphas)] * r);
+    }
+    return radialVal;
+}
+
+
 
 // =========================================================================
 //  CUDA Kernel
 // =========================================================================
-
-// Helper macros for column-major (Fortran-style) indexing.
-#define IDX2F(i, j, lda) ((j) * (size_t)(lda) + (i))
-#define IDX3F(i, j, k, lda, ldb) (((k) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
-#define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
 
 __global__ void evaluateKernel(
     int nPointsX, int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
@@ -140,26 +166,14 @@ __global__ void evaluateKernel(
                         continue;
                     }
                     double r = sqrt(r_sq);
-                    double sto_tmp_rexp = (iL == 0 && r < 1.0e-12) ? 1.0 : pow(r, iL);
                     
-                    constexpr int STO_TMP_POWS_SIZE = 16;
-                    double sto_tmp_pows[STO_TMP_POWS_SIZE];
-                    int current_sto_nPows = sto_nPows[iOrb];
-                    for (int ii = 0; ii < current_sto_nPows; ++ii) {
-                        sto_tmp_pows[ii] = sto_tmp_rexp;
-                        sto_tmp_rexp *= r;
-                    }
+                    double radialVal = getRadialValue(
+                        r, iL, sto_nPows[iOrb], sto_nAlphas[iOrb],
+                        &sto_coeffs[IDX2F(iOrb * maxNPows, 0, maxNPows)],
+                        &sto_alphas[IDX2F(0, iOrb, maxNAlphas)]
+                    );
 
-                    double radialVal = 0.0;
-                    int current_sto_nAlphas = sto_nAlphas[iOrb];
-                    for (int ii = 0; ii < current_sto_nAlphas; ++ii) {
-                        double term = 0.0;
-                        for (int jj = 0; jj < current_sto_nPows; ++jj) {
-                            term += sto_coeffs[IDX3F(jj, ii, iOrb, maxNPows, maxNAlphas)] * sto_tmp_pows[jj];
-                        }
-                        radialVal += term * exp(sto_alphas[IDX2F(ii, iOrb, maxNAlphas)] * r);
-                    }
-
+                    // Only calculate inverse once 
                     double inv_r = (r < 1.e-12) ? 0.0 : 1.0 / r;
                     double inv_r2 = inv_r * inv_r;
 
