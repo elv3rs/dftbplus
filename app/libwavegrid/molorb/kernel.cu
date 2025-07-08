@@ -194,39 +194,35 @@ __global__ void evaluateKernel(
 //  C++ Host Interface (callable from C/Fortran)
 // =========================================================================
 extern "C" void evaluate_on_device_c(
-    const int* nPointsX, const int* nPointsY, const int* nPointsZ, const int* nEig,
-    const int* nOrb, const int* nStos, const int* maxNPows, const int* maxNAlphas,
-    const int* nAtom, const int* nCell, const int* nSpecies,
+    const int nPointsX, const int nPointsY, const int nPointsZ, const int nEig,
+    const int nOrb, const int nStos, const int maxNPows, const int maxNAlphas,
+    const int nAtom, const int nCell, const int nSpecies,
     const double* h_origin, const double* h_gridVecs, const double* h_eigVecsReal,
     const double* h_coords, const int* h_species, const int* h_iStos,
     const int* h_sto_angMoms, const int* h_sto_nPows, const int* h_sto_nAlphas,
     const double* h_sto_cutoffsSq, const double* h_sto_coeffs, const double* h_sto_alphas,
     double* h_valueReal_out)
 {
-    // ... [Dereferencing and constant data setup] ...
-    int _nPointsX = *nPointsX, _nPointsY = *nPointsY, _nPointsZ = *nPointsZ, _nEig = *nEig;
-    int _nOrb = *nOrb, _nSpecies = *nSpecies, _nStos = *nStos, _maxNPows = *maxNPows, _maxNAlphas = *maxNAlphas;
-    int _nAtom = *nAtom, _nCell = *nCell;
 
-    if (_nEig == 0) return; // Nothing to do
+    if (nEig == 0) return; // Nothing to do
 
-    // ... [Allocation of constant data on device] ...
+    // Allocation of constant data on device
     double *d_origin, *d_gridVecs, *d_eigVecsReal, *d_coords, *d_sto_cutoffsSq, *d_sto_coeffs, *d_sto_alphas;
     int *d_species, *d_iStos, *d_sto_angMoms, *d_sto_nPows, *d_sto_nAlphas;
 
     size_t size_origin = 3 * sizeof(double);
     size_t size_gridVecs = 9 * sizeof(double);
-    size_t size_eigVecsReal = (size_t)_nOrb * _nEig * sizeof(double);
-    size_t size_coords = 3 * (size_t)_nAtom * _nCell * sizeof(double);
-    size_t size_species = _nAtom * sizeof(int);
-    size_t size_iStos = (_nSpecies + 1) * sizeof(int);
-    size_t size_sto_angMoms = _nStos * sizeof(int);
-    size_t size_sto_nPows = _nStos * sizeof(int);
-    size_t size_sto_nAlphas = _nStos * sizeof(int);
-    size_t size_sto_cutoffsSq = _nStos * sizeof(double);
-    size_t size_sto_coeffs = (size_t)_maxNPows * _maxNAlphas * _nStos * sizeof(double);
-    size_t size_sto_alphas = (size_t)_maxNAlphas * _nStos * sizeof(double);
-    size_t total_size_valueReal = (size_t)_nPointsX * _nPointsY * _nPointsZ * _nEig * sizeof(double);
+    size_t size_eigVecsReal = (size_t)nOrb * nEig * sizeof(double);
+    size_t size_coords = 3 * (size_t)nAtom * nCell * sizeof(double);
+    size_t size_species = nAtom * sizeof(int);
+    size_t size_iStos = (nSpecies + 1) * sizeof(int);
+    size_t size_sto_angMoms = nStos * sizeof(int);
+    size_t size_sto_nPows = nStos * sizeof(int);
+    size_t size_sto_nAlphas = nStos * sizeof(int);
+    size_t size_sto_cutoffsSq = nStos * sizeof(double);
+    size_t size_sto_coeffs = (size_t)maxNPows * maxNAlphas * nStos * sizeof(double);
+    size_t size_sto_alphas = (size_t)maxNAlphas * nStos * sizeof(double);
+    size_t total_size_valueReal = (size_t)nPointsX * nPointsY * nPointsZ * nEig * sizeof(double);
 
     cudaEvent_t startInit, endInit, startKernel, endKernel, startFinalise, endFinalise;
     CHECK_CUDA(cudaEventCreate(&startInit));
@@ -281,13 +277,13 @@ extern "C" void evaluate_on_device_c(
     size_t available_shared = prop.sharedMemPerBlock * 0.95;
     nEig_per_pass = available_shared / (block_size * sizeof(double));
     if (nEig_per_pass == 0) nEig_per_pass = 1; // Must process at least one at a time
-    if (nEig_per_pass > _nEig) nEig_per_pass = _nEig;
+    if (nEig_per_pass > nEig) nEig_per_pass = nEig;
 
     shared_mem_for_pass = (size_t)nEig_per_pass * block_size * sizeof(double);
 
     printf("Kernel Configuration:\n");
     printf("  Block size: %d threads\n", block_size);
-    printf("  Eigenstates per pass: %d (out of %d total)\n", nEig_per_pass, _nEig);
+    printf("  Eigenstates per pass: %d (out of %d total)\n", nEig_per_pass, nEig);
     printf("  Shared memory per block: %zu bytes (Device max: %zu bytes)\n", shared_mem_for_pass, prop.sharedMemPerBlock);
 
 
@@ -295,9 +291,9 @@ extern "C" void evaluate_on_device_c(
     size_t free_mem, total_mem;
     CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
     size_t available_for_batch = static_cast<size_t>(free_mem * 0.8);
-    size_t z_slice_size_bytes = (size_t)_nPointsX * _nPointsY * _nEig * sizeof(double);
+    size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEig * sizeof(double);
 
-    int z_batch_size = _nPointsZ; // Default to processing all at once
+    int z_batch_size = nPointsZ; // Default to processing all at once
     if (z_slice_size_bytes > 0 && total_size_valueReal > available_for_batch) {
         z_batch_size = available_for_batch / z_slice_size_bytes;
         if (z_batch_size == 0) z_batch_size = 1; 
@@ -305,18 +301,18 @@ extern "C" void evaluate_on_device_c(
     printf("Grid processing: Z-slices will be processed in batches of %d\n", z_batch_size);
 
     double* d_valueReal_out_batch;
-    size_t batch_buffer_size_bytes = (size_t)_nPointsX * _nPointsY * std::min(_nPointsZ, z_batch_size) * _nEig * sizeof(double);
+    size_t batch_buffer_size_bytes = (size_t)nPointsX * nPointsY * std::min(nPointsZ, z_batch_size) * nEig * sizeof(double);
     CHECK_CUDA(cudaMalloc(&d_valueReal_out_batch, batch_buffer_size_bytes));
     
-    for (int z_offset = 0; z_offset < _nPointsZ; z_offset += z_batch_size) {
-        int current_nPointsZ = std::min(z_batch_size, _nPointsZ - z_offset);
-        int total_points_in_batch = _nPointsX * _nPointsY * current_nPointsZ;
+    for (int z_offset = 0; z_offset < nPointsZ; z_offset += z_batch_size) {
+        int current_nPointsZ = std::min(z_batch_size, nPointsZ - z_offset);
+        int total_points_in_batch = nPointsX * nPointsY * current_nPointsZ;
         if (total_points_in_batch == 0) continue;
         int grid_size = (total_points_in_batch + block_size - 1) / block_size;
 
         evaluateKernel<<<grid_size, block_size, shared_mem_for_pass>>>(
-            _nPointsX, _nPointsY, current_nPointsZ, z_offset, _nEig, _nOrb, _nStos,
-            _maxNPows, _maxNAlphas, _nAtom, _nCell, nEig_per_pass,
+            nPointsX, nPointsY, current_nPointsZ, z_offset, nEig, nOrb, nStos,
+            maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass,
             d_origin, d_gridVecs, d_eigVecsReal,
             d_coords, d_species, d_iStos,
             d_sto_angMoms, d_sto_nPows, d_sto_nAlphas,
@@ -324,12 +320,12 @@ extern "C" void evaluate_on_device_c(
             d_valueReal_out_batch
         );
 
-        size_t width_bytes = (size_t)_nPointsX * _nPointsY * current_nPointsZ * sizeof(double);
+        size_t width_bytes = (size_t)nPointsX * nPointsY * current_nPointsZ * sizeof(double);
         
         // We now copy one full eigenstate plane at a time due to the complex memory layouts.
-        for(int iEig=0; iEig < _nEig; ++iEig) {
-            const double* d_src_ptr_eig = d_valueReal_out_batch + iEig * current_nPointsZ * _nPointsY * _nPointsX;
-            double* h_dest_ptr_eig = h_valueReal_out + iEig * _nPointsZ * _nPointsY * _nPointsX + (size_t)z_offset * _nPointsY * _nPointsX;
+        for(int iEig=0; iEig < nEig; ++iEig) {
+            const double* d_src_ptr_eig = d_valueReal_out_batch + iEig * current_nPointsZ * nPointsY * nPointsX;
+            double* h_dest_ptr_eig = h_valueReal_out + iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset * nPointsY * nPointsX;
             CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, width_bytes, cudaMemcpyDeviceToHost));
         }
     }

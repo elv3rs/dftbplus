@@ -9,7 +9,6 @@
 module libwavegrid_molorb_pointwise
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
-  use dftbp_dftb_boundarycond, only : TBoundaryConditions
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_common_status, only : TStatus
   use dftbp_math_simplealgebra, only : invert33
