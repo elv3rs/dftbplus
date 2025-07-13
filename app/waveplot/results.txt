@@ -1,0 +1,90 @@
+W1000 Release
+ Using real parallel
+ Running molorb using CUDA kernel.
+Found 2 GPUs.
+--- GPU 0 (Lead) Configuration ---
+  Z-slice workload: 50 (from index 0 to 49)
+  Block size: 256 threads, 45056b shared mem per block, 22 eigs per pass
+ (Free device mem: 16.31 GB, Grid size: 100 x 100 x 100 (x 6000 eigs) = 48.00 GB)
+  Processing Z-slices in batches of 27
+
+--- GPU Timing Results ---
+Total Multi-GPU execution time: 9279.81 ms
+(Lead) Kernel execution: 6121.43 ms (66.0%)
+(Lead) D2H Copy:         3072.41 ms (33.1%)
+ MolorbTime:   13.833370402000000
+File 'wp-abs2.cube' written
+
+Total charge: 7971.794716
+
+39.99user 8.87system 0:39.75elapsed 122%CPU (0avgtext+0avgdata 47552364maxresident)k
+0inputs+31912outputs (0major+4912806minor)pagefaults 0swaps
+
+W125 Release
+ Using real parallel
+ Running molorb using CUDA kernel.
+Found 2 GPUs.
+--- GPU 0 (Lead) Configuration ---
+  Z-slice workload: 50 (from index 0 to 49)
+  Block size: 256 threads, 45056b shared mem per block, 22 eigs per pass
+ (Free device mem: 16.59 GB, Grid size: 100 x 100 x 100 (x 750 eigs) = 6.00 GB)
+  Processing Z-slices in batches of 50
+
+--- GPU Timing Results ---
+Total Multi-GPU execution time: 496.22 ms
+(Lead) Kernel execution: 131.15 ms (26.4%)
+(Lead) D2H Copy:         337.69 ms (68.1%)
+ MolorbTime:   2.0528538429999998
+File 'wp-abs2.cube' written
+
+Total charge:  996.995932
+
+4.01user 2.07system 0:05.67elapsed 107%CPU (0avgtext+0avgdata 6259592maxresident)k
+0inputs+31632outputs (0major+17961minor)pagefaults 0swaps
+
+
+C40 Release
+ Using real parallel
+ Running molorb using CUDA kernel.
+Found 2 GPUs.
+--- GPU 0 (Lead) Configuration ---
+  Z-slice workload: 50 (from index 0 to 49)
+  Block size: 256 threads, 45056b shared mem per block, 22 eigs per pass
+ (Free device mem: 16.60 GB, Grid size: 100 x 100 x 100 (x 80 eigs) = 0.64 GB)
+  Processing Z-slices in batches of 50
+
+--- GPU Timing Results ---
+Total Multi-GPU execution time: 134.04 ms
+(Lead) Kernel execution: 96.27 ms (71.8%)
+(Lead) D2H Copy:         36.46 ms (27.2%)
+ MolorbTime:   1.2743641980000000
+File 'wp-abs2.cube' written
+
+Total charge:  380.813489
+
+0.91user 1.72system 0:02.58elapsed 102%CPU (0avgtext+0avgdata 1021484maxresident)k
+1392inputs+31600outputs (1major+14942minor)pagefaults 0swaps
+
+
+
+H Release
+ Using real parallel
+ Running molorb using CUDA kernel.
+Found 2 GPUs.
+--- GPU 0 (Lead) Configuration ---
+  Z-slice workload: 50 (from index 0 to 49)
+  Block size: 256 threads, 2048b shared mem per block, 1 eigs per pass
+ (Free device mem: 16.60 GB, Grid size: 100 x 100 x 100 (x 1 eigs) = 0.01 GB)
+  Processing Z-slices in batches of 50
+
+--- GPU Timing Results ---
+Total Multi-GPU execution time: 62.51 ms
+(Lead) Kernel execution: 60.85 ms (97.3%)
+(Lead) D2H Copy:         0.50 ms (0.8%)
+ MolorbTime:   1.1629913999999999
+File 'wp-abs2.cube' written
+
+Total charge:    1.000056
+
+0.46user 1.70system 0:02.19elapsed 98%CPU (0avgtext+0avgdata 402940maxresident)k
+0inputs+31592outputs (0major+14771minor)pagefaults 0swaps
