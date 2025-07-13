@@ -7,6 +7,7 @@ set(sources_lib_fpp
 
 add_subdirectory(molorb)
 if(WITH_CUDA)
+    find_package(CUDAToolkit REQUIRED)
     set(sources_lib_cuda
     molorb/kernel.cu
     )
@@ -30,7 +31,11 @@ target_include_directories(libwavegrid PUBLIC
 )
 
 target_link_libraries(libwavegrid PUBLIC dftbplus)
-if(WITH_MPI)
+
+if(WITH_CUDA)
+    target_link_libraries(libwavegrid PUBLIC CUDA::cublas)
+endif()
+if(WITH_MPI) 
   target_link_libraries(libwavegrid PUBLIC MPI::MPI_Fortran)
 endif()
 
