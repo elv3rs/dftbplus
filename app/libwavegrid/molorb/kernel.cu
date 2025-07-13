@@ -11,7 +11,8 @@
 
 
 // =========================================================================
-//  CUDA Kernel
+//  CUDA Kernel.
+//  We might want to separate the arguments into structs for better maintainability.
 // =========================================================================
 __global__ void evaluateKernel(
     const int  nPointsX, const int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
@@ -25,19 +26,23 @@ __global__ void evaluateKernel(
 {
     extern __shared__ double shared_workspace[];
 
+    // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
+    // We have to chunk the eigenstates into nEig_per_pass due to size constraints.
+    double* point_results_pass = &shared_workspace[threadIdx.x * nEig_per_pass];
+
+    // --- Thread to point mapping ---
+    // Map each thread to unique 1d index
     int idx_in_batch = blockIdx.x * blockDim.x + threadIdx.x;
     int total_points_in_batch = nPointsX * nPointsY * nPointsZ_batch;
     if (idx_in_batch >= total_points_in_batch) return;
 
-    // Each thread gets its own private slice of the shared memory buffer.
-    // This buffer is small enough to fit, but only holds results for nEig_per_pass eigenstates.
-    double* point_results_pass = &shared_workspace[threadIdx.x * nEig_per_pass];
-
+    // Map 1d index to point in grid
     int i1 = idx_in_batch % nPointsX;
     int i2 = (idx_in_batch / nPointsX) % nPointsY;
     int i3_batch = idx_in_batch / (nPointsX * nPointsY);
     int i3_global = i3_batch + z_offset;
 
+    // Map point to global coordinates
     double xyz[3];
     xyz[0] = origin[0] + i1 * gridVecs[IDX2F(0, 0, 3)] + i2 * gridVecs[IDX2F(0, 1, 3)] + i3_global * gridVecs[IDX2F(0, 2, 3)];
     xyz[1] = origin[1] + i1 * gridVecs[IDX2F(1, 0, 3)] + i2 * gridVecs[IDX2F(1, 1, 3)] + i3_global * gridVecs[IDX2F(1, 2, 3)];
@@ -96,7 +101,7 @@ __global__ void evaluateKernel(
             }
         }
 
-        // After all spatial contributions are summed for this chunk, write results to global memory.
+        // Write the complete nEig_per_pass chunk to global memory.
         for (int iEig_offset = 0; iEig_offset < nEig_per_pass; ++iEig_offset) {
             int iEig = eig_base + iEig_offset;
             if (iEig >= nEig) break;
@@ -121,137 +126,196 @@ extern "C" void evaluate_on_device_c(
     const double* h_sto_cutoffsSq, const double* h_sto_coeffs, const double* h_sto_alphas,
     double* h_valueReal_out)
 {
-    if (nEig == 0) return; // Nothing to do
+    if (nEig == 0 || nPointsZ == 0) return; // Nothing to do
+    
+    // We currently assume a hardcoded maximum for the number of powers.
     if (maxNPows > STO_MAX_POWS) {
         fprintf(stderr, "Error: maxNPows (%d) exceeds STO_MAX_POWS (%d)\n", maxNPows, STO_MAX_POWS);
         exit(EXIT_FAILURE);
     }
 
-    // Timing events
-    cudaEvent_t startKernelTimer, endKernelTimer, startCopyTimer, endCopyTimer, 
-                startEverything, endEverything;
-    CHECK_CUDA(cudaEventCreate(&startEverything));
-    CHECK_CUDA(cudaEventCreate(&endEverything));
-    CHECK_CUDA(cudaEventCreate(&startKernelTimer));
-    CHECK_CUDA(cudaEventCreate(&endKernelTimer));
-    CHECK_CUDA(cudaEventCreate(&startCopyTimer));
-    CHECK_CUDA(cudaEventCreate(&endCopyTimer));
-
-    // Copy Mem to device
-    CHECK_CUDA(cudaEventRecord(startEverything));
-    DeviceBuffer<double> d_origin(h_origin, 3);
-    DeviceBuffer<double> d_gridVecs(h_gridVecs, 9);
-    DeviceBuffer<double> d_eigVecsReal(h_eigVecsReal, (size_t)nOrb * nEig);
-    DeviceBuffer<double> d_coords(h_coords, (size_t)3 * nAtom * nCell);
-    DeviceBuffer<int>    d_species(h_species, nAtom);
-    DeviceBuffer<int>    d_iStos(h_iStos, nSpecies + 1);
-    DeviceBuffer<int>    d_sto_angMoms(h_sto_angMoms, nStos);
-    DeviceBuffer<int>    d_sto_nPows(h_sto_nPows, nStos);
-    DeviceBuffer<int>    d_sto_nAlphas(h_sto_nAlphas, nStos);
-    DeviceBuffer<double> d_sto_cutoffsSq(h_sto_cutoffsSq, nStos);
-    DeviceBuffer<double> d_sto_coeffs(h_sto_coeffs, (size_t)maxNPows * maxNAlphas * nStos);
-    DeviceBuffer<double> d_sto_alphas(h_sto_alphas, (size_t)maxNAlphas * nStos);
-
-
     size_t total_size_valueReal = (size_t)nPointsX * nPointsY * nPointsZ * nEig * sizeof(double);
-
-    // BATCHING & DYNAMIC KERNEL CONFIGURATION
-    int block_size = 256;
-    int nEig_per_pass;
-    size_t shared_mem_for_pass;
-
-    int deviceId;
-    CHECK_CUDA(cudaGetDevice(&deviceId));
-    cudaDeviceProp prop;
-    CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
-
-    size_t available_shared = prop.sharedMemPerBlock * 0.95;
-    nEig_per_pass = available_shared / (block_size * sizeof(double));
-    if (nEig_per_pass == 0) nEig_per_pass = 1;
-    if (nEig_per_pass > nEig) nEig_per_pass = nEig;
-    shared_mem_for_pass = (size_t)nEig_per_pass * block_size * sizeof(double);
-
-    printf("Kernel Configuration:\n");
-    printf("  Block size: %d threads\n", block_size);
-    printf("  Eigenstates per pass: %d (out of %d total)\n", nEig_per_pass, nEig);
-    printf("  Shared memory per block: %zu bytes (Device max: %zu bytes)\n", shared_mem_for_pass, prop.sharedMemPerBlock);
-
-    size_t free_mem, total_mem;
-    CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
-    size_t available_for_batch = static_cast<size_t>(free_mem * 0.8);
-    size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEig * sizeof(double);
-
-    int z_batch_size = nPointsZ;
-    if (z_slice_size_bytes > 0 && total_size_valueReal > available_for_batch) {
-        z_batch_size = available_for_batch / z_slice_size_bytes;
-        if (z_batch_size == 0) z_batch_size = 1;
-    }
-    printf("Grid processing: Z-slices will be processed in batches of %d\n", z_batch_size);
-    printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
-           free_mem / 1e9, nPointsX, nPointsY, nPointsZ, nEig,
-           total_size_valueReal / 1e9);
-
-
-    // Batch buffer
-    size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(nPointsZ, z_batch_size) * nEig;
-    DeviceBuffer<double> d_valueReal_out_batch(batch_buffer_size_elems);
-
-    
+    // Timing events.
+    cudaEvent_t startEverything, endEverything;
+    cudaEvent_t startKernelOnly, endKernelOnly, startCopyOnly, endCopyOnly;
     float totalKernelTime_ms = 0.0f;
     float totalD2HCopyTime_ms = 0.0f;
+    CHECK_CUDA(cudaEventCreate(&startEverything));
+    CHECK_CUDA(cudaEventCreate(&endEverything));
+    CHECK_CUDA(cudaEventCreate(&startKernelOnly));
+    CHECK_CUDA(cudaEventCreate(&endKernelOnly));
+    CHECK_CUDA(cudaEventCreate(&startCopyOnly));
+    CHECK_CUDA(cudaEventCreate(&endCopyOnly));
+    CHECK_CUDA(cudaEventRecord(startEverything));
 
-    for (int z_offset = 0; z_offset < nPointsZ; z_offset += z_batch_size) {
-        int current_nPointsZ = std::min(z_batch_size, nPointsZ - z_offset);
-        int total_points_in_batch = nPointsX * nPointsY * current_nPointsZ;
-        if (total_points_in_batch == 0) continue;
-        int grid_size = (total_points_in_batch + block_size - 1) / block_size;
 
-        CHECK_CUDA(cudaEventRecord(startKernelTimer));
-
-        evaluateKernel<<<grid_size, block_size, shared_mem_for_pass>>>(
-            nPointsX, nPointsY, current_nPointsZ, z_offset, nEig, nOrb, nStos,
-            maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass,
-            d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(),
-            d_coords.get(), d_species.get(), d_iStos.get(),
-            d_sto_angMoms.get(), d_sto_nPows.get(), d_sto_nAlphas.get(),
-            d_sto_cutoffsSq.get(), d_sto_coeffs.get(), d_sto_alphas.get(),
-            d_valueReal_out_batch.get()
-        );
-
-        CHECK_CUDA(cudaEventRecord(endKernelTimer));
-        CHECK_CUDA(cudaEventRecord(startCopyTimer));
-        
-        // The D2H copy will automatically block.
-        for(int iEig=0; iEig < nEig; ++iEig) {
-            size_t plane_size_bytes = (size_t)current_nPointsZ * nPointsY * nPointsX * sizeof(double);
-            const double* d_src_ptr_eig = d_valueReal_out_batch.get() + (size_t)iEig * current_nPointsZ * nPointsY * nPointsX;
-            double* h_dest_ptr_eig = h_valueReal_out + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset * nPointsY * nPointsX;
-            CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
-        }
-
-        CHECK_CUDA(cudaEventRecord(endCopyTimer));
-        CHECK_CUDA(cudaEventSynchronize(endCopyTimer));
-        
-        float iterKernel_ms, iterCopy_ms;
-        CHECK_CUDA(cudaEventElapsedTime(&iterKernel_ms, startKernelTimer, endKernelTimer));
-        CHECK_CUDA(cudaEventElapsedTime(&iterCopy_ms, endKernelTimer, endCopyTimer)); 
-        
-        totalKernelTime_ms += iterKernel_ms;
-        totalD2HCopyTime_ms += iterCopy_ms;
+    // --- Multi-GPU Setup ---
+    int numGpus;
+    CHECK_CUDA(cudaGetDeviceCount(&numGpus));
+    if (numGpus == 0) {
+        fprintf(stderr, "Error: No CUDA-enabled GPUs found.\n");
+        exit(EXIT_FAILURE);
     }
-    
+    printf("Found %d GPUs.", numGpus);
+
+#ifndef _OPENMP
+    if (numGpus > 1) {
+    printf("\nWARNING: Code not compiled with OpenMP support (-fopenmp). Falling back to single-GPU mode.\n");
+    numGpus = 1;
+    printf("Running on GPU 0 only.\n");
+    }
+#endif
+
+    // Use OMP to split across available GPUs
+    #pragma omp parallel num_threads(numGpus) 
+    {
+        int deviceId = omp_get_thread_num();
+        CHECK_CUDA(cudaSetDevice(deviceId));
+
+        // --- Work Distribution: Divide Z-slices among GPUs ---
+        int z_slices_per_gpu = nPointsZ / numGpus;
+        int z_start_for_device = deviceId * z_slices_per_gpu;
+        int z_count_for_device = (deviceId == numGpus - 1) ? (nPointsZ - z_start_for_device) : z_slices_per_gpu;
+
+        if (z_count_for_device > 0) {
+            // --- Per-GPU Data Allocation and H2D Copy ---
+            // Each thread allocates data on its own assigned GPU.
+            DeviceBuffer<double> d_origin(h_origin, 3);
+            DeviceBuffer<double> d_gridVecs(h_gridVecs, 9);
+            DeviceBuffer<double> d_eigVecsReal(h_eigVecsReal, (size_t)nOrb * nEig);
+            DeviceBuffer<double> d_coords(h_coords, (size_t)3 * nAtom * nCell);
+            DeviceBuffer<int>    d_species(h_species, nAtom);
+            DeviceBuffer<int>    d_iStos(h_iStos, nSpecies + 1);
+            DeviceBuffer<int>    d_sto_angMoms(h_sto_angMoms, nStos);
+            DeviceBuffer<int>    d_sto_nPows(h_sto_nPows, nStos);
+            DeviceBuffer<int>    d_sto_nAlphas(h_sto_nAlphas, nStos);
+            DeviceBuffer<double> d_sto_cutoffsSq(h_sto_cutoffsSq, nStos);
+            DeviceBuffer<double> d_sto_coeffs(h_sto_coeffs, (size_t)maxNPows * maxNAlphas * nStos);
+            DeviceBuffer<double> d_sto_alphas(h_sto_alphas, (size_t)maxNAlphas * nStos);
+
+            // --- Per-GPU Kernel Configuration ---
+            int block_size = 256;
+            cudaDeviceProp prop;
+            CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
+            
+            // Determine available shared memory for nEig_per_pass
+            size_t available_shared = prop.sharedMemPerBlock * 0.95;
+            int nEig_per_pass = available_shared / (block_size * sizeof(double));
+            if (nEig_per_pass == 0) nEig_per_pass = 1;
+            if (nEig_per_pass > nEig) nEig_per_pass = nEig;
+            size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * sizeof(double);
+            
+            // Determine the number of Z-slices to process in a single batch
+            size_t free_mem, total_mem;
+            CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
+            size_t available_for_batch = static_cast<size_t>(free_mem * 0.8);
+            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEig * sizeof(double);
+            
+            // Determine max Z-slices that can fit in available (global) memory
+            int z_batch_size = z_count_for_device; 
+            if (z_slice_size_bytes > 0 && ((size_t)z_count_for_device * z_slice_size_bytes) > available_for_batch) {
+                z_batch_size = available_for_batch / z_slice_size_bytes;
+                if (z_batch_size == 0) z_batch_size = 1;
+            }
+
+            #pragma omp critical
+            if (deviceId == 0) {
+                printf("\n--- GPU %d (Lead) Configuration ---\n", deviceId);
+                printf("  Z-slice workload: %d (from index %d to %d)\n", z_count_for_device, z_start_for_device, z_start_for_device + z_count_for_device - 1);
+                printf("  Block size: %d threads, %zub shared mem per block, %d eigs per pass\n",
+                    block_size, shared_mem_for_pass, nEig_per_pass);
+                printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
+                    free_mem / 1e9, nPointsX, nPointsY, nPointsZ, nEig,
+                    total_size_valueReal / 1e9);
+                printf("  Processing Z-slices in batches of %d\n", z_batch_size);
+
+            }
+
+            // Per-GPU batch buffer for the output
+            size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * nEig;
+            DeviceBuffer<double> d_valueReal_out_batch(batch_buffer_size_elems);
+
+
+            // --- Per-GPU Kernel Execution Loop ---
+            // This loop iterates over the Z-slices assigned to *this* GPU.
+            for (int z_offset_in_device_chunk = 0; z_offset_in_device_chunk < z_count_for_device; z_offset_in_device_chunk += z_batch_size) {
+                int current_nPointsZ_batch = std::min(z_batch_size, z_count_for_device - z_offset_in_device_chunk);
+                int total_points_in_batch = nPointsX * nPointsY * current_nPointsZ_batch;
+                if (total_points_in_batch == 0) continue;
+
+                // The global z_offset is what the kernel needs to calculate correct coordinates
+                int z_offset_global = z_start_for_device + z_offset_in_device_chunk;
+                int grid_size = (total_points_in_batch + block_size - 1) / block_size;
+                if(deviceId == 0) {
+                    CHECK_CUDA(cudaEventRecord(startKernelOnly));
+                }
+
+                evaluateKernel<<<grid_size, block_size, shared_mem_for_pass>>>(
+                    nPointsX, nPointsY, current_nPointsZ_batch, z_offset_global, nEig, nOrb, nStos,
+                    maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass,
+                    d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(),
+                    d_coords.get(), d_species.get(), d_iStos.get(),
+                    d_sto_angMoms.get(), d_sto_nPows.get(), d_sto_nAlphas.get(),
+                    d_sto_cutoffsSq.get(), d_sto_coeffs.get(), d_sto_alphas.get(),
+                    d_valueReal_out_batch.get()
+                );
+
+                if(deviceId == 0) {
+                    CHECK_CUDA(cudaEventRecord(endKernelOnly));
+                    CHECK_CUDA(cudaEventRecord(startCopyOnly));
+                }
+
+                // --- Per-GPU D2H Copy ---
+                // Copy the computed batch back to the correct slice of the final host array.
+                // The D2H copy will synchronize the kernel for this batch.
+                for(int iEig = 0; iEig < nEig; ++iEig) {
+                    size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * sizeof(double);
+
+                    // Source pointer in this GPU's batch buffer
+                    const double* d_src_ptr_eig = d_valueReal_out_batch.get() + (size_t)iEig * current_nPointsZ_batch * nPointsY * nPointsX;
+                    
+                    // Destination pointer in the final large host output array.
+                    // The offset is calculated using the GLOBAL Z-offset.
+                    double* h_dest_ptr_eig = h_valueReal_out + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
+                    
+                    CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
+                }
+                if(deviceId == 0) {
+                    CHECK_CUDA(cudaEventRecord(endCopyOnly));
+                    CHECK_CUDA(cudaEventSynchronize(endCopyOnly));
+
+                    float iterKernel_ms, iterCopy_ms;
+                    CHECK_CUDA(cudaEventElapsedTime(&iterKernel_ms, startKernelOnly, endKernelOnly));
+                    CHECK_CUDA(cudaEventElapsedTime(&iterCopy_ms, endKernelOnly, endCopyOnly));
+
+                    totalKernelTime_ms += iterKernel_ms;
+                    totalD2HCopyTime_ms += iterCopy_ms;
+                }
+            }
+        }
+    } // End of omp parallel region
+
+    // Synchronize all devices
+    for(int i = 0; i < numGpus; ++i) {
+        CHECK_CUDA(cudaSetDevice(i));
+        CHECK_CUDA(cudaDeviceSynchronize());
+    }
+
+    // Switch back to lead to retrieve timing
+    CHECK_CUDA(cudaSetDevice(0));
     CHECK_CUDA(cudaGetLastError());
 
-    // Timing
+    // --- Final Timing ---
     CHECK_CUDA(cudaEventRecord(endEverything));
     CHECK_CUDA(cudaEventSynchronize(endEverything));
 
     float timeEverything;
     CHECK_CUDA(cudaEventElapsedTime(&timeEverything, startEverything, endEverything));
-    float overhead = timeEverything- totalKernelTime_ms - totalD2HCopyTime_ms;
 
-    printf("\n--- Timing Results ---\n");
-    printf("Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms, (totalKernelTime_ms / timeEverything) * 100.0);
-    printf("D2H Copy:         %.2f ms (%.1f%%)\n", totalD2HCopyTime_ms, (totalD2HCopyTime_ms / timeEverything) * 100.0);
-    printf("Other:            %.2f ms (%.1f%%)\n", overhead, (overhead / timeEverything) * 100.0);
+
+    float overhead = timeEverything - (totalKernelTime_ms + totalD2HCopyTime_ms);
+    printf("\n--- GPU Timing Results ---\n");
+    printf("Total Multi-GPU execution time: %.2f ms\n", timeEverything);
+    printf("(Lead) Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms, (totalKernelTime_ms / timeEverything) * 100.0);
+    printf("(Lead) D2H Copy:         %.2f ms (%.1f%%)\n", totalD2HCopyTime_ms, (totalD2HCopyTime_ms / timeEverything) * 100.0);
 }
