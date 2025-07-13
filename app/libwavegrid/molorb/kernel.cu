@@ -5,126 +5,16 @@
 #include <algorithm>
 
 #include "kernel.cuh"
-
-// Helper macro for robust CUDA calls
-#define CHECK_CUDA(call) do { \
-    cudaError_t err = call; \
-    if (err != cudaSuccess) { \
-        fprintf(stderr, "CUDA Error in %s at line %d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
-        exit(EXIT_FAILURE); \
-    } \
-} while (0)
-
-
-// Helper macros for column-major (Fortran-style) indexing.
-#define IDX2F(i, j, lda) ((j) * (size_t)(lda) + (i))
-#define IDX3F(i, j, k, lda, ldb) (((k) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
-#define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
-
-
-
-// =========================================================================
-//  CUDA Device Functions
-// =========================================================================
-__device__ __forceinline__ double realTessY_device_opt(int ll, int mm, const double* diff, double inv_r, double inv_r2) {
-    const double x = diff[0];
-    const double y = diff[1];
-    const double z = diff[2];
-
-    const double x_r = x * inv_r;
-    const double y_r = y * inv_r;
-    const double z_r = z * inv_r;
-
-    switch (ll) {
-        case 0: return 0.2820947917738782; // 1/sqrt(4*PI)
-        case 1:
-            switch (mm) {
-                case -1: return 0.4886025119029198 * y_r;
-                case  0: return 0.4886025119029198 * z_r;
-                case  1: return 0.4886025119029198 * x_r;
-            }
-            break;
-        case 2:
-            {
-                const double xx_r2 = x * x * inv_r2;
-                const double yy_r2 = y * y * inv_r2;
-                const double zz_r2 = z * z * inv_r2;
-                const double xy_r2 = x * y * inv_r2;
-                const double yz_r2 = y * z * inv_r2;
-                const double xz_r2 = x * z * inv_r2;
-                switch (mm) {
-                    case -2: return 1.092548430592079 * xy_r2;
-                    case -1: return 1.092548430592079 * yz_r2;
-                    case  0: return -0.3153915652525200 * (-2.0 * zz_r2 + xx_r2 + yy_r2);
-                    case  1: return 1.092548430592079 * xz_r2;
-                    case  2: return 0.5462742152960395 * (xx_r2 - yy_r2);
-                }
-            }
-            break;
-        case 3:
-            {
-                const double x_r3 = x_r * inv_r2;
-                const double y_r3 = y_r * inv_r2;
-                const double z_r3 = z_r * inv_r2;
-                switch (mm) {
-                    case -3: return 0.5900435899266435 * y_r3 * (3.0 * x * x - y * y);
-                    case -2: return 2.890611442640554  * x_r3 * y * z;
-                    case -1: return -0.4570457994644658 * y_r3 * (-4.0 * z * z + x * x + y * y);
-                    case  0: return -0.3731763325901155 * z_r3 * (-2.0 * z * z + 3.0 * x * x + 3.0 * y * y);
-                    case  1: return -0.4570457994644658 * x_r3 * (-4.0 * z * z + x * x + y * y);
-                    case  2: return 1.445305721320277  * z_r3 * (x * x - y * y);
-                    case  3: return 0.5900435899266435 * x_r3 * (x * x - 3.0 * y * y);
-                }
-            }
-            break;
-    }
-    return 0.0;
-}
-
-
-
-__device__ __forceinline__ double getRadialValue(
-    double r, int iL, int iOrb, int nPows, int nAlphas,
-    const double* coeffs, const double* alphas,
-    int maxNPows, int maxNAlphas)
-{
-    constexpr int STO_TMP_POWS_SIZE = 16;
-    double sto_tmp_pows[STO_TMP_POWS_SIZE];
-
-    double sto_tmp_rexp = 1.0;
-
-    if (iL > 0 || r > 1.0e-12) {
-        for (int p = 0; p < iL; ++p) {
-            sto_tmp_rexp *= r;
-        }
-    }
-    for (int ii = 0; ii < nPows; ++ii) {
-        sto_tmp_pows[ii] = sto_tmp_rexp;
-        sto_tmp_rexp *= r;
-    }
-
-    double radialVal = 0.0;
-    for (int ii = 0; ii < nAlphas; ++ii) {
-        double term = 0.0;
-        for (int jj = 0; jj < nPows; ++jj) {
-            term += coeffs[IDX3F(jj, ii, iOrb, maxNPows, maxNAlphas)] * sto_tmp_pows[jj];
-        }
-        radialVal += term * exp(alphas[IDX2F(ii, iOrb, maxNAlphas)] * r);
-    }
-
-    return radialVal;
-}
-
-
+#include "utils.cuh"
+#include "slater.cuh"
 
 
 
 // =========================================================================
 //  CUDA Kernel
 // =========================================================================
-
 __global__ void evaluateKernel(
-    int nPointsX, int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
+    const int  nPointsX, const int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
     int maxNPows, int maxNAlphas, int nAtom, int nCell, int nEig_per_pass,
     const double* __restrict__ origin, const double* __restrict__ gridVecs, const double* __restrict__ eigVecsReal,
     const double* __restrict__ coords, const int* __restrict__ species, const int* __restrict__ iStos,
@@ -186,12 +76,12 @@ __global__ void evaluateKernel(
                         sto_coeffs, sto_alphas, maxNPows, maxNAlphas);
 
 
-                    // Only calculate inverse once 
+                    // Timer calculate inverse once 
                     double inv_r = (r < 1.e-12) ? 0.0 : 1.0 / r;
                     double inv_r2 = inv_r * inv_r;
 
                     for (int iM = -iL; iM <= iL; ++iM) {
-                        double val = radialVal * realTessY_device_opt(iL, iM, diff, inv_r, inv_r2);
+                        double val = radialVal * realTessY(iL, iM, diff, inv_r, inv_r2);
                         
                         // Accumulate into the small shared memory buffer for the current chunk
                         for (int iEig_offset = 0; iEig_offset < nEig_per_pass; ++iEig_offset) {
@@ -232,59 +122,38 @@ extern "C" void evaluate_on_device_c(
     double* h_valueReal_out)
 {
     if (nEig == 0) return; // Nothing to do
+    if (maxNPows > STO_MAX_POWS) {
+        fprintf(stderr, "Error: maxNPows (%d) exceeds STO_MAX_POWS (%d)\n", maxNPows, STO_MAX_POWS);
+        exit(EXIT_FAILURE);
+    }
 
-    // Allocation of constant data on device
-    double *d_origin, *d_gridVecs, *d_eigVecsReal, *d_coords, *d_sto_cutoffsSq, *d_sto_coeffs, *d_sto_alphas;
-    int *d_species, *d_iStos, *d_sto_angMoms, *d_sto_nPows, *d_sto_nAlphas;
-
-    size_t size_origin = 3 * sizeof(double);
-    size_t size_gridVecs = 9 * sizeof(double);
-    size_t size_eigVecsReal = (size_t)nOrb * nEig * sizeof(double);
-    size_t size_coords = 3 * (size_t)nAtom * nCell * sizeof(double);
-    size_t size_species = nAtom * sizeof(int);
-    size_t size_iStos = (nSpecies + 1) * sizeof(int);
-    size_t size_sto_angMoms = nStos * sizeof(int);
-    size_t size_sto_nPows = nStos * sizeof(int);
-    size_t size_sto_nAlphas = nStos * sizeof(int);
-    size_t size_sto_cutoffsSq = nStos * sizeof(double);
-    size_t size_sto_coeffs = (size_t)maxNPows * maxNAlphas * nStos * sizeof(double);
-    size_t size_sto_alphas = (size_t)maxNAlphas * nStos * sizeof(double);
-    size_t total_size_valueReal = (size_t)nPointsX * nPointsY * nPointsZ * nEig * sizeof(double);
-
-    cudaEvent_t startKernelOnly, endKernelOnly, startCopyOnly, endCopyOnly, 
+    // Timing events
+    cudaEvent_t startKernelTimer, endKernelTimer, startCopyTimer, endCopyTimer, 
                 startEverything, endEverything;
     CHECK_CUDA(cudaEventCreate(&startEverything));
     CHECK_CUDA(cudaEventCreate(&endEverything));
-    CHECK_CUDA(cudaEventCreate(&startKernelOnly));
-    CHECK_CUDA(cudaEventCreate(&endKernelOnly));
-    CHECK_CUDA(cudaEventCreate(&startCopyOnly));
-    CHECK_CUDA(cudaEventCreate(&endCopyOnly));
+    CHECK_CUDA(cudaEventCreate(&startKernelTimer));
+    CHECK_CUDA(cudaEventCreate(&endKernelTimer));
+    CHECK_CUDA(cudaEventCreate(&startCopyTimer));
+    CHECK_CUDA(cudaEventCreate(&endCopyTimer));
 
+    // Copy Mem to device
     CHECK_CUDA(cudaEventRecord(startEverything));
-    CHECK_CUDA(cudaMalloc(&d_origin, size_origin));
-    CHECK_CUDA(cudaMalloc(&d_gridVecs, size_gridVecs));
-    CHECK_CUDA(cudaMalloc(&d_eigVecsReal, size_eigVecsReal));
-    CHECK_CUDA(cudaMalloc(&d_coords, size_coords));
-    CHECK_CUDA(cudaMalloc(&d_species, size_species));
-    CHECK_CUDA(cudaMalloc(&d_iStos, size_iStos));
-    CHECK_CUDA(cudaMalloc(&d_sto_angMoms, size_sto_angMoms));
-    CHECK_CUDA(cudaMalloc(&d_sto_nPows, size_sto_nPows));
-    CHECK_CUDA(cudaMalloc(&d_sto_nAlphas, size_sto_nAlphas));
-    CHECK_CUDA(cudaMalloc(&d_sto_cutoffsSq, size_sto_cutoffsSq));
-    CHECK_CUDA(cudaMalloc(&d_sto_coeffs, size_sto_coeffs));
-    CHECK_CUDA(cudaMalloc(&d_sto_alphas, size_sto_alphas));
-    CHECK_CUDA(cudaMemcpy(d_origin, h_origin, size_origin, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_gridVecs, h_gridVecs, size_gridVecs, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_eigVecsReal, h_eigVecsReal, size_eigVecsReal, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_coords, h_coords, size_coords, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_species, h_species, size_species, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_iStos, h_iStos, size_iStos, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_sto_angMoms, h_sto_angMoms, size_sto_angMoms, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_sto_nPows, h_sto_nPows, size_sto_nPows, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_sto_nAlphas, h_sto_nAlphas, size_sto_nAlphas, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_sto_cutoffsSq, h_sto_cutoffsSq, size_sto_cutoffsSq, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_sto_coeffs, h_sto_coeffs, size_sto_coeffs, cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_sto_alphas, h_sto_alphas, size_sto_alphas, cudaMemcpyHostToDevice));
+    DeviceBuffer<double> d_origin(h_origin, 3);
+    DeviceBuffer<double> d_gridVecs(h_gridVecs, 9);
+    DeviceBuffer<double> d_eigVecsReal(h_eigVecsReal, (size_t)nOrb * nEig);
+    DeviceBuffer<double> d_coords(h_coords, (size_t)3 * nAtom * nCell);
+    DeviceBuffer<int>    d_species(h_species, nAtom);
+    DeviceBuffer<int>    d_iStos(h_iStos, nSpecies + 1);
+    DeviceBuffer<int>    d_sto_angMoms(h_sto_angMoms, nStos);
+    DeviceBuffer<int>    d_sto_nPows(h_sto_nPows, nStos);
+    DeviceBuffer<int>    d_sto_nAlphas(h_sto_nAlphas, nStos);
+    DeviceBuffer<double> d_sto_cutoffsSq(h_sto_cutoffsSq, nStos);
+    DeviceBuffer<double> d_sto_coeffs(h_sto_coeffs, (size_t)maxNPows * maxNAlphas * nStos);
+    DeviceBuffer<double> d_sto_alphas(h_sto_alphas, (size_t)maxNAlphas * nStos);
+
+
+    size_t total_size_valueReal = (size_t)nPointsX * nPointsY * nPointsZ * nEig * sizeof(double);
 
     // BATCHING & DYNAMIC KERNEL CONFIGURATION
     int block_size = 256;
@@ -322,9 +191,11 @@ extern "C" void evaluate_on_device_c(
            free_mem / 1e9, nPointsX, nPointsY, nPointsZ, nEig,
            total_size_valueReal / 1e9);
 
-    double* d_valueReal_out_batch;
-    size_t batch_buffer_size_bytes = (size_t)nPointsX * nPointsY * std::min(nPointsZ, z_batch_size) * nEig * sizeof(double);
-    CHECK_CUDA(cudaMalloc(&d_valueReal_out_batch, batch_buffer_size_bytes));
+
+    // Batch buffer
+    size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(nPointsZ, z_batch_size) * nEig;
+    DeviceBuffer<double> d_valueReal_out_batch(batch_buffer_size_elems);
+
     
     float totalKernelTime_ms = 0.0f;
     float totalD2HCopyTime_ms = 0.0f;
@@ -335,58 +206,41 @@ extern "C" void evaluate_on_device_c(
         if (total_points_in_batch == 0) continue;
         int grid_size = (total_points_in_batch + block_size - 1) / block_size;
 
-        CHECK_CUDA(cudaEventRecord(startKernelOnly));
+        CHECK_CUDA(cudaEventRecord(startKernelTimer));
 
         evaluateKernel<<<grid_size, block_size, shared_mem_for_pass>>>(
             nPointsX, nPointsY, current_nPointsZ, z_offset, nEig, nOrb, nStos,
             maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass,
-            d_origin, d_gridVecs, d_eigVecsReal,
-            d_coords, d_species, d_iStos,
-            d_sto_angMoms, d_sto_nPows, d_sto_nAlphas,
-            d_sto_cutoffsSq, d_sto_coeffs, d_sto_alphas,
-            d_valueReal_out_batch
+            d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(),
+            d_coords.get(), d_species.get(), d_iStos.get(),
+            d_sto_angMoms.get(), d_sto_nPows.get(), d_sto_nAlphas.get(),
+            d_sto_cutoffsSq.get(), d_sto_coeffs.get(), d_sto_alphas.get(),
+            d_valueReal_out_batch.get()
         );
 
-        CHECK_CUDA(cudaEventRecord(endKernelOnly));
-
-
-        CHECK_CUDA(cudaEventRecord(startCopyOnly));
+        CHECK_CUDA(cudaEventRecord(endKernelTimer));
+        CHECK_CUDA(cudaEventRecord(startCopyTimer));
         
         // The D2H copy will automatically block.
         for(int iEig=0; iEig < nEig; ++iEig) {
             size_t plane_size_bytes = (size_t)current_nPointsZ * nPointsY * nPointsX * sizeof(double);
-            const double* d_src_ptr_eig = d_valueReal_out_batch + (size_t)iEig * current_nPointsZ * nPointsY * nPointsX;
+            const double* d_src_ptr_eig = d_valueReal_out_batch.get() + (size_t)iEig * current_nPointsZ * nPointsY * nPointsX;
             double* h_dest_ptr_eig = h_valueReal_out + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset * nPointsY * nPointsX;
             CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
         }
 
-        CHECK_CUDA(cudaEventRecord(endCopyOnly));
-        CHECK_CUDA(cudaEventSynchronize(endCopyOnly));
+        CHECK_CUDA(cudaEventRecord(endCopyTimer));
+        CHECK_CUDA(cudaEventSynchronize(endCopyTimer));
         
         float iterKernel_ms, iterCopy_ms;
-        CHECK_CUDA(cudaEventElapsedTime(&iterKernel_ms, startKernelOnly, endKernelOnly));
-        CHECK_CUDA(cudaEventElapsedTime(&iterCopy_ms, endKernelOnly, endCopyOnly)); 
+        CHECK_CUDA(cudaEventElapsedTime(&iterKernel_ms, startKernelTimer, endKernelTimer));
+        CHECK_CUDA(cudaEventElapsedTime(&iterCopy_ms, endKernelTimer, endCopyTimer)); 
         
         totalKernelTime_ms += iterKernel_ms;
         totalD2HCopyTime_ms += iterCopy_ms;
     }
     
     CHECK_CUDA(cudaGetLastError());
-
-    // Free Device Memory 
-    CHECK_CUDA(cudaFree(d_valueReal_out_batch));
-    CHECK_CUDA(cudaFree(d_origin));
-    CHECK_CUDA(cudaFree(d_gridVecs));
-    CHECK_CUDA(cudaFree(d_eigVecsReal));
-    CHECK_CUDA(cudaFree(d_coords));
-    CHECK_CUDA(cudaFree(d_species));
-    CHECK_CUDA(cudaFree(d_iStos));
-    CHECK_CUDA(cudaFree(d_sto_angMoms));
-    CHECK_CUDA(cudaFree(d_sto_nPows));
-    CHECK_CUDA(cudaFree(d_sto_nAlphas));
-    CHECK_CUDA(cudaFree(d_sto_cutoffsSq));
-    CHECK_CUDA(cudaFree(d_sto_coeffs));
-    CHECK_CUDA(cudaFree(d_sto_alphas));
 
     // Timing
     CHECK_CUDA(cudaEventRecord(endEverything));
