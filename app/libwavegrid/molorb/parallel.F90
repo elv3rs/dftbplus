@@ -90,13 +90,13 @@ contains
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
     !!Complex
-    complex(dp), allocatable :: atomOrbValCmpl(:)
+    !complex(dp), allocatable :: atomOrbValCmpl(:)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
     integer :: nPoints(4)
 
 
 
-    real(dp), allocatable :: atomOrbValReal(:)
+    !real(dp), allocatable :: atomOrbValReal(:)
     integer :: i1, i2, i3
 
     !! SOA for stos contents
@@ -139,9 +139,9 @@ contains
 
 
     ! Array for the contribution of each orbital (and its periodic images)
-    allocate(atomOrbValReal(nOrb))
+    !allocate(atomOrbValReal(nOrb))
     nPoints = shape(valueReal)
-    valueReal(:,:,:,:) = 0.0_dp
+    !valueReal(:,:,:,:) = 0.0_dp
 
 
     !print *, "Devices:", omp_get_num_devices()
