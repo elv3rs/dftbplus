@@ -68,7 +68,6 @@ program waveplot
   integer :: i1, i2, i3, ioStat
   integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iOrb, mAng, ind, nBox
   logical :: tFinished, tPlotLevel, hasIoError
-  character(len=80) :: comments(2), fileName
   real(dp) :: mDist, dist
   real(dp) :: cellMiddle(3), boxMiddle(3), frac(3), cubeCorner(3), coord(3), shift(3)
   real(dp) :: invBoxVecs(3,3), recVecs2p(3,3)
@@ -89,6 +88,7 @@ program waveplot
       allocate(spinUp(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)), source=0.0_dp)
     end if
   end if
+  hasIoError = .false.
 
   ! Repeat boxes if necessary
   nBox = product(wp%opt%repeatBox)
