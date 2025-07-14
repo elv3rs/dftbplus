@@ -180,7 +180,10 @@ contains
     integer :: iSpin, iKPoint, iLevel, ind, ii, iostat
     integer :: curVec(3)
     logical :: tFound
+  
+    integer :: startTime, endTime
 
+    call system_clock(count=startTime)
   #:if WITH_MPI
     call getStartAndEndIndex(env, size(levelIndexAll, dim=2), iLvlStart, iLvlEnd)
   #:else
@@ -203,6 +206,7 @@ contains
     @:ASSERT(size(nPoints) == 3)
     @:ASSERT(all(shape(kPointCoords) == [3, nAllKPoint]))
 
+
     sf%molorb => molorb
     sf%gridVec(:,:) = gridVec
     sf%origin = origin
@@ -216,8 +220,9 @@ contains
     sf%nCached = nCached
     sf%tReal = tReal
     sf%subdivisionFactor = subdivisionFactor
+
     if (sf%tReal) then
-      allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached), source=0.0_dp)
+      allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached))
       allocate(sf%eigenvecReal(sf%nOrb, sf%nCached))
     else
       allocate(sf%gridCacheCmpl(nPoints(1), nPoints(2), nPoints(3), nCached))
@@ -255,7 +260,12 @@ contains
       call error("Can't open file '" // trim(eigvecBin) // "'.")
     end if
     read(sf%fdEigVec%unit) ii
+    call system_clock(count=endTime)
+
     sf%tInitialised = .true.
+
+    ! Timing
+    print *,  "GridCache initialised in", endTime - startTime
 
   end subroutine TGridCache_init
 
