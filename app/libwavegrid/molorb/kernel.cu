@@ -81,7 +81,7 @@ __global__ void evaluateKernel(
                         sto_coeffs, sto_alphas, maxNPows, maxNAlphas);
 
 
-                    // Timer calculate inverse once 
+                    // precompute inverse used across several realTessY calls
                     double inv_r = (r < 1.e-12) ? 0.0 : 1.0 / r;
                     double inv_r2 = inv_r * inv_r;
 

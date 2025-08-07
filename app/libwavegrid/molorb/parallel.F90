@@ -10,6 +10,7 @@
 module libwavegrid_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
+  use dftbp_io_message, only : error
   use libwavegrid_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
   use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   use, intrinsic :: iso_c_binding, only : c_int, c_double
@@ -232,7 +233,7 @@ contains
     complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEig)
 
 
-
+    
     ! Interface to the C-function defined in kernel.cu
     interface
        subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
@@ -253,6 +254,10 @@ contains
        end subroutine evaluate_on_device_c
     end interface
 
+    !> Raise if Periodic / density calc requested
+    if (isPeriodic .or. isDensityCalc) then
+      call error("evaluateCuda: isPeriodic / isDensityCalc not supported for CUDA kernel.")
+    end if
     ! Call the external CUDA routine
     call evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
         & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
