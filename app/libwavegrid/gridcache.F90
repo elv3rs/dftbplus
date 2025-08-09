@@ -24,7 +24,7 @@ module libwavegrid_gridcache
   implicit none
 
   private
-  public :: TGridCache, TGridCache_init, next
+  public :: TGridCache!, TGridCache_init!, next
 
   !> Contains the data for a grid cache.
   type TGridCache
@@ -100,15 +100,21 @@ module libwavegrid_gridcache
 
     !> Initialised?
     logical :: tInitialised = .false.
+  contains
+    procedure :: TGridCache_next_real
+    procedure :: TGridCache_next_cmpl
+    generic :: next => TGridCache_next_real, TGridCache_next_cmpl
+    !procedure :: next => Inext
+    procedure :: init => TGridCache_init
 
   end type TGridCache
 
 
   !> Delivers the next molecular orbital grid from the cache
-  interface next
-    module procedure TGridCache_next_real
-    module procedure TGridCache_next_cmpl
-  end interface
+  !interface Inext
+  !  module procedure TGridCache_next_real
+  !  module procedure TGridCache_next_cmpl
+  !end interface
 
 
 contains
@@ -119,7 +125,7 @@ contains
       & nPoints, tVerbose, eigvecBin, gridVec, origin, kPointCoords, tReal, molorb, subdivisionFactor)
 
     !> Structure to initialise
-    type(TgridCache), intent(inout) :: sf
+    class(TgridCache), intent(inout) :: sf
 
     !> Environment settings
     type(TEnvironment), intent(in) :: env
@@ -274,7 +280,7 @@ contains
   subroutine TGridCache_next_real(sf, gridValReal, levelIndex, tFinished)
 
     !> Gridcache instance
-    type(TgridCache), intent(inout) :: sf
+    class(TgridCache), intent(inout) :: sf
 
     !> Contains the molecular orbital on the grid on exit
     real(dp), pointer :: gridValReal(:,:,:)
@@ -296,7 +302,7 @@ contains
   subroutine TGridCache_next_cmpl(sf, gridValCmpl, levelIndex, tFinished)
 
     !> Gridcache instance
-    type(TgridCache), intent(inout) :: sf
+    class(TgridCache), intent(inout) :: sf
 
     !> Contains the molecular orbital on the grid on exit
     complex(dp), pointer :: gridValCmpl(:,:,:)

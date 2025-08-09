@@ -9,7 +9,7 @@
 
 !> Program for plotting molecular orbitals as cube files.
 program waveplot
-  use libwavegrid_gridcache, only : next
+  !use libwavegrid_gridcache, only : next
   use waveplot_initwaveplot, only : TProgramVariables, TProgramVariables_init
   use libwavegrid_molorb, only : getValue
   use dftbp_common_accuracy, only : dp
@@ -236,9 +236,9 @@ program waveplot
   lpStates: do while (.not. tFinished)
     ! Get the next grid and its parameters
     if (wp%input%tRealHam) then
-      call next(wp%loc%grid, gridValReal, levelIndex, tFinished)
+      call wp%loc%grid%next(gridValReal, levelIndex, tFinished)
     else
-      call next(wp%loc%grid, gridValCmpl, levelIndex, tFinished)
+      call wp%loc%grid%next(gridValCmpl, levelIndex, tFinished)
     end if
     iLevel = levelIndex(1)
     iKPoint = levelIndex(2)

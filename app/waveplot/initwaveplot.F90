@@ -9,7 +9,7 @@
 
 !> Contains the routines for initialising Waveplot.
 module waveplot_initwaveplot
-  use libwavegrid_gridcache, only : TGridCache, TGridCache_init
+  use libwavegrid_gridcache, only : TGridCache
   use libwavegrid_molorb, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
@@ -381,7 +381,7 @@ contains
     call TMolecularOrbital_init(this%loc%molOrb, this%input%geo, this%boundaryCond,&
         & this%basis%basis)
 
-    call TGridCache_init(this%loc%grid, env, this%loc%levelIndex, this%input%nOrb, this%eig%nState,&
+    call this%loc%grid%init(env, this%loc%levelIndex, this%input%nOrb, this%eig%nState,&
         & nKPoint, nSpin, nCached, this%opt%nPoints, this%opt%tVerbose, eigVecBin,&
         & this%loc%gridVec, this%opt%gridOrigin, kPointsWeights(1:3, :), this%input%tRealHam,&
         & this%loc%pMolOrb, this%opt%subdivisionFactor)
