@@ -24,7 +24,7 @@ module libwavegrid_gridcache
   implicit none
 
   private
-  public :: TGridCache!, TGridCache_init!, next
+  public :: TGridCache
 
   !> Contains the data for a grid cache.
   type TGridCache
@@ -104,17 +104,9 @@ module libwavegrid_gridcache
     procedure :: TGridCache_next_real
     procedure :: TGridCache_next_cmpl
     generic :: next => TGridCache_next_real, TGridCache_next_cmpl
-    !procedure :: next => Inext
     procedure :: init => TGridCache_init
 
   end type TGridCache
-
-
-  !> Delivers the next molecular orbital grid from the cache
-  !interface Inext
-  !  module procedure TGridCache_next_real
-  !  module procedure TGridCache_next_cmpl
-  !end interface
 
 
 contains
@@ -125,7 +117,7 @@ contains
       & nPoints, tVerbose, eigvecBin, gridVec, origin, kPointCoords, tReal, molorb, subdivisionFactor)
 
     !> Structure to initialise
-    class(TgridCache), intent(inout) :: sf
+    class(TgridCache), intent(out) :: sf
 
     !> Environment settings
     type(TEnvironment), intent(in) :: env

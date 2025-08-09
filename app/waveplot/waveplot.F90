@@ -9,7 +9,6 @@
 
 !> Program for plotting molecular orbitals as cube files.
 program waveplot
-  !use libwavegrid_gridcache, only : next
   use waveplot_initwaveplot, only : TProgramVariables, TProgramVariables_init
   use libwavegrid_molorb, only : getValue
   use dftbp_common_accuracy, only : dp
