@@ -91,7 +91,7 @@ __global__ void evaluateKernel(
     }
     // If periodic, fold into cell by discarding the non-fractional part in lattice vector multiples.
     if constexpr (isPeriodic) {
-        foldCoordsIntoCell(xyz, latVecs, recVecs2p);
+        foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(latVecs), reinterpret_cast<const double (*)[3]>(recVecs2p));
     }
 
 
@@ -362,16 +362,35 @@ extern "C" void evaluate_on_device_c(
                     CHECK_CUDA(cudaEventRecord(startKernelOnly));
                 }
 
-                evaluateKernel<isReal, isDensityCalc, isPeriodic><<<grid_size, block_size, shared_mem_for_pass>>>(
-                    nPointsX, nPointsY, current_nPointsZ_batch, z_offset_global, nEig, nOrb, nStos,
-                    maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass,
-                    d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(), d_eigVecsCmpl.get(),
-                    d_coords.get(), d_species.get(), d_iStos.get(),
-                    d_latVecs.get(), d_recVecs2p.get(), d_kIndexes.get(), d_phases.get(),
-                    d_sto_angMoms.get(), d_sto_nPows.get(), d_sto_nAlphas.get(),
-                    d_sto_cutoffsSq.get(), d_sto_coeffs.get(), d_sto_alphas.get(),
-                    d_valueReal_out_batch.get(), d_valueCmpl_out_batch.get()
-                );
+                #define LAUNCH_KERNEL(R, D, P) \
+                evaluateKernel<R, D, P><<<grid_size, block_size, shared_mem_for_pass>>>( \
+                    nPointsX, nPointsY, current_nPointsZ_batch, z_offset_global, nEig, nOrb, nStos, \
+                    maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass, \
+                    d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(), d_eigVecsCmpl.get(), \
+                    d_coords.get(), d_species.get(), d_iStos.get(), \
+                    d_latVecs.get(), d_recVecs2p.get(), d_kIndexes.get(), d_phases.get(), \
+                    d_sto_angMoms.get(), d_sto_nPows.get(), d_sto_nAlphas.get(), \
+                    d_sto_cutoffsSq.get(), d_sto_coeffs.get(), d_sto_alphas.get(), \
+                    d_valueReal_out_batch.get(), d_valueCmpl_out_batch.get()) 
+
+                if (isReal) {
+                    if (isDensityCalc) {
+                        if (isPeriodic) LAUNCH_KERNEL(true, true, true);
+                        else LAUNCH_KERNEL(true, true, false);
+                    } else {
+                        if (isPeriodic) LAUNCH_KERNEL(true, false, true);
+                        else LAUNCH_KERNEL(true, false, false);
+                    }
+                } else {
+                    if (isDensityCalc) {
+                        if (isPeriodic) LAUNCH_KERNEL(false, true, true);
+                        else LAUNCH_KERNEL(false, true, false);
+                    } else {
+                        if (isPeriodic) LAUNCH_KERNEL(false, false, true);
+                        else LAUNCH_KERNEL(false, false, false);
+                    }
+                }
+                #undef LAUNCH_KERNEL
 
                 if(deviceId == 0) {
                     CHECK_CUDA(cudaEventRecord(endKernelOnly));
@@ -389,7 +408,7 @@ extern "C" void evaluate_on_device_c(
                     
                     // Destination pointer in the final large host output array.
                     // The offset is calculated using the GLOBAL Z-offset.
-                    double* h_dest_ptr_eig = ((isReal || isDensityCalc) ? h_valueReal_out : reinterpret_cast<double*>(h_valueCmpl_out.get())) + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
+                    double* h_dest_ptr_eig = ((isReal || isDensityCalc) ? h_valueReal_out : reinterpret_cast<double*>(h_valueCmpl_out)) + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
                     
                     CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
                 }
