@@ -1,4 +1,5 @@
 #include <cuda_runtime.h>
+#include <cuComplex.h>
 #include <omp.h>
 #include <cstdio>
 #include <cmath>
@@ -117,15 +118,31 @@ __global__ void evaluateKernel(
 //  C++ Host Interface (callable from C/Fortran)
 // =========================================================================
 extern "C" void evaluate_on_device_c(
-    const int nPointsX, const int nPointsY, const int nPointsZ, const int nEig,
-    const int nOrb, const int nStos, const int maxNPows, const int maxNAlphas,
+    const int nPointsX, const int nPointsY, const int nPointsZ,
+    const int nEig, const int nOrb, const int nStos,
+    const int maxNPows, const int maxNAlphas,
     const int nAtom, const int nCell, const int nSpecies,
-    const double* h_origin, const double* h_gridVecs, const double* h_eigVecsReal,
-    const double* h_coords, const int* h_species, const int* h_iStos,
-    const int* h_sto_angMoms, const int* h_sto_nPows, const int* h_sto_nAlphas,
-    const double* h_sto_cutoffsSq, const double* h_sto_coeffs, const double* h_sto_alphas,
-    double* h_valueReal_out)
-{
+    const int isReal, const int isPeriodic, const int isDensityCalc,
+    const double* h_origin,
+    const double* h_gridVecs,
+    const double* h_eigVecsReal,
+    const cuDoubleComplex* h_eigVecsCmpl,
+    const double* h_coords,
+    const int* h_species,
+    const int* h_iStos,
+    const double* h_latVecs,
+    const double* h_recVecs2p,
+    const int* h_kIndexes,
+    const cuDoubleComplex* h_phases,
+    const int* h_sto_angMoms,
+    const int* h_sto_nPows,
+    const int* h_sto_nAlphas,
+    const double* h_sto_cutoffsSq,
+    const double* h_sto_coeffs,
+    const double* h_sto_alphas,
+    double* h_valueReal_out,
+    cuDoubleComplex* h_valueCmpl_out
+){
     if (nEig == 0 || nPointsZ == 0) return; // Nothing to do
     
     // We currently assume a hardcoded maximum for the number of powers.

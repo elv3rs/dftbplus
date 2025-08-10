@@ -7,15 +7,36 @@
 extern "C" {
 #endif
 
+
 void evaluate_on_device_c(
-    const int nPointsX, const int nPointsY, const int nPointsZ, const int nEig,
-    const int nOrb, const int nStos, const int maxNPows, const int maxNAlphas,
+    const int nPointsX, const int nPointsY, const int nPointsZ,
+    const int nEig, const int nOrb, const int nStos,
+    const int maxNPows, const int maxNAlphas,
     const int nAtom, const int nCell, const int nSpecies,
-    const double* origin, const double* gridVecs, const double* eigVecsReal,
-    const double* coords, const int* species, const int* iStos,
-    const int* sto_angMoms, const int* sto_nPows, const int* sto_nAlphas,
-    const double* sto_cutoffsSq, const double* sto_coeffs, const double* sto_alphas,
-    double* valueReal_out);
+    const int isReal, const int isPeriodic, const int isDensityCalc,
+    const double* origin,               // [3]
+    const double* gridVecs,             // [3][3]
+    const double* eigVecsReal,          // [nOrb][nEig]
+    const cuDoubleComplex* eigVecsCmpl, // [nOrb][nEig]
+    const double* coords,               // [3][nAtom][nCell]
+    const int* species,                 // [nAtom]
+    const int* iStos,                   // [nSpecies+1]
+    const double* latVecs,              // [3][3]
+    const double* recVecs2p,            // [3][3]
+    const int* kIndexes,                // [nEig]
+    const cuDoubleComplex* phases,      // [nCell][nEig]
+    const int* sto_angMoms,             // [nStos]
+    const int* sto_nPows,               // [nStos]
+    const int* sto_nAlphas,             // [nStos]
+    const double* sto_cutoffsSq,        // [nStos]
+    const double* sto_coeffs,           // [maxNPows][maxNAlphas][nStos]
+    const double* sto_alphas,           // [maxNAlphas][nStos]
+    double* valueReal_out,              // [nPointsX][nPointsY][nPointsZ][nEig]
+    cuDoubleComplex* valueCmpl_out      // [nPointsX][nPointsY][nPointsZ][nEig]
+);
+
+
+
 
 #ifdef __cplusplus
 }

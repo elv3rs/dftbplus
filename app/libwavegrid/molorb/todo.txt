@@ -2,3 +2,6 @@ TODO List:
 1. Add complex support to parallel omp and cuda implementations
 2. Add flag to force CPU OMP
 3. Allow passing occupation vector for inplace density accumulation
+    -> Decouple output nEig dimension from nEig to only output the accumulated density
+
+0. Add tests to verify that waveplot still works as expected.

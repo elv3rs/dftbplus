@@ -13,7 +13,7 @@ module libwavegrid_molorb_parallel
   use dftbp_io_message, only : error
   use libwavegrid_slater, only : TSlaterOrbital, realTessY, getVerboseRadial
   use omp_lib, only : omp_is_initial_device, omp_get_num_devices
-  use, intrinsic :: iso_c_binding, only : c_int, c_double
+  use, intrinsic :: iso_c_binding, only : c_int, c_double, c_double_complex, c_bool
   implicit none  
   
   public :: evaluateParallel
@@ -156,7 +156,7 @@ contains
     !print *, "sto_nPows:", sto_nPows
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
-    ! below. This is fine as, in contrast to what was published, DFTB+ uses implicitly exp(-ikr) as
+    ! below. This is fine as, in contrast to what was published, DFTB+ implicitly uses exp(-ikr) as
     ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
@@ -231,37 +231,47 @@ contains
     real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEig)
+    !! bools als c_int
+    integer(c_int) :: iReal, iPeriodic, iDensity
 
 
     
     ! Interface to the C-function defined in kernel.cu
     interface
        subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
-            & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
-            & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, valueReal) &
-            & bind(C, name='evaluate_on_device_c')
-         import :: c_int, c_double
+        & maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc, origin, gridVecs, &
+        & eigVecsReal, eigVecsCmpl, coords, species, iStos, latVecs, recVecs2p, kIndexes, phases, &
+        & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
+        & valueReal, valueCmpl) bind(C, name='evaluate_on_device_c')
+         import :: c_int, c_double, c_double_complex
          integer(c_int), intent(in), value :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
-            & maxNAlphas, nAtom, nCell, nSpecies
-         real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEig)
-         real(c_double), intent(in) :: coords(3, nAtom, nCell)
-         integer(c_int), intent(in) :: species(nAtom), iStos(nSpecies + 1)
-         integer(c_int), intent(in) :: sto_angMoms(nStos), sto_nPows(nStos), sto_nAlphas(nStos)
-         real(c_double), intent(in) :: sto_cutoffsSq(nStos)
-         real(c_double), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
-         real(c_double), intent(in) :: sto_alphas(maxNAlphas, nStos)
+            & maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc
+         real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEig), &
+           & coords(3, nAtom, nCell), latVecs(3, 3), recVecs2p(3, 3), sto_cutoffsSq(nStos), &
+           & sto_coeffs(maxNPows, maxNAlphas, nStos), sto_alphas(maxNAlphas, nStos)
+         integer(c_int), intent(in) :: sto_angMoms(nStos), sto_nPows(nStos), sto_nAlphas(nStos), &
+           & species(nAtom), iStos(nSpecies + 1), kIndexes(nEig)
+         complex(c_double_complex), intent(in) :: eigVecsCmpl(nOrb, nEig), phases(nCell, nEig)
+         !Output arrays
          real(c_double), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
+         complex(c_double_complex), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEig)
        end subroutine evaluate_on_device_c
     end interface
 
-    !> Raise if Periodic / density calc requested
-    if (isPeriodic .or. isDensityCalc) then
-      call error("evaluateCuda: isPeriodic / isDensityCalc not supported for CUDA kernel.")
-    end if
-    ! Call the external CUDA routine
-    call evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
-        & maxNAlphas, nAtom, nCell, nSpecies, origin, gridVecs, eigVecsReal, coords, species, iStos, &
-        & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, valueReal)
+    iReal     = merge(1, 0, isReal)      
+    iPeriodic = merge(1, 0, isPeriodic)
+    iDensity  = merge(1, 0, isDensityCalc)
+
+    call evaluate_on_device_c( &
+      & nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, &
+      & nAtom, nCell, nSpecies, &
+      & iReal, iPeriodic, iDensity, &
+      & origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
+      & latVecs, recVecs2p, kIndexes, phases, &
+      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
+      & valueReal, valueCmpl )
+
+
 
   end subroutine evaluateCuda
 #:endif
