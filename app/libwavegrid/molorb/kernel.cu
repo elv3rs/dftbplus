@@ -9,27 +9,64 @@
 #include "utils.cuh"
 #include "slater.cuh"
 
+__device__ __forceinline__ void matmul3x3_vec(
+    const double mat[3][3],
+    const double vec[3],
+    double result[3]
+) {
+    for (int i = 0; i < 3; i++) {
+        result[i] = mat[i][0] * vec[0] +
+                    mat[i][1] * vec[1] +
+                    mat[i][2] * vec[2];
+    }
+}
+
+__device__ __forceinline__ void foldCoordsIntoCell(
+    double xyz[3],
+    const double latVecs[3][3],
+    const double recVecs2p[3][3],
+) {
+    double frac[3];
+    matmul3x3_vec(recVecs2p, xyz, frac);
+
+    for (int i = 0; i < 3; i++) {
+        frac[i] -= floor(frac[i]);
+    }
+
+    matmul3x3_vec(latVecs, frac, xyz);
+}
 
 
 // =========================================================================
 //  CUDA Kernel.
 //  We might want to separate the arguments into structs for better maintainability.
 // =========================================================================
+// To avoid branching (dropped at compile time), we template the kernel 4 ways on (isReal, isDensity):
+// (true, false): regular output in valueReal_out, separate eigenstates -> real of shape (x,y,z, neig)
+// (false, false): output in valueCmpl_out, separate eigenstates -> complex of shape (x,y,z, neig)
+// (true, *): density output in valueReal_out, summed over all eigenstates -> real of shape (x,y,z, 1)
+template <bool isReal, bool isDensity>
 __global__ void evaluateKernel(
     const int  nPointsX, const int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
     int maxNPows, int maxNAlphas, int nAtom, int nCell, int nEig_per_pass,
     const double* __restrict__ origin, const double* __restrict__ gridVecs, const double* __restrict__ eigVecsReal,
+    const cuDoubleComplex* __restrict__ eigVecsCmpl, 
     const double* __restrict__ coords, const int* __restrict__ species, const int* __restrict__ iStos,
+    const double* __restrict__ latVecs, const double* __restrict__ recVecs2p, const int* __restrict__ kIndexes,
+    const cuDoubleComplex* __restrict__ phases,
     const int* __restrict__ sto_angMoms, const int* __restrict__ sto_nPows, const int* __restrict__ sto_nAlphas,
     const double* __restrict__ sto_cutoffsSq, const double* __restrict__ sto_coeffs, const double* __restrict__ sto_alphas,
-    double* valueReal_out_batch)
-
+    double* valueReal_out_batch, cuDoubleComplex* valueCmpl_out_batch)
 {
-    extern __shared__ double shared_workspace[];
-
+    using AccumT = typename std::conditional<(isDensity || isReal), double, cuDoubleComplex>::type;
+    
     // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
     // We have to chunk the eigenstates into nEig_per_pass due to size constraints.
-    double* point_results_pass = &shared_workspace[threadIdx.x * nEig_per_pass];
+    // (Cuda doesnt allow templating the shared memory type, so we simply recast it.)
+    extern __shared__ double shared_workspace[];
+    size_t doubles_per_thread = isReal ? nEig_per_pass : nEig_per_pass * 2;
+    AccumT* point_results_pass = reinterpret_cast<AccumT*>(&shared_workspace[threadIdx.x * doubles_per_thread]);
+
 
     // --- Thread to point mapping ---
     // Map each thread to unique 1d index
@@ -43,18 +80,33 @@ __global__ void evaluateKernel(
     int i3_batch = idx_in_batch / (nPointsX * nPointsY);
     int i3_global = i3_batch + z_offset;
 
-    // Map point to global coordinates
+    bool isPeriodic = !isReal
+
+    // Map point to global coordinates.
     double xyz[3];
-    xyz[0] = origin[0] + i1 * gridVecs[IDX2F(0, 0, 3)] + i2 * gridVecs[IDX2F(0, 1, 3)] + i3_global * gridVecs[IDX2F(0, 2, 3)];
-    xyz[1] = origin[1] + i1 * gridVecs[IDX2F(1, 0, 3)] + i2 * gridVecs[IDX2F(1, 1, 3)] + i3_global * gridVecs[IDX2F(1, 2, 3)];
-    xyz[2] = origin[2] + i1 * gridVecs[IDX2F(2, 0, 3)] + i2 * gridVecs[IDX2F(2, 1, 3)] + i3_global * gridVecs[IDX2F(2, 2, 3)];
+    for (int i = 0; i < 3; ++i) {
+        xyz[i] = origin[i] + i1 * gridVecs[IDX2F(i, 0, 3)]
+                           + i2 * gridVecs[IDX2F(i, 1, 3)]
+                           + i3_global * gridVecs[IDX2F(i, 2, 3)];
+    }
+    // If periodic, fold into cell by discarding the non-fractional part in lattice vector multiples.
+    if constexpr (isPeriodic) {
+        foldCoordsIntoCell(xyz, latVecs, recVecs2p);
+    }
+
+
+        
 
     // --- Loop over eigenstates in chunks that fit in shared memory ---
     for (int eig_base = 0; eig_base < nEig; eig_base += nEig_per_pass) {
         
         // Initialize the small, per-pass buffer for this thread
         for (int i = 0; i < nEig_per_pass; ++i) {
-            point_results_pass[i] = 0.0;
+            if constexpr (isReal || isDensity) {
+                point_results_pass[i] = 0.0; 
+            } else {
+                point_results_pass[i] = make_cuDoubleComplex(0.0, 0.0);
+            }
         }
 
         // The spatial calculation is repeated for each chunk of eigenstates.
@@ -64,18 +116,18 @@ __global__ void evaluateKernel(
             for (int iAtom = 0; iAtom < nAtom; ++iAtom) {
                 int iSpecies = species[iAtom] - 1;
                 double diff[3];
-                diff[0] = xyz[0] - coords[IDX3F(0, iAtom, iCell, 3, nAtom)];
-                diff[1] = xyz[1] - coords[IDX3F(1, iAtom, iCell, 3, nAtom)];
-                diff[2] = xyz[2] - coords[IDX3F(2, iAtom, iCell, 3, nAtom)];
-                double r_sq = diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2];
+                for (int i = 0; i < 3; ++i) {
+                    diff[i] = xyz[i] - coords[IDX3F(i, iAtom, iCell, 3, nAtom)];
+                }
+                double rr = diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2];
 
                 for (int iOrb = iStos[iSpecies] - 1; iOrb < iStos[iSpecies + 1] - 1; ++iOrb) {
                     int iL = sto_angMoms[iOrb];
-                    if (r_sq > sto_cutoffsSq[iOrb]) {
+                    if (rr > sto_cutoffsSq[iOrb]) {
                         orbital_idx_counter += 2 * iL + 1;
                         continue;
                     }
-                    double r = sqrt(r_sq);
+                    double r = sqrt(rr);
                     
                     double radialVal = getRadialValue(
                         r, iL, iOrb, sto_nPows[iOrb], sto_nAlphas[iOrb],
@@ -89,12 +141,20 @@ __global__ void evaluateKernel(
                     for (int iM = -iL; iM <= iL; ++iM) {
                         double val = radialVal * realTessY(iL, iM, diff, inv_r, inv_r2);
                         
+                        if constexpr (isDensity) {
+                                val = val * val; 
+                        }
                         // Accumulate into the small shared memory buffer for the current chunk
                         for (int iEig_offset = 0; iEig_offset < nEig_per_pass; ++iEig_offset) {
                             int iEig = eig_base + iEig_offset;
                             if (iEig >= nEig) break; // Don't go past the end on the last chunk
                             size_t eig_idx = IDX2F(orbital_idx_counter, iEig, nOrb);
-                            point_results_pass[iEig_offset] += val * eigVecsReal[eig_idx];
+                            if constexpr (isReal) {
+                                point_results_pass[iEig_offset] += val * eigVecsReal[eig_idx];
+                            } else {
+                                point_results_pass[iEig_offset] += val * phases[IDX2F(iCell, kIndexes[iEig], nCell)] 
+                                                                       * eigVecsCmpl[eig_idx];
+                            }
                         }
                         orbital_idx_counter++;
                     }
@@ -107,7 +167,12 @@ __global__ void evaluateKernel(
             int iEig = eig_base + iEig_offset;
             if (iEig >= nEig) break;
             size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, nPointsX, nPointsY, nPointsZ_batch);
-            valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
+
+            if constexpr (isReal || isDensity) {
+                valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
+            } else {
+                valueCmpl_out_batch[cmpl_out_idx] = point_results_pass[iEig_offset];
+            }
         }
     }
 }

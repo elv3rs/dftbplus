@@ -258,9 +258,9 @@ contains
        end subroutine evaluate_on_device_c
     end interface
 
-    iReal     = merge(1, 0, isReal)      
+    iReal = merge(1, 0, isReal)      
     iPeriodic = merge(1, 0, isPeriodic)
-    iDensity  = merge(1, 0, isDensityCalc)
+    iDensity = merge(1, 0, isDensityCalc)
 
     call evaluate_on_device_c( &
       & nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, &
@@ -270,8 +270,6 @@ contains
       & latVecs, recVecs2p, kIndexes, phases, &
       & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
       & valueReal, valueCmpl )
-
-
 
   end subroutine evaluateCuda
 #:endif
