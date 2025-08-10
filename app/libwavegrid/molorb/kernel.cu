@@ -24,7 +24,7 @@ __device__ __forceinline__ void matmul3x3_vec(
 __device__ __forceinline__ void foldCoordsIntoCell(
     double xyz[3],
     const double latVecs[3][3],
-    const double recVecs2p[3][3],
+    const double recVecs2p[3][3]
 ) {
     double frac[3];
     matmul3x3_vec(recVecs2p, xyz, frac);
@@ -41,11 +41,13 @@ __device__ __forceinline__ void foldCoordsIntoCell(
 //  CUDA Kernel.
 //  We might want to separate the arguments into structs for better maintainability.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 4 ways on (isReal, isDensity):
+// To avoid branching (dropped at compile time), we template the kernel 4 ways on (isReal, isDensity).
+// We currently assume !isReal=isPeriodic, so we only have 3 combinations:
 // (true, false): regular output in valueReal_out, separate eigenstates -> real of shape (x,y,z, neig)
 // (false, false): output in valueCmpl_out, separate eigenstates -> complex of shape (x,y,z, neig)
-// (true, *): density output in valueReal_out, summed over all eigenstates -> real of shape (x,y,z, 1)
-template <bool isReal, bool isDensity>
+// (true, true): density output in valueReal_out, summed over all eigenstates -> real of shape (x,y,z, 1) [not yet, we only squar rn.]
+// (false, true): todo. currently simply squares the complex output. 
+template <bool isReal, bool isDensity, bool isPeriodic>
 __global__ void evaluateKernel(
     const int  nPointsX, const int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
     int maxNPows, int maxNAlphas, int nAtom, int nCell, int nEig_per_pass,
@@ -80,8 +82,6 @@ __global__ void evaluateKernel(
     int i3_batch = idx_in_batch / (nPointsX * nPointsY);
     int i3_global = i3_batch + z_offset;
 
-    bool isPeriodic = !isReal
-
     // Map point to global coordinates.
     double xyz[3];
     for (int i = 0; i < 3; ++i) {
@@ -94,8 +94,6 @@ __global__ void evaluateKernel(
         foldCoordsIntoCell(xyz, latVecs, recVecs2p);
     }
 
-
-        
 
     // --- Loop over eigenstates in chunks that fit in shared memory ---
     for (int eig_base = 0; eig_base < nEig; eig_base += nEig_per_pass) {
@@ -152,8 +150,16 @@ __global__ void evaluateKernel(
                             if constexpr (isReal) {
                                 point_results_pass[iEig_offset] += val * eigVecsReal[eig_idx];
                             } else {
-                                point_results_pass[iEig_offset] += val * phases[IDX2F(iCell, kIndexes[iEig], nCell)] 
-                                                                       * eigVecsCmpl[eig_idx];
+                                cuDoubleComplex phase = phases[IDX2F(iCell, iEig, nCell)];
+                                cuDoubleComplex ev = eigVecsCmpl[eig_idx];
+                                cuDoubleComplex psi = cuCmul(make_cuDoubleComplex(val, 0.0), cuCmul(phase, ev));
+
+                                if constexpr (isDensity) {
+                                    point_results_pass[iEig_offset] += cuCreal(psi) * cuCreal(psi) + cuCimag(psi) * cuCimag(psi);
+                                }
+                                else {
+                                    point_results_pass[iEig_offset] = cuCadd(point_results_pass[iEig_offset], psi);
+                                }
                             }
                         }
                         orbital_idx_counter++;
@@ -171,7 +177,7 @@ __global__ void evaluateKernel(
             if constexpr (isReal || isDensity) {
                 valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
             } else {
-                valueCmpl_out_batch[cmpl_out_idx] = point_results_pass[iEig_offset];
+                valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
             }
         }
     }
@@ -263,8 +269,7 @@ extern "C" void evaluate_on_device_c(
             // --- Per-GPU Data Allocation and H2D Copy ---
             // Each thread allocates data on its own assigned GPU.
             DeviceBuffer<double> d_origin(h_origin, 3);
-            DeviceBuffer<double> d_gridVecs(h_gridVecs, 9);
-            DeviceBuffer<double> d_eigVecsReal(h_eigVecsReal, (size_t)nOrb * nEig);
+            DeviceBuffer<double> d_gridVecs(h_gridVecs, 9); 
             DeviceBuffer<double> d_coords(h_coords, (size_t)3 * nAtom * nCell);
             DeviceBuffer<int>    d_species(h_species, nAtom);
             DeviceBuffer<int>    d_iStos(h_iStos, nSpecies + 1);
@@ -274,6 +279,24 @@ extern "C" void evaluate_on_device_c(
             DeviceBuffer<double> d_sto_cutoffsSq(h_sto_cutoffsSq, nStos);
             DeviceBuffer<double> d_sto_coeffs(h_sto_coeffs, (size_t)maxNPows * maxNAlphas * nStos);
             DeviceBuffer<double> d_sto_alphas(h_sto_alphas, (size_t)maxNAlphas * nStos);
+            // Real / complex stuff (half left as nullptr)
+            DeviceBuffer<double> d_eigVecsReal;
+            DeviceBuffer<cuDoubleComplex> d_eigVecsCmpl;
+            DeviceBuffer<cuDoubleComplex> d_phases;
+            DeviceBuffer<int> d_kIndexes;
+            DeviceBuffer<double> d_latVecs;
+            DeviceBuffer<double> d_recVecs2p;
+            if (isReal) {
+                DeviceBuffer<double> d_eigVecsReal(h_eigVecsReal, (size_t)nOrb * nEig);
+            } else {
+                DeviceBuffer<cuDoubleComplex> d_eigVecsCmpl(h_eigVecsCmpl, (size_t)nOrb * nEig);
+                DeviceBuffer<cuDoubleComplex> d_phases(h_phases, (size_t)nCell * nEig);
+                DeviceBuffer<int> d_kIndexes(h_kIndexes, nEig);
+            }
+            if (isPeriodic) {
+                DeviceBuffer<double> d_latVecs(h_latVecs, 9);
+                DeviceBuffer<double> d_recVecs2p(h_recVecs2p, 9);
+            }
 
             // --- Per-GPU Kernel Configuration ---
             int block_size = 256;
@@ -282,16 +305,17 @@ extern "C" void evaluate_on_device_c(
             
             // Determine available shared memory for nEig_per_pass
             size_t available_shared = prop.sharedMemPerBlock * 0.95;
-            int nEig_per_pass = available_shared / (block_size * sizeof(double));
+            size_t number_size = (isReal || isDensityCalc) ? sizeof(double) : sizeof(cuDoubleComplex);
+            int nEig_per_pass = available_shared / (block_size * number_size);
             if (nEig_per_pass == 0) nEig_per_pass = 1;
             if (nEig_per_pass > nEig) nEig_per_pass = nEig;
-            size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * sizeof(double);
+            size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * number_size;
             
             // Determine the number of Z-slices to process in a single batch
             size_t free_mem, total_mem;
             CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
             size_t available_for_batch = static_cast<size_t>(free_mem * 0.8);
-            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEig * sizeof(double);
+            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEig * number_size;
             
             // Determine max Z-slices that can fit in available (global) memory
             int z_batch_size = z_count_for_device; 
@@ -315,7 +339,13 @@ extern "C" void evaluate_on_device_c(
 
             // Per-GPU batch buffer for the output
             size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * nEig;
-            DeviceBuffer<double> d_valueReal_out_batch(batch_buffer_size_elems);
+            DeviceBuffer<cuDoubleComplex> d_valueCmpl_out_batch;
+            DeviceBuffer<double> d_valueReal_out_batch;
+            if (isReal || isDensityCalc) {
+                d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
+            } else {
+                d_valueCmpl_out_batch = DeviceBuffer<cuDoubleComplex>(batch_buffer_size_elems);
+            }
 
 
             // --- Per-GPU Kernel Execution Loop ---
@@ -332,14 +362,15 @@ extern "C" void evaluate_on_device_c(
                     CHECK_CUDA(cudaEventRecord(startKernelOnly));
                 }
 
-                evaluateKernel<<<grid_size, block_size, shared_mem_for_pass>>>(
+                evaluateKernel<isReal, isDensityCalc, isPeriodic><<<grid_size, block_size, shared_mem_for_pass>>>(
                     nPointsX, nPointsY, current_nPointsZ_batch, z_offset_global, nEig, nOrb, nStos,
                     maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass,
-                    d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(),
+                    d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(), d_eigVecsCmpl.get(),
                     d_coords.get(), d_species.get(), d_iStos.get(),
+                    d_latVecs.get(), d_recVecs2p.get(), d_kIndexes.get(), d_phases.get(),
                     d_sto_angMoms.get(), d_sto_nPows.get(), d_sto_nAlphas.get(),
                     d_sto_cutoffsSq.get(), d_sto_coeffs.get(), d_sto_alphas.get(),
-                    d_valueReal_out_batch.get()
+                    d_valueReal_out_batch.get(), d_valueCmpl_out_batch.get()
                 );
 
                 if(deviceId == 0) {
@@ -349,16 +380,16 @@ extern "C" void evaluate_on_device_c(
 
                 // --- Per-GPU D2H Copy ---
                 // Copy the computed batch back to the correct slice of the final host array.
-                // The D2H copy will synchronize the kernel for this batch.
+                // The D2H copy will automatically block/  synchronize the kernel for this batch.
                 for(int iEig = 0; iEig < nEig; ++iEig) {
-                    size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * sizeof(double);
+                    size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * number_size;
 
                     // Source pointer in this GPU's batch buffer
-                    const double* d_src_ptr_eig = d_valueReal_out_batch.get() + (size_t)iEig * current_nPointsZ_batch * nPointsY * nPointsX;
+                    const double* d_src_ptr_eig = ((isReal || isDensityCalc) ? d_valueReal_out_batch.get() : reinterpret_cast<double*>(d_valueCmpl_out_batch.get())) +  (size_t)iEig * current_nPointsZ_batch * nPointsY * nPointsX;
                     
                     // Destination pointer in the final large host output array.
                     // The offset is calculated using the GLOBAL Z-offset.
-                    double* h_dest_ptr_eig = h_valueReal_out + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
+                    double* h_dest_ptr_eig = ((isReal || isDensityCalc) ? h_valueReal_out : reinterpret_cast<double*>(h_valueCmpl_out.get())) + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
                     
                     CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
                 }
