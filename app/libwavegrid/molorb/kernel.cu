@@ -287,15 +287,15 @@ extern "C" void evaluate_on_device_c(
             DeviceBuffer<double> d_latVecs;
             DeviceBuffer<double> d_recVecs2p;
             if (isReal) {
-                DeviceBuffer<double> d_eigVecsReal(h_eigVecsReal, (size_t)nOrb * nEig);
+                d_eigVecsReal = DeviceBuffer<double>(h_eigVecsReal, (size_t)nOrb * nEig);
             } else {
-                DeviceBuffer<cuDoubleComplex> d_eigVecsCmpl(h_eigVecsCmpl, (size_t)nOrb * nEig);
-                DeviceBuffer<cuDoubleComplex> d_phases(h_phases, (size_t)nCell * nEig);
-                DeviceBuffer<int> d_kIndexes(h_kIndexes, nEig);
+                d_eigVecsCmpl = DeviceBuffer<cuDoubleComplex>(h_eigVecsCmpl, (size_t)nOrb * nEig);
+                d_phases = DeviceBuffer<cuDoubleComplex>(h_phases, (size_t)nCell * nEig);
+                d_kIndexes = DeviceBuffer<int>(h_kIndexes, nEig);
             }
             if (isPeriodic) {
-                DeviceBuffer<double> d_latVecs(h_latVecs, 9);
-                DeviceBuffer<double> d_recVecs2p(h_recVecs2p, 9);
+                d_latVecs = DeviceBuffer<double>(h_latVecs, 9);
+                d_recVecs2p = DeviceBuffer<double>(h_recVecs2p, 9);
             }
 
             // --- Per-GPU Kernel Configuration ---
@@ -404,11 +404,19 @@ extern "C" void evaluate_on_device_c(
                     size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * number_size;
 
                     // Source pointer in this GPU's batch buffer
-                    const double* d_src_ptr_eig = ((isReal || isDensityCalc) ? d_valueReal_out_batch.get() : reinterpret_cast<double*>(d_valueCmpl_out_batch.get())) +  (size_t)iEig * current_nPointsZ_batch * nPointsY * nPointsX;
+                    double* d_src_ptr_eig = d_valueReal_out_batch.get();
+                    double* h_dest_ptr_eig = h_valueReal_out;
+                    bool isRealOutput = (isReal || isDensityCalc);
+                    if (!isRealOutput) {
+                        d_src_ptr_eig = reinterpret_cast<double*>(d_valueCmpl_out_batch.get());
+                        h_dest_ptr_eig = reinterpret_cast<double*>(h_valueCmpl_out);
+
+                    }
+                    d_src_ptr_eig +=  (size_t)iEig * current_nPointsZ_batch * nPointsY * nPointsX;
                     
                     // Destination pointer in the final large host output array.
                     // The offset is calculated using the GLOBAL Z-offset.
-                    double* h_dest_ptr_eig = ((isReal || isDensityCalc) ? h_valueReal_out : reinterpret_cast<double*>(h_valueCmpl_out)) + (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
+                    h_dest_ptr_eig += (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
                     
                     CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
                 }
