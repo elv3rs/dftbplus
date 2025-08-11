@@ -137,3 +137,32 @@ __device__ __forceinline__ double getRadialValue(
     return radialVal;
 }
 
+
+__device__ __forceinline__ void matmul3x3_vec(
+    const double mat[3][3],
+    const double vec[3],
+    double result[3]
+) {
+    for (int i = 0; i < 3; i++) {
+        result[i] = mat[i][0] * vec[0] +
+                    mat[i][1] * vec[1] +
+                    mat[i][2] * vec[2];
+    }
+}
+
+__device__ __forceinline__ void foldCoordsIntoCell(
+    double xyz[3],
+    const double latVecs[3][3],
+    const double recVecs2p[3][3]
+) {
+    double frac[3];
+    matmul3x3_vec(recVecs2p, xyz, frac);
+
+    for (int i = 0; i < 3; i++) {
+        frac[i] -= floor(frac[i]);
+    }
+
+    matmul3x3_vec(latVecs, frac, xyz);
+}
+
+

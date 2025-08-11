@@ -9,44 +9,17 @@
 #include "utils.cuh"
 #include "slater.cuh"
 
-__device__ __forceinline__ void matmul3x3_vec(
-    const double mat[3][3],
-    const double vec[3],
-    double result[3]
-) {
-    for (int i = 0; i < 3; i++) {
-        result[i] = mat[i][0] * vec[0] +
-                    mat[i][1] * vec[1] +
-                    mat[i][2] * vec[2];
-    }
-}
-
-__device__ __forceinline__ void foldCoordsIntoCell(
-    double xyz[3],
-    const double latVecs[3][3],
-    const double recVecs2p[3][3]
-) {
-    double frac[3];
-    matmul3x3_vec(recVecs2p, xyz, frac);
-
-    for (int i = 0; i < 3; i++) {
-        frac[i] -= floor(frac[i]);
-    }
-
-    matmul3x3_vec(latVecs, frac, xyz);
-}
-
 
 // =========================================================================
 //  CUDA Kernel.
 //  We might want to separate the arguments into structs for better maintainability.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 4 ways on (isReal, isDensity).
-// We currently assume !isReal=isPeriodic, so we only have 3 combinations:
-// (true, false): regular output in valueReal_out, separate eigenstates -> real of shape (x,y,z, neig)
-// (false, false): output in valueCmpl_out, separate eigenstates -> complex of shape (x,y,z, neig)
-// (true, true): density output in valueReal_out, summed over all eigenstates -> real of shape (x,y,z, 1) [not yet, we only squar rn.]
-// (false, true): todo. currently simply squares the complex output. 
+// To avoid branching (dropped at compile time), we template the kernel 8 ways on (isReal, isDensity, isPeriodic).
+// Todo: Remove isPeriodic flag as template since folding is not done in a tight inner loop
+// isPeriodic decides whether to fold coords into unit cell.
+// isReal decides whether to use real/complex outArrays, eigenvectors (and adds phases)
+// isDensity always compute single eigenstate density output in valueReal_out. real of shape (x,y,z, 1)
+//
 template <bool isReal, bool isDensity, bool isPeriodic>
 __global__ void evaluateKernel(
     const int  nPointsX, const int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
@@ -66,7 +39,7 @@ __global__ void evaluateKernel(
     // We have to chunk the eigenstates into nEig_per_pass due to size constraints.
     // (Cuda doesnt allow templating the shared memory type, so we simply recast it.)
     extern __shared__ double shared_workspace[];
-    size_t doubles_per_thread = isReal ? nEig_per_pass : nEig_per_pass * 2;
+    size_t doubles_per_thread = (isReal || isDensity) ? nEig_per_pass : nEig_per_pass * 2;
     AccumT* point_results_pass = reinterpret_cast<AccumT*>(&shared_workspace[threadIdx.x * doubles_per_thread]);
 
 
@@ -176,6 +149,8 @@ __global__ void evaluateKernel(
 
             if constexpr (isReal || isDensity) {
                 valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
+                if constexpr (isDensity) break; // Collapse all eigenstates into a single density output
+            
             } else {
                 valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
             }
@@ -310,6 +285,13 @@ extern "C" void evaluate_on_device_c(
             if (nEig_per_pass == 0) nEig_per_pass = 1;
             if (nEig_per_pass > nEig) nEig_per_pass = nEig;
             size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * number_size;
+
+            // Density stored as single value per point
+            if (isDensityCalc) {
+                nEig_per_pass = nEig;
+                shared_mem_for_pass = block_size * number_size; 
+            }
+
             
             // Determine the number of Z-slices to process in a single batch
             size_t free_mem, total_mem;
@@ -338,7 +320,8 @@ extern "C" void evaluate_on_device_c(
             }
 
             // Per-GPU batch buffer for the output
-            size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * nEig;
+            const int nEig_out = (isDensityCalc) ? 1 : nEig; // Density output is always 1 eig
+            size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * nEig_out;
             DeviceBuffer<cuDoubleComplex> d_valueCmpl_out_batch;
             DeviceBuffer<double> d_valueReal_out_batch;
             if (isReal || isDensityCalc) {
@@ -400,7 +383,7 @@ extern "C" void evaluate_on_device_c(
                 // --- Per-GPU D2H Copy ---
                 // Copy the computed batch back to the correct slice of the final host array.
                 // The D2H copy will automatically block/  synchronize the kernel for this batch.
-                for(int iEig = 0; iEig < nEig; ++iEig) {
+                for(int iEig = 0; iEig < nEig_out; ++iEig) {
                     size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * number_size;
 
                     // Source pointer in this GPU's batch buffer
