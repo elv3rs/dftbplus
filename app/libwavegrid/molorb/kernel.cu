@@ -14,13 +14,13 @@
 constexpr bool debug = false; 
 // =========================================================================
 //  CUDA Kernel.
-//  We surely want to separate the arguments into structs for better maintainability.
+//  TODO: We surely want to separate the arguments into structs for better maintainability.
 // =========================================================================
 // To avoid branching (dropped at compile time), we template the kernel 4 (3 usable) ways on (isReal, isDensity).
 // isPeriodic decides whether to fold coords into unit cell.
 // isReal decides whether to use real/complex outArrays, eigenvectors (and adds phases)
-// isDensity (requiring isReal) computes single eigenstate density output in valueReal_out of shape (x,y,z,1)
-// solely the orbital value is squared, users is responsible for squaring eigenvec beforehand if needed to avoid repeated multiplication. (And multiplying with occupation numbers if needed.)
+// isDensity (requiring isReal) computes combined density output in valueReal_out of shape (x,y,z,1)
+// User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
 template <bool isReal, bool isDensity>
 __global__ void evaluateKernel(
     const int nPointsX, const int nPointsY, const int nPointsZ_batch, const int z_offset, int nEig, int nOrb, int nStos,
@@ -43,7 +43,6 @@ __global__ void evaluateKernel(
     // (Cuda doesnt allow templating the shared memory type, so we simply recast it.)
     extern __shared__ double shared_workspace[];
     size_t doubles_per_thread = isReal ? nEig_per_pass : nEig_per_pass * 2;
-    if constexpr (isDensity) doubles_per_thread = 1;
     
     AccumT* point_results_pass = reinterpret_cast<AccumT*>(&shared_workspace[threadIdx.x * doubles_per_thread]);
 
@@ -72,7 +71,7 @@ __global__ void evaluateKernel(
         foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(latVecs), reinterpret_cast<const double (*)[3]>(recVecs2p));
     }
 
-
+    double densityAcc = 0.0; // used for density
     // --- Loop over eigenstates in chunks that fit in shared memory ---
     for (int eig_base = 0; eig_base < nEig; eig_base += nEig_per_pass) {
         
@@ -116,16 +115,13 @@ __global__ void evaluateKernel(
 
                     for (int iM = -iL; iM <= iL; ++iM) {
                         double val = radialVal * realTessY(iL, iM, diff, inv_r, inv_r2);
-                        if constexpr (isDensity) val *= val; 
                         
                         // Accumulate into the small shared memory buffer for the current chunk
                         for (int iEig_offset = 0; iEig_offset < nEig_per_pass; ++iEig_offset) {
                             int iEig = eig_base + iEig_offset;
                             if (iEig >= nEig) break; // Don't go past the end on the last chunk
                             size_t eig_idx = IDX2F(orbital_idx_counter, iEig, nOrb);
-                            if constexpr (isDensity) {
-                                point_results_pass[0] += val * eigVecsReal[eig_idx];
-                            } else if constexpr (isReal) {
+                            if constexpr (isReal) {
                                 point_results_pass[iEig_offset] += val * eigVecsReal[eig_idx];
                             } else {
                                 cuDoubleComplex phase = phases[IDX2F(iCell, iEig, nCell)];
@@ -145,15 +141,21 @@ __global__ void evaluateKernel(
             int iEig = eig_base + iEig_offset;
             if (iEig >= nEig) break;
             size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, nPointsX, nPointsY, nPointsZ_batch);
-
-            if constexpr (isReal) {
+            if constexpr (isDensity) {
+                densityAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
+            }
+            else if constexpr (isReal) {
                 valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
-                if constexpr (isDensity) return; 
-            
             } else {
                 valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
             }
         }
+    }
+
+    // Density stored in first eig : (x,y,z, 1)
+    if constexpr (isDensity) {
+        size_t out_idx = IDX4F(i1, i2, i3_batch, 0, nPointsX, nPointsY, nPointsZ_batch);
+        valueReal_out_batch[out_idx] = densityAcc; 
     }
 }
 
@@ -291,12 +293,6 @@ extern "C" void evaluate_on_device_c(
             if (nEig_per_pass == 0) nEig_per_pass = 1;
             if (nEig_per_pass > nEig) nEig_per_pass = nEig;
             size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * number_size;
-
-            // Density stored as single value per point
-            if (isDensityCalc) {
-                nEig_per_pass = nEig;
-                shared_mem_for_pass = block_size * number_size; 
-            }
 
             
             // Determine the number of Z-slices to process in a single batch

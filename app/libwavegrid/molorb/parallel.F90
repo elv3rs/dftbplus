@@ -148,13 +148,13 @@ contains
     !print *, "maxNPows:", maxNPows, "maxNAlphas:", maxNAlphas
     !print *, "Max sto_nPows in data:", maxval(sto_nPows)
     !print *, "iStos", iStos
-    print *, "Stos:", size(stos), "nOrb:", nOrb
+    !print *, "Stos:", size(stos), "nOrb:", nOrb
     !print *, "species", species
     !print *, "sto_alphas:", sto_alphas
     !print *, "sto_nalphas:", sto_nAlphas
     !print *, "sto_nPows:", sto_nPows
 
-    print *, "EV:", sum(eigVecsReal(1, :)), sum(eigVecsReal(:,1))
+    !print *, "EV:", sum(eigVecsReal(1, :)), sum(eigVecsReal(:,1))
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
     ! below. This is fine as, in contrast to what was published, DFTB+ implicitly uses exp(-ikr) as
@@ -167,12 +167,13 @@ contains
     end if
 
     
-    !#: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
-    #: set VARIANT = 'OMP'
+    #: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
+    !#: set VARIANT = 'OMP'
     print *, "Running molorb using ${VARIANT}$ kernel."
 
     call evaluate${VARIANT}$(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
-        & nEigIn=nPoints(4),nEigOut=nEigOut, nOrb=nOrb, nStos=size(stos), maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
+        & nEigIn=size(eigVecsReal, dim=2), nEigOut=nEigOut, nOrb=nOrb, nStos=size(stos), &
+        & maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
         & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), isReal=tReal, isPeriodic=tPeriodic, &
         & isDensityCalc=tAddDensities, origin=origin, gridVecs=gridVecs, eigVecsReal=eigVecsReal, eigVecsCmpl=eigVecsCmpl, &
         & coords=coords, species=species, iStos=iStos, &
@@ -397,15 +398,8 @@ contains
                     val =  radialVal * realTessY(iL, iM, diff, r)
 
                     if (isReal) then
-                      if (isDensityCalc) then
-                        val = val * val
-                      end if
                       do iEig = 1, nEigIn
-                        if (isDensityCalc) then
-                          valueReal(i1, i2, i3, 1) = valueReal(i1, i2, i3, 1) + val * eigVecsReal(ind, iEig) 
-                        else
-                          valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
-                        end if
+                        valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
                       end do
                     else ! Complex
                       do iEig = 1, nEigIn
