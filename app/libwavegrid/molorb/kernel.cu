@@ -43,6 +43,8 @@ __global__ void evaluateKernel(
     // (Cuda doesnt allow templating the shared memory type, so we simply recast it.)
     extern __shared__ double shared_workspace[];
     size_t doubles_per_thread = isReal ? nEig_per_pass : nEig_per_pass * 2;
+    if constexpr (isDensity) doubles_per_thread = 1;
+    
     AccumT* point_results_pass = reinterpret_cast<AccumT*>(&shared_workspace[threadIdx.x * doubles_per_thread]);
 
 
@@ -146,7 +148,7 @@ __global__ void evaluateKernel(
 
             if constexpr (isReal) {
                 valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
-                if constexpr (isDensity) break; 
+                if constexpr (isDensity) return; 
             
             } else {
                 valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];

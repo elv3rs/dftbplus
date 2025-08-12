@@ -64,7 +64,7 @@ program waveplot
   type(TListInt) :: speciesList
 
   !> Auxiliary variables
-  integer :: i1, i2, i3, ioStat, nEig
+  integer :: i1, i2, i3, ioStat, nEig, iEig, nOrbSys
   integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iOrb, mAng, ind, nBox
   logical :: tFinished, tPlotLevel, hasIoError, tRequireIndividual
   real(dp) :: mDist, dist
@@ -234,14 +234,18 @@ program waveplot
   if (wp%opt%tCalcTotChrg) then
       nEig = wp%loc%grid%nCached
       call wp%loc%grid%loadEigenvecs(nEig)
-      allocate(densityCoeffs(wp%input%nOrb, nEig))
+      nOrbSys = size(wp%loc%grid%eigenvecReal, dim=1)
+      @:ASSERT(nOrbSys == wp%input%nOrb)
+      allocate(densityCoeffs(nOrbSys, nEig))
       ! Squared Eigenvectors (density)
       densityCoeffs = wp%loc%grid%eigenvecReal(:,:)  ** 2 
       ! Multiply each orbital by its occupation
-      do iOrb = 1, wp%input%nOrb
-          levelIndex = wp%loc%grid%levelIndex(:, iOrb)
+      print *, "nOrbSys", nOrbSys, "nEig", nEig
+      print *, wp%loc%grid%levelIndex
+      do iEig = 1, nEig
+          levelIndex = wp%loc%grid%levelIndex(:, iEig)
           iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
-          !densityCoeffs(iOrb, :) = densityCoeffs(iOrb, :) * wp%input%occupations(iLevel, iKPoint, iSpin)
+          densityCoeffs(:, iEig) = densityCoeffs(:, iEig) * wp%input%occupations(iLevel, iKPoint, iSpin)
       end do
 
       call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, densityCoeffs, wp%opt%subdivisionFactor, &
@@ -249,6 +253,7 @@ program waveplot
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
       sumTotChrg = sum(totChrg) * wp%loc%gridVol
       print *, "QQQQuickchrg:", sumTotChrg
+      totChrg = 0.0_dp
   end if
 
   if (tRequireIndividual) then
@@ -277,6 +282,7 @@ program waveplot
           buffer(:,:,:) = abs(gridValCmpl)**2
         end if
         if (wp%opt%tCalcTotChrg) then
+          print *, "Added charge for level:", iLevel, "KPoint:", iKPoint, "Spin:", iSpin
           totChrg(:,:,:) = totChrg + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
         end if
         sumChrg = sum(buffer) * wp%loc%gridVol

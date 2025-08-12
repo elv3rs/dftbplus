@@ -148,7 +148,7 @@ contains
     !print *, "maxNPows:", maxNPows, "maxNAlphas:", maxNAlphas
     !print *, "Max sto_nPows in data:", maxval(sto_nPows)
     !print *, "iStos", iStos
-    !print *, "Stos:", size(stos), "nOrb:", nOrb
+    print *, "Stos:", size(stos), "nOrb:", nOrb
     !print *, "species", species
     !print *, "sto_alphas:", sto_alphas
     !print *, "sto_nalphas:", sto_nAlphas
@@ -167,7 +167,8 @@ contains
     end if
 
     
-    #: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
+    !#: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
+    #: set VARIANT = 'OMP'
     print *, "Running molorb using ${VARIANT}$ kernel."
 
     call evaluate${VARIANT}$(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
