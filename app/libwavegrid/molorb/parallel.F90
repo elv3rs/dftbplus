@@ -97,8 +97,7 @@ contains
 
 
 
-    !real(dp), allocatable :: atomOrbValReal(:)
-    integer :: i1, i2, i3
+    integer :: nEigOut
 
     !! SOA for stos contents
     integer, allocatable :: angMoms(:)
@@ -160,14 +159,17 @@ contains
     ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as
     ! factor.
     phases(:,:) = exp(imag * matmul(transpose(cellVec), kPoints))
-      
+    nEigOut = nPoints(4) 
+    if (tAddDensities) then
+      nEigOut = 1
+    end if
 
     
     #: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
     print *, "Running molorb using ${VARIANT}$ kernel."
 
     call evaluate${VARIANT}$(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
-        & nEig=nPoints(4), nOrb=nOrb, nStos=size(stos), maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
+        & nEigIn=nPoints(4),nEigOut=nEigOut, nOrb=nOrb, nStos=size(stos), maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
         & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), isReal=tReal, isPeriodic=tPeriodic, &
         & isDensityCalc=tAddDensities, origin=origin, gridVecs=gridVecs, eigVecsReal=eigVecsReal, eigVecsCmpl=eigVecsCmpl, &
         & coords=coords, species=species, iStos=iStos, &
@@ -181,7 +183,8 @@ contains
 
 
 #:if WITH_CUDA
-  subroutine evaluateCuda(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
+  subroutine evaluateCuda(nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, &
+      & maxNAlphas, nAtom, nCell, nSpecies, &
       & isReal, isPeriodic, isDensityCalc, origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
       & latVecs, recVecs2p, kIndexes, phases, &
       & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
@@ -191,7 +194,8 @@ contains
     integer, intent(in) :: nPointsX ! number of grid points in x direction
     integer, intent(in) :: nPointsY ! number of grid points in y direction
     integer, intent(in) :: nPointsZ ! number of grid points in z direction
-    integer, intent(in) :: nEig ! number of eigenvalues
+    integer, intent(in) :: nEigIn ! number of eigenvalues in input
+    integer, intent(in) :: nEigOut ! number of eigenvalues in output
     integer, intent(in) :: nOrb ! total number of orbitals
     integer, intent(in) :: nStos ! num of unique stos 
     integer, intent(in) :: maxNPows ! max number of powers in a sto
@@ -207,8 +211,8 @@ contains
     logical, intent(in) :: isDensityCalc ! if the calculation is for density instead of wave functions
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3, 3)
-    real(dp), intent(in) :: eigVecsReal(nOrb, nEig)
-    complex(dp), intent(in) :: eigVecsCmpl(nOrb, nEig)
+    real(dp), intent(in) :: eigVecsReal(nOrb, nEigIn)
+    complex(dp), intent(in) :: eigVecsCmpl(nOrb, nEigIn)
     real(dp), intent(in) :: coords(3, nAtom, nCell)
     integer, intent(in) :: species(nAtom)
     integer, intent(in) :: iStos(nSpecies + 1)
@@ -216,8 +220,8 @@ contains
     !> Additional Periodic system parameters
     real(dp), intent(in) :: latVecs(3, 3) ! lattice vectors
     real(dp), intent(in) :: recVecs2p(3, 3) ! reciprocal vectors divided by 2pi, or null-array (molecular)
-    integer, intent(in) :: kIndexes(nEig) ! index of the k-points for each orbital in KPoints
-    complex(dp), intent(in) :: phases(nCell, nEig) ! phases for the periodic system
+    integer, intent(in) :: kIndexes(nEigIn) ! index of the k-points for each orbital in KPoints
+    complex(dp), intent(in) :: phases(nCell, nEigIn) ! phases for the periodic system
 
     ! STO data
     integer, intent(in) :: sto_angMoms(nStos)
@@ -228,9 +232,9 @@ contains
     real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
 
     !> Contains the real grid on exit
-    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
+    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEigOut)
     !> Contains the complex grid on exit
-    complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEig)
+    complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
     !! bools als c_int
     integer(c_int) :: iReal, iPeriodic, iDensity
 
@@ -238,23 +242,23 @@ contains
     
     ! Interface to the C-function defined in kernel.cu
     interface
-       subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
+       subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, &
         & maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc, origin, gridVecs, &
         & eigVecsReal, eigVecsCmpl, coords, species, iStos, latVecs, recVecs2p, kIndexes, phases, &
         & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
         & valueReal, valueCmpl) bind(C, name='evaluate_on_device_c')
          import :: c_int, c_double, c_double_complex
-         integer(c_int), intent(in), value :: nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, &
-            & maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc
-         real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEig), &
+         integer(c_int), intent(in), value :: nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, &
+            & nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc
+         real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEigIn), &
            & coords(3, nAtom, nCell), latVecs(3, 3), recVecs2p(3, 3), sto_cutoffsSq(nStos), &
            & sto_coeffs(maxNPows, maxNAlphas, nStos), sto_alphas(maxNAlphas, nStos)
          integer(c_int), intent(in) :: sto_angMoms(nStos), sto_nPows(nStos), sto_nAlphas(nStos), &
-           & species(nAtom), iStos(nSpecies + 1), kIndexes(nEig)
-         complex(c_double_complex), intent(in) :: eigVecsCmpl(nOrb, nEig), phases(nCell, nEig)
+           & species(nAtom), iStos(nSpecies + 1), kIndexes(nEigIn)
+         complex(c_double_complex), intent(in) :: eigVecsCmpl(nOrb, nEigIn), phases(nCell, nEigIn)
          !Output arrays
-         real(c_double), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
-         complex(c_double_complex), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEig)
+         real(c_double), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEigOut)
+         complex(c_double_complex), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
        end subroutine evaluate_on_device_c
     end interface
 
@@ -263,7 +267,7 @@ contains
     iDensity = merge(1, 0, isDensityCalc)
 
     call evaluate_on_device_c( &
-      & nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, &
+      & nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, maxNAlphas, &
       & nAtom, nCell, nSpecies, &
       & iReal, iPeriodic, iDensity, &
       & origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
@@ -276,7 +280,7 @@ contains
 
 
 
-  subroutine evaluateOMP(nPointsX, nPointsY, nPointsZ, nEig, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
+  subroutine evaluateOMP(nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
       & isReal, isPeriodic, isDensityCalc, origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
       & latVecs, recVecs2p, kIndexes, phases, &
       & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
@@ -285,7 +289,8 @@ contains
     integer, intent(in) :: nPointsX ! number of grid points in x direction
     integer, intent(in) :: nPointsY ! number of grid points in y direction
     integer, intent(in) :: nPointsZ ! number of grid points in z direction
-    integer, intent(in) :: nEig ! number of eigenvalues
+    integer, intent(in) :: nEigIn ! number of eigenvalues in input
+    integer, intent(in) :: nEigOut ! number of eigenvalues in output
     integer, intent(in) :: nOrb ! total number of orbitals
     integer, intent(in) :: nStos ! num of unique stos 
     integer, intent(in) :: maxNPows ! max number of powers in a sto
@@ -298,11 +303,11 @@ contains
     !> System parameters
     logical, intent(in) :: isReal  ! if the system is real
     logical, intent(in) :: isPeriodic  ! if the system is periodic
-    logical, intent(in) :: isDensityCalc ! if the calculation is for density instead of wave functions
+    logical, intent(in) :: isDensityCalc ! if the calculation is for density. Implies isReal.
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3, 3)
-    real(dp), intent(in) :: eigVecsReal(nOrb, nEig)
-    complex(dp), intent(in) :: eigVecsCmpl(nOrb, nEig)
+    real(dp), intent(in) :: eigVecsReal(nOrb, nEigIn)
+    complex(dp), intent(in) :: eigVecsCmpl(nOrb, nEigIn)
     real(dp), intent(in) :: coords(3, nAtom, nCell)
     integer, intent(in) :: species(nAtom)
     integer, intent(in) :: iStos(nSpecies + 1)
@@ -310,8 +315,8 @@ contains
     !> Additional Periodic system parameters
     real(dp), intent(in) :: latVecs(3, 3) ! lattice vectors
     real(dp), intent(in) :: recVecs2p(3, 3) ! reciprocal vectors divided by 2pi, or null-array (molecular)
-    integer, intent(in) :: kIndexes(nEig) ! index of the k-points for each orbital in KPoints
-    complex(dp), intent(in) :: phases(nCell, nEig) ! phases for the periodic system
+    integer, intent(in) :: kIndexes(nEigIn) ! index of the k-points for each orbital in KPoints
+    complex(dp), intent(in) :: phases(nCell, nEigIn) ! phases for the periodic system
 
     ! STO data
     integer, intent(in) :: sto_angMoms(nStos)
@@ -322,9 +327,9 @@ contains
     real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
 
     !> Contains the real grid on exit
-    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEig)
+    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEigOut)
     !> Contains the complex grid on exit
-    complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEig)
+    complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
 
     
 
@@ -337,12 +342,11 @@ contains
     integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iL, iCell, ii, jj
     
     !$omp parallel do collapse(3) &
-    !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, ii, jj, &
-    !$omp&              xyz, diff, r, val, radialVal, sto_tmp_pows, sto_tmp_rexp, &
-    !$omp&              ind, iSpecies, rSq) &
+    !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, ii, jj, xyz, diff, &
+    !$omp&              r, val, radialVal, sto_tmp_pows, sto_tmp_rexp, ind, iSpecies, rSq) &
     !$omp&    shared(gridVecs, origin, species, nPointsX, nPointsY, nPointsZ, &
-    !$omp&              sto_angMoms, sto_nPows, sto_cutoffsSq, sto_nAlphas, &
-    !$omp&              sto_coeffs, sto_alphas, eigVecsReal, eigVecsCmpl, nEig, nOrb, nStos, &
+    !$omp&              sto_angMoms, sto_nPows, sto_cutoffsSq, sto_nAlphas, sto_coeffs, &
+    !$omp&              sto_alphas, eigVecsReal, eigVecsCmpl, nEigIn, nEigOut, nOrb, nStos, &
     !$omp&              coords, iStos, nAtom, nCell, isPeriodic, recVecs2p, latVecs, &
     !$omp&              phases, isReal, isDensityCalc, valueReal, valueCmpl)
     lpI3: do i3 = 1, nPointsZ
@@ -393,11 +397,15 @@ contains
                       if (isDensityCalc) then
                         val = val * val
                       end if
-                      do iEig = 1, nEig
-                        valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
+                      do iEig = 1, nEigIn
+                        if (isDensityCalc) then
+                          valueReal(i1, i2, i3, 1) = valueReal(i1, i2, i3, 1) + val * eigVecsReal(ind, iEig) 
+                        else
+                          valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
+                        end if
                       end do
                     else ! Complex
-                      do iEig = 1, nEig
+                      do iEig = 1, nEigIn
                         valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + val &
                             & * phases(iCell, kIndexes(iEig)) *  eigVecsCmpl(ind, iEig)
                       end do

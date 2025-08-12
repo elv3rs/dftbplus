@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
+#include <assert.h>
 
 #include "kernel.cuh"
 #include "utils.cuh"
@@ -12,18 +13,17 @@
 
 // =========================================================================
 //  CUDA Kernel.
-//  We might want to separate the arguments into structs for better maintainability.
+//  We surely want to separate the arguments into structs for better maintainability.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 8 ways on (isReal, isDensity, isPeriodic).
-// Todo: Remove isPeriodic flag as template since folding is not done in a tight inner loop
+// To avoid branching (dropped at compile time), we template the kernel 4 (3 usable) ways on (isReal, isDensity).
 // isPeriodic decides whether to fold coords into unit cell.
 // isReal decides whether to use real/complex outArrays, eigenvectors (and adds phases)
-// isDensity always compute single eigenstate density output in valueReal_out. real of shape (x,y,z, 1)
-//
-template <bool isReal, bool isDensity, bool isPeriodic>
+// isDensity (requiring isReal) computes single eigenstate density output in valueReal_out of shape (x,y,z,1)
+// solely the orbital value is squared, users is responsible for squaring eigenvec beforehand if needed to avoid repeated multiplication. (And multiplying with occupation numbers if needed.)
+template <bool isReal, bool isDensity>
 __global__ void evaluateKernel(
-    const int  nPointsX, const int nPointsY, int nPointsZ_batch, int z_offset, int nEig, int nOrb, int nStos,
-    int maxNPows, int maxNAlphas, int nAtom, int nCell, int nEig_per_pass,
+    const int nPointsX, const int nPointsY, const int nPointsZ_batch, const int z_offset, int nEig, int nOrb, int nStos,
+    int maxNPows, int maxNAlphas, int nAtom, int nCell, int nEig_per_pass, const bool isPeriodic,
     const double* __restrict__ origin, const double* __restrict__ gridVecs, const double* __restrict__ eigVecsReal,
     const cuDoubleComplex* __restrict__ eigVecsCmpl, 
     const double* __restrict__ coords, const int* __restrict__ species, const int* __restrict__ iStos,
@@ -33,13 +33,15 @@ __global__ void evaluateKernel(
     const double* __restrict__ sto_cutoffsSq, const double* __restrict__ sto_coeffs, const double* __restrict__ sto_alphas,
     double* valueReal_out_batch, cuDoubleComplex* valueCmpl_out_batch)
 {
-    using AccumT = typename std::conditional<(isDensity || isReal), double, cuDoubleComplex>::type;
+    // isDensity not compatible with isCmplx=!isReal
+    assert(!(isDensity && !isReal));
+    using AccumT = typename std::conditional<(isReal), double, cuDoubleComplex>::type;
     
     // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
     // We have to chunk the eigenstates into nEig_per_pass due to size constraints.
     // (Cuda doesnt allow templating the shared memory type, so we simply recast it.)
     extern __shared__ double shared_workspace[];
-    size_t doubles_per_thread = (isReal || isDensity) ? nEig_per_pass : nEig_per_pass * 2;
+    size_t doubles_per_thread = isReal ? nEig_per_pass : nEig_per_pass * 2;
     AccumT* point_results_pass = reinterpret_cast<AccumT*>(&shared_workspace[threadIdx.x * doubles_per_thread]);
 
 
@@ -63,7 +65,7 @@ __global__ void evaluateKernel(
                            + i3_global * gridVecs[IDX2F(i, 2, 3)];
     }
     // If periodic, fold into cell by discarding the non-fractional part in lattice vector multiples.
-    if constexpr (isPeriodic) {
+    if (isPeriodic) {
         foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(latVecs), reinterpret_cast<const double (*)[3]>(recVecs2p));
     }
 
@@ -111,28 +113,22 @@ __global__ void evaluateKernel(
 
                     for (int iM = -iL; iM <= iL; ++iM) {
                         double val = radialVal * realTessY(iL, iM, diff, inv_r, inv_r2);
+                        if constexpr (isDensity) val *= val; 
                         
-                        if constexpr (isDensity) {
-                                val = val * val; 
-                        }
                         // Accumulate into the small shared memory buffer for the current chunk
                         for (int iEig_offset = 0; iEig_offset < nEig_per_pass; ++iEig_offset) {
                             int iEig = eig_base + iEig_offset;
                             if (iEig >= nEig) break; // Don't go past the end on the last chunk
                             size_t eig_idx = IDX2F(orbital_idx_counter, iEig, nOrb);
-                            if constexpr (isReal) {
+                            if constexpr (isDensity) {
+                                point_results_pass[0] += val * eigVecsReal[eig_idx];
+                            } else if constexpr (isReal) {
                                 point_results_pass[iEig_offset] += val * eigVecsReal[eig_idx];
                             } else {
                                 cuDoubleComplex phase = phases[IDX2F(iCell, iEig, nCell)];
                                 cuDoubleComplex ev = eigVecsCmpl[eig_idx];
                                 cuDoubleComplex psi = cuCmul(make_cuDoubleComplex(val, 0.0), cuCmul(phase, ev));
-
-                                if constexpr (isDensity) {
-                                    point_results_pass[iEig_offset] += cuCreal(psi) * cuCreal(psi) + cuCimag(psi) * cuCimag(psi);
-                                }
-                                else {
-                                    point_results_pass[iEig_offset] = cuCadd(point_results_pass[iEig_offset], psi);
-                                }
+                                point_results_pass[iEig_offset] = cuCadd(point_results_pass[iEig_offset], psi);
                             }
                         }
                         orbital_idx_counter++;
@@ -147,9 +143,9 @@ __global__ void evaluateKernel(
             if (iEig >= nEig) break;
             size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, nPointsX, nPointsY, nPointsZ_batch);
 
-            if constexpr (isReal || isDensity) {
+            if constexpr (isReal) {
                 valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
-                if constexpr (isDensity) break; // Collapse all eigenstates into a single density output
+                if constexpr (isDensity) break; 
             
             } else {
                 valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
@@ -165,7 +161,7 @@ __global__ void evaluateKernel(
 // =========================================================================
 extern "C" void evaluate_on_device_c(
     const int nPointsX, const int nPointsY, const int nPointsZ,
-    const int nEig, const int nOrb, const int nStos,
+    const int nEig, const int nEigOut, const int nOrb, const int nStos,
     const int maxNPows, const int maxNAlphas,
     const int nAtom, const int nCell, const int nSpecies,
     const int isReal, const int isPeriodic, const int isDensityCalc,
@@ -190,6 +186,13 @@ extern "C" void evaluate_on_device_c(
     cuDoubleComplex* h_valueCmpl_out
 ){
     if (nEig == 0 || nPointsZ == 0) return; // Nothing to do
+    if (isDensityCalc) {
+        assert(isReal);
+        assert(nEigOut == 1);
+    } else {
+        assert(nEigOut == nEig);
+    }
+    
     
     // We currently assume a hardcoded maximum for the number of powers.
     if (maxNPows > STO_MAX_POWS) {
@@ -345,10 +348,10 @@ extern "C" void evaluate_on_device_c(
                     CHECK_CUDA(cudaEventRecord(startKernelOnly));
                 }
 
-                #define LAUNCH_KERNEL(R, D, P) \
-                evaluateKernel<R, D, P><<<grid_size, block_size, shared_mem_for_pass>>>( \
+                #define LAUNCH_KERNEL(R, D) \
+                evaluateKernel<R, D><<<grid_size, block_size, shared_mem_for_pass>>>( \
                     nPointsX, nPointsY, current_nPointsZ_batch, z_offset_global, nEig, nOrb, nStos, \
-                    maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass, \
+                    maxNPows, maxNAlphas, nAtom, nCell, nEig_per_pass, isPeriodic, \
                     d_origin.get(), d_gridVecs.get(), d_eigVecsReal.get(), d_eigVecsCmpl.get(), \
                     d_coords.get(), d_species.get(), d_iStos.get(), \
                     d_latVecs.get(), d_recVecs2p.get(), d_kIndexes.get(), d_phases.get(), \
@@ -358,21 +361,14 @@ extern "C" void evaluate_on_device_c(
 
                 if (isReal) {
                     if (isDensityCalc) {
-                        if (isPeriodic) LAUNCH_KERNEL(true, true, true);
-                        else LAUNCH_KERNEL(true, true, false);
+                        LAUNCH_KERNEL(true, true);
                     } else {
-                        if (isPeriodic) LAUNCH_KERNEL(true, false, true);
-                        else LAUNCH_KERNEL(true, false, false);
+                        LAUNCH_KERNEL(true, false);
                     }
                 } else {
-                    if (isDensityCalc) {
-                        if (isPeriodic) LAUNCH_KERNEL(false, true, true);
-                        else LAUNCH_KERNEL(false, true, false);
-                    } else {
-                        if (isPeriodic) LAUNCH_KERNEL(false, false, true);
-                        else LAUNCH_KERNEL(false, false, false);
-                    }
+                    LAUNCH_KERNEL(false, false);
                 }
+                
                 #undef LAUNCH_KERNEL
 
                 if(deviceId == 0) {

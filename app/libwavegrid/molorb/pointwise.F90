@@ -102,7 +102,7 @@ contains
     real(dp), allocatable :: atomOrbValReal(:)
     complex(dp), allocatable :: atomOrbValCmpl(:)
     complex(dp) :: phases(nCell, size(kPoints, dim=2))
-    real(dp) :: xx, val
+    real(dp) :: xx, val, acc
     integer :: nPoints(4)
     integer :: ind, i1, i2, i3, iEig, iAtom, iOrb, iM, iSpecies, iL, iCell
 
@@ -198,10 +198,18 @@ contains
               atomAllOrbVal(:,:) = atomAllOrbVal**2
             end if
             atomOrbValReal(:) = sum(atomAllOrbVal, dim=2)
-            do iEig = 1, nPoints(4)
-              valueReal(i1, i2, i3, iEig) = dot_product(atomOrbValReal(nonZeroIndices),&
+            if (tAddDensities) then
+              acc = 0.0_dp
+              do iEig = 1, nPoints(4)
+                acc = acc + dot_product(atomOrbValReal(nonZeroIndices), eigVecsReal(nonZeroIndices, iEig))
+              end do
+              valueReal(i1, i2, i3, 1) = acc
+            else
+              do iEig = 1, nPoints(4)
+                valueReal(i1, i2, i3, iEig) = dot_product(atomOrbValReal(nonZeroIndices),&
                   & eigVecsReal(nonZeroIndices, iEig))
-            end do
+              end do
+            end if
           else
             ind = 0
             do iEig = 1, nPoints(4)

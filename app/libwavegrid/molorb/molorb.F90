@@ -24,7 +24,6 @@ module libwavegrid_molorb
   implicit none
 
   private
-  save
 
 
   !> Data type containing information about the basis for a species.
@@ -226,10 +225,10 @@ contains
     !> timing variables
     integer(dp) :: startTime, endTime, clockRate
 
-    real(dp), save :: kPoints(3, 0)
-    integer, save :: kIndexes(0)
-    complex(dp), save :: valueCmpl(0, 0, 0, 0)
-    complex(dp), save :: eigVecsCmpl(0, 0)
+    real(dp) :: kPoints(3, 0)
+    integer :: kIndexes(0)
+    complex(dp) :: valueCmpl(0, 0, 0, 0)
+    complex(dp) :: eigVecsCmpl(0, 0)
     logical :: tAddDensities
 
     @:ASSERT(this%tInitialised)
@@ -295,9 +294,9 @@ contains
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
 
-    real(dp), save :: valueReal(0,0,0,0)
-    real(dp), save :: eigVecsReal(0,0)
-    logical, save :: tAddDensities = .false.
+    real(dp) :: valueReal(0,0,0,0)
+    real(dp) :: eigVecsReal(0,0)
+    logical :: tAddDensities = .false.
 
     @:ASSERT(this%tInitialised)
     @:ASSERT(size(origin) == 3)

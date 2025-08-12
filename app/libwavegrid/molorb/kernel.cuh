@@ -10,7 +10,7 @@ extern "C" {
 
 void evaluate_on_device_c(
     const int nPointsX, const int nPointsY, const int nPointsZ,
-    const int nEig, const int nOrb, const int nStos,
+    const int nEigIn, const int nEigOut, const int nOrb, const int nStos,
     const int maxNPows, const int maxNAlphas,
     const int nAtom, const int nCell, const int nSpecies,
     const int isReal, const int isPeriodic, const int isDensityCalc,
