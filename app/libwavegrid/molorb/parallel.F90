@@ -154,6 +154,8 @@ contains
     !print *, "sto_nalphas:", sto_nAlphas
     !print *, "sto_nPows:", sto_nPows
 
+    print *, "EV:", sum(eigVecsReal(1, :)), sum(eigVecsReal(:,1))
+
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
     ! below. This is fine as, in contrast to what was published, DFTB+ implicitly uses exp(-ikr) as
     ! a phase factor, as the unpack routines assemble the lower triangular matrix with exp(ikr) as

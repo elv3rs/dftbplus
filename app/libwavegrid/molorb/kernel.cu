@@ -10,7 +10,8 @@
 #include "utils.cuh"
 #include "slater.cuh"
 
-
+// more print statements
+constexpr bool debug = false; 
 // =========================================================================
 //  CUDA Kernel.
 //  We surely want to separate the arguments into structs for better maintainability.
@@ -310,7 +311,7 @@ extern "C" void evaluate_on_device_c(
             }
 
             #pragma omp critical
-            if (deviceId == 0) {
+            if (deviceId == 0 && debug) {
                 printf("\n--- GPU %d (Lead) Configuration ---\n", deviceId);
                 printf("  Z-slice workload: %d (from index %d to %d)\n", z_count_for_device, z_start_for_device, z_start_for_device + z_count_for_device - 1);
                 printf("  Block size: %d threads, %zub shared mem per block, %d eigs per pass\n",
@@ -378,7 +379,7 @@ extern "C" void evaluate_on_device_c(
 
                 // --- Per-GPU D2H Copy ---
                 // Copy the computed batch back to the correct slice of the final host array.
-                // The D2H copy will automatically block/  synchronize the kernel for this batch.
+                // The D2H copy will automatically block/ synchronize the kernel for this batch.
                 for(int iEig = 0; iEig < nEig_out; ++iEig) {
                     size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * number_size;
 
@@ -396,7 +397,6 @@ extern "C" void evaluate_on_device_c(
                     // Destination pointer in the final large host output array.
                     // The offset is calculated using the GLOBAL Z-offset.
                     h_dest_ptr_eig += (size_t)iEig * nPointsZ * nPointsY * nPointsX + (size_t)z_offset_global * nPointsY * nPointsX;
-                    
                     CHECK_CUDA(cudaMemcpy(h_dest_ptr_eig, d_src_ptr_eig, plane_size_bytes, cudaMemcpyDeviceToHost));
                 }
                 if(deviceId == 0) {
@@ -433,8 +433,11 @@ extern "C" void evaluate_on_device_c(
 
 
     float overhead = timeEverything - (totalKernelTime_ms + totalD2HCopyTime_ms);
+    if(debug)
     printf("\n--- GPU Timing Results ---\n");
     printf("Total Multi-GPU execution time: %.2f ms\n", timeEverything);
+    if(debug){
     printf("(Lead) Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms, (totalKernelTime_ms / timeEverything) * 100.0);
     printf("(Lead) D2H Copy:         %.2f ms (%.1f%%)\n", totalD2HCopyTime_ms, (totalD2HCopyTime_ms / timeEverything) * 100.0);
+    }
 }

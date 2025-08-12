@@ -105,6 +105,7 @@ module libwavegrid_gridcache
     procedure :: TGridCache_next_cmpl
     generic :: next => TGridCache_next_real, TGridCache_next_cmpl
     procedure :: init => TGridCache_init
+    procedure :: loadEigenvecs
 
   end type TGridCache
 
@@ -299,7 +300,7 @@ contains
     !> Contains the molecular orbital on the grid on exit
     complex(dp), pointer :: gridValCmpl(:,:,:)
 
-    !> Indices of the moleular orbital (spin, kpoint, level)
+    !> Indices of the molecular orbital (spin, kpoint, level)
     integer, intent(out) :: levelIndex(:)
 
     !> If all orbitals had been processed.
@@ -310,6 +311,42 @@ contains
     call localNext(sf, gridValReal, gridValCmpl, levelIndex, tFinished)
 
   end subroutine TGridCache_next_cmpl
+  
+  !> Loads the Eigenvectors from disk
+  subroutine loadEigenvecs(sf, iEnd)
+    !> Gridcache instance
+    class(TgridCache), intent(inout) :: sf
+    !> Nr. of eigenvectors to read
+    integer, intent(in) :: iEnd
+    integer :: iStartAbs
+    integer :: iSpin, iKPoint, iLevel
+    integer :: ind, tmp
+    iStartAbs = sf%iGrid ! (1)
+    ind = 1
+    !print *, "Loading EV for index range", iStartAbs, "to", iStartAbs + iEnd - 1
+
+    do while (ind <= iEnd)
+      if (sf%tReal) then
+        read(sf%fdEigVec%unit) sf%eigenvecReal(:,ind)
+      else
+        read(sf%fdEigVec%unit) sf%eigenvecCmpl(:,ind)
+      end if
+      sf%nReadEigVec = sf%nReadEigVec + 1
+
+      ! If eigenvec belongs to a level which must be plotted, keep it
+      iSpin = (sf%nReadEigVec - 1) / (sf%nAllLevel * sf%nAllKPoint) + 1
+      tmp = mod(sf%nReadEigVec - 1, sf%nAllLevel * sf%nAllKPoint)
+      iKPoint = tmp / sf%nAllLevel + 1
+      iLevel = mod(tmp, sf%nAllLevel) + 1
+      if (all([iLevel, iKPoint, iSpin] == sf%levelIndex(:,iStartAbs+ind-1))) then
+        ind = ind + 1
+        if (sf%tVerbose) then
+          write(stdout, "(I5,I7,I7,A8)") iSpin, iKPoint, iLevel, "read"
+        end if
+      end if
+    end do
+  end subroutine loadEigenvecs
+
 
 
   !> Working subroutine for the TGridCache_next_* subroutines.
@@ -345,27 +382,9 @@ contains
       iEnd = min(sf%nGrid, sf%iGrid + sf%nCached - 1) - sf%iGrid + 1
       iEndAbs = sf%iGrid + iEnd - 1
 
-      ind = 1
-      do while (ind <= iEnd)
-        if (sf%tReal) then
-          read(sf%fdEigVec%unit) sf%eigenvecReal(:,ind)
-        else
-          read(sf%fdEigVec%unit) sf%eigenvecCmpl(:,ind)
-        end if
-        sf%nReadEigVec = sf%nReadEigVec + 1
-
-        ! If eigenvec belongs to a level which must be plotted, keep it
-        iSpin = (sf%nReadEigVec - 1) / (sf%nAllLevel * sf%nAllKPoint) + 1
-        tmp = mod(sf%nReadEigVec - 1, sf%nAllLevel * sf%nAllKPoint)
-        iKPoint = tmp / sf%nAllLevel + 1
-        iLevel = mod(tmp, sf%nAllLevel) + 1
-        if (all([iLevel, iKPoint, iSpin] == sf%levelIndex(:,iStartAbs+ind-1))) then
-          ind = ind + 1
-          if (sf%tVerbose) then
-            write(stdout, "(I5,I7,I7,A8)") iSpin, iKPoint, iLevel, "read"
-          end if
-        end if
-      end do
+      if (sf%nReadEigVec < iEndAbs) then
+        call loadEigenvecs(sf, iEnd)
+      end if
 
       ! Get molecular orbital for that eigenvector
       if (sf%tVerbose) then

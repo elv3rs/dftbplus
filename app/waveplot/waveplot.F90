@@ -40,10 +40,10 @@ program waveplot
   complex(dp), pointer :: gridValCmpl(:,:,:)
 
   !> Arrays holding the volumetric data
-  real(dp), allocatable :: buffer(:,:,:), totChrg(:,:,:), atomicChrg(:,:,:,:), spinUp(:,:,:)
+  real(dp), allocatable :: buffer(:,:,:), totChrg(:,:,:), atomicChrg(:,:,:,:), spinUp(:,:,:), totChrg4d(:,:,:,:)
 
   !> Occupation of orbitals
-  real(dp), allocatable :: orbitalOcc(:,:)
+  real(dp), allocatable :: orbitalOcc(:,:), densityCoeffs(:,:)
 
   !> Array holding temporary coordinate information
   real(dp), allocatable :: coords(:,:)
@@ -64,9 +64,9 @@ program waveplot
   type(TListInt) :: speciesList
 
   !> Auxiliary variables
-  integer :: i1, i2, i3, ioStat
+  integer :: i1, i2, i3, ioStat, nEig
   integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iOrb, mAng, ind, nBox
-  logical :: tFinished, tPlotLevel, hasIoError
+  logical :: tFinished, tPlotLevel, hasIoError, tRequireIndividual
   real(dp) :: mDist, dist
   real(dp) :: cellMiddle(3), boxMiddle(3), frac(3), cubeCorner(3), coord(3), shift(3)
   real(dp) :: invBoxVecs(3,3), recVecs2p(3,3)
@@ -83,6 +83,7 @@ program waveplot
   allocate(buffer(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)))
   if (wp%opt%tCalcTotChrg) then
     allocate(totChrg(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)), source=0.0_dp)
+    allocate(totChrg4d(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3), 1), source=0.0_dp)
     if (wp%opt%tPlotTotSpin) then
       allocate(spinUp(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)), source=0.0_dp)
     end if
@@ -228,76 +229,99 @@ program waveplot
     deallocate(cellVec)
     deallocate(rCellVec)
   end if
+  tRequireIndividual = wp%opt%tCalcTotChrg .or. wp%opt%tPlotChrgDiff &
+                    & .or. wp%opt%tPlotReal .or. wp%opt%tPlotImag .or. wp%opt%tPlotTotSpin
+  if (wp%opt%tCalcTotChrg) then
+      nEig = wp%loc%grid%nCached
+      call wp%loc%grid%loadEigenvecs(nEig)
+      allocate(densityCoeffs(wp%input%nOrb, nEig))
+      ! Squared Eigenvectors (density)
+      densityCoeffs = wp%loc%grid%eigenvecReal(:,:)  ** 2 
+      ! Multiply each orbital by its occupation
+      do iOrb = 1, wp%input%nOrb
+          levelIndex = wp%loc%grid%levelIndex(:, iOrb)
+          iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
+          !densityCoeffs(iOrb, :) = densityCoeffs(iOrb, :) * wp%input%occupations(iLevel, iKPoint, iSpin)
+      end do
 
-  ! Calculate the molecular orbitals and write them to the disk
-  tFinished = .false.
-  hasIoError = .false.
-  lpStates: do while (.not. tFinished)
-    ! Get the next grid and its parameters
-    if (wp%input%tRealHam) then
-      call wp%loc%grid%next(gridValReal, levelIndex, tFinished)
-    else
-      call wp%loc%grid%next(gridValCmpl, levelIndex, tFinished)
-    end if
-    iLevel = levelIndex(1)
-    iKPoint = levelIndex(2)
-    iSpin = levelIndex(3)
+      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, densityCoeffs, wp%opt%subdivisionFactor, &
+          & totChrg4d , addDensities=.true.)
+      totChrg(:,:,:) = totChrg4d(:,:,:,1)
+      sumTotChrg = sum(totChrg) * wp%loc%gridVol
+      print *, "QQQQuickchrg:", sumTotChrg
+  end if
 
-    ! Build charge if needed for total charge or was explicitely required
-    tPlotLevel = any(wp%opt%plottedSpins == iSpin) &
-        &.and. any(wp%opt%plottedKPoints == iKPoint) .and. any(wp%opt%plottedLevels == iLevel)
-    if (wp%opt%tCalcTotChrg .or. (tPlotLevel .and. (wp%opt%tPlotChrg .or. wp%opt%tPlotChrgDiff)))&
-        & then
+  if (tRequireIndividual) then
+    ! Calculate the molecular orbitals and write them to the disk
+    tFinished = .false.
+    hasIoError = .false.
+    lpStates: do while (.not. tFinished)
+      ! Get the next grid and its parameters
       if (wp%input%tRealHam) then
-        buffer(:,:,:) = gridValReal**2
+        call wp%loc%grid%next(gridValReal, levelIndex, tFinished)
       else
-        buffer(:,:,:) = abs(gridValCmpl)**2
+        call wp%loc%grid%next(gridValCmpl, levelIndex, tFinished)
       end if
-      if (wp%opt%tCalcTotChrg) then
-        totChrg(:,:,:) = totChrg + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
-      end if
-      sumChrg = sum(buffer) * wp%loc%gridVol
-      if (wp%opt%tVerbose) then
-        write(*, "(I5,I7,I7,A8,F12.6,F12.6)") iSpin, iKPoint, iLevel, "calc", sumChrg,&
-            & wp%input%occupations(iLevel, iKPoint, iSpin)
-      end if
-    end if
+      iLevel = levelIndex(1)
+      iKPoint = levelIndex(2)
+      iSpin = levelIndex(3)
 
-    ! Save spin up density before processing first level for spin down
-    if (wp%opt%tPlotTotSpin .and. (iSpin == 1)) then
-      spinUp(:,:,:) = spinUp + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
-    end if
-
-    ! Build and dump desired properties of the current level
-    if (tPlotLevel) then
-      if (wp%opt%tPlotChrg) then
-        call writePropertyToCube("charge", buffer, wp, levelIndex, ioStat=ioStat)
-        hasIoError = hasIoError .or. ioStat /= 0
-      end if
-
-      if (wp%opt%tPlotChrgDiff) then
-        buffer(:,:,:) = buffer - (sumChrg / sumAtomicChrg) * atomicChrg(:,:,:,1)
-        call writePropertyToCube("chargediff", buffer, wp, levelIndex, ioStat=ioStat)
-        hasIoError = hasIoError .or. ioStat /= 0
-      end if
-
-      if (wp%opt%tPlotReal) then
+      ! Build charge if needed for total charge or was explicitely required
+      tPlotLevel = any(wp%opt%plottedSpins == iSpin) &
+          &.and. any(wp%opt%plottedKPoints == iKPoint) .and. any(wp%opt%plottedLevels == iLevel)
+      if (wp%opt%tCalcTotChrg .or. (tPlotLevel .and. (wp%opt%tPlotChrg .or. wp%opt%tPlotChrgDiff)))&
+          & then
         if (wp%input%tRealHam) then
-          buffer(:,:,:) = gridValReal
+          buffer(:,:,:) = gridValReal**2
         else
-          buffer(:,:,:) = real(gridValCmpl, dp)
+          buffer(:,:,:) = abs(gridValCmpl)**2
         end if
-        call writePropertyToCube("real", buffer, wp, levelIndex, ioStat=ioStat)
-        hasIoError = hasIoError .or. ioStat /= 0
+        if (wp%opt%tCalcTotChrg) then
+          totChrg(:,:,:) = totChrg + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
+        end if
+        sumChrg = sum(buffer) * wp%loc%gridVol
+        if (wp%opt%tVerbose) then
+          write(*, "(I5,I7,I7,A8,F12.6,F12.6)") iSpin, iKPoint, iLevel, "calc", sumChrg,&
+              & wp%input%occupations(iLevel, iKPoint, iSpin)
+        end if
       end if
 
-      if (wp%opt%tPlotImag) then
-        buffer(:,:,:) = aimag(gridValCmpl)
-        call writePropertyToCube("imag", buffer, wp, levelIndex)
-        hasIoError = hasIoError .or. ioStat /= 0
+      ! Save spin up density before processing first level for spin down
+      if (wp%opt%tPlotTotSpin .and. (iSpin == 1)) then
+        spinUp(:,:,:) = spinUp + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
       end if
-    end if
-  end do lpStates
+
+      ! Build and dump desired properties of the current level
+      if (tPlotLevel) then
+        if (wp%opt%tPlotChrg) then
+          call writePropertyToCube("charge", buffer, wp, levelIndex, ioStat=ioStat)
+          hasIoError = hasIoError .or. ioStat /= 0
+        end if
+
+        if (wp%opt%tPlotChrgDiff) then
+          buffer(:,:,:) = buffer - (sumChrg / sumAtomicChrg) * atomicChrg(:,:,:,1)
+          call writePropertyToCube("chargediff", buffer, wp, levelIndex, ioStat=ioStat)
+          hasIoError = hasIoError .or. ioStat /= 0
+        end if
+
+        if (wp%opt%tPlotReal) then
+          if (wp%input%tRealHam) then
+            buffer(:,:,:) = gridValReal
+          else
+            buffer(:,:,:) = real(gridValCmpl, dp)
+          end if
+          call writePropertyToCube("real", buffer, wp, levelIndex, ioStat=ioStat)
+          hasIoError = hasIoError .or. ioStat /= 0
+        end if
+
+        if (wp%opt%tPlotImag) then
+          buffer(:,:,:) = aimag(gridValCmpl)
+          call writePropertyToCube("imag", buffer, wp, levelIndex)
+          hasIoError = hasIoError .or. ioStat /= 0
+        end if
+      end if
+    end do lpStates
+end if
 
 #:if WITH_MPI
   call mpifx_allreduceip(env%mpi%globalComm, hasIoError, MPI_LOR)
