@@ -231,30 +231,25 @@ program waveplot
   end if
   tRequireIndividual =  wp%opt%tPlotChrgDiff &
                     & .or. wp%opt%tPlotReal .or. wp%opt%tPlotImag .or. wp%opt%tPlotTotSpin
-  if (wp%opt%tCalcTotChrg) then
+
+  if (.not. tRequireIndividual .and. wp%opt%tCalcTotChrg) then
+    print *, "Using inplace accumulation for total charge calculation."
       nEig = wp%loc%grid%nCached
       call wp%loc%grid%loadEigenvecs(nEig)
       nOrbSys = size(wp%loc%grid%eigenvecReal, dim=1)
       @:ASSERT(nOrbSys == wp%input%nOrb)
       allocate(densityCoeffs(nOrbSys, nEig))
 
-      ! Squared Eigenvectors (density)
-      densityCoeffs = wp%loc%grid%eigenvecReal(:,:) 
-      ! Multiply each orbital by its occupation
-      !print *, "nOrbSys", nOrbSys, "nEig", nEig
-      !print *, wp%loc%grid%levelIndex
+      ! Bake occupation into eigenvectors
       do iEig = 1, nEig
           levelIndex = wp%loc%grid%levelIndex(:, iEig)
           iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
-          densityCoeffs(:, iEig) = densityCoeffs(:, iEig) * sqrt( wp%input%occupations(iLevel, iKPoint, iSpin) )
+          densityCoeffs(:, iEig) = wp%loc%grid%eigenvecReal(:,iEig) * sqrt(wp%input%occupations(iLevel, iKPoint, iSpin) )
       end do
 
       call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, densityCoeffs, wp%opt%subdivisionFactor, &
           & totChrg4d , addDensities=.true.)
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
-      sumTotChrg = sum(totChrg) * wp%loc%gridVol
-      print *, "Inplace Acc. Total Charge:", sumTotChrg
-      totChrg = 0.0_dp
   end if
 
   if (tRequireIndividual) then

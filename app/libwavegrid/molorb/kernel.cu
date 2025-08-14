@@ -11,7 +11,7 @@
 #include "slater.cuh"
 
 // more print statements
-constexpr bool debug = false; 
+constexpr bool debug = true; 
 // =========================================================================
 //  CUDA Kernel.
 //  TODO: We surely want to separate the arguments into structs for better maintainability.
@@ -204,8 +204,7 @@ extern "C" void evaluate_on_device_c(
         fprintf(stderr, "Error: maxNPows (%d) exceeds STO_MAX_POWS (%d)\n", maxNPows, STO_MAX_POWS);
         exit(EXIT_FAILURE);
     }
-
-    size_t total_size_valueReal = (size_t)nPointsX * nPointsY * nPointsZ * nEig * sizeof(double);
+    
     // Timing events.
     cudaEvent_t startEverything, endEverything;
     cudaEvent_t startKernelOnly, endKernelOnly, startCopyOnly, endCopyOnly;
@@ -246,6 +245,7 @@ extern "C" void evaluate_on_device_c(
         // --- Work Distribution: Divide Z-slices among GPUs ---
         int z_slices_per_gpu = nPointsZ / numGpus;
         int z_start_for_device = deviceId * z_slices_per_gpu;
+        // Handle uneven Z-slice count
         int z_count_for_device = (deviceId == numGpus - 1) ? (nPointsZ - z_start_for_device) : z_slices_per_gpu;
 
         if (z_count_for_device > 0) {
@@ -299,7 +299,7 @@ extern "C" void evaluate_on_device_c(
             size_t free_mem, total_mem;
             CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
             size_t available_for_batch = static_cast<size_t>(free_mem * 0.8);
-            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEig * number_size;
+            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * nEigOut * number_size;
             
             // Determine max Z-slices that can fit in available (global) memory
             int z_batch_size = z_count_for_device; 
@@ -314,16 +314,17 @@ extern "C" void evaluate_on_device_c(
                 printf("  Z-slice workload: %d (from index %d to %d)\n", z_count_for_device, z_start_for_device, z_start_for_device + z_count_for_device - 1);
                 printf("  Block size: %d threads, %zub shared mem per block, %d eigs per pass\n",
                     block_size, shared_mem_for_pass, nEig_per_pass);
+                size_t total_size_valueOut = (size_t)nPointsX * nPointsY * nPointsZ * nEigOut * sizeof(double);
+                if (!isReal && !isDensityCalc) total_size_valueOut *= 2; 
                 printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
-                    free_mem / 1e9, nPointsX, nPointsY, nPointsZ, nEig,
-                    total_size_valueReal / 1e9);
+                    free_mem / 1e9, nPointsX, nPointsY, nPointsZ, nEigOut,
+                    total_size_valueOut / 1e9);
                 printf("  Processing Z-slices in batches of %d\n", z_batch_size);
 
             }
 
             // Per-GPU batch buffer for the output
-            const int nEig_out = (isDensityCalc) ? 1 : nEig; // Density output is always 1 eig
-            size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * nEig_out;
+            size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * nEigOut;
             DeviceBuffer<cuDoubleComplex> d_valueCmpl_out_batch;
             DeviceBuffer<double> d_valueReal_out_batch;
             if (isReal || isDensityCalc) {
@@ -378,7 +379,7 @@ extern "C" void evaluate_on_device_c(
                 // --- Per-GPU D2H Copy ---
                 // Copy the computed batch back to the correct slice of the final host array.
                 // The D2H copy will automatically block/ synchronize the kernel for this batch.
-                for(int iEig = 0; iEig < nEig_out; ++iEig) {
+                for(int iEig = 0; iEig < nEigOut; ++iEig) {
                     size_t plane_size_bytes = (size_t)current_nPointsZ_batch * nPointsY * nPointsX * number_size;
 
                     // Source pointer in this GPU's batch buffer
