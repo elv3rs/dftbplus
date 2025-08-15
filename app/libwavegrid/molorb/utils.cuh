@@ -1,5 +1,8 @@
 #ifndef UTILS_CUH_
 #define UTILS_CUH_
+#include <cuda_runtime.h>
+#include <string>
+#include <stdexcept>
 
 // Helper macro for robust CUDA calls
 #define CHECK_CUDA(call) do { \
@@ -17,19 +20,8 @@
 #define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
 
 
-
-
-
-// In a new header, e.g., "cuda_utils.cuh"
-#include <cuda_runtime.h>
-#include <stdexcept>
-
-
-
-
 // A simple RAII wrapper for device memory.
 // Use get() to retrieve the raw pointer.
-//
 template <typename T>
 class DeviceBuffer {
 public:
@@ -42,14 +34,27 @@ public:
     // Allocate and copy from host
     DeviceBuffer(const T* host_ptr, size_t count) {
         allocate(count);
-        CHECK_CUDA(cudaMemcpy(d_ptr_, host_ptr, count * sizeof(T), cudaMemcpyHostToDevice));
+        copy_to_device(host_ptr, count);
     }
 
     // Destructor automatically frees the memory
     ~DeviceBuffer() {
-        if (d_ptr_) {
-            cudaFree(d_ptr_);
+        deallocate();
+    }
+
+    void deallocate() {
+        if (_devicePtr) {
+            CHECK_CUDA(cudaFree(_devicePtr));
+            _devicePtr = nullptr;
+            _count = 0;
         }
+    }
+    
+    // Assign a new size and copy from host
+    void assign(const T* host_ptr, size_t count) {
+        deallocate();
+        allocate(count);
+        copy_to_device(host_ptr, count);
     }
 
     // Disable copy semantics
@@ -57,43 +62,57 @@ public:
     DeviceBuffer& operator=(const DeviceBuffer&) = delete;
 
     // Enable move semantics
-    DeviceBuffer(DeviceBuffer&& other) noexcept : d_ptr_(other.d_ptr_), count_(other.count_) {
-        other.d_ptr_ = nullptr;
-        other.count_ = 0;
+    DeviceBuffer(DeviceBuffer&& other) noexcept : _devicePtr(other._devicePtr), _count(other._count) {
+        other._devicePtr = nullptr;
+        other._count = 0;
     }
     DeviceBuffer& operator=(DeviceBuffer&& other) noexcept {
         if (this != &other) {
-            if (d_ptr_) cudaFree(d_ptr_);
-            d_ptr_ = other.d_ptr_;
-            count_ = other.count_;
-            other.d_ptr_ = nullptr;
-            other.count_ = 0;
+            if (_devicePtr) cudaFree(_devicePtr);
+            _devicePtr = other._devicePtr;
+            _count = other._count;
+            other._devicePtr = nullptr;
+            other._count = 0;
         }
         return *this;
     }
     
     
-    T* get() { return d_ptr_; }
-    const T* get() const { return d_ptr_; }
-    size_t size() const { return count_; }
+    T* get() { return _devicePtr; }
+    const T* get() const { return _devicePtr; }
+    size_t size() const { return _count; }
 
     void copy_to_host(T* host_ptr, size_t count_to_copy) const {
-        if (count_to_copy > count_) {
+        if (count_to_copy > _count) {
              fprintf(stderr, "Error: trying to copy more elements than buffer contains.\n");
              exit(EXIT_FAILURE);
         }
-        CHECK_CUDA(cudaMemcpy(host_ptr, d_ptr_, count_to_copy * sizeof(T), cudaMemcpyDeviceToHost));
+        CHECK_CUDA(cudaMemcpy(host_ptr, _devicePtr, count_to_copy * sizeof(T), cudaMemcpyDeviceToHost));
+    }
+
+    void copy_to_device(const T* host_ptr, size_t count_to_copy) {
+        if (!_devicePtr) {
+            fprintf(stderr, "Error: device pointer is null. Cannot copy to device.\n");
+            exit(EXIT_FAILURE);
+        }
+        if (count_to_copy > _count) {
+            fprintf(stderr, "Error: trying to copy more elements than buffer contains.\n");
+            exit(EXIT_FAILURE);
+        }
+        CHECK_CUDA(cudaMemcpy(_devicePtr, host_ptr, count_to_copy * sizeof(T), cudaMemcpyHostToDevice));
     }
 
 private:
     void allocate(size_t count) {
-        count_ = count;
+        _count = count;
         if (count > 0) {
-            CHECK_CUDA(cudaMalloc(&d_ptr_, count * sizeof(T)));
+            CHECK_CUDA(cudaMalloc(&_devicePtr, count * sizeof(T)));
+        } else {
+            _devicePtr = nullptr;
         }
     }
-    T* d_ptr_ = nullptr;
-    size_t count_ = 0;
+    T* _devicePtr = nullptr;
+    size_t _count = 0;
 };
 
 #endif // UTILS_CUH_

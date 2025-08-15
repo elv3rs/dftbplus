@@ -174,7 +174,7 @@ contains
     call evaluate${VARIANT}$(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
         & nEigIn=size(eigVecsReal, dim=2), nEigOut=nEigOut, nOrb=nOrb, nStos=size(stos), &
         & maxNPows=maxNPows, maxNAlphas=maxNAlphas, &
-        & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), isReal=tReal, isPeriodic=tPeriodic, &
+        & nAtom=nAtom, nCell=nCell, nSpecies=size(iStos), isRealInput=tReal, isPeriodic=tPeriodic, &
         & isDensityCalc=tAddDensities, origin=origin, gridVecs=gridVecs, eigVecsReal=eigVecsReal, eigVecsCmpl=eigVecsCmpl, &
         & coords=coords, species=species, iStos=iStos, &
         & latVecs=latVecs, recVecs2p=recVecs2p, kIndexes=kIndexes, phases=phases, &
@@ -189,10 +189,11 @@ contains
 #:if WITH_CUDA
   subroutine evaluateCuda(nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, &
       & maxNAlphas, nAtom, nCell, nSpecies, &
-      & isReal, isPeriodic, isDensityCalc, origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
+      & isRealInput, isPeriodic, isDensityCalc, origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
       & latVecs, recVecs2p, kIndexes, phases, &
       & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
       & valueReal, valueCmpl)
+    use, intrinsic :: iso_c_binding, only : c_int, c_ptr, c_loc, c_double, c_double_complex
 
 
     integer, intent(in) :: nPointsX ! number of grid points in x direction
@@ -201,91 +202,146 @@ contains
     integer, intent(in) :: nEigIn ! number of eigenvalues in input
     integer, intent(in) :: nEigOut ! number of eigenvalues in output
     integer, intent(in) :: nOrb ! total number of orbitals
-    integer, intent(in) :: nStos ! num of unique stos 
+    integer, intent(in) :: nStos ! num of unique stos
     integer, intent(in) :: maxNPows ! max number of powers in a sto
     integer, intent(in) :: maxNAlphas ! max number of alphas in a sto
     integer, intent(in) :: nAtom ! number of atoms
     integer, intent(in) :: nCell ! number of adjacent cells
     integer, intent(in) :: nSpecies ! number of different atom kinds
-    
+
 
     !> System parameters
-    logical, intent(in) :: isReal  ! if the system is real
+    logical, intent(in) :: isRealInput  ! if the system is real
     logical, intent(in) :: isPeriodic ! if the system is periodic
     logical, intent(in) :: isDensityCalc ! if the calculation is for density instead of wave functions
-    real(dp), intent(in) :: origin(3)
-    real(dp), intent(in) :: gridVecs(3, 3)
-    real(dp), intent(in) :: eigVecsReal(nOrb, nEigIn)
-    complex(dp), intent(in) :: eigVecsCmpl(nOrb, nEigIn)
-    real(dp), intent(in) :: coords(3, nAtom, nCell)
-    integer, intent(in) :: species(nAtom)
-    integer, intent(in) :: iStos(nSpecies + 1)
+    real(dp), intent(in), target :: origin(3)
+    real(dp), intent(in), target :: gridVecs(3, 3)
+    real(dp), intent(in), target :: eigVecsReal(nOrb, nEigIn)
+    complex(dp), intent(in), target :: eigVecsCmpl(nOrb, nEigIn)
+    real(dp), intent(in), target :: coords(3, nAtom, nCell)
+    integer, intent(in), target :: species(nAtom)
+    integer, intent(in), target :: iStos(nSpecies + 1)
 
     !> Additional Periodic system parameters
-    real(dp), intent(in) :: latVecs(3, 3) ! lattice vectors
-    real(dp), intent(in) :: recVecs2p(3, 3) ! reciprocal vectors divided by 2pi, or null-array (molecular)
-    integer, intent(in) :: kIndexes(nEigIn) ! index of the k-points for each orbital in KPoints
-    complex(dp), intent(in) :: phases(nCell, nEigIn) ! phases for the periodic system
+    real(dp), intent(in), target :: latVecs(3, 3) ! lattice vectors
+    real(dp), intent(in), target :: recVecs2p(3, 3) ! reciprocal vectors divided by 2pi, or null-array (molecular)
+    integer, intent(in), target :: kIndexes(nEigIn) ! index of the k-points for each orbital in KPoints
+    complex(dp), intent(in), target :: phases(nCell, nEigIn) ! phases for the periodic system
 
     ! STO data
-    integer, intent(in) :: sto_angMoms(nStos)
-    integer, intent(in) :: sto_nPows(nStos)
-    integer, intent(in)  :: sto_nAlphas(nStos)
-    real(dp), intent(in) :: sto_cutoffsSq(nStos)
-    real(dp), intent(in) :: sto_coeffs(maxNPows, maxNAlphas, nStos)
-    real(dp), intent(in) :: sto_alphas(maxNAlphas, nStos)
+    integer, intent(in), target :: sto_angMoms(nStos)
+    integer, intent(in), target :: sto_nPows(nStos)
+    integer, intent(in), target :: sto_nAlphas(nStos)
+    real(dp), intent(in), target :: sto_cutoffsSq(nStos)
+    real(dp), intent(in), target :: sto_coeffs(maxNPows, maxNAlphas, nStos)
+    real(dp), intent(in), target :: sto_alphas(maxNAlphas, nStos)
 
     !> Contains the real grid on exit
-    real(dp), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEigOut)
+    real(dp), intent(out), target :: valueReal(nPointsX, nPointsY, nPointsZ, nEigOut)
     !> Contains the complex grid on exit
-    complex(dp), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
-    !! bools als c_int
-    integer(c_int) :: iReal, iPeriodic, iDensity
+    complex(dp), intent(out), target :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
+
+    type, bind(c) :: GridParams_t
+      integer(c_int) :: nPointsX, nPointsY, nPointsZ
+      type(c_ptr) :: origin, gridVecs
+    end type
+
+    type, bind(c) :: SystemParams_t
+      integer(c_int) :: nAtom, nCell, nSpecies, nOrb
+      type(c_ptr) :: coords, species, iStos
+    end type
+
+    type, bind(c) :: PeriodicParams_t
+      integer(c_int) :: isPeriodic
+      type(c_ptr) :: latVecs, recVecs2p, kIndexes, phases
+    end type
+
+    type, bind(c) :: BasisParams_t
+      integer(c_int) :: nStos, maxNPows, maxNAlphas
+      type(c_ptr) :: sto_angMoms, sto_nPows, sto_nAlphas
+      type(c_ptr) :: sto_cutoffsSq, sto_coeffs, sto_alphas
+    end type
+
+    type, bind(c) :: CalculationParams_t
+      integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc
+      type(c_ptr) :: eigVecsReal, eigVecsCmpl
+      type(c_ptr) :: valueReal_out, valueCmpl_out
+    end type
 
 
-    
     ! Interface to the C-function defined in kernel.cu
     interface
-       subroutine evaluate_on_device_c(nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, &
-        & maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc, origin, gridVecs, &
-        & eigVecsReal, eigVecsCmpl, coords, species, iStos, latVecs, recVecs2p, kIndexes, phases, &
-        & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
-        & valueReal, valueCmpl) bind(C, name='evaluate_on_device_c')
-         import :: c_int, c_double, c_double_complex
-         integer(c_int), intent(in), value :: nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, &
-            & nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, isReal, isPeriodic, isDensityCalc
-         real(c_double), intent(in) :: origin(3), gridVecs(3,3), eigVecsReal(nOrb, nEigIn), &
-           & coords(3, nAtom, nCell), latVecs(3, 3), recVecs2p(3, 3), sto_cutoffsSq(nStos), &
-           & sto_coeffs(maxNPows, maxNAlphas, nStos), sto_alphas(maxNAlphas, nStos)
-         integer(c_int), intent(in) :: sto_angMoms(nStos), sto_nPows(nStos), sto_nAlphas(nStos), &
-           & species(nAtom), iStos(nSpecies + 1), kIndexes(nEigIn)
-         complex(c_double_complex), intent(in) :: eigVecsCmpl(nOrb, nEigIn), phases(nCell, nEigIn)
-         !Output arrays
-         real(c_double), intent(out) :: valueReal(nPointsX, nPointsY, nPointsZ, nEigOut)
-         complex(c_double_complex), intent(out) :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
-       end subroutine evaluate_on_device_c
+
+      ! Now, define the subroutine with the new signature
+      subroutine evaluate_on_device_c(grid, system, periodic, basis, calc) bind(C, name='evaluate_on_device_c')
+        import
+        type(GridParams_t), intent(in) :: grid
+        type(SystemParams_t), intent(in) :: system
+        type(PeriodicParams_t), intent(in) :: periodic
+        type(BasisParams_t), intent(in) :: basis
+        type(CalculationParams_t), intent(in) :: calc
+      end subroutine evaluate_on_device_c
+
     end interface
 
-    iReal = merge(1, 0, isReal)      
-    iPeriodic = merge(1, 0, isPeriodic)
-    iDensity = merge(1, 0, isDensityCalc)
+  ! Declare variables of the new types
+    type(GridParams_t) :: grid_p
+    type(SystemParams_t) :: system_p
+    type(BasisParams_t) :: sto_basis_p
+    type(PeriodicParams_t) :: periodic_p
+    type(CalculationParams_t) :: calc_p
 
-    call evaluate_on_device_c( &
-      & nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, maxNAlphas, &
-      & nAtom, nCell, nSpecies, &
-      & iReal, iPeriodic, iDensity, &
-      & origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
-      & latVecs, recVecs2p, kIndexes, phases, &
-      & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
-      & valueReal, valueCmpl )
+    ! Populate the structs
+    ! Grid parameters
+    grid_p%nPointsX = nPointsX
+    grid_p%nPointsY = nPointsY
+    grid_p%nPointsZ = nPointsZ
+    grid_p%origin   = c_loc(origin)
+    grid_p%gridVecs = c_loc(gridVecs)
+    ! System parameters
+    system_p%nAtom    = nAtom
+    system_p%nCell    = nCell
+    system_p%nSpecies = nSpecies
+    system_p%nOrb     = nOrb
+    system_p%coords   = c_loc(coords)
+    system_p%species  = c_loc(species)
+    system_p%iStos    = c_loc(iStos)
+    ! Periodic system parameters
+    periodic_p%isPeriodic = merge(1, 0, isPeriodic)
+    periodic_p%latVecs   = c_loc(latVecs)
+    periodic_p%recVecs2p = c_loc(recVecs2p)
+    periodic_p%kIndexes  = c_loc(kIndexes)
+    periodic_p%phases    = c_loc(phases)
+    ! Basis parameters
+    sto_basis_p%nStos       = nStos
+    sto_basis_p%maxNPows    = maxNPows
+    sto_basis_p%maxNAlphas  = maxNAlphas
+    sto_basis_p%sto_angMoms = c_loc(sto_angMoms)
+    sto_basis_p%sto_nPows   = c_loc(sto_nPows)
+    sto_basis_p%sto_nAlphas = c_loc(sto_nAlphas)
+    sto_basis_p%sto_cutoffsSq = c_loc(sto_cutoffsSq)
+    sto_basis_p%sto_coeffs  = c_loc(sto_coeffs)
+    sto_basis_p%sto_alphas  = c_loc(sto_alphas)
+    ! Calculation parameters
+    calc_p%nEigIn         = nEigIn
+    calc_p%nEigOut        = nEigOut
+    calc_p%isRealInput    = merge(1, 0, isRealInput)
+    calc_p%isDensityCalc  = merge(1, 0, isDensityCalc)
+    calc_p%eigVecsReal    = c_loc(eigVecsReal)
+    calc_p%eigVecsCmpl    = c_loc(eigVecsCmpl)
+    calc_p%valueReal_out  = c_loc(valueReal)
+    calc_p%valueCmpl_out  = c_loc(valueCmpl)
+
+    call evaluate_on_device_c(grid_p, system_p, periodic_p, sto_basis_p, calc_p)
 
   end subroutine evaluateCuda
 #:endif
 
 
 
+
   subroutine evaluateOMP(nPointsX, nPointsY, nPointsZ, nEigIn, nEigOut, nOrb, nStos, maxNPows, maxNAlphas, nAtom, nCell, nSpecies, &
-      & isReal, isPeriodic, isDensityCalc, origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
+      & isRealInput, isPeriodic, isDensityCalc, origin, gridVecs, eigVecsReal, eigVecsCmpl, coords, species, iStos, &
       & latVecs, recVecs2p, kIndexes, phases, &
       & sto_angMoms, sto_nPows, sto_nAlphas, sto_cutoffsSq, sto_coeffs, sto_alphas, &
       & valueReal, valueCmpl)
@@ -305,9 +361,9 @@ contains
     
 
     !> System parameters
-    logical, intent(in) :: isReal  ! if the system is real
+    logical, intent(in) :: isRealInput  ! if the system is real
     logical, intent(in) :: isPeriodic  ! if the system is periodic
-    logical, intent(in) :: isDensityCalc ! if the calculation is for density. Implies isReal.
+    logical, intent(in) :: isDensityCalc ! if the calculation is for density. Implies isRealInput.
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3, 3)
     real(dp), intent(in) :: eigVecsReal(nOrb, nEigIn)
@@ -352,7 +408,7 @@ contains
     !$omp&              sto_angMoms, sto_nPows, sto_cutoffsSq, sto_nAlphas, sto_coeffs, &
     !$omp&              sto_alphas, eigVecsReal, eigVecsCmpl, nEigIn, nEigOut, nOrb, nStos, &
     !$omp&              coords, iStos, nAtom, nCell, isPeriodic, recVecs2p, latVecs, &
-    !$omp&              phases, isReal, isDensityCalc, valueReal, valueCmpl)
+    !$omp&              phases, isRealInput, isDensityCalc, valueReal, valueCmpl)
     lpI3: do i3 = 1, nPointsZ
       lpI2: do i2 = 1, nPointsY
         lpI1: do i1 = 1, nPointsX
@@ -397,7 +453,7 @@ contains
                     ind = ind + 1
                     val =  radialVal * realTessY(iL, iM, diff, r)
 
-                    if (isReal) then
+                    if (isRealInput) then
                       do iEig = 1, nEigIn
                         valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
                       end do
