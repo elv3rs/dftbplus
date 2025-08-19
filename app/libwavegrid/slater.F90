@@ -16,7 +16,7 @@ module libwavegrid_slater
 
   public :: realTessY
   public :: TSlaterOrbital
-  public :: getVerboseRadial
+  public :: getRadial
 
 
   !> Data type for STOs.
@@ -30,7 +30,7 @@ module libwavegrid_slater
     !> Occupation of the orbital
     real(dp) :: occupation
 
-    !> Maximal power of the distance
+    !> Maximum power of the radial distance
     integer :: nPow
 
     !> Number of exponential coefficients
@@ -47,15 +47,8 @@ module libwavegrid_slater
     !> Initialises a SlaterOrbital.
     procedure :: init => TSlaterOrbital_init
 
-    !> Non-interpolated version
-    procedure :: getRadialDirect => TSlaterOrbital_getRadialValue_explicit
-
   end type TSlaterOrbital
 
-
-  interface getVerboseRadial
-    module procedure TSlaterOrbital_getVerboseRadial
-  end interface
 
 
 contains
@@ -189,10 +182,6 @@ contains
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
-    integer :: iGrid, ii
-    real(dp) :: rr
-
-
     this%nAlpha = size(alpha)
     this%nPow = size(aa, dim=1)
 
@@ -215,48 +204,8 @@ contains
   end subroutine TSlaterOrbital_init
 
 
-
   !> Calculates the value of an STO analytically.
-  subroutine TSlaterOrbital_getRadialValue_explicit(this, rr, sto)
-
-    !> SlaterOrbital instance
-    class(TSlaterOrbital), intent(in) :: this
-
-    !> Distance, where the STO should be calculated
-    real(dp), intent(in) :: rr
-
-    !> Value of the STO on return
-    real(dp), intent(out) :: sto
-
-    real(dp) :: pows(this%nPow)
-    real(dp) :: rTmp
-    integer :: ii, jj
-
-    ! Avoid 0.0**0 as it may lead to arithmetic exception
-    if (this%angMom == 0 .and. rr < epsilon(1.0_dp)) then
-      rTmp = 1.0_dp
-    else
-      rTmp = rr**this%angMom
-    end if
-    do ii = 1, this%nPow
-      pows(ii) = rTmp
-      rTmp = rTmp * rr
-    end do
-    sto = 0.0_dp
-    do ii = 1, this%nAlpha
-      rTmp = 0.0_dp
-      do jj = 1, this%nPow
-        rTmp = rTmp + this%aa(jj, ii) * pows(jj)
-      end do
-      sto = sto + rTmp * exp(this%alpha(ii) * rr)
-    end do
-
-  end subroutine TSlaterOrbital_getRadialValue_explicit
-
-
-
-  !> Calculates the value of an STO analytically.
-  subroutine TSlaterOrbital_getVerboseRadial(ll, nPow, nAlpha, aa, alpha, rr, sto)
+  function getRadial(ll, nPow, nAlpha, aa, alpha, rr) result(sto)
     !$omp declare target
 
     !> Angular momentum of the STO
@@ -278,7 +227,7 @@ contains
     real(dp), intent(in) :: rr
 
     !> Value of the STO on return
-    real(dp), intent(out) :: sto
+    real(dp) :: sto
     
     real(dp) :: pows(nPow)
     real(dp) :: rTmp
@@ -306,7 +255,7 @@ contains
       sto = sto + rTmp * exp(alpha(ii) * rr)
     end do
 
-  end subroutine TSlaterOrbital_getVerboseRadial
+  end function getRadial
 
 
 end module libwavegrid_slater

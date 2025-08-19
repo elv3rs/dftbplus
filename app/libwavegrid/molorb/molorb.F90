@@ -40,7 +40,6 @@ module libwavegrid_molorb
 
   !> Data type containing information for molecular orbital calculator.
   type TMolecularOrbital
-    private
 
     !> Nr. of atoms
     integer :: nAtom
@@ -111,8 +110,7 @@ contains
     !> Basis for each species.
     type(TSpeciesBasis), intent(in) :: basis(:)
 
-    integer :: nOrb
-    integer :: ii, jj, ind, iSp
+    integer :: nOrb, ii, jj, ind, iSp
     real(dp) :: mCutoff
     real(dp), allocatable :: rCellVec(:,:)
 
@@ -296,7 +294,6 @@ contains
         & this%coords, this%species, this%iStos, this%stos,&
         & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
         & this%cellVec, tAddDensities, valueReal, valueOnGrid)
-
 
   end subroutine TMolecularOrbital_getValue_cmpl
 

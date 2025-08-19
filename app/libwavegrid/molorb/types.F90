@@ -1,0 +1,62 @@
+!--------------------------------------------------------------------------------------------------!
+!  DFTB+: general package for performing fast atomistic simulations                                !
+!  Copyright (C) 2006 - 2025  DFTB+ developers group                                               !
+!                                                                                                  !
+!  See the LICENSE file for terms of usage and distribution.                                       !
+!--------------------------------------------------------------------------------------------------!
+
+#:include 'common.fypp'
+
+!> Contains shared data types for the molecular orbital calculator.
+module libwavegrid_molorb_types
+  use dftbp_common_accuracy, only : dp
+  use libwavegrid_slater, only : TSlaterOrbital
+
+  implicit none
+
+  private
+
+  !> Data type containing information about the basis for a species.
+  type TSpeciesBasis
+    !> Atomic number of the species
+    integer :: atomicNumber
+    !> Nr. of orbitals
+    integer :: nOrb
+    !> STO for each orbital
+    type(TSlaterOrbital), allocatable :: stos(:)
+  end type TSpeciesBasis
+
+  !> Data for the system geometry and composition
+  type TSystemParams
+    integer :: nAtom
+    integer :: nSpecies
+    integer, allocatable :: species(:)
+    integer, allocatable :: iStos(:)
+    integer :: nOrb
+    real(dp), allocatable :: coords(:,:,:)
+  end type TSystemParams
+
+  !> Data for periodic boundary conditions
+  type TPeriodicParams
+    logical :: tPeriodic
+    real(dp), allocatable :: latVecs(:,:)
+    real(dp), allocatable :: recVecs2p(:,:)
+    real(dp), allocatable :: cellVec(:,:)
+    integer :: nCell
+  end type TPeriodicParams
+
+  !> Data for the basis set in SoA format
+  type TBasisParams
+    integer :: nStos
+    integer :: maxNPows
+    integer :: maxNAlphas
+    integer, allocatable :: angMoms(:)
+    real(dp), allocatable :: cutoffsSq(:)
+    integer, allocatable :: sto_nPows(:)
+    integer, allocatable :: sto_nAlphas(:)
+    real(dp), allocatable :: sto_coeffs(:,:,:)
+    real(dp), allocatable :: sto_alphas(:,:)
+  end type TBasisParams
+
+
+end module libwavegrid_molorb_types
