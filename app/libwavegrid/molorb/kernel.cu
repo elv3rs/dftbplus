@@ -1,3 +1,9 @@
+/*-------------------------------------------------------------------------------------------------*
+ *  DFTB+: general package for performing fast atomistic simulations                               *
+ *  Copyright (C) 2006 - 2025  DFTB+ developers group                                              *
+ *                                                                                                 *
+ *  See the LICENSE file for terms of usage and distribution.                                      *
+ *-------------------------------------------------------------------------------------------------*/
 #include <cuda_runtime.h>
 #include <cuComplex.h>
 #include <omp.h>
@@ -179,15 +185,17 @@ struct DeviceKernelParams {
 // =========================================================================
 //  CUDA Kernel.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 4 (3 usable) ways on (isRealInput, isDensity).
+// To avoid branching (dropped at compile time), we template the kernel 8 ways on (isRealInput, calcDensity, accDensity).
 // isPeriodic decides whether to fold coords into unit cell.
-// isRealInput decides whether to use real/complex outArrays, eigenvectors (and adds phases)
-// isDensity computes combined density output in valueReal_out of shape (x,y,z,1)
+// isRealInput decides whether to use real/complex eigenvectors (and adds phases)
+// isDensity squares the wavefunction, result in valueReal_out of shape (x,y,z,n)
+// accDensity accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
 // User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
-template <bool isRealInput, bool isDensity>
+template <bool isRealInput, bool isDensity, bool accDensity>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
-    constexpr bool isRealOutput = isRealInput || isDensity;
+    // AccDensity requires isDensity to be true.
+    assert(!(accDensity && !isDensity));
     using AccumT = typename std::conditional<(isRealInput), double, cuDoubleComplex>::type;
     
     // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
@@ -213,15 +221,15 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
 
     // Map point to global coordinates.
     double xyz[3];
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i) 
         xyz[i] = p.origin[i] + i1 * p.gridVecs[IDX2F(i, 0, 3)]
                              + i2 * p.gridVecs[IDX2F(i, 1, 3)]
                              + i3_global * p.gridVecs[IDX2F(i, 2, 3)];
-    }
+    
     // If periodic, fold into cell by discarding the non-fractional part in lattice vector multiples.
-    if (p.isPeriodic) {
+    if (p.isPeriodic) 
         foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(p.latVecs), reinterpret_cast<const double (*)[3]>(p.recVecs2p));
-    }
+    
 
     double densityAcc = 0.0; // used for density
     // --- Loop over eigenstates in chunks that fit in shared memory ---
@@ -293,11 +301,18 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
             int iEig = eig_base + iEig_offset;
             if (iEig >= p.nEig) break;
             size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
-            if constexpr (isDensity) {
-                densityAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
-            }
-            else if constexpr (isRealInput) {
-                p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
+            if constexpr (isRealInput) {
+                if constexpr (accDensity) {
+                    densityAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
+                } else if (isDensity) {
+                    p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
+                } else {
+                    p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
+                }
+            } else if constexpr (accDensity) {
+                densityAcc += cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
+            } else if constexpr (isDensity) {
+                p.valueReal_out_batch[out_idx] = cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
             } else {
                 p.valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
             }
@@ -305,7 +320,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
     }
 
     // Density stored in first eig : (x,y,z, 1)
-    if constexpr (isDensity) {
+    if constexpr (accDensity) {
         size_t out_idx = IDX4F(i1, i2, i3_batch, 0, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
         p.valueReal_out_batch[out_idx] = densityAcc; 
     }
@@ -321,7 +336,9 @@ extern "C" void evaluate_on_device_c(
     const SystemParams* system,
     const PeriodicParams* periodic,
     const StoBasisParams* basis,
-    const CalculationParams* calc
+    const CalculationParams* calc,
+    double* valueReal_out,              // [nPointsX][nPointsY][nPointsZ][nEig]
+    cuDoubleComplex* valueCmpl_out      // [nPointsX][nPointsY][nPointsZ][nEig]
 ){
     // Since we use these often, derefence them and add to namespace
     int nPointsX = grid->nPointsX;
@@ -465,17 +482,30 @@ extern "C" void evaluate_on_device_c(
                 if(deviceId == 0) {
                     CHECK_CUDA(cudaEventRecord(startKernelOnly));
                 }
-                
+                 
                 if (calc->isRealInput) {
                     if (calc->isDensityCalc) { 
-                        evaluateKernel<true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                    }
-                    else { 
-                        evaluateKernel<true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                        if (calc->accDensity) {
+                            evaluateKernel<true, true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                        } else {
+                            evaluateKernel<true, true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                        }
+                    } else {
+                        evaluateKernel<true, false, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
                     }
                 } else {
-                    evaluateKernel<false, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                    if (calc->isDensityCalc) {
+                        if (calc->accDensity) {
+                            evaluateKernel<false, true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                        } else {
+                            evaluateKernel<false, true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                        }
+                    } else {
+                        evaluateKernel<false, false, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+                    }
                 }
+                    
+
 
                 if(deviceId == 0) {
                     CHECK_CUDA(cudaEventRecord(endKernelOnly));
@@ -486,7 +516,7 @@ extern "C" void evaluate_on_device_c(
                 // Copy the computed batch back to the correct slice of the final host array.
                 // The D2H copy will automatically block/ synchronize the kernel for this batch.
                 void *d_src_ptr = (isRealOutput ? (void*)d_valueReal_out_batch.get() : (void*)d_valueCmpl_out_batch.get());
-                void* h_dest_ptr = (isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out);
+                void* h_dest_ptr = (isRealOutput ? (void*)valueReal_out : (void*)valueCmpl_out);
 
                 size_t host_plane_size = (size_t)nPointsZ * nPointsY * nPointsX * number_size;
                 size_t device_plane_size = (size_t)deviceParams.nPointsZ_batch * nPointsY * nPointsX * number_size;

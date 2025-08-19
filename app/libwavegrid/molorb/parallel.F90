@@ -241,31 +241,31 @@ contains
     !> Contains the complex grid on exit
     complex(dp), intent(out), target :: valueCmpl(nPointsX, nPointsY, nPointsZ, nEigOut)
 
-    type, bind(c) :: GridParams_t
+    type, bind(c) :: TGridParams
       integer(c_int) :: nPointsX, nPointsY, nPointsZ
       type(c_ptr) :: origin, gridVecs
     end type
 
-    type, bind(c) :: SystemParams_t
+    type, bind(c) :: TSystemParams
       integer(c_int) :: nAtom, nCell, nSpecies, nOrb
       type(c_ptr) :: coords, species, iStos
     end type
 
-    type, bind(c) :: PeriodicParams_t
+    type, bind(c) :: TPeriodicParams
       integer(c_int) :: isPeriodic
       type(c_ptr) :: latVecs, recVecs2p, kIndexes, phases
     end type
 
-    type, bind(c) :: BasisParams_t
+    type, bind(c) :: TBasisParams
       integer(c_int) :: nStos, maxNPows, maxNAlphas
       type(c_ptr) :: sto_angMoms, sto_nPows, sto_nAlphas
       type(c_ptr) :: sto_cutoffsSq, sto_coeffs, sto_alphas
     end type
 
-    type, bind(c) :: CalculationParams_t
-      integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc
+    type, bind(c) :: TCalculationParams
+      integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc, accDensity
       type(c_ptr) :: eigVecsReal, eigVecsCmpl
-      type(c_ptr) :: valueReal_out, valueCmpl_out
+      !type(c_ptr) :: valueReal_out, valueCmpl_out
     end type
 
 
@@ -273,23 +273,26 @@ contains
     interface
 
       ! Now, define the subroutine with the new signature
-      subroutine evaluate_on_device_c(grid, system, periodic, basis, calc) bind(C, name='evaluate_on_device_c')
+      subroutine evaluate_on_device_c(grid, system, periodic, basis, calc, valueReal, & 
+          & valueCmpl) bind(C, name='evaluate_on_device_c')
         import
-        type(GridParams_t), intent(in) :: grid
-        type(SystemParams_t), intent(in) :: system
-        type(PeriodicParams_t), intent(in) :: periodic
-        type(BasisParams_t), intent(in) :: basis
-        type(CalculationParams_t), intent(in) :: calc
+        type(TGridParams), intent(in) :: grid
+        type(TSystemParams), intent(in) :: system
+        type(TPeriodicParams), intent(in) :: periodic
+        type(TBasisParams), intent(in) :: basis
+        type(TCalculationParams), intent(in) :: calc
+        type(c_ptr), intent(inout) :: valueReal 
+        type(c_ptr), intent(inout) :: valueCmpl
       end subroutine evaluate_on_device_c
 
     end interface
 
-  ! Declare variables of the new types
-    type(GridParams_t) :: grid_p
-    type(SystemParams_t) :: system_p
-    type(BasisParams_t) :: sto_basis_p
-    type(PeriodicParams_t) :: periodic_p
-    type(CalculationParams_t) :: calc_p
+    type(TGridParams) :: grid_p
+    type(TSystemParams) :: system_p
+    type(TPeriodicParams) :: periodic_p
+    type(TBasisParams) :: sto_basis_p
+    type(TCalculationParams) :: calc_p
+    type(c_ptr) :: valueReal_out, valueCmpl_out
 
     ! Populate the structs
     ! Grid parameters
@@ -327,12 +330,13 @@ contains
     calc_p%nEigOut        = nEigOut
     calc_p%isRealInput    = merge(1, 0, isRealInput)
     calc_p%isDensityCalc  = merge(1, 0, isDensityCalc)
+    calc_p%accDensity     = merge(1, 0, isDensityCalc)
     calc_p%eigVecsReal    = c_loc(eigVecsReal)
     calc_p%eigVecsCmpl    = c_loc(eigVecsCmpl)
-    calc_p%valueReal_out  = c_loc(valueReal)
-    calc_p%valueCmpl_out  = c_loc(valueCmpl)
+    valueReal_out  = c_loc(valueReal)
+    valueCmpl_out  = c_loc(valueCmpl)
 
-    call evaluate_on_device_c(grid_p, system_p, periodic_p, sto_basis_p, calc_p)
+    call evaluate_on_device_c(grid_p, system_p, periodic_p, sto_basis_p, calc_p, valueReal_out, valueCmpl_out)
 
   end subroutine evaluateCuda
 #:endif

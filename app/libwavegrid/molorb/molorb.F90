@@ -11,13 +11,11 @@
 !! an equidistant grid.
 module libwavegrid_molorb
   use dftbp_common_accuracy, only : dp
-  use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
   use libwavegrid_slater, only : TSlaterOrbital, realTessY
-  use dftbp_math_lapackroutines, only: gesv
   use libwavegrid_molorb_pointwise, only: evaluatePointwise
   use libwavegrid_molorb_parallel, only: evaluateParallel
 
@@ -153,7 +151,6 @@ contains
     nOrb = 0
     do ii = 1, this%nAtom
       iSp = this%species(ii)
-
       do jj = 1, basis(iSp)%nOrb
         nOrb = nOrb + 1 + 2 * basis(iSp)%stos(jj)%angMom
       end do

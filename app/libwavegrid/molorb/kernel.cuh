@@ -32,7 +32,7 @@ typedef struct {
     const double* latVecs;        // [3][3]
     const double* recVecs2p;      // [3][3]
     const int* kIndexes;          // [nEig]
-    const cuDoubleComplex* phases;// [nCell][nEig]
+    const cuDoubleComplex* phases;// [nCell][nEigIn]
 } PeriodicParams;
 
 // Basis parameters describing orbitals
@@ -49,16 +49,15 @@ typedef struct {
 } StoBasisParams;
 
 
-// Main Input/Output arrays
+// Coefficient Input and Control Flags
 typedef struct {
     int nEigIn;
-    int nEigOut;
-    int isRealInput;
+    int nEigOut; // accDensity ? 1 : nEigIn
+    int isRealInput; 
     int isDensityCalc;
-    const double* eigVecsReal;          // [nOrb][nEig]
-    const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEig]
-    double* valueReal_out;              // [nPointsX][nPointsY][nPointsZ][nEig]
-    cuDoubleComplex* valueCmpl_out;     // [nPointsX][nPointsY][nPointsZ][nEig]
+    int accDensity;
+    const double* eigVecsReal;          // [nOrb][nEigIn]
+    const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]
 } CalculationParams;
 
 
@@ -67,7 +66,9 @@ void evaluate_on_device_c(
     const SystemParams* system,
     const PeriodicParams* periodic,
     const StoBasisParams* basis,
-    const CalculationParams* calc
+    const CalculationParams* calc,
+    double* valueReal_out,              // [nPointsX][nPointsY][nPointsZ][nEigOut]
+    cuDoubleComplex* valueCmpl_out     // [nPointsX][nPointsY][nPointsZ][nEigOut]
 );
 
 
