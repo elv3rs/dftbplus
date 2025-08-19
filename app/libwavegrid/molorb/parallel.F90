@@ -138,23 +138,7 @@ contains
     end do
 
 
-    ! Array for the contribution of each orbital (and its periodic images)
-    !allocate(atomOrbValReal(nOrb))
     nPoints = shape(valueReal)
-    !valueReal(:,:,:,:) = 0.0_dp
-
-
-    !print *, "Devices:", omp_get_num_devices()
-    !print *, "maxNPows:", maxNPows, "maxNAlphas:", maxNAlphas
-    !print *, "Max sto_nPows in data:", maxval(sto_nPows)
-    !print *, "iStos", iStos
-    !print *, "Stos:", size(stos), "nOrb:", nOrb
-    !print *, "species", species
-    !print *, "sto_alphas:", sto_alphas
-    !print *, "sto_nalphas:", sto_nAlphas
-    !print *, "sto_nPows:", sto_nPows
-
-    !print *, "EV:", sum(eigVecsReal(1, :)), sum(eigVecsReal(:,1))
 
     ! Phase factors for the periodic image cell. Note: This will be conjugated in the scalar product
     ! below. This is fine as, in contrast to what was published, DFTB+ implicitly uses exp(-ikr) as
@@ -168,7 +152,6 @@ contains
 
     
     #: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
-    !#: set VARIANT = 'OMP'
     print *, "Running molorb using ${VARIANT}$ kernel."
 
     call evaluate${VARIANT}$(nPointsX=nPoints(1), nPointsY=nPoints(2), nPointsZ=nPoints(3), &
@@ -269,10 +252,8 @@ contains
     end type
 
 
-    ! Interface to the C-function defined in kernel.cu
     interface
 
-      ! Now, define the subroutine with the new signature
       subroutine evaluate_on_device_c(grid, system, periodic, basis, calc) bind(C, name='evaluate_on_device_c')
         import
         type(TGridParams), intent(in) :: grid
@@ -452,14 +433,23 @@ contains
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1
-                    val =  radialVal * realTessY(iL, iM, diff, r)
+                    val = radialVal * realTessY(iL, iM, diff, r)
+
+                    if (isDensityCalc) then
+                      val = val * val
+                    end if
 
                     if (isRealInput) then
                       do iEig = 1, nEigIn
-                        valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
+                        if(accDensity) then
+                          valueReal(i1, i2, i3, 1) = valueReal(i1, i2, i3, 1) + val * eigVecsReal(ind, iEig)
+                        else
+                          valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
+                        end if
                       end do
                     else ! Complex
                       do iEig = 1, nEigIn
+                        ! We dont support complex densities here.
                         valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + val &
                             & * phases(iCell, kIndexes(iEig)) *  eigVecsCmpl(ind, iEig)
                       end do

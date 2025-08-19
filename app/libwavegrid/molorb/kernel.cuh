@@ -17,7 +17,7 @@ typedef struct {
 } GridParams;
 
 typedef struct {
-    int nAtom;
+int nAtom;
     int nCell;
     int nSpecies;
     int nOrb;
@@ -59,7 +59,7 @@ typedef struct {
     const double* eigVecsReal;          // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]
     double* valueReal_out;              // [nPointsX][nPointsY][nPointsZ][nEigOut]
-    cuDoubleComplex* valueCmpl_out    ; // [nPointsX][nPointsY][nPointsZ][nEigOut]
+    cuDoubleComplex* valueCmpl_out;     // [nPointsX][nPointsY][nPointsZ][nEigOut]
 } CalculationParams;
 
 
