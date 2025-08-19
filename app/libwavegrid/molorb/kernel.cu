@@ -336,9 +336,7 @@ extern "C" void evaluate_on_device_c(
     const SystemParams* system,
     const PeriodicParams* periodic,
     const StoBasisParams* basis,
-    const CalculationParams* calc,
-    double* valueReal_out,              // [nPointsX][nPointsY][nPointsZ][nEig]
-    cuDoubleComplex* valueCmpl_out      // [nPointsX][nPointsY][nPointsZ][nEig]
+    const CalculationParams* calc
 ){
     // Since we use these often, derefence them and add to namespace
     int nPointsX = grid->nPointsX;
@@ -515,8 +513,9 @@ extern "C" void evaluate_on_device_c(
                 // --- D2H Copy ---
                 // Copy the computed batch back to the correct slice of the final host array.
                 // The D2H copy will automatically block/ synchronize the kernel for this batch.
+                // This could be improved by using streams / cudaMemcpyAsync.
                 void *d_src_ptr = (isRealOutput ? (void*)d_valueReal_out_batch.get() : (void*)d_valueCmpl_out_batch.get());
-                void* h_dest_ptr = (isRealOutput ? (void*)valueReal_out : (void*)valueCmpl_out);
+                void* h_dest_ptr = (isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out);
 
                 size_t host_plane_size = (size_t)nPointsZ * nPointsY * nPointsX * number_size;
                 size_t device_plane_size = (size_t)deviceParams.nPointsZ_batch * nPointsY * nPointsX * number_size;

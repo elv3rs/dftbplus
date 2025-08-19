@@ -265,7 +265,7 @@ contains
     type, bind(c) :: TCalculationParams
       integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc, accDensity
       type(c_ptr) :: eigVecsReal, eigVecsCmpl
-      !type(c_ptr) :: valueReal_out, valueCmpl_out
+      type(c_ptr) :: valueReal_out, valueCmpl_out
     end type
 
 
@@ -273,16 +273,13 @@ contains
     interface
 
       ! Now, define the subroutine with the new signature
-      subroutine evaluate_on_device_c(grid, system, periodic, basis, calc, valueReal, & 
-          & valueCmpl) bind(C, name='evaluate_on_device_c')
+      subroutine evaluate_on_device_c(grid, system, periodic, basis, calc) bind(C, name='evaluate_on_device_c')
         import
         type(TGridParams), intent(in) :: grid
         type(TSystemParams), intent(in) :: system
         type(TPeriodicParams), intent(in) :: periodic
         type(TBasisParams), intent(in) :: basis
         type(TCalculationParams), intent(in) :: calc
-        type(c_ptr), intent(inout) :: valueReal 
-        type(c_ptr), intent(inout) :: valueCmpl
       end subroutine evaluate_on_device_c
 
     end interface
@@ -333,10 +330,10 @@ contains
     calc_p%accDensity     = merge(1, 0, isDensityCalc)
     calc_p%eigVecsReal    = c_loc(eigVecsReal)
     calc_p%eigVecsCmpl    = c_loc(eigVecsCmpl)
-    valueReal_out  = c_loc(valueReal)
-    valueCmpl_out  = c_loc(valueCmpl)
+    calc_p%valueReal_out  = c_loc(valueReal)
+    calc_p%valueCmpl_out  = c_loc(valueCmpl)
 
-    call evaluate_on_device_c(grid_p, system_p, periodic_p, sto_basis_p, calc_p, valueReal_out, valueCmpl_out)
+    call evaluate_on_device_c(grid_p, system_p, periodic_p, sto_basis_p, calc_p)
 
   end subroutine evaluateCuda
 #:endif

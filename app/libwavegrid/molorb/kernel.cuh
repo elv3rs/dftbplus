@@ -58,6 +58,8 @@ typedef struct {
     int accDensity;
     const double* eigVecsReal;          // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]
+    double* valueReal_out;              // [nPointsX][nPointsY][nPointsZ][nEigOut]
+    cuDoubleComplex* valueCmpl_out    ; // [nPointsX][nPointsY][nPointsZ][nEigOut]
 } CalculationParams;
 
 
@@ -66,9 +68,7 @@ void evaluate_on_device_c(
     const SystemParams* system,
     const PeriodicParams* periodic,
     const StoBasisParams* basis,
-    const CalculationParams* calc,
-    double* valueReal_out,              // [nPointsX][nPointsY][nPointsZ][nEigOut]
-    cuDoubleComplex* valueCmpl_out     // [nPointsX][nPointsY][nPointsZ][nEigOut]
+    const CalculationParams* calc
 );
 
 
