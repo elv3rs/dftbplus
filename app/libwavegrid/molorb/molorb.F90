@@ -16,7 +16,6 @@ module libwavegrid_molorb
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
   use libwavegrid_slater, only : TSlaterOrbital, realTessY
-  use libwavegrid_molorb_pointwise, only: evaluatePointwise
   use libwavegrid_molorb_parallel, only: evaluateParallel
 
   implicit none
@@ -196,7 +195,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, &
-      & subdivisionFactor, valueOnGrid, addDensities)
+      & valueOnGrid, addDensities)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -212,9 +211,6 @@ contains
 
     !> Molecular orbitals on a grid
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
-
-    !> Subdivision factor for the Orbital Cache
-    integer, intent(in) :: subdivisionFactor
 
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addDensities
@@ -243,19 +239,11 @@ contains
 
     call system_clock(count_rate=clockRate, count=startTime)
 
-    if (subdivisionFactor == -1) then
-      print *, "Using real parallel"
-      call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-          & this%coords, this%species, this%iStos, this%stos,&
-          & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-          & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
-    else
-      print *, "Using real evaluatePointwise"
-      call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-          & this%coords, this%species, this%iStos, this%stos,&
-          & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-          & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
-    end if
+    call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+        & this%coords, this%species, this%iStos, this%stos,&
+        & this%tPeriodic, .true., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+        & this%cellVec, tAddDensities, valueOnGrid, valueCmpl)
+
   
     call system_clock(count=endTime)
 
@@ -265,7 +253,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, subdivisionFactor, valueOnGrid)
+      & kIndexes, valueOnGrid)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -284,9 +272,6 @@ contains
 
     !> Index of the k-points in kPoints for every mol.orbital
     integer, intent(in) :: kIndexes(:)
-
-    !> Subdivision factor for the Orbital Cache
-    integer, intent(in) :: subdivisionFactor
 
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
@@ -307,11 +292,10 @@ contains
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
   
-      print *, "Using cmplx evaluatePointwise"
-      call evaluatePointwise(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
-          & this%coords, this%species, this%iStos, this%stos,&
-          & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
-          & this%cellVec, tAddDensities, valueReal, valueOnGrid)
+    call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%nAtom, this%nOrb,&
+        & this%coords, this%species, this%iStos, this%stos,&
+        & this%tPeriodic, .false., this%latVecs, this%recVecs2p, kPoints, kIndexes, this%nCell,&
+        & this%cellVec, tAddDensities, valueReal, valueOnGrid)
 
 
   end subroutine TMolecularOrbital_getValue_cmpl

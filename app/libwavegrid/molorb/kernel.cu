@@ -185,17 +185,17 @@ struct DeviceKernelParams {
 // =========================================================================
 //  CUDA Kernel.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 8 ways on (isRealInput, calcDensity, accDensity).
+// To avoid branching (dropped at compile time), we template the kernel 8 ways on (isRealInput, calcDensity, calcTotalChrg).
 // isPeriodic decides whether to fold coords into unit cell.
 // isRealInput decides whether to use real/complex eigenvectors (and adds phases)
 // isDensity squares the wavefunction, result in valueReal_out of shape (x,y,z,n)
-// accDensity accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
+// calcTotalChrg accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
 // User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
-template <bool isRealInput, bool isDensity, bool accDensity>
+template <bool isRealInput, bool isDensity, bool calcTotalChrg>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
     // AccDensity requires isDensity to be true.
-    assert(!(accDensity && !isDensity));
+    assert(!(calcTotalChrg && !isDensity));
     using AccumT = typename std::conditional<(isRealInput), double, cuDoubleComplex>::type;
     
     // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
@@ -302,14 +302,14 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
             if (iEig >= p.nEig) break;
             size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
             if constexpr (isRealInput) {
-                if constexpr (accDensity) {
+                if constexpr (calcTotalChrg) {
                     densityAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
                 } else if (isDensity) {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
                 } else {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
                 }
-            } else if constexpr (accDensity) {
+            } else if constexpr (calcTotalChrg) {
                 densityAcc += cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
             } else if constexpr (isDensity) {
                 p.valueReal_out_batch[out_idx] = cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
@@ -320,7 +320,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
     }
 
     // Density stored in first eig : (x,y,z, 1)
-    if constexpr (accDensity) {
+    if constexpr (calcTotalChrg) {
         size_t out_idx = IDX4F(i1, i2, i3_batch, 0, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
         p.valueReal_out_batch[out_idx] = densityAcc; 
     }
@@ -483,7 +483,7 @@ extern "C" void evaluate_on_device_c(
                  
                 if (calc->isRealInput) {
                     if (calc->isDensityCalc) { 
-                        if (calc->accDensity) {
+                        if (calc->calcTotalChrg) {
                             evaluateKernel<true, true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
                         } else {
                             evaluateKernel<true, true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
@@ -493,7 +493,7 @@ extern "C" void evaluate_on_device_c(
                     }
                 } else {
                     if (calc->isDensityCalc) {
-                        if (calc->accDensity) {
+                        if (calc->calcTotalChrg) {
                             evaluateKernel<false, true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
                         } else {
                             evaluateKernel<false, true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);

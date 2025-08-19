@@ -52,10 +52,10 @@ typedef struct {
 // Coefficient Input and Control Flags
 typedef struct {
     int nEigIn;
-    int nEigOut; // accDensity ? 1 : nEigIn
+    int nEigOut; // calcTotalChrg ? 1 : nEigIn
     int isRealInput; 
     int isDensityCalc;
-    int accDensity;
+    int calcTotalChrg;
     const double* eigVecsReal;          // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]
     double* valueReal_out;              // [nPointsX][nPointsY][nPointsZ][nEigOut]

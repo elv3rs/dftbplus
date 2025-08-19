@@ -150,7 +150,7 @@ program waveplot
           ind = ind + mAng
         end do
       end do
-      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, orbitalOcc, wp%opt%subdivisionFactor, &
+      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, orbitalOcc, &
           & atomicChrg, addDensities=.true.)
       sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
       buffer(:,:,:) = atomicChrg(:,:,:, 1)
@@ -247,7 +247,7 @@ program waveplot
           densityCoeffs(:, iEig) = wp%loc%grid%eigenvecReal(:,iEig) * sqrt(wp%input%occupations(iLevel, iKPoint, iSpin) )
       end do
 
-      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, densityCoeffs, wp%opt%subdivisionFactor, &
+      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, densityCoeffs, &
           & totChrg4d , addDensities=.true.)
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
   end if

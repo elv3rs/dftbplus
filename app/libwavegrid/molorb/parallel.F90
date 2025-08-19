@@ -246,7 +246,7 @@ contains
     end type
 
     type, bind(c) :: TCalculationParams
-      integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc, accDensity
+      integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc, calcTotalChrg
       type(c_ptr) :: eigVecsReal, eigVecsCmpl
       type(c_ptr) :: valueReal_out, valueCmpl_out
     end type
@@ -308,7 +308,7 @@ contains
     calc_p%nEigOut        = nEigOut
     calc_p%isRealInput    = merge(1, 0, isRealInput)
     calc_p%isDensityCalc  = merge(1, 0, isDensityCalc)
-    calc_p%accDensity     = merge(1, 0, isDensityCalc)
+    calc_p%calcTotalChrg     = merge(1, 0, isDensityCalc)
     calc_p%eigVecsReal    = c_loc(eigVecsReal)
     calc_p%eigVecsCmpl    = c_loc(eigVecsCmpl)
     calc_p%valueReal_out  = c_loc(valueReal)
@@ -441,11 +441,7 @@ contains
 
                     if (isRealInput) then
                       do iEig = 1, nEigIn
-                        if(accDensity) then
-                          valueReal(i1, i2, i3, 1) = valueReal(i1, i2, i3, 1) + val * eigVecsReal(ind, iEig)
-                        else
-                          valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
-                        end if
+                        valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
                       end do
                     else ! Complex
                       do iEig = 1, nEigIn

@@ -392,11 +392,11 @@ contains
       end if
       if (sf%tReal) then
         eigReal => sf%eigenvecReal(:, :iEnd)
-        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%subdivisionFactor, sf%gridCacheReal(:,:,:,:iEnd))
+        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd))
       else
         eigCmpl => sf%eigenvecCmpl(:, :iEnd)
         call getValue(sf%molorb, sf%origin, sf%gridVec, eigCmpl, sf%kPoints,&
-            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%subdivisionFactor, sf%gridCacheCmpl(:,:,:,:iEnd))
+            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd))
       end if
     end if
 
