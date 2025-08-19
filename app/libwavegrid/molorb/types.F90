@@ -14,7 +14,7 @@ module libwavegrid_molorb_types
 
   implicit none
 
-  private
+  public
 
   !> Data type containing information about the basis for a species.
   type TSpeciesBasis
@@ -38,7 +38,7 @@ module libwavegrid_molorb_types
 
   !> Data for periodic boundary conditions
   type TPeriodicParams
-    logical :: tPeriodic
+    logical :: isPeriodic
     real(dp), allocatable :: latVecs(:,:)
     real(dp), allocatable :: recVecs2p(:,:)
     real(dp), allocatable :: cellVec(:,:)
