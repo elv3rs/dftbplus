@@ -30,7 +30,7 @@ int nAtom;
 typedef struct {
     int isPeriodic;
     const double* latVecs;        // [3][3]
-    const double* recVecs2p;      // [3][3]
+    const double* recVecs2pi;     // [3][3]
     const int* kIndexes;          // [nEig]
     const cuDoubleComplex* phases;// [nCell][nEigIn]
 } PeriodicParams;

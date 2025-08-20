@@ -40,8 +40,9 @@ module libwavegrid_molorb_types
   type TPeriodicParams
     logical :: isPeriodic
     real(dp), allocatable :: latVecs(:,:)
-    real(dp), allocatable :: recVecs2p(:,:)
-    real(dp), allocatable :: cellVec(:,:)
+    real(dp), allocatable :: recVecs2pi(:,:)
+    real(dp), allocatable :: rCellVec(:,:)
+    real(dp), allocatable :: fCellVec(:,:)
     integer :: nCell
   end type TPeriodicParams
 

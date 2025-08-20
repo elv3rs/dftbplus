@@ -23,7 +23,6 @@ module libwavegrid_molorb
   implicit none
 
   private
-
   !> Data type containing information for molecular orbital calculator.
   type TMolecularOrbital
     !> System geometry and composition
@@ -34,6 +33,12 @@ module libwavegrid_molorb
     type(TBasisParams) :: basis
     !> If it is initialised
     logical :: tInitialised = .false.
+  contains
+    private
+    procedure, pass(this) :: initSystem
+    procedure, pass(this) :: initBasis
+    procedure, pass(this) :: initPeriodic
+    procedure, pass(this) :: initCoords
   end type TMolecularOrbital
 
 
@@ -50,124 +55,161 @@ contains
 
 
   !> Initialises MolecularOrbital instance.
-  subroutine TMolecularOrbital_init(this, geometry, boundaryCond, basis)
-
-    !> Molecular Orbital
+  subroutine TMolecularOrbital_init(this, geometry, boundaryCond, basisInput)
     type(TMolecularOrbital), intent(out) :: this
-
-    !> Geometrical information.
     type(TGeometry), intent(in) :: geometry
-
-    !> Boundary condition
     type(TBoundaryConds), intent(in) :: boundaryCond
-
-    !> Basis for each species.
-    type(TSpeciesBasis), intent(in) :: basis(:)
-
-    integer :: nOrb, ii, jj, ind, iSp, iOrb
+    type(TSpeciesBasis), intent(in) :: basisInput(:)
     real(dp) :: maxCutoff
-    real(dp), allocatable :: rCellVec(:,:)
-    type(TSlaterOrbital), allocatable :: stos_temp(:)
 
     @:ASSERT(.not. this%tInitialised)
+
+    call this%initSystem(geometry, basisInput)
+    call this%initBasis(basisInput)
+    maxCutoff = sqrt(maxval(this%basis%cutoffsSq))
+    call this%initPeriodic(geometry, maxCutoff)
+    call this%initCoords(geometry, boundaryCond)
+
+    this%tInitialised = .true.
+  end subroutine TMolecularOrbital_init
+
+
+  !> Initialises system parameters (non-periodic)
+  subroutine initSystem(this, geometry, basis)
+    class(TMolecularOrbital), intent(inout) :: this
+    type(TGeometry), intent(in) :: geometry
+    type(TSpeciesBasis), intent(in) :: basis(:)
+
+    integer :: nOrbTotal, nOrbSpecies, iSpec, iAtom, ind, iOrb, angMom, nStosTotal
+
     @:ASSERT(geometry%nSpecies == size(basis))
 
-    ! Populate system parameters
     this%system%nAtom = geometry%nAtom
     this%system%nSpecies = geometry%nSpecies
     allocate(this%system%species(this%system%nAtom))
     this%system%species(:) = geometry%species
 
-    ! Create an sto index 
-    nOrb = 0
-    do ii = 1, this%system%nSpecies
-      nOrb = nOrb + basis(ii)%nOrb
+    ! Get total number of STOs
+    nStosTotal = 0
+    do iSpec = 1, this%system%nSpecies
+      nStosTotal = nStosTotal + basis(iSpec)%nOrb
     end do
-    allocate(this%system%iStos(this%system%nSpecies+1))
-    allocate(stos_temp(nOrb))
-    this%basis%nStos = nOrb
+    allocate(this%system%iStos(this%system%nSpecies + 1))
+    this%basis%nStos = nStosTotal
 
+    ! Create STO index map: iStos(i) points to the first STO of species i
     ind = 1
-    do ii = 1, this%system%nSpecies
-      this%system%iStos(ii) = ind
-      nOrb = basis(ii)%nOrb
-      stos_temp(ind:ind+nOrb-1) = basis(ii)%stos(1:nOrb)
-      ind = ind + nOrb
+    do iSpec = 1, this%system%nSpecies
+      this%system%iStos(iSpec) = ind
+      ind = ind + basis(iSpec)%nOrb
     end do
-    this%system%iStos(ii) = ind
+    this%system%iStos(iSpec) = ind
 
-    ! Count all orbitals (including atom, m-dependence)
-    nOrb = 0
-    do ii = 1, this%system%nAtom
-      iSp = this%system%species(ii)
-      do jj = this%system%iStos(iSp), this%system%iStos(iSp+1)-1
-        nOrb = nOrb + 1 + 2 * stos_temp(jj)%angMom
+    ! Count total number of orbitals (including m-dependence)
+    nOrbTotal = 0
+    do iAtom = 1, this%system%nAtom
+      iSpec = this%system%species(iAtom)
+      do iOrb = 1, basis(iSpec)%nOrb
+        angMom = basis(iSpec)%stos(iOrb)%angMom
+        nOrbTotal = nOrbTotal + 1 + 2 * angMom
       end do
     end do
-    this%system%nOrb = nOrb
+    this%system%nOrb = nOrbTotal
+  end subroutine initSystem
 
-    ! Convert basis from AoS to SoA format
-    allocate(this%basis%angMoms(this%basis%nStos), source=0)
-    allocate(this%basis%sto_nPows(this%basis%nStos), source=0)
-    allocate(this%basis%sto_nAlphas(this%basis%nStos), source=0)
-    allocate(this%basis%cutoffsSq(this%basis%nStos), source=0.0_dp)
+
+  !> Converts basis from AoS to SoA format for performance.
+  subroutine initBasis(this, basisInput)
+    class(TMolecularOrbital), intent(inout) :: this
+    type(TSpeciesBasis), intent(in) :: basisInput(:)
+    integer :: iSpec, iOrb, ind
+    type(TSlaterOrbital), allocatable :: stos_flat(:)
+
+    ! Flatten the basis array for easier iteration
+    allocate(stos_flat(this%basis%nStos))
+    ind = 1
+    do iSpec = 1, this%system%nSpecies
+      stos_flat(ind:ind+basisInput(iSpec)%nOrb-1) = basisInput(iSpec)%stos(:)
+      ind = ind + basisInput(iSpec)%nOrb
+    end do
+
+    ! Allocate SoA arrays
+    allocate(this%basis%angMoms(this%basis%nStos))
+    allocate(this%basis%sto_nPows(this%basis%nStos))
+    allocate(this%basis%sto_nAlphas(this%basis%nStos))
+    allocate(this%basis%cutoffsSq(this%basis%nStos))
+
+    ! Populate SoA arrays
     do iOrb = 1, this%basis%nStos
-      this%basis%angMoms(iOrb) = stos_temp(iOrb)%angMom
-      this%basis%cutoffsSq(iOrb) = stos_temp(iOrb)%cutoff ** 2
-      this%basis%sto_nPows(iOrb) = stos_temp(iOrb)%nPow
-      this%basis%sto_nAlphas(iOrb) = stos_temp(iOrb)%nAlpha
+      this%basis%angMoms(iOrb) = stos_flat(iOrb)%angMom
+      this%basis%cutoffsSq(iOrb) = stos_flat(iOrb)%cutoff ** 2
+      this%basis%sto_nPows(iOrb) = stos_flat(iOrb)%nPow
+      this%basis%sto_nAlphas(iOrb) = stos_flat(iOrb)%nAlpha
     end do
     this%basis%maxNPows = maxval(this%basis%sto_nPows)
     this%basis%maxNAlphas = maxval(this%basis%sto_nAlphas)
-    maxCutoff = sqrt(maxval(this%basis%cutoffsSq))
+
+    ! Allocate and populate coefficient/alpha matrices
     allocate(this%basis%sto_coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
     allocate(this%basis%sto_alphas(this%basis%maxNAlphas, this%basis%nStos))
     do iOrb = 1, this%basis%nStos
-      this%basis%sto_coeffs(1:this%basis%sto_nPows(iOrb), 1:this%basis%sto_nAlphas(iOrb), iOrb) = stos_temp(iOrb)%aa
-      this%basis%sto_alphas(1:this%basis%sto_nAlphas(iOrb), iOrb) = stos_temp(iOrb)%alpha
+      this%basis%sto_coeffs(1:stos_flat(iOrb)%nPow, 1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%aa
+      this%basis%sto_alphas(1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%alpha
     end do
+  end subroutine initBasis
 
 
-
-
-    ! Populate periodic parameters
+  !> Initializes periodic parameters
+  subroutine initPeriodic(this, geometry, maxCutoff)
+    class(TMolecularOrbital), intent(inout) :: this
+    type(TGeometry), intent(in) :: geometry
+    real(dp), intent(in) :: maxCutoff
+    real(dp), allocatable :: rCellVec(:,:)
+  
     this%periodic%isPeriodic = geometry%tPeriodic
     if (this%periodic%isPeriodic) then
       allocate(this%periodic%latVecs(3, 3))
-      allocate(this%periodic%recVecs2p(3, 3))
+      allocate(this%periodic%recVecs2pi(3, 3))
+
       this%periodic%latVecs(:,:) = geometry%latVecs
-      call invert33(this%periodic%recVecs2p, this%periodic%latVecs)
-      this%periodic%recVecs2p(:,:) = reshape(this%periodic%recVecs2p, [3, 3], order=[2, 1])
-      call getCellTranslations(this%periodic%cellVec, rCellVec, this%periodic%latVecs, &
-          & this%periodic%recVecs2p, maxCutoff)
-      this%periodic%nCell = size(this%periodic%cellVec,dim=2)
+      call invert33(this%periodic%recVecs2pi, this%periodic%latVecs)
+      this%periodic%recVecs2pi(:,:) = transpose(this%periodic%recVecs2pi)
+      call getCellTranslations(this%periodic%fCellVec, this%periodic%rCellVec, this%periodic%latVecs, &
+          & this%periodic%recVecs2pi, maxCutoff)
+      this%periodic%nCell = size(this%periodic%fCellVec, dim=2)
     else
-      allocate(this%periodic%latVecs(3, 0))
-      allocate(this%periodic%recVecs2p(3, 0))
-      allocate(this%periodic%cellVec(3, 1))
-      this%periodic%cellVec(:,:) = 0.0_dp
-      allocate(rCellVec(3, 1))
-      rCellVec(:,:) = 0.0_dp
       this%periodic%nCell = 1
+      allocate(this%periodic%latVecs(3, 0))
+      allocate(this%periodic%recVecs2pi(3, 0))
+      allocate(this%periodic%fCellVec(3, 1))
+      allocate(this%periodic%rCellVec(3, 1))
+      this%periodic%fCellVec(:,:) = 0.0_dp
+      this%periodic%rCellVec(:,:) = 0.0_dp
     end if
+  end subroutine initPeriodic
 
-    ! Create coordinates for central cell and periodic images
-    allocate(this%system%coords(3, this%system%nAtom, this%periodic%nCell))
-    this%system%coords(:,:,1) = geometry%coords
-    call boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
-    if (this%periodic%isPeriodic) then
-      do ii = 2, this%periodic%nCell
-        do jj = 1, this%system%nAtom
-          this%system%coords(:, jj, ii) = this%system%coords(:, jj, 1) + rCellVec(:, ii)
+
+  !> Initializes coordinates including periodic images.
+  ! Depends on initPeriodic having run first.
+  subroutine initCoords(this, geometry, boundaryCond)
+      class(TMolecularOrbital), intent(inout) :: this
+      type(TGeometry), intent(in) :: geometry
+      type(TBoundaryConds), intent(in) :: boundaryCond
+      integer :: iCell, iAtom
+
+      allocate(this%system%coords(3, this%system%nAtom, this%periodic%nCell))
+      this%system%coords(:,:,1) = geometry%coords
+      call boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
+
+      if (this%periodic%isPeriodic) then
+        do iCell = 2, this%periodic%nCell
+          do iAtom = 1, this%system%nAtom
+            this%system%coords(:, iAtom, iCell) = this%system%coords(:, iAtom, 1) + this%periodic%rCellVec(:, iCell)
+          end do
         end do
-      end do
-    end if
+      end if
+  end subroutine initCoords
 
-
-
-    this%tInitialised = .true.
-
-  end subroutine TMolecularOrbital_init
 
 
   !> Returns molecular orbitals on a grid.
@@ -270,7 +312,7 @@ contains
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
-      phases(:,:) = exp(imag * matmul(transpose(this%periodic%cellVec), kPoints))
+      phases(:,:) = exp(imag * matmul(transpose(this%periodic%fCellVec), kPoints))
     else
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if

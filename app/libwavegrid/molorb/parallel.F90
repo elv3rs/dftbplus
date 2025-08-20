@@ -186,7 +186,7 @@ contains
 
     type, bind(c) :: TPeriodicParamsC
       integer(c_int) :: isPeriodic
-      type(c_ptr) :: latVecs, recVecs2p, kIndexes, phases
+      type(c_ptr) :: latVecs, recVecs2pi, kIndexes, phases
     end type
 
     type, bind(c) :: TBasisParamsC
@@ -237,7 +237,7 @@ contains
     system_p%iStos = c_loc(system%iStos)
     periodic_p%isPeriodic = merge(1, 0, periodic%isPeriodic)
     periodic_p%latVecs = c_loc(periodic%latVecs)
-    periodic_p%recVecs2p = c_loc(periodic%recVecs2p)
+    periodic_p%recVecs2pi = c_loc(periodic%recVecs2pi)
     periodic_p%kIndexes = c_loc(kIndexes)
     periodic_p%phases = c_loc(phases)
     sto_basis_p%nStos = basis%nStos
@@ -326,7 +326,7 @@ contains
 
             ! Fold coordinates into unit cell
             if (periodic%isPeriodic) then
-              frac(:) = matmul(xyz, periodic%recVecs2p)
+              frac(:) = matmul(xyz, periodic%recVecs2pi)
               xyz(:) = matmul(periodic%latVecs, frac - real(floor(frac), dp))
             end if
 

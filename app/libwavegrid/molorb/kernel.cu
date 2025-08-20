@@ -41,7 +41,7 @@ struct DeviceData {
 
     // Periodic
     DeviceBuffer<double> latVecs;
-    DeviceBuffer<double> recVecs2p;
+    DeviceBuffer<double> recVecs2pi;
     DeviceBuffer<int>    kIndexes;
     DeviceBuffer<cuDoubleComplex> phases;
 
@@ -80,7 +80,7 @@ struct DeviceData {
         }
         if (periodic->isPeriodic) {
             latVecs.assign(periodic->latVecs, 9);
-            recVecs2p.assign(periodic->recVecs2p, 9);
+            recVecs2pi.assign(periodic->recVecs2pi, 9);
         }
     }
 };
@@ -101,7 +101,7 @@ struct DeviceKernelParams {
     // Periodic boundary cond.
     bool isPeriodic;
     const double* latVecs;
-    const double* recVecs2p;
+    const double* recVecs2pi;
     const int*    kIndexes;
     const cuDoubleComplex* phases;
 
@@ -162,7 +162,7 @@ struct DeviceKernelParams {
         // Periodic boundary conditions
         isPeriodic = periodic->isPeriodic;
         latVecs = data.latVecs.get();
-        recVecs2p = data.recVecs2p.get();
+        recVecs2pi = data.recVecs2pi.get();
         kIndexes = data.kIndexes.get();
         phases = data.phases.get();
 
@@ -228,7 +228,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
     
     // If periodic, fold into cell by discarding the non-fractional part in lattice vector multiples.
     if (p.isPeriodic) 
-        foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(p.latVecs), reinterpret_cast<const double (*)[3]>(p.recVecs2p));
+        foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(p.latVecs), reinterpret_cast<const double (*)[3]>(p.recVecs2pi));
     
 
     double densityAcc = 0.0; // used for density
