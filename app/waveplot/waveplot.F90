@@ -229,9 +229,10 @@ program waveplot
     deallocate(cellVec)
     deallocate(rCellVec)
   end if
+
   tRequireIndividual =  wp%opt%tPlotChrgDiff &
                     & .or. wp%opt%tPlotReal .or. wp%opt%tPlotImag .or. wp%opt%tPlotTotSpin
-
+  tRequireIndividual = .true.
   if (.not. tRequireIndividual .and. wp%opt%tCalcTotChrg) then
     print *, "Using inplace accumulation for total charge calculation."
       nEig = wp%loc%grid%nCached

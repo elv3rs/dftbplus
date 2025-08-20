@@ -23,7 +23,7 @@ contains
 
   !> Returns the values of several molecular orbitals on grids.
   subroutine evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, system, basis, tReal, &
-      & kIndexes, phases, tAddDensities, valueReal, valueCmpl, periodic)
+      & kIndexes, phases, isDensityCalc, calcTotalChrg, valueReal, valueCmpl, periodic)
 
     !> Origin of the grid
     real(dp), intent(in) :: origin(:)
@@ -44,7 +44,10 @@ contains
     !> Phase factors for periodic images
     complex(dp), intent(in) :: phases(:,:)
     !> If densities should be added instead of wave funcs
-    logical, intent(in) :: tAddDensities
+    logical, intent(in) :: isDensityCalc
+    !> Whether to calculate total charge
+    logical, intent(in) :: calcTotalChrg
+
     !> Contains the real grid on exit
     real(dp), intent(out) :: valueReal(:,:,:,:)
     !> Contains the complex grid on exit
@@ -56,8 +59,8 @@ contains
     #: set VARIANT = 'OMP'
     print *, "Running molorb using ${VARIANT}$ kernel."
 
-    call evaluate${VARIANT}$(calcTotalChrg=tAddDensities, &
-        & isDensityCalc=tAddDensities, origin=origin, gridVecs=gridVecs, &
+    call evaluate${VARIANT}$(calcTotalChrg=calcTotalChrg, &
+        & isDensityCalc=isDensityCalc, origin=origin, gridVecs=gridVecs, &
         & system=system, basis=basis, kIndexes=kIndexes, phases=phases, &
         & eigVecsReal=eigVecsReal, eigVecsCmpl=eigVecsCmpl, &
         & valueReal=valueReal, valueCmpl=valueCmpl, isRealInput=tReal, periodic=periodic)

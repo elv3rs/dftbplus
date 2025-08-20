@@ -65,7 +65,7 @@ contains
     type(TSpeciesBasis), intent(in) :: basis(:)
 
     integer :: nOrb, ii, jj, ind, iSp, iOrb
-    real(dp) :: mCutoff
+    real(dp) :: maxCutoff
     real(dp), allocatable :: rCellVec(:,:)
     type(TSlaterOrbital), allocatable :: stos_temp(:)
 
@@ -78,7 +78,7 @@ contains
     allocate(this%system%species(this%system%nAtom))
     this%system%species(:) = geometry%species
 
-    ! Create sequential list of STOs (AoS format)
+    ! Create an sto index 
     nOrb = 0
     do ii = 1, this%system%nSpecies
       nOrb = nOrb + basis(ii)%nOrb
@@ -87,20 +87,16 @@ contains
     allocate(stos_temp(nOrb))
     this%basis%nStos = nOrb
 
-    mCutoff = -1.0_dp
     ind = 1
     do ii = 1, this%system%nSpecies
       this%system%iStos(ii) = ind
       nOrb = basis(ii)%nOrb
       stos_temp(ind:ind+nOrb-1) = basis(ii)%stos(1:nOrb)
-      do jj = 1, basis(ii)%nOrb
-        mCutoff = max(mCutoff, basis(ii)%stos(jj)%cutoff)
-      end do
       ind = ind + nOrb
     end do
     this%system%iStos(ii) = ind
 
-    ! Count all orbitals (including m-dependence)
+    ! Count all orbitals (including atom, m-dependence)
     nOrb = 0
     do ii = 1, this%system%nAtom
       iSp = this%system%species(ii)
@@ -109,6 +105,30 @@ contains
       end do
     end do
     this%system%nOrb = nOrb
+
+    ! Convert basis from AoS to SoA format
+    allocate(this%basis%angMoms(this%basis%nStos), source=0)
+    allocate(this%basis%sto_nPows(this%basis%nStos), source=0)
+    allocate(this%basis%sto_nAlphas(this%basis%nStos), source=0)
+    allocate(this%basis%cutoffsSq(this%basis%nStos), source=0.0_dp)
+    do iOrb = 1, this%basis%nStos
+      this%basis%angMoms(iOrb) = stos_temp(iOrb)%angMom
+      this%basis%cutoffsSq(iOrb) = stos_temp(iOrb)%cutoff ** 2
+      this%basis%sto_nPows(iOrb) = stos_temp(iOrb)%nPow
+      this%basis%sto_nAlphas(iOrb) = stos_temp(iOrb)%nAlpha
+    end do
+    this%basis%maxNPows = maxval(this%basis%sto_nPows)
+    this%basis%maxNAlphas = maxval(this%basis%sto_nAlphas)
+    maxCutoff = sqrt(maxval(this%basis%cutoffsSq))
+    allocate(this%basis%sto_coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
+    allocate(this%basis%sto_alphas(this%basis%maxNAlphas, this%basis%nStos))
+    do iOrb = 1, this%basis%nStos
+      this%basis%sto_coeffs(1:this%basis%sto_nPows(iOrb), 1:this%basis%sto_nAlphas(iOrb), iOrb) = stos_temp(iOrb)%aa
+      this%basis%sto_alphas(1:this%basis%sto_nAlphas(iOrb), iOrb) = stos_temp(iOrb)%alpha
+    end do
+
+
+
 
     ! Populate periodic parameters
     this%periodic%isPeriodic = geometry%tPeriodic
@@ -119,7 +139,7 @@ contains
       call invert33(this%periodic%recVecs2p, this%periodic%latVecs)
       this%periodic%recVecs2p(:,:) = reshape(this%periodic%recVecs2p, [3, 3], order=[2, 1])
       call getCellTranslations(this%periodic%cellVec, rCellVec, this%periodic%latVecs, &
-          & this%periodic%recVecs2p, mCutoff)
+          & this%periodic%recVecs2p, maxCutoff)
       this%periodic%nCell = size(this%periodic%cellVec,dim=2)
     else
       allocate(this%periodic%latVecs(3, 0))
@@ -143,25 +163,7 @@ contains
       end do
     end if
 
-    ! Convert basis from AoS to SoA format
-    allocate(this%basis%angMoms(this%basis%nStos), source=0)
-    allocate(this%basis%sto_nPows(this%basis%nStos), source=0)
-    allocate(this%basis%sto_nAlphas(this%basis%nStos), source=0)
-    allocate(this%basis%cutoffsSq(this%basis%nStos), source=0.0_dp)
-    do iOrb = 1, this%basis%nStos
-      this%basis%angMoms(iOrb) = stos_temp(iOrb)%angMom
-      this%basis%cutoffsSq(iOrb) = stos_temp(iOrb)%cutoff ** 2
-      this%basis%sto_nPows(iOrb) = stos_temp(iOrb)%nPow
-      this%basis%sto_nAlphas(iOrb) = stos_temp(iOrb)%nAlpha
-    end do
-    this%basis%maxNPows = maxval(this%basis%sto_nPows)
-    this%basis%maxNAlphas = maxval(this%basis%sto_nAlphas)
-    allocate(this%basis%sto_coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
-    allocate(this%basis%sto_alphas(this%basis%maxNAlphas, this%basis%nStos))
-    do iOrb = 1, this%basis%nStos
-      this%basis%sto_coeffs(1:this%basis%sto_nPows(iOrb), 1:this%basis%sto_nAlphas(iOrb), iOrb) = stos_temp(iOrb)%aa
-      this%basis%sto_alphas(1:this%basis%sto_nAlphas(iOrb), iOrb) = stos_temp(iOrb)%alpha
-    end do
+
 
     this%tInitialised = .true.
 
@@ -185,12 +187,9 @@ contains
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addDensities
 
-    integer(dp) :: startTime, endTime, clockRate
     integer :: kIndexes(0)
-    complex(dp) :: valueCmpl(0, 0, 0, 0)
-    complex(dp) :: eigVecsCmpl(0, 0)
-    complex(dp), allocatable :: phases(:,:)
-    logical :: tAddDensities
+    complex(dp) :: valueCmpl(0, 0, 0, 0), eigVecsCmpl(0, 0), phases(0,0)
+    logical :: tAddDensities, calcTotalChrg
 
     @:ASSERT(this%tInitialised)
     @:ASSERT(size(origin) == 3)
@@ -199,12 +198,12 @@ contains
     @:ASSERT(all(shape(valueOnGrid) > [1, 1, 1, 0]))
     @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
 
+    calcTotalChrg = .false.
     tAddDensities = present(addDensities)
 
-    allocate(phases(this%periodic%nCell, 0))
 
-      call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%system, this%basis, &
-          & .true., kIndexes, phases, tAddDensities, valueOnGrid, valueCmpl, this%periodic)
+    call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%system, this%basis, &
+          & .true., kIndexes, phases, tAddDensities, calcTotalChrg, valueOnGrid, valueCmpl, this%periodic)
 
   end subroutine TMolecularOrbital_getValue_real
 
@@ -228,9 +227,9 @@ contains
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
 
-    real(dp) :: valueReal(0,0,0,0)
-    real(dp) :: eigVecsReal(0,0)
+    real(dp) :: valueReal(0,0,0,0), eigVecsReal(0,0)
     complex(dp), allocatable :: phases(:,:)
+    logical :: tAddDensities, calcTotalChrg
 
     @:ASSERT(this%tInitialised)
     @:ASSERT(size(origin) == 3)
@@ -244,6 +243,9 @@ contains
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
 
+    tAddDensities = .false.
+    calcTotalChrg = .false.
+
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
       phases(:,:) = exp(imag * matmul(transpose(this%periodic%cellVec), kPoints))
@@ -251,8 +253,8 @@ contains
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if
 
-      call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%system, this%basis, &
-          & .false., kIndexes, phases, .false., valueReal, valueOnGrid, this%periodic)
+    call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%system, this%basis, &
+          & .false., kIndexes, phases, tAddDensities, calcTotalChrg, valueReal, valueOnGrid, this%periodic)
 
   end subroutine TMolecularOrbital_getValue_cmpl
 
