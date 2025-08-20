@@ -1,7 +1,6 @@
 set(projectdir ${PROJECT_SOURCE_DIR})
 
 set(sources_lib_fpp
-  gridcache.F90
   slater.F90
 )
 

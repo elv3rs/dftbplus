@@ -22,73 +22,151 @@ module libwavegrid_molorb_parallel
 contains
 
   !> Returns the values of several molecular orbitals on grids.
-  subroutine evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, system, basis, tReal, &
-      & kIndexes, phases, isDensityCalc, calcTotalChrg, valueReal, valueCmpl, periodic)
+  !> This dispatches to either CPU / GPU implementation, and handles total Charge calculation using occupationVec if present.
+  subroutine evaluateParallel(origin, gridVecs, system, periodic, kIndexes, phases, basis, &
+      & isRealInput, isDensityCalc, preferCPU, eigVecsReal, eigVecsCmpl, &
+      & valueReal, valueCmpl, occupationVec)
 
     !> Origin of the grid
     real(dp), intent(in) :: origin(:)
     !> Grid vectors
     real(dp), intent(in) :: gridVecs(:,:)
-    !> Real eigenvectors, or null-array
-    real(dp), intent(in) :: eigVecsReal(:,:)
-    !> Complex eigenvectors, or null-array
-    complex(dp), intent(in) :: eigVecsCmpl(:,:)
+
     !> System geometry and composition
     type(TSystemParams), intent(in) :: system
-    !> Basis set data in SoA format
-    type(TBasisParams), intent(in) :: basis
-    !> If the eigenvectors are real
-    logical, intent(in) :: tReal
+
+    !> Periodic boundary conditions data 
+    type(TPeriodicParams), intent(in) :: periodic
     !> Index of the k-points for each orbital in kPoints
     integer, intent(in) :: kIndexes(:)
     !> Phase factors for periodic images
     complex(dp), intent(in) :: phases(:,:)
+
+    !> Basis set data in SoA format
+    type(TBasisParams), intent(in) :: basis
+
+
+    !> If the eigenvectors are real
+    logical, intent(in) :: isRealInput
     !> If densities should be added instead of wave funcs
     logical, intent(in) :: isDensityCalc
-    !> Whether to calculate total charge
-    logical, intent(in) :: calcTotalChrg
+    !> Whether to force CPU-only calculation
+    logical, intent(in) :: preferCPU
+
+
+    !> Real eigenvectors, or null-array
+    real(dp), intent(in) :: eigVecsReal(:,:)
+    !> Complex eigenvectors, or null-array
+    complex(dp), intent(in) :: eigVecsCmpl(:,:)
 
     !> Contains the real grid on exit
     real(dp), intent(out) :: valueReal(:,:,:,:)
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
-    !> Periodic boundary conditions data 
-    type(TPeriodicParams), intent(in) :: periodic
 
-    #: set VARIANT = 'CUDA' if WITH_CUDA else 'OMP'
-    #: set VARIANT = 'OMP'
-    print *, "Running molorb using ${VARIANT}$ kernel."
+    !> If this is present, calculate total charge. I.e. sum the squared states weighted by occupationVec(nEig).
+    !> Output valueReal and valueCmpl will collapse to one slice in the last dimension, (x,y,z,1).
+    real(dp), intent(in), optional :: occupationVec(:)
 
-    call evaluate${VARIANT}$(calcTotalChrg=calcTotalChrg, &
-        & isDensityCalc=isDensityCalc, origin=origin, gridVecs=gridVecs, &
-        & system=system, basis=basis, kIndexes=kIndexes, phases=phases, &
-        & eigVecsReal=eigVecsReal, eigVecsCmpl=eigVecsCmpl, &
-        & valueReal=valueReal, valueCmpl=valueCmpl, isRealInput=tReal, periodic=periodic)
+    real(dp), allocatable :: coeffVecReal(:,:)
+    complex(dp), allocatable :: coeffVecCmpl(:,:)
+    real(dp), allocatable :: bufferReal(:,:,:,:)
+
+#:if WITH_CUDA
+    logical, parameter :: gpuAvailable = .true.
+#:else
+    logical, parameter :: gpuAvailable = .false.
+#:endif
+    logical :: calcTotalChrg, runOnGPU
+    integer :: iEig
+
+    runOnGPU = gpuAvailable .and. .not. preferCPU
+
+    calcTotalChrg = present(occupationVec)
+    if (calcTotalChrg) then
+      @:ASSERT(size(valueReal, dim=4) <= 1)
+      @:ASSERT(size(valueCmpl, dim=4) <= 1)
+    end if
+
+
+    if (runOnGPU) then
+      #:if WITH_CUDA
+        ! GPU implementation handles occupation by baking their sqrt into the eigenvectors
+        allocate(coeffVecReal(size(eigVecsReal, dim=1), size(eigVecsReal, dim=2)))
+        allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
+
+        if (calcTotalChrg) then
+          @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
+          do iEig = 1, size(eigVecsReal, dim=2)
+            coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
+          end do
+          do iEig = 1, size(eigVecsCmpl, dim=2)
+            coeffVecCmpl(:, iEig) = eigVecsCmpl(:, iEig) * sqrt(occupationVec(iEig))
+          end do
+        else
+          coeffVecReal = eigVecsReal
+          coeffVecCmpl = eigVecsCmpl
+        end if
+
+        call evaluateCuda(origin, gridVecs, &
+            & system, basis, periodic, kIndexes, phases, &
+            & isDensityCalc, calcTotalChrg, isRealInput, &
+            & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
+      #:else
+          error("CUDA support not enabled. Recompile WITH_CUDA.")
+      #:endif
+    else ! CPU implementation
+      ! Notify user if cpu omp unavailable (will be slower)
+      #:if WITH_OMP
+        print *, "Using CPU OMP molorb calculation."
+      #:else
+        print *, "Using CPU serial molorb calculation. OMP not available. (will run slower)"
+      #:endif
+      if (calcTotalChrg) then
+        print *, "Warn: Total Charge calculation not done in place (potential high memory usage)"
+        allocate(bufferReal(size(valueReal, dim=1), size(valueReal, dim=2), size(valueReal, dim=3), size(occupationVec)))
+        bufferReal(:,:,:, :) = 0.0_dp
+        call evaluateOMP(origin, gridVecs, &
+            & system, basis, periodic, kIndexes, phases, &
+            & isDensityCalc, calcTotalChrg, isRealInput, &
+            & eigVecsReal, eigVecsCmpl, bufferReal, valueCmpl)
+        ! Multiply states by occupation
+        valueReal(:, :, :, 1) = 0.0_dp
+        do iEig = 1, size(occupationVec)
+          valueReal(:, :, :, 1) = valueReal(:, :, :, 1)  + bufferReal(:, :, :, iEig) ** 2 * occupationVec(iEig)
+        end do
+      else
+        call evaluateOMP(origin, gridVecs, &
+            & system, basis, periodic, kIndexes, phases, &
+            & isDensityCalc, calcTotalChrg, isRealInput, &
+            & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
+      end if
+    end if
+
 
   end subroutine evaluateParallel
 
 
 
 #:if WITH_CUDA
-  subroutine evaluateCuda(isDensityCalc, calcTotalChrg, origin, gridVecs, system, basis, &
-      & kIndexes, phases, eigVecsReal, eigVecsCmpl, valueReal, valueCmpl, isRealInput, periodic)
-    use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams
-    use, intrinsic :: iso_c_binding, only : c_int, c_ptr, c_loc, c_double, c_double_complex
+  subroutine evaluateCuda(origin, gridVecs, &
+      & system, basis, periodic, kIndexes, phases, &
+      & isDensityCalc, calcTotalChrg, isRealInput, &
+      & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
-    !> Calculation flags
-    logical, intent(in) :: isDensityCalc, calcTotalChrg, isRealInput
-    !> Grid data
+    !> Grid
     real(dp), intent(in), target :: origin(3)
     real(dp), intent(in), target :: gridVecs(3, 3)
-    !> System and basis data
+    !> System
     type(TSystemParams), intent(in), target :: system
+    !> Basis set
     type(TBasisParams), intent(in), target :: basis
+    !> Periodic boundary conditions
     type(TPeriodicParams), intent(in), target :: periodic
-    !> k-point data
-    !> Index of the k-points for each orbital in kPoints
     integer, intent(in), target :: kIndexes(:)
-    !> Phase factors for periodic images
     complex(dp), intent(in), target :: phases(:, :)
+    !> Calculation flags
+    logical, intent(in) :: isDensityCalc, calcTotalChrg, isRealInput
     !> Eigenvectors
     real(dp), intent(in), target :: eigVecsReal(:, :)
     complex(dp), intent(in), target :: eigVecsCmpl(:, :)
@@ -200,30 +278,30 @@ contains
 
 
 
-  subroutine evaluateOMP(isDensityCalc, calcTotalChrg, origin, gridVecs, system, basis, &
-      & kIndexes, phases, eigVecsReal, eigVecsCmpl, valueReal, valueCmpl, isRealInput, periodic)
-    use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams
-    use, intrinsic :: iso_c_binding, only : c_int, c_ptr, c_loc, c_double, c_double_complex
+  subroutine evaluateOMP(origin, gridVecs, &
+      & system, basis, periodic, kIndexes, phases, &
+      & isDensityCalc, calcTotalChrg, isRealInput, &
+      & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
-    !> Calculation flags
-    logical, intent(in) :: isDensityCalc, calcTotalChrg, isRealInput
-    !> Grid data
+    !> Grid
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3, 3)
-    !> System and basis data
+    !> System
     type(TSystemParams), intent(in) :: system
+    !> Basis set
     type(TBasisParams), intent(in) :: basis
-    !> k-point data
+    !> Periodic boundary conditions
+    type(TPeriodicParams), intent(in) :: periodic
     integer, intent(in) :: kIndexes(:)
     complex(dp), intent(in) :: phases(:, :)
+    !> Calculation flags
+    logical, intent(in) :: isDensityCalc, calcTotalChrg, isRealInput
     !> Eigenvectors
     real(dp), intent(in) :: eigVecsReal(:, :)
     complex(dp), intent(in) :: eigVecsCmpl(:, :)
     !> Output grids
     real(dp), intent(out) :: valueReal(:, :, :, :)
     complex(dp), intent(out) :: valueCmpl(:, :, :, :)
-    !> Optional periodic data
-    type(TPeriodicParams), intent(in) :: periodic
 
     !! Thread private variables
     integer ::  ind, iSpecies

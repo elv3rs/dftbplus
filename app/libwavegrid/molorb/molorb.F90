@@ -172,7 +172,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, &
-      & valueOnGrid, addDensities)
+      & valueOnGrid, addDensities, preferCPU, occupationVec)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -186,10 +186,15 @@ contains
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addDensities
+    !> Whether to prefer CPU for calculation
+    logical, intent(in), optional :: preferCPU
+    !> if present, calculate total charge. Coefficients for each squared state
+    real(dp), intent(in), optional :: occupationVec(:)
 
     integer :: kIndexes(0)
     complex(dp) :: valueCmpl(0, 0, 0, 0), eigVecsCmpl(0, 0), phases(0,0)
-    logical :: tAddDensities, calcTotalChrg
+    logical :: isDensityCalc, doPreferCPU
+    logical, parameter :: isRealInput = .true.
 
     @:ASSERT(this%tInitialised)
     @:ASSERT(size(origin) == 3)
@@ -198,19 +203,31 @@ contains
     @:ASSERT(all(shape(valueOnGrid) > [1, 1, 1, 0]))
     @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
 
-    calcTotalChrg = .false.
-    tAddDensities = present(addDensities)
+    isDensityCalc = .false.
+    if (present(addDensities)) then
+      isDensityCalc = addDensities
+    end if
+    doPreferCPU = .false.
+    if (present(preferCPU)) then
+      doPreferCPU = preferCPU
+    end if
 
-
-    call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%system, this%basis, &
-          & .true., kIndexes, phases, tAddDensities, calcTotalChrg, valueOnGrid, valueCmpl, this%periodic)
+    if (present(occupationVec)) then
+      call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+        & isRealInput, isDensityCalc, doPreferCPU, eigVecsReal, eigVecsCmpl, &
+        & valueOnGrid, valueCmpl, occupationVec)
+    else
+      call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+        & isRealInput, isDensityCalc, doPreferCPU, eigVecsReal, eigVecsCmpl, &
+        & valueOnGrid, valueCmpl)
+    end if
 
   end subroutine TMolecularOrbital_getValue_real
 
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid)
+      & kIndexes, valueOnGrid, preferCPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -226,10 +243,14 @@ contains
     integer, intent(in) :: kIndexes(:)
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
+    !> Whether to prefer CPU for calculation
+    logical, intent(in), optional :: preferCPU
 
     real(dp) :: valueReal(0,0,0,0), eigVecsReal(0,0)
     complex(dp), allocatable :: phases(:,:)
-    logical :: tAddDensities, calcTotalChrg
+    logical, parameter :: isRealInput = .false.
+    logical, parameter :: isDensityCalc = .false.
+    logical :: doPreferCPU
 
     @:ASSERT(this%tInitialised)
     @:ASSERT(size(origin) == 3)
@@ -242,9 +263,10 @@ contains
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
-
-    tAddDensities = .false.
-    calcTotalChrg = .false.
+    doPreferCPU = .false.
+    if (present(preferCPU)) then
+      doPreferCPU = preferCPU
+    end if
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
@@ -253,8 +275,9 @@ contains
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if
 
-    call evaluateParallel(origin, gridVecs, eigVecsReal, eigVecsCmpl, this%system, this%basis, &
-          & .false., kIndexes, phases, tAddDensities, calcTotalChrg, valueReal, valueOnGrid, this%periodic)
+    call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+      & isRealInput, isDensityCalc, preferCPU, eigVecsReal, eigVecsCmpl, &
+      & valueReal, valueOnGrid)
 
   end subroutine TMolecularOrbital_getValue_cmpl
 

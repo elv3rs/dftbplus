@@ -43,7 +43,7 @@ program waveplot
   real(dp), allocatable :: buffer(:,:,:), totChrg(:,:,:), atomicChrg(:,:,:,:), spinUp(:,:,:), totChrg4d(:,:,:,:)
 
   !> Occupation of orbitals
-  real(dp), allocatable :: orbitalOcc(:,:), densityCoeffs(:,:)
+  real(dp), allocatable :: orbitalOcc(:,:), eigCoeffs(:)
 
   !> Array holding temporary coordinate information
   real(dp), allocatable :: coords(:,:)
@@ -232,24 +232,22 @@ program waveplot
 
   tRequireIndividual =  wp%opt%tPlotChrgDiff &
                     & .or. wp%opt%tPlotReal .or. wp%opt%tPlotImag .or. wp%opt%tPlotTotSpin
-  tRequireIndividual = .true.
+  ! The cuda kernel supports fast inplace accumulation for total charge. (speedup ~ 6x)
   if (.not. tRequireIndividual .and. wp%opt%tCalcTotChrg) then
-    print *, "Using inplace accumulation for total charge calculation."
+      print *, "Using library total charge calculation"
+      ! Get occupation by state
       nEig = wp%loc%grid%nCached
       call wp%loc%grid%loadEigenvecs(nEig)
-      nOrbSys = size(wp%loc%grid%eigenvecReal, dim=1)
-      @:ASSERT(nOrbSys == wp%input%nOrb)
-      allocate(densityCoeffs(nOrbSys, nEig))
+      allocate(eigCoeffs(nEig))
 
-      ! Bake occupation into eigenvectors
       do iEig = 1, nEig
           levelIndex = wp%loc%grid%levelIndex(:, iEig)
           iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
-          densityCoeffs(:, iEig) = wp%loc%grid%eigenvecReal(:,iEig) * sqrt(wp%input%occupations(iLevel, iKPoint, iSpin) )
+          eigCoeffs(iEig) = wp%input%occupations(iLevel, iKPoint, iSpin)
       end do
 
-      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, densityCoeffs, &
-          & totChrg4d , addDensities=.true.)
+      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecReal, &
+          & totChrg4d , addDensities=.false., preferCPU=.true., occupationVec=eigCoeffs)
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
   end if
 
@@ -279,7 +277,6 @@ program waveplot
           buffer(:,:,:) = abs(gridValCmpl)**2
         end if
         if (wp%opt%tCalcTotChrg) then
-          !print *, "Added charge for level:", iLevel, "KPoint:", iKPoint, "Spin:", iSpin
           totChrg(:,:,:) = totChrg + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
         end if
         sumChrg = sum(buffer) * wp%loc%gridVol

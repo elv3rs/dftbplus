@@ -2,7 +2,8 @@ set(projectdir ${PROJECT_SOURCE_DIR})
 
 set(sources_main_fpp
   initwaveplot.F90
-    waveplot.F90
+  gridcache.F90
+  waveplot.F90
 )
 
 set(fypp_flags ${FYPP_BUILD_FLAGS})
