@@ -15,7 +15,9 @@ module libwavegrid_molorb_offloaded
   implicit none
   private
 
+#:if WITH_CUDA
   public :: prepareGPUCoefficients, evaluateCuda
+#:endif
 
 contains
 #:if WITH_CUDA

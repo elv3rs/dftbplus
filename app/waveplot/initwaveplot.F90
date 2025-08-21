@@ -379,6 +379,16 @@ contains
     this%loc%pMolOrb => this%loc%molOrb
     call TMolecularOrbital_init(this%loc%molOrb, this%input%geo, this%boundaryCond,&
         & this%basis%basis)
+    
+    ! Dont run multiple MPI processes on the same GPU.
+    ! This avoids cuda memory allocation race conditions in libwavegrid.
+    #:if WITH_MPI
+      print *, "Waveplot running with MPI using", env%mpi%globalComm%size, "processes"
+      if(this%opt%useGPU .and. env%mpi%globalComm%size > 1) then
+        call error("Cannot use GPU with multiple MPI processes, please run with only one process")
+      end if
+    #:endif
+
 
     call this%loc%grid%init(env, this%loc%levelIndex, this%input%nOrb, this%eig%nState,&
         & nKPoint, nSpin, nCached, this%opt%nPoints, this%opt%beVerbose, eigVecBin,&

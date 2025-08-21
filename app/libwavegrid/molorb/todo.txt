@@ -1,6 +1,4 @@
-
 Todo
-- [ ] have useGPU throw errors to avoid running in cpu mode on clusters
 - [ ] Disallow running waveplot using mpi + gpu
 - [ ] use std::cuda::complex instead of cuDoubleComplex
 
@@ -9,6 +7,7 @@ Todo
 - [ ] Function to query available system ram
 
 - [ ] interpolation radial part
+- [ ] move occupation out of sto
 
 - [ ] readme
 - [ ] unit tests

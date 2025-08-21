@@ -16,6 +16,7 @@ module libwavegrid_molorb
   use dftbp_dftb_periodic, only : getCellTranslations
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
+  use dftbp_io_message, only : error
   use libwavegrid_molorb_parallel, only : evaluateParallel
   use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams, &
     & TCalculationContext
