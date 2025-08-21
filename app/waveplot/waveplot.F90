@@ -232,7 +232,7 @@ program waveplot
 
   doRequireIndividual =  wp%opt%doPlotChrgDiff &
                     & .or. wp%opt%doPlotReal .or. wp%opt%doPlotImag .or. wp%opt%doPlotTotSpin
-  doRequireIndividual = .true.
+  !doRequireIndividual = .true.
   ! The cuda kernel supports fast inplace accumulation for total charge. (speedup ~ 6x)
   if (.not. doRequireIndividual .and. wp%opt%doCalcTotChrg) then
       print *, "Using library total charge calculation"
@@ -246,9 +246,13 @@ program waveplot
           iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
           eigCoeffs(iEig) = wp%input%occupations(iLevel, iKPoint, iSpin)
       end do
-
-      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecReal, &
-        & totChrg4d , addDensities=.false., preferCPU=wp%opt%preferCPU, occupationVec=eigCoeffs)
+      if (wp%input%isRealHam) then
+        call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecReal, &
+          & totChrg4d, preferCPU=wp%opt%preferCPU, occupationVec=eigCoeffs)
+      else
+        call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecCmpl, &
+          & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d,  preferCPU=wp%opt%preferCPU, occupationVec=eigCoeffs)
+      end if
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
   end if
 

@@ -120,9 +120,15 @@ contains
     type(TCalculationParamsC) :: calc_p
 
     ! Populate the structs
-    grid_p%nPointsX = size(valueReal, dim=1)
-    grid_p%nPointsY = size(valueReal, dim=2)
-    grid_p%nPointsZ = size(valueReal, dim=3)
+    if (ctx%isRealOutput) then
+      grid_p%nPointsX = size(valueReal, dim=1)
+      grid_p%nPointsY = size(valueReal, dim=2)
+      grid_p%nPointsZ = size(valueReal, dim=3)
+    else
+      grid_p%nPointsX = size(valueCmpl, dim=1)
+      grid_p%nPointsY = size(valueCmpl, dim=2)
+      grid_p%nPointsZ = size(valueCmpl, dim=3)
+    end if
     grid_p%origin = c_loc(origin)
     grid_p%gridVecs = c_loc(gridVecs)
     system_p%nAtom = system%nAtom

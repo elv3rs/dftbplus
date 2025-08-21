@@ -17,7 +17,7 @@ module libwavegrid_molorb
   use dftbp_math_simplealgebra, only : invert33
   use dftbp_type_typegeometry, only : TGeometry
   use libwavegrid_molorb_parallel, only : evaluateParallel
-  use libwavegrid_molorb_types, only : TSpeciesBasis, TSystemParams, TPeriodicParams, TBasisParams, &
+  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams, &
     & TCalculationContext
   use libwavegrid_slater, only : TSlaterOrbital
 
@@ -42,11 +42,21 @@ module libwavegrid_molorb
     procedure :: initCoords
   end type TMolecularOrbital
 
+  !> Data type containing information about the basis for a species.
+  type TSpeciesBasis
+    !> Atomic number of the species
+    integer :: atomicNumber
+    !> Nr. of orbitals
+    integer :: nOrb
+    !> STO for each orbital
+    type(TSlaterOrbital), allocatable :: stos(:)
+  end type TSpeciesBasis
 
   !> Returns the value of one or more molecular orbitals on a grid
   interface getValue
     module procedure TMolecularOrbital_getValue_real
     module procedure TMolecularOrbital_getValue_cmpl
+    module procedure TMolecularOrbital_getTotalChrg_cmpl
   end interface
 
   public :: TSpeciesBasis
@@ -292,7 +302,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid, preferCPU, occupationVec)
+      & kIndexes, valueOnGrid, addDensities, preferCPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -308,10 +318,10 @@ contains
     integer, intent(in) :: kIndexes(:)
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
+    !> Add densities instead of wave functions
+    logical, intent(in), optional :: addDensities
     !> Whether to prefer CPU for calculation
     logical, intent(in), optional :: preferCPU
-    !> if present, calculate total charge. Coefficients for each squared state
-    real(dp), intent(in), optional :: occupationVec(:)
 
     real(dp) :: valueReal(0,0,0,0), eigVecsReal(0,0)
     complex(dp), allocatable :: phases(:,:)
@@ -328,12 +338,11 @@ contains
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
-    ! Todo: Allow addDensities complex calculation
-    ctx = bundleFlags(.false., .false., preferCPU, occupationVec)
+    ctx = bundleFlags(.false., addDensities, preferCPU)
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
-      phases(:,:) = exp(imag * matmul(transpose(this%periodic%rCellVec), kPoints))
+      phases(:,:) = exp(imag * matmul(transpose(this%periodic%fCellVec), kPoints))
     else
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if
@@ -343,5 +352,59 @@ contains
       & valueReal, valueOnGrid)
 
   end subroutine TMolecularOrbital_getValue_cmpl
+
+  subroutine TMolecularOrbital_getTotalChrg_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
+      & kIndexes, valueOnGrid, preferCPU, occupationVec)
+
+    !> MolecularOrbital instance
+    type(TMolecularOrbital), intent(in) :: this
+    !> Origin of the grid
+    real(dp), intent(in) :: origin(:)
+    !> Grid vectors
+    real(dp), intent(in) :: gridVecs(:,:)
+    !> Summation coefficients for the STOs
+    complex(dp), intent(in) :: eigVecsCmpl(:,:)
+    !> Array of k-points
+    real(dp), intent(in) :: kPoints(:,:)
+    !> Index of the k-points in kPoints for every mol.orbital
+    integer, intent(in) :: kIndexes(:)
+    !> Molecular orbitals on grid on exit.
+    real(dp), intent(out) :: valueOnGrid(:,:,:,:)
+    !> Whether to prefer CPU for calculation
+    logical, intent(in), optional :: preferCPU
+    !> Calculate total charge. Coefficients for each squared state
+    real(dp), intent(in) :: occupationVec(:)
+
+    real(dp) :: eigVecsReal(0,0)
+    complex(dp) :: valueCmpl(0, 0, 0, 0)
+    complex(dp), allocatable :: phases(:,:)
+    type(TCalculationContext) :: ctx
+
+    @:ASSERT(this%isInitialised)
+    @:ASSERT(size(origin) == 3)
+    @:ASSERT(all(shape(gridVecs) == [3, 3]))
+    @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
+    @:ASSERT(all(shape(valueOnGrid) > [0, 0, 0, 0]))
+    @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
+    @:ASSERT(size(kPoints, dim=1) == 3)
+    @:ASSERT(size(kPoints, dim=2) > 0)
+    @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
+    @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
+    @:ASSERT(minval(kIndexes) > 0)
+    ctx = bundleFlags(.false., .false., preferCPU, occupationVec)
+
+    allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
+    if (this%periodic%isPeriodic) then
+      phases(:,:) = exp(imag * matmul(transpose(this%periodic%fCellVec), kPoints))
+    else
+      phases(1,:) = (1.0_dp, 0.0_dp)
+    end if
+
+    call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+      & ctx, eigVecsReal, eigVecsCmpl, valueOnGrid, valueCmpl, occupationVec)
+
+  end subroutine TMolecularOrbital_getTotalChrg_cmpl
+
+
 
 end module libwavegrid_molorb

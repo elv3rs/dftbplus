@@ -16,16 +16,6 @@ module libwavegrid_molorb_types
 
   public
 
-  !> Data type containing information about the basis for a species.
-  type TSpeciesBasis
-    !> Atomic number of the species
-    integer :: atomicNumber
-    !> Nr. of orbitals
-    integer :: nOrb
-    !> STO for each orbital
-    type(TSlaterOrbital), allocatable :: stos(:)
-  end type TSpeciesBasis
-
   !> Data for the system geometry and composition
   type TSystemParams
     integer :: nAtom

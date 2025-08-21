@@ -112,16 +112,18 @@ contains
         if (ctx%isRealInput) then
           allocate(bufferReal(size(valueReal, 1), size(valueReal, 2), size(valueReal, 3), nEigsPerChunk))
         else ! Complex input
-          allocate(bufferCmpl(size(valueCmpl, 1), size(valueCmpl, 2), size(valueCmpl, 3), nEigsPerChunk))
+          allocate(bufferCmpl(size(valueReal, 1), size(valueReal, 2), size(valueReal, 3), nEigsPerChunk))
         end if
 
         ! Zero accumulator
         valueReal(:, :, :, 1) = 0.0_dp
+        print *, "isRealInput: ", ctx%isRealInput
 
+        print *, "Eigenvector shape: ", shape(eigVecsCmpl), shape(eigVecsReal)
         lpChunk: do iStart = 1, nEigs, nEigsPerChunk
           iEnd = min(iStart + nEigsPerChunk - 1, nEigs)
           nChunk = iEnd - iStart + 1
-          !print *, "Processing eigenvectors ", iStart, " to ", iEnd, " of ", nEigs
+          print *, "Processing eigenvectors ", iStart, " to ", iEnd, " of ", nEigs
 
           if (ctx%isRealInput) then
             call evaluateOMP(origin, gridVecs, &
@@ -197,10 +199,6 @@ contains
 
     @:ASSERT(basis%maxNPows <= MAX_STO_POWS)
 
-    print *, "IsRealInput?", ctx%isRealInput
-    @:ASSERT(size(system%coords, dim=1) == 3)
-    @:ASSERT(size(system%coords, dim=2) == size(system%species))
-    @:ASSERT(size(system%coords, dim=3) == periodic%nCells)
     !$omp parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, xyz, frac, diff, &
     !$omp&              r, val, radialVal, tmp_pows, tmp_rexp, ind, iSpecies, rSq) &
