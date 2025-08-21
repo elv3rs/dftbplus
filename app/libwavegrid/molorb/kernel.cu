@@ -388,6 +388,7 @@ extern "C" void evaluate_on_device_c(
 #endif
 
     // Use OMP to split across available GPUs
+    // This works irrespective of the number of threads set in OMP_NUM_THREADS.
     #pragma omp parallel num_threads(numGpus) 
     {
         int deviceId = omp_get_thread_num();

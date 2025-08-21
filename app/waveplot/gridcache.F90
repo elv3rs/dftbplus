@@ -68,6 +68,9 @@ module waveplot_gridcache
     !> Size of the eigenvectors
     integer :: nOrb
 
+    !> Shape of the grid
+    integer :: nPoints(3)
+
     !> Levels in the eigenvec file
     integer :: nAllLevel
 
@@ -216,14 +219,15 @@ contains
     sf%nCached = nCached
     sf%isReal = isReal
     sf%preferCPU = preferCPU
+    sf%nPoints = nPoints
 
     if (sf%isReal) then
-      allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached))
       allocate(sf%eigenvecReal(sf%nOrb, sf%nCached))
     else
-      allocate(sf%gridCacheCmpl(nPoints(1), nPoints(2), nPoints(3), nCached))
       allocate(sf%eigenvecCmpl(sf%nOrb, sf%nCached))
     end if
+
+
 
     nAll = size(levelIndex, dim=2)
     allocate(sf%levelIndex(3, nAll))
@@ -365,8 +369,17 @@ contains
     real(dp), pointer :: eigReal(:,:)
     complex(dp), pointer :: eigCmpl(:,:)
 
+
     @:ASSERT(sf%isInitialised)
     @:ASSERT(.not. sf%isFinished)
+
+    !! Allocate the grid cache if not done yet
+    if (sf%isReal .and. .not. allocated(sf%gridCacheReal)) then
+      allocate(sf%gridCacheReal(sf%nPoints(1), sf%nPoints(2), sf%nPoints(3), sf%nCached))
+    else if (.not. sf%isReal .and. .not. allocated(sf%gridCacheCmpl)) then
+      allocate(sf%gridCacheCmpl(sf%nPoints(1), sf%nPoints(2), sf%nPoints(3), sf%nCached))
+    end if
+
 
     ! We passed back everything from the cache, fill it with new grids
     if (mod(sf%cachePos - 1, sf%nCached) == 0) then

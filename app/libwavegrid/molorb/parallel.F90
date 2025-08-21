@@ -85,8 +85,6 @@ contains
         call evaluateCuda(origin, gridVecs, &
             & system, basis, periodic, kIndexes, phases, ctx, &
             & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
-        print *, eigVecsCmpl
-        print *, eigVecsReal
       #:endif
     else ! CPU implementation
       #:if WITH_OMP
