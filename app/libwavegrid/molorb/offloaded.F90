@@ -35,6 +35,7 @@ contains
     allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
 
     if (ctx%calcTotalChrg) then
+      print *, "Baking occupationVec into GPU Eigenvector coefficients"
       @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
       do iEig = 1, size(eigVecsReal, dim=2)
         coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
@@ -96,7 +97,7 @@ contains
     end type
 
     type, bind(c) :: TCalculationParamsC
-      integer(c_int) :: nEigIn, nEigOut, isRealInput, isDensityCalc, calcTotalChrg
+      integer(c_int) :: nEigIn, nEigOut, isRealInput, calcAtomicDensity, calcTotalChrg
       type(c_ptr) :: eigVecsReal, eigVecsCmpl
       type(c_ptr) :: valueReal_out, valueCmpl_out
     end type
@@ -166,7 +167,7 @@ contains
       @:ASSERT(calc_p%nEigOut == 1)
     end if
     calc_p%isRealInput = merge(1, 0, ctx%isRealInput)
-    calc_p%isDensityCalc = merge(1, 0, ctx%isDensityCalc)
+    calc_p%calcAtomicDensity = merge(1, 0, ctx%calcAtomicDensity)
     calc_p%calcTotalChrg = merge(1, 0, ctx%calcTotalChrg)
     calc_p%eigVecsReal = c_loc(eigVecsReal)
     calc_p%eigVecsCmpl = c_loc(eigVecsCmpl)

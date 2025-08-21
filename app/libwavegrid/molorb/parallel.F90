@@ -101,14 +101,13 @@ contains
       else
         ! Number of eigenvectors to calculate at once in a chunk.
         ! We need a function to query free RAM to dynamically size this.
-        ! Additionally, expose to user.
-        nEigsPerChunk = 100
+        ! TODO: Additionally, expose to user.
+        nEigsPerChunk = -1
 
         nEigs = size(occupationVec)
         if (nEigsPerChunk <= 0 .or. nEigsPerChunk > nEigs) then
           nEigsPerChunk = nEigs
         end if
-        print *, "Using CPU molorb calculation with ", nEigsPerChunk, " eigenvectors per chunk."
         if (ctx%isRealInput) then
           allocate(bufferReal(size(valueReal, 1), size(valueReal, 2), size(valueReal, 3), nEigsPerChunk))
         else ! Complex input
@@ -117,13 +116,11 @@ contains
 
         ! Zero accumulator
         valueReal(:, :, :, 1) = 0.0_dp
-        print *, "isRealInput: ", ctx%isRealInput
 
-        print *, "Eigenvector shape: ", shape(eigVecsCmpl), shape(eigVecsReal)
         lpChunk: do iStart = 1, nEigs, nEigsPerChunk
           iEnd = min(iStart + nEigsPerChunk - 1, nEigs)
           nChunk = iEnd - iStart + 1
-          print *, "Processing eigenvectors ", iStart, " to ", iEnd, " of ", nEigs
+          print *, "Processing", nEigsPerChunk, "eigenvectors from", iStart, "to", iEnd, "of", nEigs
 
           if (ctx%isRealInput) then
             call evaluateOMP(origin, gridVecs, &
@@ -244,7 +241,7 @@ contains
                   lpM : do iM = -iL, iL
                     ind = ind + 1
                     val = radialVal * realTessY(iL, iM, diff, r)
-                    if (ctx%isDensityCalc) val = val * val
+                    if (ctx%calcAtomicDensity) val = val * val
 
                     if (ctx%isRealInput) then
                       do iEig = 1, size(eigVecsReal, dim=2)

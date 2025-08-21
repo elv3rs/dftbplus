@@ -53,7 +53,7 @@ module libwavegrid_molorb_types
   type :: TCalculationContext
     logical :: isRealInput
     logical :: isRealOutput
-    logical :: isDensityCalc
+    logical :: calcAtomicDensity
     logical :: calcTotalChrg
     logical :: runOnGPU
   end type

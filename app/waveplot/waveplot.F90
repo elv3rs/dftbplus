@@ -10,7 +10,7 @@
 !> Program for plotting molecular orbitals as cube files.
 program waveplot
   use waveplot_initwaveplot, only : TProgramVariables, TProgramVariables_init
-  use libwavegrid_molorb, only : getValue
+  use libwavegrid, only : getValue
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment, TEnvironment_init
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
@@ -151,7 +151,7 @@ program waveplot
         end do
       end do
       call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, orbitalOcc, &
-          & atomicChrg, addDensities=.true.)
+          & atomicChrg, addAtomicDensities=.true.)
       sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
       buffer(:,:,:) = atomicChrg(:,:,:, 1)
 

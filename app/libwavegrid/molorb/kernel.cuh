@@ -54,7 +54,7 @@ typedef struct {
     int nEigIn;
     int nEigOut; // calcTotalChrg ? 1 : nEigIn
     int isRealInput; 
-    int isDensityCalc;
+    int calcAtomicDensity;
     int calcTotalChrg;
     const double* eigVecsReal;          // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]

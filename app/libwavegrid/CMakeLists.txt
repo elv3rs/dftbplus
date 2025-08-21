@@ -2,6 +2,7 @@ set(projectdir ${PROJECT_SOURCE_DIR})
 
 set(sources_lib_fpp
   slater.F90
+  libwavegrid.F90
 )
 
 add_subdirectory(molorb)

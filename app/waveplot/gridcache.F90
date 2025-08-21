@@ -19,7 +19,7 @@ module waveplot_gridcache
 #:if WITH_MPI
   use dftbp_common_schedule, only : getStartAndEndIndex
 #:endif
-  use libwavegrid_molorb, only : getValue, TMolecularOrbital
+  use libwavegrid, only : getValue, TMolecularOrbital
   use dftbp_io_message, only : error
   implicit none
 

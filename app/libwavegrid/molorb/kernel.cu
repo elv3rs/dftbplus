@@ -188,14 +188,12 @@ struct DeviceKernelParams {
 // To avoid branching (dropped at compile time), we template the kernel 8 ways on (isRealInput, calcDensity, calcTotalChrg).
 // isPeriodic decides whether to fold coords into unit cell.
 // isRealInput decides whether to use real/complex eigenvectors (and adds phases)
-// isDensity squares the wavefunction, result in valueReal_out of shape (x,y,z,n)
+// calcAtomicDensity squares the basis wavefunction contributions, result in valueReal_out of shape (x,y,z,n)
 // calcTotalChrg accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
 // User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
-template <bool isRealInput, bool isDensity, bool calcTotalChrg>
+template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
-    // AccDensity requires isDensity to be true.
-    assert(!(calcTotalChrg && !isDensity));
     using AccumT = typename std::conditional<(isRealInput), double, cuDoubleComplex>::type;
     
     // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
@@ -304,14 +302,14 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
             if constexpr (isRealInput) {
                 if constexpr (calcTotalChrg) {
                     densityAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
-                } else if (isDensity) {
+                } else if (calcAtomicDensity) {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
                 } else {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
                 }
             } else if constexpr (calcTotalChrg) {
                 densityAcc += cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
-            } else if constexpr (isDensity) {
+            } else if constexpr (calcAtomicDensity) {
                 p.valueReal_out_batch[out_idx] = cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
             } else {
                 p.valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
@@ -342,11 +340,10 @@ extern "C" void evaluate_on_device_c(
     int nPointsX = grid->nPointsX;
     int nPointsY = grid->nPointsY;
     int nPointsZ = grid->nPointsZ;
-    bool isRealOutput = calc->isRealInput || calc->isDensityCalc;
+    bool isRealOutput = calc->isRealInput || calc->calcAtomicDensity;
 
     if (calc->nEigIn == 0 || nPointsZ == 0) return; // Nothing to do
-    if (calc->isDensityCalc) {
-        assert(calc->isRealInput);
+    if (calc->calcTotalChrg) {
         assert(calc->nEigOut == 1);
     } else {
         assert(calc->nEigOut == calc->nEigIn);
@@ -395,6 +392,7 @@ extern "C" void evaluate_on_device_c(
     {
         int deviceId = omp_get_thread_num();
         CHECK_CUDA(cudaSetDevice(deviceId));
+        printf("\n--- GPU %d ---\n", deviceId);
 
         // --- Work Distribution: Divide Z-slices among GPUs ---
         int z_slices_per_gpu = nPointsZ / numGpus;
@@ -437,7 +435,7 @@ extern "C" void evaluate_on_device_c(
             size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * calc->nEigOut;
             DeviceBuffer<cuDoubleComplex> d_valueCmpl_out_batch;
             DeviceBuffer<double> d_valueReal_out_batch;
-            if (calc->isRealInput || calc->isDensityCalc) {
+            if (calc->isRealInput || calc->calcAtomicDensity) {
                 d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
             } else {
                 d_valueCmpl_out_batch = DeviceBuffer<cuDoubleComplex>(batch_buffer_size_elems);
@@ -451,7 +449,7 @@ extern "C" void evaluate_on_device_c(
                 printf("  Block size: %d threads, %zub shared mem per block, %d eigs per pass\n",
                     block_size, shared_mem_for_pass, nEig_per_pass);
                 size_t total_size_valueOut = (size_t)nPointsX * nPointsY * nPointsZ * calc->nEigOut * sizeof(double);
-                if (!calc->isRealInput && !calc->isDensityCalc) total_size_valueOut *= 2; 
+                if (!calc->isRealInput && !calc->calcAtomicDensity) total_size_valueOut *= 2; 
                 printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
                     free_mem / 1e9, nPointsX, nPointsY, nPointsZ, calc->nEigOut,
                     total_size_valueOut / 1e9);
@@ -481,28 +479,25 @@ extern "C" void evaluate_on_device_c(
                     CHECK_CUDA(cudaEventRecord(startKernelOnly));
                 }
                  
-                if (calc->isRealInput) {
-                    if (calc->isDensityCalc) { 
-                        if (calc->calcTotalChrg) {
-                            evaluateKernel<true, true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                        } else {
-                            evaluateKernel<true, true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                        }
-                    } else {
-                        evaluateKernel<true, false, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                    }
-                } else {
-                    if (calc->isDensityCalc) {
-                        if (calc->calcTotalChrg) {
-                            evaluateKernel<false, true, true><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                        } else {
-                            evaluateKernel<false, true, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                        }
-                    } else {
-                        evaluateKernel<false, false, false><<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
-                    }
+                #define CALL_KERNEL(isReal, doAtomic, doChrg) \
+                    evaluateKernel<isReal, doAtomic, doChrg> \
+                        <<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
+
+                int idx = (calc->isRealInput     ? 1 : 0)
+                        + (calc->calcAtomicDensity ? 2 : 0)
+                        + (calc->calcTotalChrg     ? 4 : 0);
+
+                switch (idx) {
+                    case 0: CALL_KERNEL(false, false, false); break;
+                    case 1: CALL_KERNEL(true,  false, false); break;
+                    case 2: CALL_KERNEL(false, true,  false); break;
+                    case 3: CALL_KERNEL(true,  true,  false); break;
+                    case 4: CALL_KERNEL(false, false, true);  break;
+                    case 5: CALL_KERNEL(true,  false, true);  break;
+                    case 6: CALL_KERNEL(false, true,  true);  break;
+                    case 7: CALL_KERNEL(true,  true,  true);  break;
                 }
-                    
+                                    
 
 
                 if(deviceId == 0) {

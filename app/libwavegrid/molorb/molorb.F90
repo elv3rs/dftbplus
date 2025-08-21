@@ -221,17 +221,17 @@ contains
   end subroutine initCoords
 
 
-  function bundleFlags(isRealInput, addDensities, preferCPU, occupationVec) result(ctx)
+  function bundleFlags(isRealInput, addAtomicDensities, preferCPU, occupationVec) result(ctx)
     logical, intent(in) :: isRealInput
-    logical, intent(in), optional :: addDensities, preferCPU
+    logical, intent(in), optional :: addAtomicDensities, preferCPU
     real(dp), intent(in), optional :: occupationVec(:)
     type(TCalculationContext) :: ctx
 
     ctx%isRealInput = isRealInput
 
-    ctx%isDensityCalc = .false.
-    if (present(addDensities)) then
-      ctx%isDensityCalc = addDensities
+    ctx%calcAtomicDensity = .false.
+    if (present(addAtomicDensities)) then
+      ctx%calcAtomicDensity = addAtomicDensities
     end if
 
     ctx%calcTotalChrg = .false.
@@ -254,7 +254,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, &
-      & valueOnGrid, addDensities, preferCPU, occupationVec)
+      & valueOnGrid, addAtomicDensities, preferCPU, occupationVec)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -267,7 +267,7 @@ contains
     !> Molecular orbitals on a grid
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
     !> Add densities instead of wave functions
-    logical, intent(in), optional :: addDensities
+    logical, intent(in), optional :: addAtomicDensities
     !> Whether to prefer CPU for calculation
     logical, intent(in), optional :: preferCPU
     !> if present, calculate total charge. Coefficients for each squared state
@@ -285,7 +285,7 @@ contains
     @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
 
 
-    ctx = bundleFlags(.true., addDensities, preferCPU, occupationVec)
+    ctx = bundleFlags(.true., addAtomicDensities, preferCPU, occupationVec)
 
     if (present(occupationVec)) then
       call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
@@ -302,7 +302,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid, addDensities, preferCPU)
+      & kIndexes, valueOnGrid, addAtomicDensities, preferCPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -319,7 +319,7 @@ contains
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
     !> Add densities instead of wave functions
-    logical, intent(in), optional :: addDensities
+    logical, intent(in), optional :: addAtomicDensities
     !> Whether to prefer CPU for calculation
     logical, intent(in), optional :: preferCPU
 
@@ -338,7 +338,7 @@ contains
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
-    ctx = bundleFlags(.false., addDensities, preferCPU)
+    ctx = bundleFlags(.false., addAtomicDensities, preferCPU)
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
