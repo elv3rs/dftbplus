@@ -329,11 +329,11 @@ contains
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
     ! Todo: Allow addDensities complex calculation
-    ctx = bundleFlags(.true., .false., preferCPU, occupationVec)
+    ctx = bundleFlags(.false., .false., preferCPU, occupationVec)
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
-      phases(:,:) = exp(imag * matmul(transpose(this%periodic%fCellVec), kPoints))
+      phases(:,:) = exp(imag * matmul(transpose(this%periodic%rCellVec), kPoints))
     else
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if

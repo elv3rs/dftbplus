@@ -180,9 +180,6 @@ contains
     integer :: curVec(3)
     logical :: wasFound
   
-    integer :: startTime, endTime
-
-    call system_clock(count=startTime)
   #:if WITH_MPI
     call getStartAndEndIndex(env, size(levelIndexAll, dim=2), iLvlStart, iLvlEnd)
   #:else
@@ -259,12 +256,8 @@ contains
       call error("Can't open file '" // trim(eigvecBin) // "'.")
     end if
     read(sf%fdEigVec%unit) ii
-    call system_clock(count=endTime)
 
     sf%isInitialised = .true.
-
-    ! Timing
-    print *,  "GridCache initialised in", endTime - startTime
 
   end subroutine TGridCache_init
 
@@ -392,11 +385,11 @@ contains
       end if
       if (sf%isReal) then
         eigReal => sf%eigenvecReal(:, :iEnd)
-        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd), preferCPU=.true.)
+        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd), preferCPU=sf%preferCPU)
       else
         eigCmpl => sf%eigenvecCmpl(:, :iEnd)
         call getValue(sf%molorb, sf%origin, sf%gridVec, eigCmpl, sf%kPoints,&
-            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd), preferCPU=.true.)
+            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd), preferCPU=sf%preferCPU)
       end if
     end if
 

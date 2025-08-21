@@ -232,6 +232,7 @@ program waveplot
 
   doRequireIndividual =  wp%opt%doPlotChrgDiff &
                     & .or. wp%opt%doPlotReal .or. wp%opt%doPlotImag .or. wp%opt%doPlotTotSpin
+  doRequireIndividual = .true.
   ! The cuda kernel supports fast inplace accumulation for total charge. (speedup ~ 6x)
   if (.not. doRequireIndividual .and. wp%opt%doCalcTotChrg) then
       print *, "Using library total charge calculation"
@@ -247,7 +248,7 @@ program waveplot
       end do
 
       call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecReal, &
-          & totChrg4d , addDensities=.false., preferCPU=.true., occupationVec=eigCoeffs)
+        & totChrg4d , addDensities=.false., preferCPU=wp%opt%preferCPU, occupationVec=eigCoeffs)
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
   end if
 

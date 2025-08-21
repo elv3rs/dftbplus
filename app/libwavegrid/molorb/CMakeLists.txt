@@ -3,6 +3,7 @@ set(curdir ${CMAKE_CURRENT_SOURCE_DIR})
 set(sources_local_fpp
   ${curdir}/molorb.F90
   ${curdir}/parallel.F90
+  ${curdir}/offloaded.F90
   ${curdir}/types.F90
 )
 
