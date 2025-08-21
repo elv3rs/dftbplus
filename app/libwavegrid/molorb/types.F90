@@ -62,6 +62,7 @@ module libwavegrid_molorb_types
   !> Control type holding calculation flags
   type :: TCalculationContext
     logical :: isRealInput
+    logical :: isRealOutput
     logical :: isDensityCalc
     logical :: calcTotalChrg
     logical :: runOnGPU

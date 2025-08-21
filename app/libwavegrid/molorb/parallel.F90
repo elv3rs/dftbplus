@@ -78,25 +78,11 @@ contains
     if (ctx%runOnGPU) then
       #:if WITH_CUDA
         ! GPU implementation passes occupation information by baking their sqrt into the eigenvectors
-        allocate(coeffVecReal(size(eigVecsReal, dim=1), size(eigVecsReal, dim=2)))
-        allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
-
-        if (ctx%calcTotalChrg) then
-          @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
-          do iEig = 1, size(eigVecsReal, dim=2)
-            coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
-          end do
-          do iEig = 1, size(eigVecsCmpl, dim=2)
-            coeffVecCmpl(:, iEig) = eigVecsCmpl(:, iEig) * sqrt(occupationVec(iEig))
-          end do
-        else
-          coeffVecReal = eigVecsReal
-          coeffVecCmpl = eigVecsCmpl
-        end if
+        call prepareGPUCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecReal, coeffVecCmpl)
 
         call evaluateCuda(origin, gridVecs, &
             & system, basis, periodic, kIndexes, phases, &
-            & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
+            & ctx, &
             & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
       #:endif
     else ! CPU implementation
@@ -108,7 +94,7 @@ contains
       if (.not. ctx%calcTotalChrg) then
         call evaluateOMP(origin, gridVecs, &
             & system, basis, periodic, kIndexes, phases, &
-            & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
+            & ctx, &
             & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
       else
         ! Number of eigenvectors to calculate at once in a chunk.
@@ -137,7 +123,7 @@ contains
           if (ctx%isRealInput) then
             call evaluateOMP(origin, gridVecs, &
                 & system, basis, periodic, kIndexes, phases, &
-                & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
+                & ctx, &
                 & eigVecsReal(:, iStart:iEnd), eigVecsCmpl, bufferReal, valueCmpl)
 
             do iEigInChunk = 1, nChunk
@@ -147,7 +133,7 @@ contains
           else ! Complex input
             call evaluateOMP(origin, gridVecs, &
                 & system, basis, periodic, kIndexes(iStart:iEnd), phases, &
-                & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
+                & ctx, &
                 & eigVecsReal, eigVecsCmpl(:, iStart:iEnd), valueReal, bufferCmpl)
 
             do iEigInChunk = 1, nChunk
@@ -169,13 +155,13 @@ contains
 
 
 
-  !> Prepare coefficient vectors for GPU calculation
-  subroutine prepareGPUCoefficients(eigVecsReal, eigVecsCmpl, occupationVec, ctx, &
-      & coeffVecReal, coeffVecCmpl)
+  !> Prepare coefficient vectors for GPU calculation by, if required due to total charge calculation,
+  !> scaling the eigenvectors by sqrt(occupationVec).
+  subroutine prepareGPUCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecReal, coeffVecCmpl)
+    type(TCalculationContext), intent(in) :: ctx
     real(dp), intent(in) :: eigVecsReal(:,:)
     complex(dp), intent(in) :: eigVecsCmpl(:,:)
     real(dp), intent(in), optional :: occupationVec(:)
-    type(TCalculationContext), intent(in) :: ctx
     real(dp), allocatable, intent(out) :: coeffVecReal(:,:)
     complex(dp), allocatable, intent(out) :: coeffVecCmpl(:,:)
 
@@ -203,7 +189,7 @@ contains
 #:if WITH_CUDA
   subroutine evaluateCuda(origin, gridVecs, &
       & system, basis, periodic, kIndexes, phases, &
-      & isDensityCalc, calcTotalChrg, isRealInput, &
+      & ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
     !> Grid
@@ -218,7 +204,7 @@ contains
     integer, intent(in), target :: kIndexes(:)
     complex(dp), intent(in), target :: phases(:, :)
     !> Calculation flags
-    logical, intent(in) :: isDensityCalc, calcTotalChrg, isRealInput
+    type(TCalculationContext), intent(in) :: ctx
     !> Eigenvectors
     real(dp), intent(in), target :: eigVecsReal(:, :)
     complex(dp), intent(in), target :: eigVecsCmpl(:, :)
@@ -270,9 +256,6 @@ contains
     type(TPeriodicParamsC) :: periodic_p
     type(TBasisParamsC) :: basis_p
     type(TCalculationParamsC) :: calc_p
-    logical :: isRealOutput
-
-    isRealOutput = isRealInput .or. calcTotalChrg
 
     ! Populate the structs
     grid_p%nPointsX = size(valueReal, dim=1)
@@ -301,22 +284,22 @@ contains
     basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
     basis_p%sto_coeffs = c_loc(basis%coeffs)
     basis_p%sto_alphas = c_loc(basis%alphas)
-    if (isRealInput) then
+    if (ctx%isRealInput) then
       calc_p%nEigIn = size(eigVecsReal, dim=2)
     else
       calc_p%nEigIn = size(eigVecsCmpl, dim=2)
     end if
-    if (isRealOutput) then
+    if (ctx%isRealOutput) then
       calc_p%nEigOut = size(valueReal, dim=4)
     else
       calc_p%nEigOut = size(valueCmpl, dim=4)
     end if
-    if (calcTotalChrg) then
+    if (ctx%calcTotalChrg) then
       @:ASSERT(calc_p%nEigOut == 1)
     end if
-    calc_p%isRealInput = merge(1, 0, isRealInput)
-    calc_p%isDensityCalc = merge(1, 0, isDensityCalc)
-    calc_p%calcTotalChrg = merge(1, 0, calcTotalChrg)
+    calc_p%isRealInput = merge(1, 0, ctx%isRealInput)
+    calc_p%isDensityCalc = merge(1, 0, ctx%isDensityCalc)
+    calc_p%calcTotalChrg = merge(1, 0, ctx%calcTotalChrg)
     calc_p%eigVecsReal = c_loc(eigVecsReal)
     calc_p%eigVecsCmpl = c_loc(eigVecsCmpl)
     calc_p%valueReal_out = c_loc(valueReal)
@@ -332,7 +315,7 @@ contains
 
   subroutine evaluateOMP(origin, gridVecs, &
       & system, basis, periodic, kIndexes, phases, &
-      & isDensityCalc, calcTotalChrg, isRealInput, &
+      & ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
     !> Grid
@@ -347,7 +330,7 @@ contains
     integer, intent(in) :: kIndexes(:)
     complex(dp), intent(in) :: phases(:, :)
     !> Calculation flags
-    logical, intent(in) :: isDensityCalc, calcTotalChrg, isRealInput
+    type(TCalculationContext), intent(in) :: ctx
     !> Eigenvectors
     real(dp), intent(in) :: eigVecsReal(:, :)
     complex(dp), intent(in) :: eigVecsCmpl(:, :)
@@ -368,8 +351,7 @@ contains
     !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, xyz, diff, &
     !$omp&              r, val, radialVal, tmp_pows, tmp_rexp, ind, iSpecies, rSq) &
     !$omp&    shared(gridVecs, origin, system, basis, periodic, &
-    !$omp&              eigVecsReal, eigVecsCmpl, &
-    !$omp&              phases, isDensityCalc, valueReal, valueCmpl)
+    !$omp&              eigVecsReal, eigVecsCmpl, phases, ctx, valueReal, valueCmpl)
     lpI3: do i3 = 1, size(valueReal, dim=3)
       lpI2: do i2 = 1, size(valueReal, dim=2)
         lpI1: do i1 = 1, size(valueReal, dim=1)
@@ -411,9 +393,9 @@ contains
                   lpM : do iM = -iL, iL
                     ind = ind + 1
                     val = radialVal * realTessY(iL, iM, diff, r)
-                    if (isDensityCalc) val = val * val
+                    if (ctx%isDensityCalc) val = val * val
 
-                    if (isRealInput) then
+                    if (ctx%isRealInput) then
                       do iEig = 1, size(eigVecsReal, dim=2)
                         valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
                       end do

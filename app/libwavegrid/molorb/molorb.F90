@@ -236,6 +236,8 @@ contains
       ctx%runOnGPU = .false.
     #:endif
 
+    ctx%isRealOutput = ctx%isRealInput .or. ctx%calcTotalChrg
+
   end function bundleFlags
 
 
