@@ -5,7 +5,7 @@
  *  See the LICENSE file for terms of usage and distribution.                                      *
  *-------------------------------------------------------------------------------------------------*/
 #include <cuda_runtime.h>
-#include <cuComplex.h>
+#include <thrust/complex.h>
 #include <omp.h>
 #include <cstdio>
 #include <cmath>
@@ -26,7 +26,7 @@ constexpr float GLOBAL_MEM_FACTOR = 0.80f;
 // Threads per block, multiple of warp size 32
 constexpr int block_size = 256; 
 
-
+using complexd = thrust::complex<double>;
 
 // Manages Gpu memory allocation
 struct DeviceData {
@@ -43,7 +43,7 @@ struct DeviceData {
     DeviceBuffer<double> latVecs;
     DeviceBuffer<double> recVecs2pi;
     DeviceBuffer<int>    kIndexes;
-    DeviceBuffer<cuDoubleComplex> phases;
+    DeviceBuffer<complexd> phases;
 
     // STO Basis
     DeviceBuffer<int>    sto_angMoms;
@@ -55,7 +55,7 @@ struct DeviceData {
 
     // Eigenvectors
     DeviceBuffer<double> eigVecsReal;
-    DeviceBuffer<cuDoubleComplex> eigVecsCmpl;
+    DeviceBuffer<complexd> eigVecsCmpl;
 
     // Constructor handles all H2D allocation and copy
     DeviceData(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic, const StoBasisParams* basis, const CalculationParams* calc)
@@ -74,8 +74,8 @@ struct DeviceData {
         if (calc->isRealInput) {
             eigVecsReal.assign(calc->eigVecsReal, (size_t)system->nOrb * calc->nEigIn);
         } else {
-            eigVecsCmpl.assign(calc->eigVecsCmpl, (size_t)system->nOrb * calc->nEigIn);
-            phases.assign(periodic->phases, (size_t)system->nCell * calc->nEigIn);
+            eigVecsCmpl.assign(reinterpret_cast<const complexd*>(calc->eigVecsCmpl), (size_t)system->nOrb * calc->nEigIn);
+            phases.assign(reinterpret_cast<const complexd*>(periodic->phases), (size_t)system->nCell * calc->nEigIn);
             kIndexes.assign(periodic->kIndexes, calc->nEigIn);
         }
         if (periodic->isPeriodic) {
@@ -103,7 +103,7 @@ struct DeviceKernelParams {
     const double* latVecs;
     const double* recVecs2pi;
     const int*    kIndexes;
-    const cuDoubleComplex* phases;
+    const complexd* phases;
 
     // STO Basis
     int nStos, maxNPows, maxNAlphas;
@@ -117,11 +117,11 @@ struct DeviceKernelParams {
     // Eigenvectors
     int nEig, nEig_per_pass;
     const double* eigVecsReal;
-    const cuDoubleComplex* eigVecsCmpl;
+    const complexd* eigVecsCmpl;
 
-    // Output (batch pointers) - These must remain non-const
+    // Output (batch pointers), varied in batch loop
     double* valueReal_out_batch;
-    cuDoubleComplex* valueCmpl_out_batch;
+    complexd* valueCmpl_out_batch;
 
     // Constructor to initialize the parameters from host data
     // Batch-specific parameters are initialized to zero or nullptr,
@@ -194,15 +194,13 @@ struct DeviceKernelParams {
 template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
-    using AccumT = typename std::conditional<(isRealInput), double, cuDoubleComplex>::type;
+    using AccumT = typename std::conditional<(isRealInput), double, complexd>::type;
     
     // Each thread gets its own private slice of the shared memory buffer for fast accumulation.
     // We have to chunk the eigenstates into nEig_per_pass due to size constraints.
     // (Cuda doesnt allow templating the shared memory type, so we simply recast it.)
-    extern __shared__ double shared_workspace[];
-    size_t doubles_per_thread = isRealInput ? p.nEig_per_pass : p.nEig_per_pass * 2;
-    
-    AccumT* point_results_pass = reinterpret_cast<AccumT*>(&shared_workspace[threadIdx.x * doubles_per_thread]);
+    extern __shared__ char shared_workspace[];
+    AccumT* point_results_pass = reinterpret_cast<AccumT*>(shared_workspace) + threadIdx.x * p.nEig_per_pass;
 
 
     // --- Thread to point mapping ---
@@ -229,20 +227,17 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
         foldCoordsIntoCell(xyz, reinterpret_cast<const double (*)[3]>(p.latVecs), reinterpret_cast<const double (*)[3]>(p.recVecs2pi));
     
 
-    double densityAcc = 0.0; // used for density
+    double totChrgAcc = 0.0;
     // --- Loop over eigenstates in chunks that fit in shared memory ---
     for (int eig_base = 0; eig_base < p.nEig; eig_base += p.nEig_per_pass) {
         
         // Initialize the small, per-pass buffer for this thread
         for (int i = 0; i < p.nEig_per_pass; ++i) {
-            if constexpr (isRealInput) {
-                point_results_pass[i] = 0.0; 
-            } else {
-                point_results_pass[i] = make_cuDoubleComplex(0.0, 0.0);
-            }
+            point_results_pass[i] = AccumT(0.0);
         }
 
-        // The spatial calculation is repeated for each chunk of eigenstates.
+        // Since we run out of space in point_result_pass[], the spatial calculation 
+        // is repeated for each chunk of eigenstates.
         // This is to keep the accumulation in fast shared memory.
         for (int iCell = 0; iCell < p.nCell; ++iCell) {
             int orbital_idx_counter = 0; 
@@ -282,10 +277,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
                             if constexpr (isRealInput) {
                                 point_results_pass[iEig_offset] += val * p.eigVecsReal[eig_idx];
                             } else {
-                                cuDoubleComplex phase = p.phases[IDX2F(iCell, iEig, p.nCell)];
-                                cuDoubleComplex ev = p.eigVecsCmpl[eig_idx];
-                                cuDoubleComplex psi = cuCmul(make_cuDoubleComplex(val, 0.0), cuCmul(phase, ev));
-                                point_results_pass[iEig_offset] = cuCadd(point_results_pass[iEig_offset], psi);
+                                point_results_pass[iEig_offset] += val * p.phases[IDX2F(iCell, iEig, p.nCell)] * p.eigVecsCmpl[eig_idx];
                             }
                         }
                         orbital_idx_counter++;
@@ -301,18 +293,20 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
             size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
             if constexpr (isRealInput) {
                 if constexpr (calcTotalChrg) {
-                    densityAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
+                    totChrgAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
                 } else if (calcAtomicDensity) {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
                 } else {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
                 }
-            } else if constexpr (calcTotalChrg) {
-                densityAcc += cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
-            } else if constexpr (calcAtomicDensity) {
-                p.valueReal_out_batch[out_idx] = cuCabs(point_results_pass[iEig_offset]) * cuCabs(point_results_pass[iEig_offset]);
             } else {
-                p.valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
+                if constexpr (calcTotalChrg) {
+                    totChrgAcc += thrust::norm(point_results_pass[iEig_offset]);
+                } else if constexpr (calcAtomicDensity) {
+                    p.valueReal_out_batch[out_idx] = thrust::norm(point_results_pass[iEig_offset]);
+                } else {
+                    p.valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
+                }
             }
         }
     }
@@ -320,7 +314,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
     // Density stored in first eig : (x,y,z, 1)
     if constexpr (calcTotalChrg) {
         size_t out_idx = IDX4F(i1, i2, i3_batch, 0, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
-        p.valueReal_out_batch[out_idx] = densityAcc; 
+        p.valueReal_out_batch[out_idx] = totChrgAcc; 
     }
 }
 
@@ -410,7 +404,7 @@ extern "C" void evaluate_on_device_c(
             
             // Determine available shared memory for nEig_per_pass
             size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
-            size_t number_size = isRealOutput ? sizeof(double) : sizeof(cuDoubleComplex);
+            size_t number_size = isRealOutput ? sizeof(double) : sizeof(complexd);
             int nEig_per_pass = available_shared / (block_size * number_size);
             if (nEig_per_pass == 0) nEig_per_pass = 1;
             if (nEig_per_pass > calc->nEigIn) nEig_per_pass = calc->nEigIn;
@@ -433,12 +427,13 @@ extern "C" void evaluate_on_device_c(
 
             // Per-GPU batch buffer for the output
             size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * calc->nEigOut;
-            DeviceBuffer<cuDoubleComplex> d_valueCmpl_out_batch;
+            // todo: move this to deviceParams
+            DeviceBuffer<complexd> d_valueCmpl_out_batch;
             DeviceBuffer<double> d_valueReal_out_batch;
             if (calc->isRealInput || calc->calcAtomicDensity) {
                 d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
             } else {
-                d_valueCmpl_out_batch = DeviceBuffer<cuDoubleComplex>(batch_buffer_size_elems);
+                d_valueCmpl_out_batch = DeviceBuffer<complexd>(batch_buffer_size_elems);
             }
 
             // Debug output

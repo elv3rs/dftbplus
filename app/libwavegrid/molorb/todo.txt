@@ -1,5 +1,4 @@
 Todo
-- [ ] Disallow running waveplot using mpi + gpu
 - [ ] use std::cuda::complex instead of cuDoubleComplex
 
 
