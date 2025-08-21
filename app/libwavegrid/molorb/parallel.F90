@@ -10,7 +10,7 @@
 module libwavegrid_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
-  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams
+  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams, TCalculationContext
   use libwavegrid_slater, only : realTessY, getRadial
   use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   use, intrinsic :: iso_c_binding, only : c_int, c_double, c_double_complex, c_bool, c_ptr, c_loc, &
@@ -24,11 +24,11 @@ module libwavegrid_molorb_parallel
 
 contains
 
+
   !> Returns the values of several molecular orbitals on grids.
   !> This dispatches to either CPU / GPU implementation, and handles total Charge calculation using occupationVec if present.
   subroutine evaluateParallel(origin, gridVecs, system, periodic, kIndexes, phases, basis, &
-      & isRealInput, isDensityCalc, preferCPU, eigVecsReal, eigVecsCmpl, &
-      & valueReal, valueCmpl, occupationVec)
+      & ctx, eigVecsReal, eigVecsCmpl,  valueReal, valueCmpl, occupationVec)
 
     !> Origin of the grid
     real(dp), intent(in) :: origin(:)
@@ -38,7 +38,7 @@ contains
     !> System geometry and composition
     type(TSystemParams), intent(in) :: system
 
-    !> Periodic boundary conditions data 
+    !> Periodic boundary conditions data
     type(TPeriodicParams), intent(in) :: periodic
     !> Index of the k-points for each orbital in kPoints
     integer, intent(in) :: kIndexes(:)
@@ -48,14 +48,8 @@ contains
     !> Basis set data in SoA format
     type(TBasisParams), intent(in) :: basis
 
-
-    !> If the eigenvectors are real
-    logical, intent(in) :: isRealInput
-    !> If densities should be added instead of wave funcs
-    logical, intent(in) :: isDensityCalc
-    !> Whether to force CPU-only calculation
-    logical, intent(in) :: preferCPU
-
+    !> Calculation control flags
+    type(TCalculationContext), intent(in) :: ctx
 
     !> Real eigenvectors, or null-array
     real(dp), intent(in) :: eigVecsReal(:,:)
@@ -70,35 +64,24 @@ contains
     !> If this is present, calculate total charge. I.e. sum the squared states weighted by occupationVec(nEig).
     !> Output valueReal and valueCmpl will collapse to one slice in the last dimension, (x,y,z,1).
     real(dp), intent(in), optional :: occupationVec(:)
+    !! Variables for total charge calculation
+    integer :: iEig, iStart, iEnd, nChunk, iEigInChunk, nEigs, nEigsPerChunk
+    real(dp), allocatable :: bufferReal(:,:,:,:), coeffVecReal(:,:)
+    complex(dp), allocatable :: bufferCmpl(:,:,:,:), coeffVecCmpl(:,:)
 
-    real(dp), allocatable :: coeffVecReal(:,:)
-    complex(dp), allocatable :: coeffVecCmpl(:,:)
-    real(dp), allocatable :: bufferReal(:,:,:,:)
-
-#:if WITH_CUDA
-    logical, parameter :: gpuAvailable = .true.
-#:else
-    logical, parameter :: gpuAvailable = .false.
-#:endif
-    logical :: calcTotalChrg, runOnGPU
-    integer :: iEig
-
-    runOnGPU = gpuAvailable .and. .not. preferCPU
-
-    calcTotalChrg = present(occupationVec)
-    if (calcTotalChrg) then
+    if (ctx%calcTotalChrg) then
       @:ASSERT(size(valueReal, dim=4) <= 1)
       @:ASSERT(size(valueCmpl, dim=4) <= 1)
     end if
 
 
-    if (runOnGPU) then
+    if (ctx%runOnGPU) then
       #:if WITH_CUDA
-        ! GPU implementation handles occupation by baking their sqrt into the eigenvectors
+        ! GPU implementation passes occupation information by baking their sqrt into the eigenvectors
         allocate(coeffVecReal(size(eigVecsReal, dim=1), size(eigVecsReal, dim=2)))
         allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
 
-        if (calcTotalChrg) then
+        if (ctx%calcTotalChrg) then
           @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
           do iEig = 1, size(eigVecsReal, dim=2)
             coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
@@ -113,42 +96,108 @@ contains
 
         call evaluateCuda(origin, gridVecs, &
             & system, basis, periodic, kIndexes, phases, &
-            & isDensityCalc, calcTotalChrg, isRealInput, &
+            & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
             & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
-      #:else
-          error("CUDA support not enabled. Recompile WITH_CUDA.")
       #:endif
     else ! CPU implementation
-      ! Notify user if cpu omp unavailable (will be slower)
       #:if WITH_OMP
         print *, "Using CPU OMP molorb calculation."
       #:else
         print *, "Using CPU serial molorb calculation. OMP not available. (will run slower)"
       #:endif
-      if (calcTotalChrg) then
-        print *, "Warn: Total Charge calculation not done in place (potential high memory usage)"
-        allocate(bufferReal(size(valueReal, dim=1), size(valueReal, dim=2), size(valueReal, dim=3), size(occupationVec)))
-        bufferReal(:,:,:, :) = 0.0_dp
+      if (.not. ctx%calcTotalChrg) then
         call evaluateOMP(origin, gridVecs, &
             & system, basis, periodic, kIndexes, phases, &
-            & isDensityCalc, calcTotalChrg, isRealInput, &
-            & eigVecsReal, eigVecsCmpl, bufferReal, valueCmpl)
-        ! Multiply states by occupation
-        valueReal(:, :, :, 1) = 0.0_dp
-        do iEig = 1, size(occupationVec)
-          valueReal(:, :, :, 1) = valueReal(:, :, :, 1)  + bufferReal(:, :, :, iEig) ** 2 * occupationVec(iEig)
-        end do
-      else
-        call evaluateOMP(origin, gridVecs, &
-            & system, basis, periodic, kIndexes, phases, &
-            & isDensityCalc, calcTotalChrg, isRealInput, &
+            & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
             & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
+      else
+        ! Number of eigenvectors to calculate at once in a chunk.
+        ! We need a function to query free RAM to dynamically size this.
+        ! Additionally, expose to user.
+        nEigsPerChunk = -1 
+
+        nEigs = size(occupationVec)
+        if (nEigsPerChunk <= 0 .or. nEigsPerChunk > nEigs) then
+          nEigsPerChunk = nEigs
+        end if
+        print *, "Using CPU molorb calculation with ", nEigsPerChunk, " eigenvectors per chunk."
+        if (ctx%isRealInput) then
+          allocate(bufferReal(size(valueReal, 1), size(valueReal, 2), size(valueReal, 3), nEigsPerChunk))
+        else ! Complex input
+          allocate(bufferCmpl(size(valueCmpl, 1), size(valueCmpl, 2), size(valueCmpl, 3), nEigsPerChunk))
+        end if
+
+        ! Zero accumulator
+        valueReal(:, :, :, 1) = 0.0_dp
+
+        lpChunk: do iStart = 1, nEigs, nEigsPerChunk
+          iEnd = min(iStart + nEigsPerChunk - 1, nEigs)
+          nChunk = iEnd - iStart + 1
+
+          if (ctx%isRealInput) then
+            call evaluateOMP(origin, gridVecs, &
+                & system, basis, periodic, kIndexes, phases, &
+                & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
+                & eigVecsReal(:, iStart:iEnd), eigVecsCmpl, bufferReal, valueCmpl)
+
+            do iEigInChunk = 1, nChunk
+              iEig = iStart + iEigInChunk - 1
+              valueReal(:,:,:,1) = valueReal(:,:,:,1) + bufferReal(:,:,:,iEigInChunk)**2 * occupationVec(iEig)
+            end do
+          else ! Complex input
+            call evaluateOMP(origin, gridVecs, &
+                & system, basis, periodic, kIndexes(iStart:iEnd), phases, &
+                & ctx%isDensityCalc, ctx%calcTotalChrg, ctx%isRealInput, &
+                & eigVecsReal, eigVecsCmpl(:, iStart:iEnd), valueReal, bufferCmpl)
+
+            do iEigInChunk = 1, nChunk
+              iEig = iStart + iEigInChunk - 1
+              valueReal(:,:,:,1) = valueReal(:,:,:,1) + abs(bufferCmpl(:,:,:,iEigInChunk))**2 * occupationVec(iEig)
+            end do
+          end if
+        end do lpChunk
+        if (allocated(bufferReal)) then
+          deallocate(bufferReal)
+        end if
+        if (allocated(bufferCmpl)) then
+          deallocate(bufferCmpl)
+        end if
       end if
     end if
 
-
   end subroutine evaluateParallel
 
+
+
+  !> Prepare coefficient vectors for GPU calculation
+  subroutine prepareGPUCoefficients(eigVecsReal, eigVecsCmpl, occupationVec, ctx, &
+      & coeffVecReal, coeffVecCmpl)
+    real(dp), intent(in) :: eigVecsReal(:,:)
+    complex(dp), intent(in) :: eigVecsCmpl(:,:)
+    real(dp), intent(in), optional :: occupationVec(:)
+    type(TCalculationContext), intent(in) :: ctx
+    real(dp), allocatable, intent(out) :: coeffVecReal(:,:)
+    complex(dp), allocatable, intent(out) :: coeffVecCmpl(:,:)
+
+    integer :: iEig
+
+    allocate(coeffVecReal(size(eigVecsReal, dim=1), size(eigVecsReal, dim=2)))
+    allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
+
+    if (ctx%calcTotalChrg) then
+      @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
+      do iEig = 1, size(eigVecsReal, dim=2)
+        coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
+      end do
+      do iEig = 1, size(eigVecsCmpl, dim=2)
+        coeffVecCmpl(:, iEig) = eigVecsCmpl(:, iEig) * sqrt(occupationVec(iEig))
+      end do
+    else
+      coeffVecReal = eigVecsReal
+      coeffVecCmpl = eigVecsCmpl
+    end if
+
+  end subroutine prepareGPUCoefficients
 
 
 #:if WITH_CUDA

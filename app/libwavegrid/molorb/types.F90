@@ -58,6 +58,13 @@ module libwavegrid_molorb_types
     real(dp), allocatable :: coeffs(:,:,:)
     real(dp), allocatable :: alphas(:,:)
   end type TBasisParams
-
+  
+  !> Control type holding calculation flags
+  type :: TCalculationContext
+    logical :: isRealInput
+    logical :: isDensityCalc
+    logical :: calcTotalChrg
+    logical :: runOnGPU
+  end type
 
 end module libwavegrid_molorb_types
