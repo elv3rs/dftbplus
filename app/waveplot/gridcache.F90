@@ -60,7 +60,7 @@ module waveplot_gridcache
     integer :: cachePos
 
     !> Are we ready?
-    logical :: tFinished
+    logical :: isFinished
 
     !> File descriptor for eigenvec
     type(TFileDescr) :: fdEigVec
@@ -78,13 +78,13 @@ module waveplot_gridcache
     integer :: nAllSpin
 
     !> Verbose?
-    logical :: tVerbose
+    logical :: beVerbose
 
     !> Nr. of cached grids
     integer :: nCached
 
-    !> Subdivision factor
-    integer :: subdivisionFactor
+    !> Whether to prefer CPU calculation over GPU offloading
+    logical :: preferCPU
 
     !> Cache for real grids
     real(dp), allocatable :: gridCacheReal(:,:,:,:)
@@ -96,10 +96,10 @@ module waveplot_gridcache
     real(dp), allocatable :: kPoints(:,:)
 
     !> Are eigenvectors real
-    logical :: tReal
+    logical :: isReal
 
     !> Initialised?
-    logical :: tInitialised = .false.
+    logical :: isInitialised = .false.
   contains
     procedure :: TGridCache_next_real
     procedure :: TGridCache_next_cmpl
@@ -115,7 +115,7 @@ contains
   !> Initialises a GridCache instance.
   !! Caveat: Level index is not allowed to contain duplicate entries!
   subroutine TGridCache_init(sf, env, levelIndexAll, nOrb, nAllLevel, nAllKPoint, nAllSpin, nCached,&
-      & nPoints, tVerbose, eigvecBin, gridVec, origin, kPointCoords, tReal, molorb, subdivisionFactor)
+      & nPoints, beVerbose, eigvecBin, gridVec, origin, kPointCoords, isReal, molorb, preferCPU)
 
     !> Structure to initialise
     class(TgridCache), intent(out) :: sf
@@ -145,7 +145,7 @@ contains
     integer, intent(in) :: nPoints(:)
 
     !> If verbosity should turned on
-    logical, intent(in) :: tVerbose
+    logical, intent(in) :: beVerbose
 
     !> Name of the binary eigenvector file
     character(len=*), intent(in) :: eigvecBin
@@ -160,13 +160,13 @@ contains
     real(dp), intent(in) :: kPointCoords(:,:)
 
     !> If grids and eigenvectors are real
-    logical, intent(in) :: tReal
+    logical, intent(in) :: isReal
 
     !> Molecular orbital calculator
     type(TMolecularOrbital), pointer, intent(in) :: molorb
 
-    !> Subdivision factor for the cache grid
-    integer, intent(in) :: subdivisionFactor
+    !> Whether to prefer CPU calculation over GPU offloading
+    logical, intent(in) :: preferCPU
 
     !! Contains indexes (spin, kpoint, state) to be calculated by the current MPI process
     integer, allocatable :: levelIndex(:,:)
@@ -178,7 +178,7 @@ contains
     integer ::nAll
     integer :: iSpin, iKPoint, iLevel, ind, ii, iostat
     integer :: curVec(3)
-    logical :: tFound
+    logical :: wasFound
   
     integer :: startTime, endTime
 
@@ -192,7 +192,7 @@ contains
 
     levelIndex = levelIndexAll(:, iLvlStart:iLvlEnd)
 
-    @:ASSERT(.not. sf%tInitialised)
+    @:ASSERT(.not. sf%isInitialised)
     @:ASSERT(size(levelIndex, dim=1) == 3)
     @:ASSERT(size(levelIndex, dim=2) > 0)
     @:ASSERT(minval(levelIndex) > 0)
@@ -213,14 +213,14 @@ contains
     sf%nAllLevel = nAllLevel
     sf%nAllKPoint = nAllKPoint
     sf%nAllSpin = nAllSpin
-    sf%tVerbose = tVerbose
+    sf%beVerbose = beVerbose
     allocate(sf%kPoints(3, nAllKPoint))
     sf%kPoints(:,:) = 2.0_dp * pi * kPointCoords
     sf%nCached = nCached
-    sf%tReal = tReal
-    sf%subdivisionFactor = subdivisionFactor
+    sf%isReal = isReal
+    sf%preferCPU = preferCPU
 
-    if (sf%tReal) then
+    if (sf%isReal) then
       allocate(sf%gridCacheReal(nPoints(1), nPoints(2), nPoints(3), nCached))
       allocate(sf%eigenvecReal(sf%nOrb, sf%nCached))
     else
@@ -236,12 +236,12 @@ contains
       do iKPoint = 1, nAllKPoint
         do iLevel = 1, nAllLevel
           curVec = [iLevel, iKPoint, iSpin]
-          tFound = .false.
+          wasFound = .false.
           lpLevelIndex: do ii = 1, size(levelIndex, dim=2)
-            tFound = all(levelIndex(:, ii) == curVec)
-            if (tFound) exit lpLevelIndex
+            wasFound = all(levelIndex(:, ii) == curVec)
+            if (wasFound) exit lpLevelIndex
           end do lpLevelIndex
-          if (tFound) then
+          if (wasFound) then
             sf%levelIndex(:, ind) = curVec
             ind = ind + 1
           end if
@@ -253,7 +253,7 @@ contains
     sf%iGrid = 1
     sf%cachePos = 1
     sf%nReadEigVec = 0
-    sf%tFinished = .false.
+    sf%isFinished = .false.
     call openFile(sf%fdEigVec, eigvecBin, mode="rb", iostat=iostat)
     if (iostat /= 0) then
       call error("Can't open file '" // trim(eigvecBin) // "'.")
@@ -261,7 +261,7 @@ contains
     read(sf%fdEigVec%unit) ii
     call system_clock(count=endTime)
 
-    sf%tInitialised = .true.
+    sf%isInitialised = .true.
 
     ! Timing
     print *,  "GridCache initialised in", endTime - startTime
@@ -270,7 +270,7 @@ contains
 
 
   !> Returns the next entry from the cache (real version).
-  subroutine TGridCache_next_real(sf, gridValReal, levelIndex, tFinished)
+  subroutine TGridCache_next_real(sf, gridValReal, levelIndex, isFinished)
 
     !> Gridcache instance
     class(TgridCache), intent(inout) :: sf
@@ -282,17 +282,17 @@ contains
     integer, intent(out) :: levelIndex(:)
 
     !> If all orbitals had been processed.
-    logical, intent(out) :: tFinished
+    logical, intent(out) :: isFinished
 
     complex(dp), pointer, save :: gridValCmpl(:,:,:) => null()
 
-    call localNext(sf, gridValReal, gridValCmpl, levelIndex, tFinished)
+    call localNext(sf, gridValReal, gridValCmpl, levelIndex, isFinished)
 
   end subroutine TGridCache_next_real
 
 
   !> Returns the next entry from the cache (complex version).
-  subroutine TGridCache_next_cmpl(sf, gridValCmpl, levelIndex, tFinished)
+  subroutine TGridCache_next_cmpl(sf, gridValCmpl, levelIndex, isFinished)
 
     !> Gridcache instance
     class(TgridCache), intent(inout) :: sf
@@ -304,11 +304,11 @@ contains
     integer, intent(out) :: levelIndex(:)
 
     !> If all orbitals had been processed.
-    logical, intent(out) :: tFinished
+    logical, intent(out) :: isFinished
 
     real(dp), pointer, save :: gridValReal(:,:,:) => null()
 
-    call localNext(sf, gridValReal, gridValCmpl, levelIndex, tFinished)
+    call localNext(sf, gridValReal, gridValCmpl, levelIndex, isFinished)
 
   end subroutine TGridCache_next_cmpl
   
@@ -326,7 +326,7 @@ contains
     !print *, "Loading EV for index range", iStartAbs, "to", iStartAbs + iEnd - 1
 
     do while (ind <= iEnd)
-      if (sf%tReal) then
+      if (sf%isReal) then
         read(sf%fdEigVec%unit) sf%eigenvecReal(:,ind)
       else
         read(sf%fdEigVec%unit) sf%eigenvecCmpl(:,ind)
@@ -340,7 +340,7 @@ contains
       iLevel = mod(tmp, sf%nAllLevel) + 1
       if (all([iLevel, iKPoint, iSpin] == sf%levelIndex(:,iStartAbs+ind-1))) then
         ind = ind + 1
-        if (sf%tVerbose) then
+        if (sf%beVerbose) then
           write(stdout, "(I5,I7,I7,A8)") iSpin, iKPoint, iLevel, "read"
         end if
       end if
@@ -350,7 +350,7 @@ contains
 
 
   !> Working subroutine for the TGridCache_next_* subroutines.
-  subroutine localNext(sf, gridValReal, gridValCmpl, levelIndex, tFinished)
+  subroutine localNext(sf, gridValReal, gridValCmpl, levelIndex, isFinished)
 
     !> Gridcache instance
     type(TgridCache), intent(inout), target :: sf
@@ -365,15 +365,15 @@ contains
     integer, intent(out) :: levelIndex(:)
 
     !> If all orbitals had been processed.
-    logical, intent(out) :: tFinished
+    logical, intent(out) :: isFinished
 
     integer :: iEnd, iStartAbs, iEndAbs, iLevel, iKPoint, iSpin
     integer :: ind, tmp
     real(dp), pointer :: eigReal(:,:)
     complex(dp), pointer :: eigCmpl(:,:)
 
-    @:ASSERT(sf%tInitialised)
-    @:ASSERT(.not. sf%tFinished)
+    @:ASSERT(sf%isInitialised)
+    @:ASSERT(.not. sf%isFinished)
 
     ! We passed back everything from the cache, fill it with new grids
     if (mod(sf%cachePos - 1, sf%nCached) == 0) then
@@ -387,10 +387,10 @@ contains
       end if
 
       ! Get molecular orbital for that eigenvector
-      if (sf%tVerbose) then
+      if (sf%beVerbose) then
         write(stdout, "(/,A,/)") "Calculating grid"
       end if
-      if (sf%tReal) then
+      if (sf%isReal) then
         eigReal => sf%eigenvecReal(:, :iEnd)
         call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd), preferCPU=.true.)
       else
@@ -401,7 +401,7 @@ contains
     end if
 
     ! Return the appropriate grid
-    if (sf%tReal) then
+    if (sf%isReal) then
       gridValReal => sf%gridCacheReal(:,:,:,sf%cachePos)
     else
       gridValCmpl => sf%gridCacheCmpl(:,:,:,sf%cachePos)
@@ -412,10 +412,10 @@ contains
     sf%iGrid = sf%iGrid + 1
     sf%cachePos = sf%cachePos + 1
     if (sf%iGrid > sf%nGrid) then
-      sf%tFinished = .true.
+      sf%isFinished = .true.
       call closeFile(sf%fdEigVec)
     end if
-    tFinished = sf%tFinished
+    isFinished = sf%isFinished
 
   end subroutine localNext
 

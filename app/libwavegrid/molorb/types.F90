@@ -53,10 +53,10 @@ module libwavegrid_molorb_types
     integer :: maxNAlphas
     integer, allocatable :: angMoms(:)
     real(dp), allocatable :: cutoffsSq(:)
-    integer, allocatable :: sto_nPows(:)
-    integer, allocatable :: sto_nAlphas(:)
-    real(dp), allocatable :: sto_coeffs(:,:,:)
-    real(dp), allocatable :: sto_alphas(:,:)
+    integer, allocatable :: nPows(:)
+    integer, allocatable :: nAlphas(:)
+    real(dp), allocatable :: coeffs(:,:,:)
+    real(dp), allocatable :: alphas(:,:)
   end type TBasisParams
 
 

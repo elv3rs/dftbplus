@@ -16,6 +16,9 @@ module libwavegrid_molorb_parallel
   use, intrinsic :: iso_c_binding, only : c_int, c_double, c_double_complex, c_bool, c_ptr, c_loc, &
       & c_null_ptr
   implicit none
+  private
+  !> Max powers expected in STO basis.
+  integer, parameter :: MAX_STO_POWS = 16
 
   public :: evaluateParallel
 
@@ -216,7 +219,7 @@ contains
     type(TGridParamsC) :: grid_p
     type(TSystemParamsC) :: system_p
     type(TPeriodicParamsC) :: periodic_p
-    type(TBasisParamsC) :: sto_basis_p
+    type(TBasisParamsC) :: basis_p
     type(TCalculationParamsC) :: calc_p
     logical :: isRealOutput
 
@@ -240,15 +243,15 @@ contains
     periodic_p%recVecs2pi = c_loc(periodic%recVecs2pi)
     periodic_p%kIndexes = c_loc(kIndexes)
     periodic_p%phases = c_loc(phases)
-    sto_basis_p%nStos = basis%nStos
-    sto_basis_p%maxNPows = basis%maxNPows
-    sto_basis_p%maxNAlphas = basis%maxNAlphas
-    sto_basis_p%sto_angMoms = c_loc(basis%angMoms)
-    sto_basis_p%sto_nPows = c_loc(basis%sto_nPows)
-    sto_basis_p%sto_nAlphas = c_loc(basis%sto_nAlphas)
-    sto_basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
-    sto_basis_p%sto_coeffs = c_loc(basis%sto_coeffs)
-    sto_basis_p%sto_alphas = c_loc(basis%sto_alphas)
+    basis_p%nStos = basis%nStos
+    basis_p%maxNPows = basis%maxNPows
+    basis_p%maxNAlphas = basis%maxNAlphas
+    basis_p%sto_angMoms = c_loc(basis%angMoms)
+    basis_p%sto_nPows = c_loc(basis%nPows)
+    basis_p%sto_nAlphas = c_loc(basis%nAlphas)
+    basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
+    basis_p%sto_coeffs = c_loc(basis%coeffs)
+    basis_p%sto_alphas = c_loc(basis%alphas)
     if (isRealInput) then
       calc_p%nEigIn = size(eigVecsReal, dim=2)
     else
@@ -270,7 +273,7 @@ contains
     calc_p%valueReal_out = c_loc(valueReal)
     calc_p%valueCmpl_out = c_loc(valueCmpl)
 
-    call evaluate_on_device_c(grid_p, system_p, periodic_p, sto_basis_p, calc_p)
+    call evaluate_on_device_c(grid_p, system_p, periodic_p, basis_p, calc_p)
 
   end subroutine evaluateCuda
 #:endif
@@ -305,14 +308,16 @@ contains
 
     !! Thread private variables
     integer ::  ind, iSpecies
-    real(dp) :: sto_tmp_pows(16), xyz(3), diff(3)
-    real(dp) :: rSq, r, val, radialVal, sto_tmp_rexp, frac(3)
+    real(dp) :: tmp_pows(MAX_STO_POWS), xyz(3), diff(3)
+    real(dp) :: rSq, r, val, radialVal, tmp_rexp, frac(3)
     !! Loop Variables
     integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iL, iCell
 
+    @:ASSERT(basis%maxNPows <= MAX_STO_POWS)
+
     !$omp parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, xyz, diff, &
-    !$omp&              r, val, radialVal, sto_tmp_pows, sto_tmp_rexp, ind, iSpecies, rSq) &
+    !$omp&              r, val, radialVal, tmp_pows, tmp_rexp, ind, iSpecies, rSq) &
     !$omp&    shared(gridVecs, origin, system, basis, periodic, &
     !$omp&              eigVecsReal, eigVecsCmpl, &
     !$omp&              phases, isDensityCalc, valueReal, valueCmpl)
@@ -324,7 +329,7 @@ contains
                              & + real(i2 - 1, dp) * gridVecs(:, 2) &
                              & + real(i3 - 1, dp) * gridVecs(:, 3)
 
-            ! Fold coordinates into unit cell
+            ! Map grid coordinates into unit cell
             if (periodic%isPeriodic) then
               frac(:) = matmul(xyz, periodic%recVecs2pi)
               xyz(:) = matmul(periodic%latVecs, frac - real(floor(frac), dp))
@@ -348,10 +353,10 @@ contains
                   r = sqrt(rSq)
 
                   radialVal = getRadial(iL, &
-                              & basis%sto_nPows(iOrb), &
-                              & basis%sto_nAlphas(iOrb), &
-                              & basis%sto_coeffs(1:basis%sto_nPows(iOrb), 1:basis%sto_nAlphas(iOrb), iOrb), &
-                              & basis%sto_alphas(1:basis%sto_nAlphas(iOrb), iOrb), &
+                              & basis%nPows(iOrb), &
+                              & basis%nAlphas(iOrb), &
+                              & basis%coeffs(1:basis%nPows(iOrb), 1:basis%nAlphas(iOrb), iOrb), &
+                              & basis%alphas(1:basis%nAlphas(iOrb), iOrb), &
                               & r)
 
                   lpM : do iM = -iL, iL

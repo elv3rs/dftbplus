@@ -32,13 +32,13 @@ module libwavegrid_molorb
     !> Basis set data in SoA format
     type(TBasisParams) :: basis
     !> If it is initialised
-    logical :: tInitialised = .false.
+    logical :: isInitialised = .false.
   contains
     private
-    procedure, pass(this) :: initSystem
-    procedure, pass(this) :: initBasis
-    procedure, pass(this) :: initPeriodic
-    procedure, pass(this) :: initCoords
+    procedure :: initSystem
+    procedure :: initBasis
+    procedure :: initPeriodic
+    procedure :: initCoords
   end type TMolecularOrbital
 
 
@@ -62,7 +62,7 @@ contains
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     real(dp) :: maxCutoff
 
-    @:ASSERT(.not. this%tInitialised)
+    @:ASSERT(.not. this%isInitialised)
 
     call this%initSystem(geometry, basisInput)
     call this%initBasis(basisInput)
@@ -70,7 +70,7 @@ contains
     call this%initPeriodic(geometry, maxCutoff)
     call this%initCoords(geometry, boundaryCond)
 
-    this%tInitialised = .true.
+    this%isInitialised = .true.
   end subroutine TMolecularOrbital_init
 
 
@@ -80,7 +80,7 @@ contains
     type(TGeometry), intent(in) :: geometry
     type(TSpeciesBasis), intent(in) :: basis(:)
 
-    integer :: nOrbTotal, nOrbSpecies, iSpec, iAtom, ind, iOrb, angMom, nStosTotal
+    integer :: nOrbTotal, iSpec, iAtom, ind, iOrb, angMom, nStosTotal
 
     @:ASSERT(geometry%nSpecies == size(basis))
 
@@ -103,7 +103,7 @@ contains
       this%system%iStos(iSpec) = ind
       ind = ind + basis(iSpec)%nOrb
     end do
-    this%system%iStos(iSpec) = ind
+    this%system%iStos(this%system%nSpecies + 1) = ind
 
     ! Count total number of orbitals (including m-dependence)
     nOrbTotal = 0
@@ -135,26 +135,26 @@ contains
 
     ! Allocate SoA arrays
     allocate(this%basis%angMoms(this%basis%nStos))
-    allocate(this%basis%sto_nPows(this%basis%nStos))
-    allocate(this%basis%sto_nAlphas(this%basis%nStos))
+    allocate(this%basis%nPows(this%basis%nStos))
+    allocate(this%basis%nAlphas(this%basis%nStos))
     allocate(this%basis%cutoffsSq(this%basis%nStos))
 
     ! Populate SoA arrays
     do iOrb = 1, this%basis%nStos
       this%basis%angMoms(iOrb) = stos_flat(iOrb)%angMom
       this%basis%cutoffsSq(iOrb) = stos_flat(iOrb)%cutoff ** 2
-      this%basis%sto_nPows(iOrb) = stos_flat(iOrb)%nPow
-      this%basis%sto_nAlphas(iOrb) = stos_flat(iOrb)%nAlpha
+      this%basis%nPows(iOrb) = stos_flat(iOrb)%nPow
+      this%basis%nAlphas(iOrb) = stos_flat(iOrb)%nAlpha
     end do
-    this%basis%maxNPows = maxval(this%basis%sto_nPows)
-    this%basis%maxNAlphas = maxval(this%basis%sto_nAlphas)
+    this%basis%maxNPows = maxval(this%basis%nPows)
+    this%basis%maxNAlphas = maxval(this%basis%nAlphas)
 
     ! Allocate and populate coefficient/alpha matrices
-    allocate(this%basis%sto_coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
-    allocate(this%basis%sto_alphas(this%basis%maxNAlphas, this%basis%nStos))
+    allocate(this%basis%coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
+    allocate(this%basis%alphas(this%basis%maxNAlphas, this%basis%nStos))
     do iOrb = 1, this%basis%nStos
-      this%basis%sto_coeffs(1:stos_flat(iOrb)%nPow, 1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%aa
-      this%basis%sto_alphas(1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%alpha
+      this%basis%coeffs(1:stos_flat(iOrb)%nPow, 1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%aa
+      this%basis%alphas(1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%alpha
     end do
   end subroutine initBasis
 
@@ -164,7 +164,6 @@ contains
     class(TMolecularOrbital), intent(inout) :: this
     type(TGeometry), intent(in) :: geometry
     real(dp), intent(in) :: maxCutoff
-    real(dp), allocatable :: rCellVec(:,:)
   
     this%periodic%isPeriodic = geometry%tPeriodic
     if (this%periodic%isPeriodic) then
@@ -238,7 +237,7 @@ contains
     logical :: isDensityCalc, doPreferCPU
     logical, parameter :: isRealInput = .true.
 
-    @:ASSERT(this%tInitialised)
+    @:ASSERT(this%isInitialised)
     @:ASSERT(size(origin) == 3)
     @:ASSERT(all(shape(gridVecs) == [3, 3]))
     @:ASSERT(size(eigVecsReal, dim=1) == this%system%nOrb)
@@ -294,7 +293,7 @@ contains
     logical, parameter :: isDensityCalc = .false.
     logical :: doPreferCPU
 
-    @:ASSERT(this%tInitialised)
+    @:ASSERT(this%isInitialised)
     @:ASSERT(size(origin) == 3)
     @:ASSERT(all(shape(gridVecs) == [3, 3]))
     @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
