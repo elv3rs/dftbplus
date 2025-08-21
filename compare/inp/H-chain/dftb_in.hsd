@@ -1,0 +1,42 @@
+Geometry = GenFormat {
+  <<< geometry.gen
+}
+
+Hamiltonian = DFTB {
+  SCC = Yes
+  SCCTolerance = 1e-6
+  MaxAngularMomentum {
+    H = "s"
+  }
+  Filling = Fermi {
+    Temperature [Kelvin] = 0
+  }
+  SlaterKosterFiles = Type2FileNames {
+    Prefix = "3ob-3-1/"
+    Separator = "-"
+    Suffix  = ".skf"
+  }
+  KPointsAndWeights = SupercellFolding {
+   1 0 0 
+   0 1 0
+   0 0 16
+   0.0 0.0 0.5
+  }
+}
+
+Options {
+  WriteDetailedXml = Yes
+  WriteDetailedOut = No
+  WriteCharges = No
+}
+
+Analysis {
+  WriteEigenvectors = Yes
+  WriteBandOut = No
+  MullikenAnalysis = No
+}
+
+ParserOptions = {
+  ParserVersion = 14
+  WriteHSDInput = No
+}

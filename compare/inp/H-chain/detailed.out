@@ -1,0 +1,72 @@
+ Fermi distribution function
+
+Calculation with static geometry
+
+
+********************************************************************************
+ iSCC Total electronic   Diff electronic      SCC error    
+    1   -0.31590453E+00    0.00000000E+00    0.22204460E-15
+********************************************************************************
+
+ Total charge:    -0.00000000
+
+ Atomic gross charges (e)
+ Atom           Charge
+    1      -0.00000000
+
+Nr. of electrons (up):      1.00000000
+Atom populations (up)
+ Atom       Population
+    1       1.00000000
+
+l-shell populations (up)
+ Atom Sh.   l       Population
+    1   1   0       1.00000000
+
+Orbital populations (up)
+ Atom Sh.   l   m       Population  Label
+    1   1   0   0       1.00000000  s
+
+Fermi level:                        -0.1045220384 H           -2.8442 eV
+Band energy:                        -0.3159045340 H           -8.5962 eV
+TS:                                  0.0000000000 H            0.0000 eV
+Band free energy (E-TS):            -0.3159045340 H           -8.5962 eV
+Extrapolated E(0K):                 -0.3159045340 H           -8.5962 eV
+Input / Output electrons (q):      1.0000000000      1.0000000000
+
+Energy H0:                          -0.3159045340 H           -8.5962 eV
+Energy SCC:                          0.0000000000 H            0.0000 eV
+Total Electronic energy:            -0.3159045340 H           -8.5962 eV
+Repulsive energy:                    0.0040571197 H            0.1104 eV
+Total energy:                       -0.3118474143 H           -8.4858 eV
+Extrapolated to 0:                  -0.3118474143 H           -8.4858 eV
+Total Mermin free energy:           -0.3118474143 H           -8.4858 eV
+Force related energy:               -0.3118474143 H           -8.4858 eV
+
+Non-constrained calculation
+
+SCC converged
+
+Total Forces
+    1     -0.000000000000     -0.000000000000     -0.000000000000
+
+Total stress tensor
+     -0.000000000000     -0.000000000000      0.000000000000
+     -0.000000000000     -0.000000000000      0.000000000000
+      0.000000000000      0.000000000000      0.000002305005
+
+Total lattice derivs
+      0.000000000000      0.000000000000     -0.000000000000
+      0.000000000000      0.000000000000     -0.000000000000
+     -0.000000000000     -0.000000000000     -0.082313207278
+
+Maximal derivative component:        0.000000E+00 au
+
+Volume:                              0.539867E+05 au^3
+Pressure:                            0.768335E-06 au     0.226052E+08 Pa
+
+Warning: dipole moment is not defined absolutely!
+Dipole moment:    0.00000000    0.00000000    0.00000000 au
+Dipole moment:    0.00000000    0.00000000    0.00000000 Debye
+
+
