@@ -374,7 +374,7 @@ extern "C" void evaluate_on_device_c(
     int numGpus;
     CHECK_CUDA(cudaGetDeviceCount(&numGpus));
     if (numGpus == 0) {
-        fprintf(stderr, "Error: No CUDA-enabled GPUs found.\n");
+        fprintf(stderr, "No CUDA-enabled GPUs found. Unable to launch Kernel.\n");
         exit(EXIT_FAILURE);
     }
     printf("Found %d GPUs.", numGpus);
@@ -393,7 +393,6 @@ extern "C" void evaluate_on_device_c(
     {
         int deviceId = omp_get_thread_num();
         CHECK_CUDA(cudaSetDevice(deviceId));
-        printf("\n--- GPU %d ---\n", deviceId);
 
         // --- Work Distribution: Divide Z-slices among GPUs ---
         int z_slices_per_gpu = nPointsZ / numGpus;

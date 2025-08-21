@@ -248,10 +248,10 @@ program waveplot
       end do
       if (wp%input%isRealHam) then
         call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecReal, &
-          & totChrg4d, preferCPU=wp%opt%preferCPU, occupationVec=eigCoeffs)
+          & totChrg4d, useGPU=wp%opt%useGPU, occupationVec=eigCoeffs)
       else
         call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecCmpl, &
-          & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d,  preferCPU=wp%opt%preferCPU, occupationVec=eigCoeffs)
+          & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d,  useGPU=wp%opt%useGPU, occupationVec=eigCoeffs)
       end if
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
   end if

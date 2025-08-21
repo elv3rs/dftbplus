@@ -86,8 +86,8 @@ module waveplot_gridcache
     !> Nr. of cached grids
     integer :: nCached
 
-    !> Whether to prefer CPU calculation over GPU offloading
-    logical :: preferCPU
+    !> Whether to enable GPU offloading.
+    logical :: useGPU
 
     !> Cache for real grids
     real(dp), allocatable :: gridCacheReal(:,:,:,:)
@@ -118,7 +118,7 @@ contains
   !> Initialises a GridCache instance.
   !! Caveat: Level index is not allowed to contain duplicate entries!
   subroutine TGridCache_init(sf, env, levelIndexAll, nOrb, nAllLevel, nAllKPoint, nAllSpin, nCached,&
-      & nPoints, beVerbose, eigvecBin, gridVec, origin, kPointCoords, isReal, molorb, preferCPU)
+      & nPoints, beVerbose, eigvecBin, gridVec, origin, kPointCoords, isReal, molorb, useGPU)
 
     !> Structure to initialise
     class(TgridCache), intent(out) :: sf
@@ -168,8 +168,8 @@ contains
     !> Molecular orbital calculator
     type(TMolecularOrbital), pointer, intent(in) :: molorb
 
-    !> Whether to prefer CPU calculation over GPU offloading
-    logical, intent(in) :: preferCPU
+    !> Whether to enable GPU offloading
+    logical, intent(in) :: useGPU
 
     !! Contains indexes (spin, kpoint, state) to be calculated by the current MPI process
     integer, allocatable :: levelIndex(:,:)
@@ -218,7 +218,7 @@ contains
     sf%kPoints(:,:) = 2.0_dp * pi * kPointCoords
     sf%nCached = nCached
     sf%isReal = isReal
-    sf%preferCPU = preferCPU
+    sf%useGPU = useGPU
     sf%nPoints = nPoints
 
     if (sf%isReal) then
@@ -398,11 +398,11 @@ contains
       end if
       if (sf%isReal) then
         eigReal => sf%eigenvecReal(:, :iEnd)
-        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd), preferCPU=sf%preferCPU)
+        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd), useGPU=sf%useGPU)
       else
         eigCmpl => sf%eigenvecCmpl(:, :iEnd)
         call getValue(sf%molorb, sf%origin, sf%gridVec, eigCmpl, sf%kPoints,&
-            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd), preferCPU=sf%preferCPU)
+            & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd), useGPU=sf%useGPU)
       end if
     end if
 

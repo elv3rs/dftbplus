@@ -131,8 +131,8 @@ module waveplot_initwaveplot
     !> List of levels to plot, whereby insignificant occupations were filtered out
     integer, allocatable :: levelIndex(:,:)
 
-    !> Whether to prefer CPU calculation over GPU offloading
-    logical :: preferCPU
+    !> Whether to enable GPU offloading.
+    logical :: useGPU
 
     !> File access types
     character(20) :: binaryAccessTypes(2)
@@ -383,7 +383,7 @@ contains
     call this%loc%grid%init(env, this%loc%levelIndex, this%input%nOrb, this%eig%nState,&
         & nKPoint, nSpin, nCached, this%opt%nPoints, this%opt%beVerbose, eigVecBin,&
         & this%loc%gridVec, this%opt%gridOrigin, kPointsWeights(1:3, :), this%input%isRealHam,&
-        & this%loc%pMolOrb, this%opt%preferCPU)
+        & this%loc%pMolOrb, this%opt%useGPU)
 
   end subroutine TProgramVariables_init
 
@@ -627,7 +627,7 @@ contains
     call getChildValue(node, "NrOfCachedGrids", nCached, 1, child=field)
 
     ! SubdivisionFactor
-    call getChildValue(node, "preferCPU", this%opt%preferCPU, .false., child=field)
+    call getChildValue(node, "useGPU", this%opt%useGPU, .false., child=field)
 
     if (nCached < 1 .and. nCached /= -1) then
       call detailedError(field, "Value must be -1 or greater than zero.")

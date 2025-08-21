@@ -221,9 +221,9 @@ contains
   end subroutine initCoords
 
 
-  function bundleFlags(isRealInput, addAtomicDensities, preferCPU, occupationVec) result(ctx)
+  function bundleFlags(isRealInput, addAtomicDensities, useGPU, occupationVec) result(ctx)
     logical, intent(in) :: isRealInput
-    logical, intent(in), optional :: addAtomicDensities, preferCPU
+    logical, intent(in), optional :: addAtomicDensities, useGPU
     real(dp), intent(in), optional :: occupationVec(:)
     type(TCalculationContext) :: ctx
 
@@ -239,12 +239,18 @@ contains
       ctx%calcTotalChrg = .true.
       @:ASSERT(size(occupationVec) == size(this%system%nOrb))
     end if
+    
+    ctx%runOnGPU = .false.
+    if (present(useGPU)) then
+      #:if WITH_CUDA
+        ctx%runOnGPU = useGPU
+      #:else
+      if (useGPU) then
+        call error("GPU offloading requested (useGPU=.true.), but not available in this build. (missing WITH_CUDA)")
+      end if
+      #:endif
+    end if
 
-    #:if WITH_CUDA
-      ctx%runOnGPU = .not. preferCPU
-    #:else
-      ctx%runOnGPU = .false.
-    #:endif
 
     ctx%isRealOutput = ctx%isRealInput .or. ctx%calcTotalChrg
 
@@ -254,7 +260,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, &
-      & valueOnGrid, addAtomicDensities, preferCPU, occupationVec)
+      & valueOnGrid, addAtomicDensities, useGPU, occupationVec)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -268,8 +274,8 @@ contains
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addAtomicDensities
-    !> Whether to prefer CPU for calculation
-    logical, intent(in), optional :: preferCPU
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
     !> if present, calculate total charge. Coefficients for each squared state
     real(dp), intent(in), optional :: occupationVec(:)
 
@@ -285,7 +291,7 @@ contains
     @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
 
 
-    ctx = bundleFlags(.true., addAtomicDensities, preferCPU, occupationVec)
+    ctx = bundleFlags(.true., addAtomicDensities, useGPU, occupationVec)
 
     if (present(occupationVec)) then
       call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
@@ -302,7 +308,7 @@ contains
 
   !> Returns molecular orbitals on a grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid, addAtomicDensities, preferCPU)
+      & kIndexes, valueOnGrid, addAtomicDensities, useGPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -320,8 +326,8 @@ contains
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
     !> Add densities instead of wave functions
     logical, intent(in), optional :: addAtomicDensities
-    !> Whether to prefer CPU for calculation
-    logical, intent(in), optional :: preferCPU
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
 
     real(dp) :: valueReal(0,0,0,0), eigVecsReal(0,0)
     complex(dp), allocatable :: phases(:,:)
@@ -338,7 +344,7 @@ contains
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
-    ctx = bundleFlags(.false., addAtomicDensities, preferCPU)
+    ctx = bundleFlags(.false., addAtomicDensities, useGPU)
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
@@ -354,7 +360,7 @@ contains
   end subroutine TMolecularOrbital_getValue_cmpl
 
   subroutine TMolecularOrbital_getTotalChrg_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid, preferCPU, occupationVec)
+      & kIndexes, valueOnGrid, useGPU, occupationVec)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -370,8 +376,8 @@ contains
     integer, intent(in) :: kIndexes(:)
     !> Molecular orbitals on grid on exit.
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
-    !> Whether to prefer CPU for calculation
-    logical, intent(in), optional :: preferCPU
+    !> Whether to enable GPU offloading
+    logical, intent(in), optional :: useGPU
     !> Calculate total charge. Coefficients for each squared state
     real(dp), intent(in) :: occupationVec(:)
 
@@ -391,7 +397,7 @@ contains
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
-    ctx = bundleFlags(.false., .false., preferCPU, occupationVec)
+    ctx = bundleFlags(.false., .false., useGPU, occupationVec)
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then

@@ -85,6 +85,8 @@ contains
         call evaluateCuda(origin, gridVecs, &
             & system, basis, periodic, kIndexes, phases, ctx, &
             & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
+      #:else
+        call error("Libwavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
       #:endif
     else ! CPU implementation
       #:if WITH_OMP

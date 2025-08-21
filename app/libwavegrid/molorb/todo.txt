@@ -1,3 +1,20 @@
+
+Todo
+- [ ] have useGPU throw errors to avoid running in cpu mode on clusters
+- [ ] Disallow running waveplot using mpi + gpu
+- [ ] use std::cuda::complex instead of cuDoubleComplex
+
+
+- [ ] allow specifying nCachedGridPoints
+- [ ] Function to query available system ram
+
+- [ ] interpolation radial part
+
+- [ ] readme
+- [ ] unit tests
+
+
+
 # Libwavegrid
 This is a molecular orbital calculator.
 How does it work?
