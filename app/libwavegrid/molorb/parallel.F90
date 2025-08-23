@@ -28,13 +28,8 @@ contains
 
   !> Returns the values of several molecular orbitals on grids.
   !> This dispatches to either CPU / GPU implementation, and handles total Charge calculation using occupationVec if present.
-  subroutine evaluateParallel(origin, gridVecs, system, periodic, kIndexes, phases, basis, &
+  subroutine evaluateParallel(system, periodic, kIndexes, phases, basis, &
       & ctx, eigVecsReal, eigVecsCmpl,  valueReal, valueCmpl, occupationVec)
-
-    !> Origin of the grid
-    real(dp), intent(in) :: origin(:)
-    !> Grid vectors
-    real(dp), intent(in) :: gridVecs(:,:)
 
     !> System geometry and composition
     type(TSystemParams), intent(in) :: system
@@ -82,8 +77,7 @@ contains
         ! GPU implementation passes occupation information by baking their sqrt into the eigenvectors
         call prepareGPUCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecReal, coeffVecCmpl)
 
-        call evaluateCuda(origin, gridVecs, &
-            & system, basis, periodic, kIndexes, phases, ctx, &
+        call evaluateCuda(system, basis, periodic, kIndexes, phases, ctx, &
             & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
       #:else
         call error("Libwavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
@@ -95,8 +89,7 @@ contains
         print *, "Serial CPU molorb."
       #:endif
       if (.not. ctx%calcTotalChrg) then
-        call evaluateOMP(origin, gridVecs, &
-            & system, basis, periodic, kIndexes, phases, ctx, &
+        call evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
             & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
       else
         ! Number of eigenvectors to calculate at once in a chunk.
@@ -123,8 +116,7 @@ contains
           print *, "Processing", nEigsPerChunk, "eigenvectors from", iStart, "to", iEnd, "of", nEigs
 
           if (ctx%isRealInput) then
-            call evaluateOMP(origin, gridVecs, &
-                & system, basis, periodic, kIndexes, phases, ctx, &
+            call evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
                 & eigVecsReal(:, iStart:iEnd), eigVecsCmpl, bufferReal, valueCmpl)
 
             do iEigInChunk = 1, nChunk
@@ -132,8 +124,7 @@ contains
               valueReal(:,:,:,1) = valueReal(:,:,:,1) + bufferReal(:,:,:,iEigInChunk)**2 * occupationVec(iEig)
             end do
           else ! Complex input
-            call evaluateOMP(origin, gridVecs, &
-                & system, basis, periodic, kIndexes(iStart:iEnd), phases, ctx, &
+            call evaluateOMP(system, basis, periodic, kIndexes(iStart:iEnd), phases, ctx, &
                 & eigVecsReal, eigVecsCmpl(:, iStart:iEnd), valueReal, bufferCmpl)
 
             do iEigInChunk = 1, nChunk
@@ -154,13 +145,9 @@ contains
   end subroutine evaluateParallel
 
 
-  subroutine evaluateOMP(origin, gridVecs, &
-      & system, basis, periodic, kIndexes, phases, ctx, &
+  subroutine evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
-    !> Grid
-    real(dp), intent(in) :: origin(3)
-    real(dp), intent(in) :: gridVecs(3, 3)
     !> System
     type(TSystemParams), intent(in) :: system
     !> Basis set
@@ -199,14 +186,14 @@ contains
     !$omp parallel do collapse(3) &
     !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, xyz, frac, diff, &
     !$omp&              r, val, radialVal, tmp_pows, tmp_rexp, ind, iSpecies, rSq) &
-    !$omp&    shared(gridVecs, origin, system, basis, periodic,&
-    !$omp&              eigVecsReal, eigVecsCmpl, phases, ctx, valueReal, valueCmpl)
+    !$omp&    shared(ctx, system, basis, periodic, phases, kIndexes, &
+    !$omp&              eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
     lpI3: do i3 = 1, nPoints(3)
       lpI2: do i2 = 1, nPoints(2)
         lpI1: do i1 = 1, nPoints(1)
-            xyz(:) = origin(:) + real(i1 - 1, dp) * gridVecs(:, 1) &
-                             & + real(i2 - 1, dp) * gridVecs(:, 2) &
-                             & + real(i3 - 1, dp) * gridVecs(:, 3)
+            xyz(:) = system%origin(:) + real(i1 - 1, dp) * system%gridVecs(:, 1) &
+                                    & + real(i2 - 1, dp) * system%gridVecs(:, 2) &
+                                    & + real(i3 - 1, dp) * system%gridVecs(:, 3)
 
             ! Map grid coordinates into unit cell
             if (periodic%isPeriodic) then

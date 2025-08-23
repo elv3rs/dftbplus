@@ -27,20 +27,22 @@ module libwavegrid_molorb
   private
   !> Data type containing information for molecular orbital calculator.
   type TMolecularOrbital
-    !> System geometry and composition
+    !> System composition and coordinates
     type(TSystemParams) :: system
-    !> Periodic boundary conditions data
+    !> Periodic boundary conditions
     type(TPeriodicParams) :: periodic
-    !> Basis set data in SoA format
+    !> Basis set in SoA format
     type(TBasisParams) :: basis
-    !> If it is initialised
+    !> Boundary conditions handler for coordinate recalculation
+    type(TBoundaryConds) :: boundaryCond
+
     logical :: isInitialised = .false.
   contains
     private
-    procedure :: initSystem
+    procedure, public :: updateCoords => TMolecularOrbital_updateCoords
+    procedure :: initSpeciesMapping
     procedure :: initBasis
     procedure :: initPeriodic
-    procedure :: initCoords
   end type TMolecularOrbital
 
   !> Data type containing information about the basis for a species.
@@ -67,27 +69,42 @@ contains
 
 
   !> Initialises MolecularOrbital instance.
-  subroutine TMolecularOrbital_init(this, geometry, boundaryCond, basisInput)
+  !> This prepares data structures for the molorb calculation.
+  !> The coordinates may be updated later by calling updateCoords on the molorb data object.
+  subroutine TMolecularOrbital_init(this, geometry, boundaryCond, basisInput, origin, gridVecs)
+    !> TMolecularOrbital data object to initialise
     type(TMolecularOrbital), intent(out) :: this
     type(TGeometry), intent(in) :: geometry
     type(TBoundaryConds), intent(in) :: boundaryCond
     type(TSpeciesBasis), intent(in) :: basisInput(:)
+    !> Origin of the grid
+    real(dp), intent(in) :: origin(3)
+    !> Grid vectors
+    real(dp), intent(in) :: gridVecs(3,3)
+
     real(dp) :: maxCutoff
 
     @:ASSERT(.not. this%isInitialised)
+    @:ASSERT(size(origin) == 3)
+    @:ASSERT(all(shape(gridVecs) == [3, 3]))
+    this%boundaryCond = boundaryCond
+    this%system%origin = origin
+    this%system%gridVecs = gridVecs
 
-    call this%initSystem(geometry, basisInput)
+
+    call this%initSpeciesMapping(geometry, basisInput)
     call this%initBasis(basisInput)
     maxCutoff = sqrt(maxval(this%basis%cutoffsSq))
     call this%initPeriodic(geometry, maxCutoff)
-    call this%initCoords(geometry, boundaryCond)
+    call this%updateCoords(geometry)
 
     this%isInitialised = .true.
   end subroutine TMolecularOrbital_init
 
 
-  !> Initialises system parameters (non-periodic)
-  subroutine initSystem(this, geometry, basis)
+  !> Initialises non-geometric system parameters 
+  !! Counts total number of orbitals and STOs and creates index maps.
+  subroutine initSpeciesMapping(this, geometry, basis)
     class(TMolecularOrbital), intent(inout) :: this
     type(TGeometry), intent(in) :: geometry
     type(TSpeciesBasis), intent(in) :: basis(:)
@@ -127,7 +144,8 @@ contains
       end do
     end do
     this%system%nOrb = nOrbTotal
-  end subroutine initSystem
+    this%system%speciesInitialised = .true.
+  end subroutine initSpeciesMapping
 
 
   !> Converts basis from AoS to SoA format for performance.
@@ -168,6 +186,7 @@ contains
       this%basis%coeffs(1:stos_flat(iOrb)%nPow, 1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%aa
       this%basis%alphas(1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%alpha
     end do
+    this%basis%isInitialized = .true.
   end subroutine initBasis
 
 
@@ -197,20 +216,23 @@ contains
       this%periodic%fCellVec(:,:) = 0.0_dp
       this%periodic%rCellVec(:,:) = 0.0_dp
     end if
+    this%periodic%isInitialized = .true.
   end subroutine initPeriodic
 
 
   !> Initializes coordinates including periodic images.
   ! Depends on initPeriodic having run first.
-  subroutine initCoords(this, geometry, boundaryCond)
+  subroutine TMolecularOrbital_updateCoords(this, geometry)
       class(TMolecularOrbital), intent(inout) :: this
       type(TGeometry), intent(in) :: geometry
-      type(TBoundaryConds), intent(in) :: boundaryCond
       integer :: iCell, iAtom
+
+      @:ASSERT(this%system%speciesInitialised)
+      @:ASSERT(this%periodic%isInitialized)
 
       allocate(this%system%coords(3, this%system%nAtom, this%periodic%nCell))
       this%system%coords(:,:,1) = geometry%coords
-      call boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
+      call this%boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
 
       if (this%periodic%isPeriodic) then
         do iCell = 2, this%periodic%nCell
@@ -219,7 +241,9 @@ contains
           end do
         end do
       end if
-  end subroutine initCoords
+      this%system%coordsInitialised = .true.
+  end subroutine TMolecularOrbital_updateCoords
+
 
 
   function bundleFlags(isRealInput, addAtomicDensities, useGPU, occupationVec) result(ctx)
@@ -260,15 +284,11 @@ contains
 
 
   !> Returns molecular orbitals on a grid.
-  subroutine TMolecularOrbital_getValue_real(this, origin, gridVecs, eigVecsReal, &
+  subroutine TMolecularOrbital_getValue_real(this, eigVecsReal, &
       & valueOnGrid, addAtomicDensities, useGPU, occupationVec)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
-    !> Origin of the grid
-    real(dp), intent(in) :: origin(:)
-    !> Grid vectors
-    real(dp), intent(in) :: gridVecs(:,:)
     !> Summation coefficients for the STOs
     real(dp), intent(in) :: eigVecsReal(:,:)
     !> Molecular orbitals on a grid
@@ -285,8 +305,6 @@ contains
     type(TCalculationContext) :: ctx
 
     @:ASSERT(this%isInitialised)
-    @:ASSERT(size(origin) == 3)
-    @:ASSERT(all(shape(gridVecs) == [3, 3]))
     @:ASSERT(size(eigVecsReal, dim=1) == this%system%nOrb)
     @:ASSERT(all(shape(valueOnGrid) > [1, 1, 1, 0]))
     @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
@@ -295,11 +313,11 @@ contains
     ctx = bundleFlags(.true., addAtomicDensities, useGPU, occupationVec)
 
     if (present(occupationVec)) then
-      call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+      call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
         & ctx, eigVecsReal, eigVecsCmpl, &
         & valueOnGrid, valueCmpl, occupationVec)
     else
-      call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+      call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
         & ctx, eigVecsReal, eigVecsCmpl, &
         & valueOnGrid, valueCmpl)
     end if
@@ -308,15 +326,11 @@ contains
 
 
   !> Returns molecular orbitals on a grid.
-  subroutine TMolecularOrbital_getValue_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
+  subroutine TMolecularOrbital_getValue_cmpl(this, eigVecsCmpl, kPoints,&
       & kIndexes, valueOnGrid, addAtomicDensities, useGPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
-    !> Origin of the grid
-    real(dp), intent(in) :: origin(:)
-    !> Grid vectors
-    real(dp), intent(in) :: gridVecs(:,:)
     !> Summation coefficients for the STOs
     complex(dp), intent(in) :: eigVecsCmpl(:,:)
     !> Array of k-points
@@ -335,8 +349,6 @@ contains
     type(TCalculationContext) :: ctx
 
     @:ASSERT(this%isInitialised)
-    @:ASSERT(size(origin) == 3)
-    @:ASSERT(all(shape(gridVecs) == [3, 3]))
     @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
     @:ASSERT(all(shape(valueOnGrid) > [0, 0, 0, 0]))
     @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
@@ -354,21 +366,17 @@ contains
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if
 
-    call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
       & ctx, eigVecsReal, eigVecsCmpl, &
       & valueReal, valueOnGrid)
 
   end subroutine TMolecularOrbital_getValue_cmpl
 
-  subroutine TMolecularOrbital_getTotalChrg_cmpl(this, origin, gridVecs, eigVecsCmpl, kPoints,&
+  subroutine TMolecularOrbital_getTotalChrg_cmpl(this, eigVecsCmpl, kPoints,&
       & kIndexes, valueOnGrid, useGPU, occupationVec)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
-    !> Origin of the grid
-    real(dp), intent(in) :: origin(:)
-    !> Grid vectors
-    real(dp), intent(in) :: gridVecs(:,:)
     !> Summation coefficients for the STOs
     complex(dp), intent(in) :: eigVecsCmpl(:,:)
     !> Array of k-points
@@ -388,8 +396,6 @@ contains
     type(TCalculationContext) :: ctx
 
     @:ASSERT(this%isInitialised)
-    @:ASSERT(size(origin) == 3)
-    @:ASSERT(all(shape(gridVecs) == [3, 3]))
     @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
     @:ASSERT(all(shape(valueOnGrid) > [0, 0, 0, 0]))
     @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
@@ -407,7 +413,7 @@ contains
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if
 
-    call evaluateParallel(origin, gridVecs, this%system, this%periodic, kIndexes, phases, this%basis, &
+    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
       & ctx, eigVecsReal, eigVecsCmpl, valueOnGrid, valueCmpl, occupationVec)
 
   end subroutine TMolecularOrbital_getTotalChrg_cmpl

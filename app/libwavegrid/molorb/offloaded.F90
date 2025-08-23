@@ -52,14 +52,9 @@ contains
 
   end subroutine prepareGPUCoefficients
 
-  subroutine evaluateCuda(origin, gridVecs, &
-      & system, basis, periodic, kIndexes, phases, &
-      & ctx, &
+  subroutine evaluateCuda(system, basis, periodic, kIndexes, phases, ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
-    !> Grid
-    real(dp), intent(in), target :: origin(3)
-    real(dp), intent(in), target :: gridVecs(3, 3)
     !> System
     type(TSystemParams), intent(in), target :: system
     !> Basis set
@@ -132,8 +127,8 @@ contains
       grid_p%nPointsY = size(valueCmpl, dim=2)
       grid_p%nPointsZ = size(valueCmpl, dim=3)
     end if
-    grid_p%origin = c_loc(origin)
-    grid_p%gridVecs = c_loc(gridVecs)
+    grid_p%origin = c_loc(system%origin)
+    grid_p%gridVecs = c_loc(system%gridVecs)
     system_p%nAtom = system%nAtom
     system_p%nCell = size(system%coords, dim=3)
     system_p%nSpecies = system%nSpecies

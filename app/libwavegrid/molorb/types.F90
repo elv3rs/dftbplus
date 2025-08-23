@@ -18,12 +18,19 @@ module libwavegrid_molorb_types
 
   !> Data for the system geometry and composition
   type TSystemParams
+    !! Composition
     integer :: nAtom
+    integer :: nOrb
     integer :: nSpecies
     integer, allocatable :: species(:)
     integer, allocatable :: iStos(:)
-    integer :: nOrb
+    logical :: speciesInitialised = .false.
+    
+    !! Geometry
+    real(dp) :: origin(3)
+    real(dp) :: gridVecs(3,3)
     real(dp), allocatable :: coords(:,:,:)
+    logical :: coordsInitialised = .false.
   end type TSystemParams
 
   !> Data for periodic boundary conditions
@@ -34,6 +41,7 @@ module libwavegrid_molorb_types
     real(dp), allocatable :: rCellVec(:,:)
     real(dp), allocatable :: fCellVec(:,:)
     integer :: nCell
+    logical :: isInitialized = .false.
   end type TPeriodicParams
 
   !> Data for the basis set in SoA format
@@ -47,6 +55,7 @@ module libwavegrid_molorb_types
     integer, allocatable :: nAlphas(:)
     real(dp), allocatable :: coeffs(:,:,:)
     real(dp), allocatable :: alphas(:,:)
+    logical :: isInitialized = .false.
   end type TBasisParams
   
   !> Control type holding calculation flags
@@ -56,6 +65,7 @@ module libwavegrid_molorb_types
     logical :: calcAtomicDensity
     logical :: calcTotalChrg
     logical :: runOnGPU
+    logical :: isInitialized = .false.
   end type
 
 end module libwavegrid_molorb_types
