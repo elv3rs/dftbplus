@@ -398,10 +398,10 @@ contains
       end if
       if (sf%isReal) then
         eigReal => sf%eigenvecReal(:, :iEnd)
-        call getValue(sf%molorb, sf%origin, sf%gridVec, eigReal, sf%gridCacheReal(:,:,:,:iEnd), useGPU=sf%useGPU)
+        call getValue(sf%molorb, eigReal, sf%gridCacheReal(:,:,:,:iEnd), useGPU=sf%useGPU)
       else
         eigCmpl => sf%eigenvecCmpl(:, :iEnd)
-        call getValue(sf%molorb, sf%origin, sf%gridVec, eigCmpl, sf%kPoints,&
+        call getValue(sf%molorb, eigCmpl, sf%kPoints,&
             & sf%levelIndex(2, iStartAbs:iEndAbs), sf%gridCacheCmpl(:,:,:,:iEnd), useGPU=sf%useGPU)
       end if
     end if

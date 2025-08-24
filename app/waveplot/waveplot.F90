@@ -150,8 +150,7 @@ program waveplot
           ind = ind + mAng
         end do
       end do
-      call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, orbitalOcc, &
-          & atomicChrg, addAtomicDensities=.true.)
+      call getValue(wp%loc%molorb, orbitalOcc, atomicChrg, addAtomicDensities=.true.)
       sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
       buffer(:,:,:) = atomicChrg(:,:,:, 1)
 
@@ -247,10 +246,10 @@ program waveplot
           eigCoeffs(iEig) = wp%input%occupations(iLevel, iKPoint, iSpin)
       end do
       if (wp%input%isRealHam) then
-        call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecReal, &
+        call getValue(wp%loc%molorb, wp%loc%grid%eigenvecReal, &
           & totChrg4d, useGPU=wp%opt%useGPU, occupationVec=eigCoeffs)
       else
-        call getValue(wp%loc%molorb, wp%opt%gridOrigin, wp%loc%gridVec, wp%loc%grid%eigenvecCmpl, &
+        call getValue(wp%loc%molorb, wp%loc%grid%eigenvecCmpl, &
           & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d,  useGPU=wp%opt%useGPU, occupationVec=eigCoeffs)
       end if
       totChrg(:,:,:) = totChrg4d(:,:,:,1)

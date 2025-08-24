@@ -10,7 +10,7 @@
 !> Contains the routines for initialising Waveplot.
 module waveplot_initwaveplot
   use waveplot_gridcache, only : TGridCache
-  use libwavegrid_molorb, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
+  use libwavegrid, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
   use dftbp_common_file, only : closeFile, openFile, setDefaultBinaryAccess, TFileDescr
@@ -378,7 +378,7 @@ contains
     allocate(this%loc%molOrb)
     this%loc%pMolOrb => this%loc%molOrb
     call TMolecularOrbital_init(this%loc%molOrb, this%input%geo, this%boundaryCond,&
-        & this%basis%basis)
+        & this%basis%basis, this%opt%origin, this%loc%gridVec)
     
     ! Dont run multiple MPI processes on the same GPU.
     ! This avoids cuda memory allocation race conditions in libwavegrid.

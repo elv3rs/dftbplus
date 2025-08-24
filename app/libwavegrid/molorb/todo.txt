@@ -11,6 +11,8 @@ Todo
 - [ ] readme
 - [ ] unit tests
 
+- [ ] allow updating gridvecs, origin without rebuilding TMolecularOrbital?
+-> Would probably neverr be used. Can always be added later if needed
 
 
 # Libwavegrid
