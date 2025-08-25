@@ -227,6 +227,7 @@ contains
       rr = real(iGrid - 1, dp) * resolution
       call this%getRadialDirect(rr, this%gridValue(iGrid))
     end do
+    print *, "Initialized STO with l=", ll, " cutoff=", cutoff, " resolution=", resolution, " nGrid=", this%nGrid
 
   end subroutine TSlaterOrbital_init
 

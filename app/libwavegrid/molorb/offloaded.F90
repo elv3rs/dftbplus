@@ -16,42 +16,11 @@ module libwavegrid_molorb_offloaded
   private
 
 #:if WITH_CUDA
-  public :: prepareGPUCoefficients, evaluateCuda
+  public :: evaluateCuda
 #:endif
 
 contains
 #:if WITH_CUDA
-  !> Prepare coefficient vectors for GPU calculation by, if required due to total charge calculation,
-  !> scaling the eigenvectors by sqrt(occupationVec).
-  subroutine prepareGPUCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecReal, coeffVecCmpl)
-    type(TCalculationContext), intent(in) :: ctx
-    real(dp), intent(in) :: eigVecsReal(:,:)
-    complex(dp), intent(in) :: eigVecsCmpl(:,:)
-    real(dp), intent(in), optional :: occupationVec(:)
-    real(dp), allocatable, intent(out) :: coeffVecReal(:,:)
-    complex(dp), allocatable, intent(out) :: coeffVecCmpl(:,:)
-
-    integer :: iEig
-
-    allocate(coeffVecReal(size(eigVecsReal, dim=1), size(eigVecsReal, dim=2)))
-    allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
-
-    if (ctx%calcTotalChrg) then
-      print *, "Baking occupationVec into GPU Eigenvector coefficients"
-      @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
-      do iEig = 1, size(eigVecsReal, dim=2)
-        coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
-      end do
-      do iEig = 1, size(eigVecsCmpl, dim=2)
-        coeffVecCmpl(:, iEig) = eigVecsCmpl(:, iEig) * sqrt(occupationVec(iEig))
-      end do
-    else
-      coeffVecReal = eigVecsReal
-      coeffVecCmpl = eigVecsCmpl
-    end if
-
-  end subroutine prepareGPUCoefficients
-
   subroutine evaluateCuda(system, basis, periodic, kIndexes, phases, ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 

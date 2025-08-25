@@ -12,14 +12,12 @@ module libwavegrid_molorb_parallel
   use dftbp_io_message, only : error
   use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams, TCalculationContext
 #:if WITH_CUDA
-  use libwavegrid_molorb_offloaded, only : prepareGPUCoefficients, evaluateCuda
+  use libwavegrid_molorb_offloaded, only : evaluateCuda
 #:endif
   use libwavegrid_slater, only : realTessY, getRadial
   use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   implicit none
   private
-  !> Max powers expected in STO basis.
-  integer, parameter :: MAX_STO_POWS = 16
 
   public :: evaluateParallel
 
@@ -63,79 +61,30 @@ contains
     real(dp), intent(in), optional :: occupationVec(:)
 
     !! Variables for total charge calculation
-    integer :: iEig, iStart, iEnd, nChunk, iEigInChunk, nEigs, nEigsPerChunk
-    real(dp), allocatable :: bufferReal(:,:,:,:), coeffVecReal(:,:)
-    complex(dp), allocatable :: bufferCmpl(:,:,:,:), coeffVecCmpl(:,:)
+    real(dp), allocatable :: coeffVecsReal(:,:)
+    complex(dp), allocatable :: coeffVecsCmpl(:,:)
 
+    ! To reduce repeated multiplications we bake the totalCharge occupations
+    ! directly into the eigenvector coefficients.
+    call prepareCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecsReal, coeffVecsCmpl)
+    
+    ! Dispatch to CPU / GPU implementation
     if (ctx%runOnGPU) then
       #:if WITH_CUDA
-        print *, "GPU offloaded molorb."
-        ! GPU implementation passes occupation information by baking their sqrt into the eigenvectors
-        call prepareGPUCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecReal, coeffVecCmpl)
-
+        print *, "Libwavegrid: running on GPU using CUDA"
         call evaluateCuda(system, basis, periodic, kIndexes, phases, ctx, &
-            & coeffVecReal, coeffVecCmpl, valueReal, valueCmpl)
+            & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
       #:else
         call error("Libwavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
       #:endif
     else ! CPU implementation
       #:if WITH_OMP
-        print *, "OMP parallel CPU molorb."
+        print *, "Libwavegrid: running OMP parallel on CPU"
       #:else
-        print *, "Serial CPU molorb."
+      print *, "Libwavegrid: missing OMP, running serially on CPU"
       #:endif
-      if (.not. ctx%calcTotalChrg) then
-        call evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
-            & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
-      else
-        ! Number of eigenvectors to calculate at once in a chunk.
-        ! We need a function to query free RAM to dynamically size this.
-        ! TODO: Additionally, expose to user.
-        nEigsPerChunk = -1
-
-        nEigs = size(occupationVec)
-        if (nEigsPerChunk <= 0 .or. nEigsPerChunk > nEigs) then
-          nEigsPerChunk = nEigs
-        end if
-        if (ctx%isRealInput) then
-          allocate(bufferReal(size(valueReal, 1), size(valueReal, 2), size(valueReal, 3), nEigsPerChunk))
-        else ! Complex input
-          allocate(bufferCmpl(size(valueReal, 1), size(valueReal, 2), size(valueReal, 3), nEigsPerChunk))
-        end if
-
-        ! Zero accumulator
-        valueReal(:, :, :, 1) = 0.0_dp
-
-        lpChunk: do iStart = 1, nEigs, nEigsPerChunk
-          iEnd = min(iStart + nEigsPerChunk - 1, nEigs)
-          nChunk = iEnd - iStart + 1
-          print *, "Processing", nEigsPerChunk, "eigenvectors from", iStart, "to", iEnd, "of", nEigs
-
-          if (ctx%isRealInput) then
-            call evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
-                & eigVecsReal(:, iStart:iEnd), eigVecsCmpl, bufferReal, valueCmpl)
-
-            do iEigInChunk = 1, nChunk
-              iEig = iStart + iEigInChunk - 1
-              valueReal(:,:,:,1) = valueReal(:,:,:,1) + bufferReal(:,:,:,iEigInChunk)**2 * occupationVec(iEig)
-            end do
-          else ! Complex input
-            call evaluateOMP(system, basis, periodic, kIndexes(iStart:iEnd), phases, ctx, &
-                & eigVecsReal, eigVecsCmpl(:, iStart:iEnd), valueReal, bufferCmpl)
-
-            do iEigInChunk = 1, nChunk
-              iEig = iStart + iEigInChunk - 1
-              valueReal(:,:,:,1) = valueReal(:,:,:,1) + abs(bufferCmpl(:,:,:,iEigInChunk))**2 * occupationVec(iEig)
-            end do
-          end if
-        end do lpChunk
-        if (allocated(bufferReal)) then
-          deallocate(bufferReal)
-        end if
-        if (allocated(bufferCmpl)) then
-          deallocate(bufferCmpl)
-        end if
-      end if
+      call evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
+            & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
     end if
 
   end subroutine evaluateParallel
@@ -160,30 +109,38 @@ contains
     !> Output grids
     real(dp), intent(out) :: valueReal(:, :, :, :)
     complex(dp), intent(out) :: valueCmpl(:, :, :, :)
-
     !! Thread private variables
     integer ::  ind, iSpecies
-    real(dp) :: tmp_pows(MAX_STO_POWS), xyz(3), diff(3)
-    real(dp) :: rSq, r, val, radialVal, tmp_rexp, frac(3)
+    real(dp) :: xyz(3), diff(3), frac(3)
+    real(dp) :: rSq, r, val, radialVal
+    !! Variables for inplace charge calculation
+    real(dp), allocatable :: orbValsPerPointReal(:)
+    complex(dp), allocatable :: orbValsPerPointCmpl(:)
     !! Loop Variables
-    integer :: i1, i2, i3, iEig, iAtom, iOrb, iM, iL, iCell
+    integer :: i1, i2, i3, iAtom, iOrb, iM, iL, iCell
     integer :: nPoints(4)
 
-    if(ctx%isRealInput) then
+    if (ctx%isRealInput .or. ctx%calcTotalChrg) then
       valueReal = 0.0_dp
       nPoints = shape(valueReal)
-    else 
+    else
       valueCmpl = 0.0_dp
       nPoints = shape(valueCmpl)
     end if
 
-    @:ASSERT(basis%maxNPows <= MAX_STO_POWS)
 
-    !$omp parallel do collapse(3) &
-    !$omp&    private(i1, i2, i3, iCell, iAtom, iOrb, iEig, iL, iM, xyz, frac, diff, &
-    !$omp&              r, val, radialVal, tmp_pows, tmp_rexp, ind, iSpecies, rSq) &
-    !$omp&    shared(ctx, system, basis, periodic, phases, kIndexes, &
-    !$omp&              eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
+    !$omp parallel private(i1, i2, i3, iCell, iAtom, iOrb, iL, iM, xyz, frac, diff, &
+    !$omp&              r, val, radialVal, ind, iSpecies, rSq, &
+    !$omp&              orbValsPerPointReal, orbValsPerPointCmpl)
+    if (ctx%calcTotalChrg) then
+      if (ctx%isRealInput) then
+        allocate(orbValsPerPointReal(size(eigVecsReal, dim=2)))
+      else
+        allocate(orbValsPerPointCmpl(size(eigVecsCmpl, dim=2)))
+      end if
+    end if
+
+    !$omp do collapse(3)
     lpI3: do i3 = 1, nPoints(3)
       lpI2: do i2 = 1, nPoints(2)
         lpI1: do i1 = 1, nPoints(1)
@@ -195,6 +152,14 @@ contains
             if (periodic%isPeriodic) then
               frac(:) = matmul(xyz, periodic%recVecs2pi)
               xyz(:) = matmul(periodic%latVecs, frac - real(floor(frac), dp))
+            end if
+
+            if (ctx%calcTotalChrg) then
+              if (ctx%isRealInput) then
+                orbValsPerPointReal(:) = 0.0_dp
+              else
+                orbValsPerPointCmpl(:) = 0.0_dp
+              end if
             end if
 
             ! Get contribution from every atom in every cell for current point
@@ -214,36 +179,84 @@ contains
                   end if
                   r = sqrt(rSq)
 
-                  radialVal = getRadial(iL, &
-                              & basis%nPows(iOrb), &
-                              & basis%nAlphas(iOrb), &
-                              & basis%coeffs(1:basis%nPows(iOrb), 1:basis%nAlphas(iOrb), iOrb), &
-                              & basis%alphas(1:basis%nAlphas(iOrb), iOrb), &
-                              & r)
+                  call basis%stos(iOrb)%getRadialCached(r, radialVal)
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1
                     val = radialVal * realTessY(iL, iM, diff, r)
                     if (ctx%calcAtomicDensity) val = val * val
 
-                    if (ctx%isRealInput) then
-                      do iEig = 1, size(eigVecsReal, dim=2)
-                        valueReal(i1, i2, i3, iEig) = valueReal(i1, i2, i3, iEig) + val * eigVecsReal(ind, iEig)
-                      end do
-                    else ! Complex
-                      do iEig = 1, size(eigVecsCmpl, dim=2)
-                        valueCmpl(i1, i2, i3, iEig) = valueCmpl(i1, i2, i3, iEig) + val &
-                            & * phases(iCell, kIndexes(iEig)) *  eigVecsCmpl(ind, iEig)
-                      end do
+                    if (ctx%calcTotalChrg) then
+                      if (ctx%isRealInput) then
+                        orbValsPerPointReal(:) = orbValsPerPointReal(:) + val * eigVecsReal(ind, :)
+                      else ! Complex
+                        orbValsPerPointCmpl(:) = orbValsPerPointCmpl(:) + val &
+                            & * phases(iCell, kIndexes(:)) * eigVecsCmpl(ind, :)
+                      end if
+                    else
+                      if (ctx%isRealInput) then
+                        valueReal(i1, i2, i3, :) = valueReal(i1, i2, i3, :) + val * eigVecsReal(ind, :)
+                      else ! Complex
+                        valueCmpl(i1, i2, i3, :) = valueCmpl(i1, i2, i3, :) + val &
+                            & * phases(iCell, kIndexes(:)) *  eigVecsCmpl(ind, :)
+                      end if
                     end if
                   end do lpM
                 end do lpOrb
               end do lpAtom
             end do lpCell
+
+            if (ctx%calcTotalChrg) then
+              if (ctx%isRealInput) then
+                valueReal(i1, i2, i3, 1) = sum(orbValsPerPointReal(:)**2)
+              else ! Complex
+                valueReal(i1, i2, i3, 1) = sum(abs(orbValsPerPointCmpl(:))**2)
+              end if
+            end if
         end do lpI1
       end do lpI2
     end do lpI3
-    !$omp end parallel do
+    !$omp end do
+
+    if (ctx%calcTotalChrg .and. ctx%isRealInput) then
+        deallocate(orbValsPerPointReal)
+    else if (ctx%calcTotalChrg) then
+        deallocate(orbValsPerPointCmpl)
+    end if
+    !$omp end parallel
   end subroutine evaluateOMP
+
+
+
+  !> Prepare coefficient vectors for calculation by, if required due to total charge calculation,
+  !> scaling the eigenvectors by sqrt(occupationVec).
+  subroutine prepareCoefficients(ctx, eigVecsReal, eigVecsCmpl, occupationVec, coeffVecReal, coeffVecCmpl)
+    type(TCalculationContext), intent(in) :: ctx
+    real(dp), intent(in) :: eigVecsReal(:,:)
+    complex(dp), intent(in) :: eigVecsCmpl(:,:)
+    real(dp), intent(in), optional :: occupationVec(:)
+    real(dp), allocatable, intent(out) :: coeffVecReal(:,:)
+    complex(dp), allocatable, intent(out) :: coeffVecCmpl(:,:)
+
+    integer :: iEig
+
+    allocate(coeffVecReal(size(eigVecsReal, dim=1), size(eigVecsReal, dim=2)))
+    allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
+
+    if (ctx%calcTotalChrg) then
+      print *, "Baking occupationVec into Eigenvector coefficients"
+      @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
+      do iEig = 1, size(eigVecsReal, dim=2)
+        coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
+      end do
+      do iEig = 1, size(eigVecsCmpl, dim=2)
+        coeffVecCmpl(:, iEig) = eigVecsCmpl(:, iEig) * sqrt(occupationVec(iEig))
+      end do
+    else
+      coeffVecReal = eigVecsReal
+      coeffVecCmpl = eigVecsCmpl
+    end if
+
+  end subroutine prepareCoefficients
 
 end module libwavegrid_molorb_parallel
