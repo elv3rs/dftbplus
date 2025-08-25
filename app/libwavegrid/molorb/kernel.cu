@@ -52,6 +52,8 @@ struct DeviceData {
     DeviceBuffer<double> sto_cutoffsSq;
     DeviceBuffer<double> sto_coeffs;
     DeviceBuffer<double> sto_alphas;
+    // Texture for radial LUT
+    cudaTextureObject_t sto_lutTex;
 
     // Eigenvectors
     DeviceBuffer<double> eigVecsReal;
@@ -64,13 +66,49 @@ struct DeviceData {
           coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
           species(system->species, system->nAtom),
           iStos(system->iStos, system->nSpecies + 1),
-          sto_angMoms(basis->sto_angMoms, basis->nStos),
-          sto_nPows(basis->sto_nPows, basis->nStos),
-          sto_nAlphas(basis->sto_nAlphas, basis->nStos),
-          sto_cutoffsSq(basis->sto_cutoffsSq, basis->nStos),
-          sto_coeffs(basis->sto_coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos),
-          sto_alphas(basis->sto_alphas, (size_t)basis->maxNAlphas * basis->nStos)
     {
+        if (basis->useRadialLut) {
+            // Allocate
+            cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
+            cudaExtent shape = make_cudaExtent(basis->nLutPoints, 0, basis->nStos);
+            cudaArray_t lutArray;
+            CHECK_CUDA(cudaMalloc3DArray(&lutArray, &channelDesc, shape, cudaArrayLayered));
+            // Copy data to array
+            for (int iOrb = 0; iOrb < basis->nStos; ++iOrb) {
+                const int N = basis->nLutPoints;
+                cudaMemcpy3DParms p{};
+                p.kind = cudaMemcpyHostToDevice;
+                p.extent = make_cudaExtent(N, 1, 1);
+                // args: actual pointer, pitch (bytes to next row), element width, number of rows
+                p.srcPtr = make_cudaPitchedPtr((void*)(basis->lut + iOrb * N), N * sizeof(float), N, 1);
+                p.dstArray = lutArray;
+                p.dstPos = make_cudaPos(0, 0, iOrb);
+                CHECK_CUDA(cudaMemcpy3D(&copyParams));
+
+            }
+
+            // Prepare texture object properties
+            cudaResourceDesc resDesc{};
+            resDesc.resType = cudaResourceTypeArray;
+            resDesc.res.array.array = lutArray;
+
+            cudaTextureDesc texDesc{};
+            texDesc.addressMode[0] = cudaAddressModeClamp;
+            texDesc.filterMode = cudaFilterModeLinear; 
+            texDesc.readMode = cudaReadModeElementType; // dont normalize our lut values
+            texDesc.normalizedCoords = 0; // access using [0, N-1]
+            // Create texture object
+            CHECK_CUDA(cudaCreateTextureObject(&sto_lutTex, &resDesc, &texDesc, nullptr)
+
+        } else {
+            sto_angMoms.assign(basis->sto_angMoms, basis->nStos);
+            sto_nPows.assign(basis->sto_nPows, basis->nStos);
+            sto_nAlphas.assign(basis->sto_nAlphas, basis->nStos);
+            sto_cutoffsSq.assign(basis->sto_cutoffsSq, basis->nStos);
+            sto_coeffs.assign(basis->sto_coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos);
+            sto_alphas.assign(basis->sto_alphas, (size_t)basis->maxNAlphas * basis->nStos);
+        }
+
         if (calc->isRealInput) {
             eigVecsReal.assign(calc->eigVecsReal, (size_t)system->nOrb * calc->nEigIn);
         } else {
@@ -107,6 +145,9 @@ struct DeviceKernelParams {
 
     // STO Basis
     int nStos, maxNPows, maxNAlphas;
+    // Texture LUTs
+    cudaTextureObject* lutTex;
+    // STO parameters
     const int*    sto_angMoms;
     const int*    sto_nPows;
     const int*    sto_nAlphas;
@@ -152,12 +193,17 @@ struct DeviceKernelParams {
         nStos = basis->nStos;
         maxNPows = basis->maxNPows;
         maxNAlphas = basis->maxNAlphas;
-        sto_angMoms = data.sto_angMoms.get();
-        sto_nPows = data.sto_nPows.get();
-        sto_nAlphas = data.sto_nAlphas.get();
-        sto_cutoffsSq = data.sto_cutoffsSq.get();
-        sto_coeffs = data.sto_coeffs.get();
-        sto_alphas = data.sto_alphas.get();
+        if (basis->useRadialLut) {
+            lutTex = data.sto_lutTex;
+        } else {
+            sto_angMoms = data.sto_angMoms.get();
+            sto_nPows = data.sto_nPows.get();
+            sto_nAlphas = data.sto_nAlphas.get();
+            sto_cutoffsSq = data.sto_cutoffsSq.get();
+            sto_coeffs = data.sto_coeffs.get();
+            sto_alphas = data.sto_alphas.get();
+        }
+
 
         // Periodic boundary conditions
         isPeriodic = periodic->isPeriodic;
@@ -185,13 +231,14 @@ struct DeviceKernelParams {
 // =========================================================================
 //  CUDA Kernel.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 8 ways on (isRealInput, calcDensity, calcTotalChrg).
+// To avoid branching (dropped at compile time), we template the kernel 16 ways on (isRealInput, calcDensity, calcTotalChrg, useLUT).
+// useLUT decides whether to use texture memory interpolation for STO radial functions.
 // isPeriodic decides whether to fold coords into unit cell.
 // isRealInput decides whether to use real/complex eigenvectors (and adds phases)
 // calcAtomicDensity squares the basis wavefunction contributions, result in valueReal_out of shape (x,y,z,n)
 // calcTotalChrg accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
 // User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
-template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg>
+template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useLUT>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
     using AccumT = typename std::conditional<(isRealInput), double, complexd>::type;
@@ -256,10 +303,15 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
                         continue;
                     }
                     double r = sqrt(rr);
-                    
-                    double radialVal = getRadialValue(
-                        r, iL, iOrb, p.sto_nPows[iOrb], p.sto_nAlphas[iOrb],
-                        p.sto_coeffs, p.sto_alphas, p.maxNPows, p.maxNAlphas);
+
+                    if constexpr (useLUT) {
+                        double lut_pos = 0.5f + r * p.inverseLutStep;
+                        double radialVal = static_cast<double>(tex1DLayered<float>(p.lutTex, lut_pos, iOrb)[0]);
+                    } else {
+                        double radialVal = getRadialValue(
+                            r, iL, iOrb, p.sto_nPows[iOrb], p.sto_nAlphas[iOrb],
+                            p.sto_coeffs, p.sto_alphas, p.maxNPows, p.maxNAlphas);
+                    } 
 
 
                     // precompute inverse used across several realTessY calls

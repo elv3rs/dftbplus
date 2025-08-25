@@ -14,9 +14,7 @@ module libwavegrid_slater
 
   private
 
-  public :: realTessY
-  public :: TSlaterOrbital
-  public :: getRadial
+  public :: TSlaterOrbital, realTessY
 
 
   !> Data type for STOs.
@@ -30,6 +28,8 @@ module libwavegrid_slater
     !> STO values on the distance grid
     real(dp), allocatable :: gridValue(:)
 
+    !> Whether to use the cached grid for evaluation
+    logical :: useCache = .true.
 
     !> Cutoff, after which the orbital is assumed to be zero
     real(dp) :: cutoff
@@ -37,7 +37,7 @@ module libwavegrid_slater
     !> Angular momentum of the orbital
     integer :: angMom
 
-    !> Occupation of the orbital
+    !> Occupation of the orbital (for atomic density)
     real(dp) :: occupation
 
     !> Maximum power of the radial distance
@@ -62,6 +62,9 @@ module libwavegrid_slater
   
     !> Non-interpolated version
     procedure :: getRadialDirect => TSlaterOrbital_getRadialValueDirect
+
+    !> Dispatch to cached or direct version based on this%useCache
+    procedure :: getRadial
 
   end type TSlaterOrbital
 
@@ -232,6 +235,19 @@ contains
   end subroutine TSlaterOrbital_init
 
 
+  subroutine getRadial(this, rr, sto)
+    class(TSlaterOrbital), intent(in) :: this
+    real(dp), intent(in) :: rr
+    real(dp), intent(out) :: sto
+
+    if (this%useCache) then
+      call this%getRadialCached(rr, sto)
+    else
+      call this%getRadialDirect(rr, sto)
+    end if
+
+  end subroutine getRadial
+
   !> Returns the value of the SlaterOrbital in a given point.
   !! Builds a 1d cache grid across which the result is interpolated
   !! in order to speed up evaluation for subsequent calls.
@@ -301,58 +317,6 @@ contains
   end subroutine TSlaterOrbital_getRadialValueDirect
 
 
-  !> Calculates the value of an STO analytically.
-  function getRadial(ll, nPow, nAlpha, aa, alpha, rr) result(sto)
-    !$omp declare target
-
-    !> Angular momentum of the STO
-    integer, intent(in) :: ll
-
-    !> Maximal power of the distance in the STO
-    integer, intent(in) :: nPow
-
-    !> Number of exponential coefficients
-    integer, intent(in) :: nAlpha
-
-    !> Summation coefficients
-    real(dp), intent(in) :: aa(nPow, nAlpha)
-
-    !> Exponential coefficients
-    real(dp), intent(in) :: alpha(nAlpha)
-
-    !> Distance, where the STO should be calculated
-    real(dp), intent(in) :: rr
-
-    !> Value of the STO on return
-    real(dp) :: sto
-    
-    real(dp) :: pows(nPow)
-    real(dp) :: rTmp
-    integer :: ii, jj
-
-    ! Avoid 0.0**0 as it may lead to arithmetic exception
-    if (ll == 0 .and. rr < epsilon(1.0_dp)) then
-      rTmp = 1.0_dp
-    else
-      rTmp = rr**ll
-    end if
-
-    ! Compute radial powers
-    do ii = 1, nPow
-      pows(ii) = rTmp
-      rTmp = rTmp * rr
-    end do
-
-    sto = 0.0_dp
-    do ii = 1, nAlpha
-      rTmp = 0.0_dp
-      do jj = 1, nPow
-        rTmp = rTmp + aa(jj, ii) * pows(jj)
-      end do
-      sto = sto + rTmp * exp(alpha(ii) * rr)
-    end do
-
-  end function getRadial
 
 
 end module libwavegrid_slater

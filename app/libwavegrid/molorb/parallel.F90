@@ -179,7 +179,7 @@ contains
                   end if
                   r = sqrt(rSq)
 
-                  call basis%stos(iOrb)%getRadialCached(r, radialVal)
+                  call basis%stos(iOrb)%getRadial(r, radialVal)
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1

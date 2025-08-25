@@ -1,9 +1,8 @@
 Todo
-- [ ] allow specifying nCachedGridPoints
-- [ ] Function to query available system ram
-
-- [ ] interpolation radial part
+- [ ] interpolation radial part CUDA
 - [ ] move occupation out of sto
-
 - [ ] readme
 - [ ] unit tests
+
+- [ ] recast flat pointers to multi-dim arrays, get rid of Index calc macro
+

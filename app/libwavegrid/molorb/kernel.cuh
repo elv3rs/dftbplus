@@ -38,6 +38,12 @@ typedef struct {
 // Basis parameters describing orbitals
 typedef struct {
     int nStos;
+
+    int useRadialLut;
+    int nLutPoints;
+    double inverseLutStep;
+    const float* lut;         // [nStos][nLutPoints]
+
     int maxNPows;
     int maxNAlphas;
     const int* sto_angMoms;       // [nStos]
