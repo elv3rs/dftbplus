@@ -154,6 +154,7 @@ contains
       end do
     end do
     this%system%nOrb = nOrbTotal
+
     this%system%speciesInitialised = .true.
   end subroutine initSpeciesMapping
 
@@ -163,13 +164,13 @@ contains
     class(TMolecularOrbital), intent(inout) :: this
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     integer :: iSpec, iOrb, ind
-    type(TSlaterOrbital), allocatable :: stos_flat(:)
+    !type(TSlaterOrbital), allocatable :: this%basis%stos(:)
 
     ! Flatten the basis array for easier iteration
-    allocate(stos_flat(this%basis%nStos))
+    allocate(this%basis%stos(this%basis%nStos))
     ind = 1
     do iSpec = 1, this%system%nSpecies
-      stos_flat(ind:ind+basisInput(iSpec)%nOrb-1) = basisInput(iSpec)%stos(:)
+      this%basis%stos(ind:ind+basisInput(iSpec)%nOrb-1) = basisInput(iSpec)%stos(:)
       ind = ind + basisInput(iSpec)%nOrb
     end do
 
@@ -181,10 +182,10 @@ contains
 
     ! Populate SoA arrays
     do iOrb = 1, this%basis%nStos
-      this%basis%angMoms(iOrb) = stos_flat(iOrb)%angMom
-      this%basis%cutoffsSq(iOrb) = stos_flat(iOrb)%cutoff ** 2
-      this%basis%nPows(iOrb) = stos_flat(iOrb)%nPow
-      this%basis%nAlphas(iOrb) = stos_flat(iOrb)%nAlpha
+      this%basis%angMoms(iOrb) = this%basis%stos(iOrb)%angMom
+      this%basis%cutoffsSq(iOrb) = this%basis%stos(iOrb)%cutoff ** 2
+      this%basis%nPows(iOrb) = this%basis%stos(iOrb)%nPow
+      this%basis%nAlphas(iOrb) = this%basis%stos(iOrb)%nAlpha
     end do
     this%basis%maxNPows = maxval(this%basis%nPows)
     this%basis%maxNAlphas = maxval(this%basis%nAlphas)
@@ -193,8 +194,8 @@ contains
     allocate(this%basis%coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
     allocate(this%basis%alphas(this%basis%maxNAlphas, this%basis%nStos))
     do iOrb = 1, this%basis%nStos
-      this%basis%coeffs(1:stos_flat(iOrb)%nPow, 1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%aa
-      this%basis%alphas(1:stos_flat(iOrb)%nAlpha, iOrb) = stos_flat(iOrb)%alpha
+      this%basis%coeffs(1:this%basis%stos(iOrb)%nPow, 1:this%basis%stos(iOrb)%nAlpha, iOrb) = this%basis%stos(iOrb)%aa
+      this%basis%alphas(1:this%basis%stos(iOrb)%nAlpha, iOrb) = this%basis%stos(iOrb)%alpha
     end do
     this%basis%isInitialized = .true.
   end subroutine initBasis

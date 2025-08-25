@@ -21,6 +21,16 @@ module libwavegrid_slater
 
   !> Data type for STOs.
   type TSlaterOrbital
+    !> Grid distance (resolution)
+    real(dp) :: gridDist
+
+    !> Number of grid points
+    integer :: nGrid
+
+    !> STO values on the distance grid
+    real(dp), allocatable :: gridValue(:)
+
+
     !> Cutoff, after which the orbital is assumed to be zero
     real(dp) :: cutoff
 
@@ -46,6 +56,12 @@ module libwavegrid_slater
 
     !> Initialises a SlaterOrbital.
     procedure :: init => TSlaterOrbital_init
+
+    !> Returns the value of the Slater orbital in a given point.
+    procedure :: getRadialCached => TSlaterOrbital_getRadialValueCached
+  
+    !> Non-interpolated version
+    procedure :: getRadialDirect => TSlaterOrbital_getRadialValueDirect
 
   end type TSlaterOrbital
 
@@ -182,26 +198,106 @@ contains
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
+    integer :: iGrid, ii
+    real(dp) :: rr
     this%nAlpha = size(alpha)
     this%nPow = size(aa, dim=1)
+
+  
 
     @:ASSERT(size(aa, dim=2) == this%nAlpha)
     @:ASSERT(cutoff > 0.0_dp)
     @:ASSERT(resolution > 0.0_dp)
 
-
     allocate(this%aa(this%nPow, this%nAlpha))
     allocate(this%alpha(this%nAlpha))
+
+    this%cutoff = cutoff
 
     ! Store parameters in case non-interpolated version is requested
     this%angMom = ll
     this%aa(:,:) = aa
     this%alpha(:) = -1.0_dp * alpha
 
-    ! Used for cache sizing
-    this%cutoff = cutoff
+    ! Obtain STO on a grid
+    this%nGrid = floor(cutoff / resolution) + 2
+    this%gridDist = resolution
+    allocate(this%gridValue(this%nGrid))
+    do iGrid = 1, this%nGrid
+      rr = real(iGrid - 1, dp) * resolution
+      call this%getRadialDirect(rr, this%gridValue(iGrid))
+    end do
 
   end subroutine TSlaterOrbital_init
+
+
+  !> Returns the value of the SlaterOrbital in a given point.
+  !! Builds a 1d cache grid across which the result is interpolated
+  !! in order to speed up evaluation for subsequent calls.
+  subroutine TSlaterOrbital_getRadialValueCached(this, rr, sto)
+
+    !> SlaterOrbital instance
+    class(TSlaterOrbital), intent(in) :: this
+
+    !> Distance, where STO should be calculated
+    real(dp), intent(in) :: rr
+
+    !> Contains the value of the function on return
+    real(dp), intent(out) :: sto
+
+    integer :: ind
+    real(dp) :: frac
+
+    @:ASSERT(rr >= 0.0_dp)
+
+    ! ind = 1 means zero distance as rr = (ind - 1) * gridDist
+    ind = floor(rr / this%gridDist) + 1
+    if (ind < this%nGrid) then
+      frac = mod(rr, this%gridDist) / this%gridDist
+      sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)
+    else
+      sto = 0.0_dp
+    end if
+
+  end subroutine TSlaterOrbital_getRadialValueCached
+
+
+  !> Calculates the value of an STO analytically.
+  subroutine TSlaterOrbital_getRadialValueDirect(this, rr, sto)
+
+    !> SlaterOrbital instance
+    class(TSlaterOrbital), intent(in) :: this
+
+    !> Distance, where the STO should be calculated
+    real(dp), intent(in) :: rr
+
+    !> Value of the STO on return
+    real(dp), intent(out) :: sto
+
+    real(dp) :: pows(this%nPow)
+    real(dp) :: rTmp
+    integer :: ii, jj
+
+    ! Avoid 0.0**0 as it may lead to arithmetic exception
+    if (this%angMom == 0 .and. rr < epsilon(1.0_dp)) then
+      rTmp = 1.0_dp
+    else
+      rTmp = rr**this%angMom
+    end if
+    do ii = 1, this%nPow
+      pows(ii) = rTmp
+      rTmp = rTmp * rr
+    end do
+    sto = 0.0_dp
+    do ii = 1, this%nAlpha
+      rTmp = 0.0_dp
+      do jj = 1, this%nPow
+        rTmp = rTmp + this%aa(jj, ii) * pows(jj)
+      end do
+      sto = sto + rTmp * exp(this%alpha(ii) * rr)
+    end do
+
+  end subroutine TSlaterOrbital_getRadialValueDirect
 
 
   !> Calculates the value of an STO analytically.

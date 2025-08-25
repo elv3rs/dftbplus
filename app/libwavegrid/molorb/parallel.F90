@@ -67,12 +67,6 @@ contains
     real(dp), allocatable :: bufferReal(:,:,:,:), coeffVecReal(:,:)
     complex(dp), allocatable :: bufferCmpl(:,:,:,:), coeffVecCmpl(:,:)
 
-    if (ctx%calcTotalChrg) then
-      @:ASSERT(size(valueReal, dim=4) <= 1)
-      @:ASSERT(size(valueCmpl, dim=4) <= 1)
-    end if
-
-
     if (ctx%runOnGPU) then
       #:if WITH_CUDA
         print *, "GPU offloaded molorb."

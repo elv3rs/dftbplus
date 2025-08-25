@@ -49,6 +49,9 @@ module libwavegrid_molorb_types
     integer :: nStos
     integer :: maxNPows
     integer :: maxNAlphas
+    !! AoS
+    type(TSlaterOrbital), allocatable :: stos(:)
+    !! SoA
     integer, allocatable :: angMoms(:)
     real(dp), allocatable :: cutoffsSq(:)
     integer, allocatable :: nPows(:)
