@@ -2,7 +2,6 @@ Todo
 - [ ] allow specifying nCachedGridPoints
 - [ ] Function to query available system ram
 
-- [ ] change molorb signature
 - [ ] move atomicCharge to individual function
 
 - [ ] interpolation radial part
@@ -11,8 +10,6 @@ Todo
 - [ ] readme
 - [ ] unit tests
 
-- [ ] allow updating gridvecs, origin without rebuilding TMolecularOrbital?
--> Would probably neverr be used. Can always be added later if needed
 
 
 # Libwavegrid

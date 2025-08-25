@@ -57,9 +57,11 @@ contains
     !> Contains the complex grid on exit
     complex(dp), intent(out) :: valueCmpl(:,:,:,:)
 
-    !> If this is present, calculate total charge. I.e. sum the squared states weighted by occupationVec(nEig).
+    !> Used for calculating total charge if ctx%calcTotalChrg is set.
+    !> Done by summing the squared states weighted by occupationVec(nEig).
     !> Output valueReal and valueCmpl will collapse to one slice in the last dimension, (x,y,z,1).
     real(dp), intent(in), optional :: occupationVec(:)
+
     !! Variables for total charge calculation
     integer :: iEig, iStart, iEnd, nChunk, iEigInChunk, nEigs, nEigsPerChunk
     real(dp), allocatable :: bufferReal(:,:,:,:), coeffVecReal(:,:)

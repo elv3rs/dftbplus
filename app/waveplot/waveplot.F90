@@ -10,7 +10,7 @@
 !> Program for plotting molecular orbitals as cube files.
 program waveplot
   use waveplot_initwaveplot, only : TProgramVariables, TProgramVariables_init
-  use libwavegrid, only : getValue
+  use libwavegrid, only : getValue, getTotalChrg, getAtomicDensities
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment, TEnvironment_init
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
@@ -150,7 +150,7 @@ program waveplot
           ind = ind + mAng
         end do
       end do
-      call getValue(wp%loc%molorb, orbitalOcc, atomicChrg, addAtomicDensities=.true.)
+      call getAtomicDensities(wp%loc%molorb, orbitalOcc, atomicChrg)
       sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
       buffer(:,:,:) = atomicChrg(:,:,:, 1)
 
@@ -246,11 +246,11 @@ program waveplot
           eigCoeffs(iEig) = wp%input%occupations(iLevel, iKPoint, iSpin)
       end do
       if (wp%input%isRealHam) then
-        call getValue(wp%loc%molorb, wp%loc%grid%eigenvecReal, &
-          & totChrg4d, useGPU=wp%opt%useGPU, occupationVec=eigCoeffs)
+        call getTotalChrg(wp%loc%molorb, wp%loc%grid%eigenvecReal, &
+          & totChrg4d, eigCoeffs, wp%opt%useGPU)
       else
-        call getValue(wp%loc%molorb, wp%loc%grid%eigenvecCmpl, &
-          & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d,  useGPU=wp%opt%useGPU, occupationVec=eigCoeffs)
+        call getTotalChrg(wp%loc%molorb, wp%loc%grid%eigenvecCmpl, &
+          & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d, eigCoeffs, wp%opt%useGPU)
       end if
       totChrg(:,:,:) = totChrg4d(:,:,:,1)
   end if

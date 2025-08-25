@@ -59,11 +59,21 @@ module libwavegrid_molorb
   interface getValue
     module procedure TMolecularOrbital_getValue_real
     module procedure TMolecularOrbital_getValue_cmpl
+  end interface
+
+  !> Returns the total charge density on a grid
+  interface getTotalChrg
+    module procedure TMolecularOrbital_getTotalChrg_real
     module procedure TMolecularOrbital_getTotalChrg_cmpl
   end interface
 
-  public :: TSpeciesBasis
-  public :: TMolecularOrbital, TMolecularOrbital_init, getValue
+  !> Returns the atomic densities on a grid
+  interface getAtomicDensities
+    module procedure TMolecularOrbital_getAtomicDensities_real
+  end interface
+
+  public :: TSpeciesBasis, TMolecularOrbital, TMolecularOrbital_init
+  public :: getValue, getTotalChrg, getAtomicDensities
 
 contains
 
@@ -79,7 +89,7 @@ contains
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     !> Origin of the grid
     real(dp), intent(in) :: origin(3)
-    !> Grid vectors
+    !> Grid vectors of output array
     real(dp), intent(in) :: gridVecs(3,3)
 
     real(dp) :: maxCutoff
@@ -283,9 +293,24 @@ contains
 
 
 
-  !> Returns molecular orbitals on a grid.
-  subroutine TMolecularOrbital_getValue_real(this, eigVecsReal, &
-      & valueOnGrid, addAtomicDensities, useGPU, occupationVec)
+  !> Returns molecular orbitals on a real grid. 
+  subroutine TMolecularOrbital_getValue_real(this, eigVecsReal, valueOnGrid, useGPU)
+
+    !> MolecularOrbital data instance
+    type(TMolecularOrbital), intent(in) :: this
+    !> Summation coefficients for the STOs
+    real(dp), intent(in) :: eigVecsReal(:,:)
+    !> Molecular orbitals on a grid
+    real(dp), intent(out) :: valueOnGrid(:,:,:,:)
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
+
+    call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU)
+  end subroutine TMolecularOrbital_getValue_real
+
+  !> Returns the total charge density on a grid.
+  !> This squares each state and sums them up weighted by occupationVec.
+  subroutine TMolecularOrbital_getTotalChrg_real(this, eigVecsReal, valueOnGrid, occupationVec, useGPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -293,41 +318,37 @@ contains
     real(dp), intent(in) :: eigVecsReal(:,:)
     !> Molecular orbitals on a grid
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
-    !> Add densities instead of wave functions
-    logical, intent(in), optional :: addAtomicDensities
+    !> Calculate total charge. Coefficients for each squared state.
+    real(dp), intent(in) :: occupationVec(:)
     !> Enable GPU offloading?
     logical, intent(in), optional :: useGPU
-    !> if present, calculate total charge. Coefficients for each squared state
-    real(dp), intent(in), optional :: occupationVec(:)
 
-    integer :: kIndexes(0)
-    complex(dp) :: valueCmpl(0, 0, 0, 0), eigVecsCmpl(0, 0), phases(0,0)
-    type(TCalculationContext) :: ctx
+    call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
+        & addAtomicDensities=.false., occupationVec=occupationVec)
+  end subroutine TMolecularOrbital_getTotalChrg_real
 
-    @:ASSERT(this%isInitialised)
-    @:ASSERT(size(eigVecsReal, dim=1) == this%system%nOrb)
-    @:ASSERT(all(shape(valueOnGrid) > [1, 1, 1, 0]))
-    @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
+  !> Calculates the atomic densities by squaring each STO *before* summation.
+  subroutine TMolecularOrbital_getAtomicDensities_real(this, eigVecsReal, valueOnGrid, useGPU)
 
+    !> MolecularOrbital instance
+    type(TMolecularOrbital), intent(in) :: this
+    !> Summation coefficients for the STOs
+    real(dp), intent(in) :: eigVecsReal(:,:)
+    !> Molecular orbitals on a grid
+    real(dp), intent(out) :: valueOnGrid(:,:,:,:)
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
 
-    ctx = bundleFlags(.true., addAtomicDensities, useGPU, occupationVec)
-
-    if (present(occupationVec)) then
-      call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
-        & ctx, eigVecsReal, eigVecsCmpl, &
-        & valueOnGrid, valueCmpl, occupationVec)
-    else
-      call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
-        & ctx, eigVecsReal, eigVecsCmpl, &
-        & valueOnGrid, valueCmpl)
-    end if
-
-  end subroutine TMolecularOrbital_getValue_real
+    call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
+        & addAtomicDensities=.true.)
+  end subroutine TMolecularOrbital_getAtomicDensities_real
 
 
-  !> Returns molecular orbitals on a grid.
-  subroutine TMolecularOrbital_getValue_cmpl(this, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid, addAtomicDensities, useGPU)
+
+
+
+  !> Returns molecular orbitals on a complex grid.
+  subroutine TMolecularOrbital_getValue_cmpl(this, eigVecsCmpl, kPoints, kIndexes, valueOnGrid, useGPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -339,41 +360,18 @@ contains
     integer, intent(in) :: kIndexes(:)
     !> Molecular orbitals on grid on exit.
     complex(dp), intent(out) :: valueOnGrid(:,:,:,:)
-    !> Add densities instead of wave functions
-    logical, intent(in), optional :: addAtomicDensities
     !> Enable GPU offloading?
     logical, intent(in), optional :: useGPU
+    ! Dummy real arrays
+    real(dp) :: dummyReal(0,0,0,0)
 
-    real(dp) :: valueReal(0,0,0,0), eigVecsReal(0,0)
-    complex(dp), allocatable :: phases(:,:)
-    type(TCalculationContext) :: ctx
-
-    @:ASSERT(this%isInitialised)
-    @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
-    @:ASSERT(all(shape(valueOnGrid) > [0, 0, 0, 0]))
-    @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
-    @:ASSERT(size(kPoints, dim=1) == 3)
-    @:ASSERT(size(kPoints, dim=2) > 0)
-    @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
-    @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
-    @:ASSERT(minval(kIndexes) > 0)
-    ctx = bundleFlags(.false., addAtomicDensities, useGPU)
-
-    allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
-    if (this%periodic%isPeriodic) then
-      phases(:,:) = exp(imag * matmul(transpose(this%periodic%fCellVec), kPoints))
-    else
-      phases(1,:) = (1.0_dp, 0.0_dp)
-    end if
-
-    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
-      & ctx, eigVecsReal, eigVecsCmpl, &
-      & valueReal, valueOnGrid)
+    call TMolecularOrbital_getValue_cmpl_generic(this, eigVecsCmpl, kPoints, kIndexes, dummyReal, valueOnGrid, useGPU)
 
   end subroutine TMolecularOrbital_getValue_cmpl
 
-  subroutine TMolecularOrbital_getTotalChrg_cmpl(this, eigVecsCmpl, kPoints,&
-      & kIndexes, valueOnGrid, useGPU, occupationVec)
+
+  !> Returns the total charge density on a grid.
+  subroutine TMolecularOrbital_getTotalChrg_cmpl(this, eigVecsCmpl, kPoints, kIndexes, valueOnGrid, occupationVec, useGPU)
 
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
@@ -385,26 +383,110 @@ contains
     integer, intent(in) :: kIndexes(:)
     !> Molecular orbitals on grid on exit.
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
-    !> Whether to enable GPU offloading
-    logical, intent(in), optional :: useGPU
-    !> Calculate total charge. Coefficients for each squared state
+    !> Calculate total charge. Coefficients for each squared state.
     real(dp), intent(in) :: occupationVec(:)
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
+    ! Dummy complex arrays
+    complex(dp) :: dummyCmplx(0,0,0,0)
 
-    real(dp) :: eigVecsReal(0,0)
-    complex(dp) :: valueCmpl(0, 0, 0, 0)
-    complex(dp), allocatable :: phases(:,:)
+    call TMolecularOrbital_getValue_cmpl_generic(this, eigVecsCmpl, kPoints, kIndexes, valueOnGrid, dummyCmplx, useGPU, &
+        & occupationVec)
+
+  end subroutine TMolecularOrbital_getTotalChrg_cmpl
+
+
+
+  !> Bundles calls to addAtomicDensities, getTotalChrg and the regular molorb to allow for 
+  !> Cleaner public interfaces.
+  subroutine TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
+      & addAtomicDensities, occupationVec)
+
+    !> MolecularOrbital instance
+    type(TMolecularOrbital), intent(in) :: this
+    !> Summation coefficients for the STOs
+    real(dp), intent(in) :: eigVecsReal(:,:)
+    !> Molecular orbitals on a grid
+    real(dp), intent(out) :: valueOnGrid(:,:,:,:)
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
+    !> Add densities instead of wave functions
+    logical, intent(in), optional :: addAtomicDensities
+    !> if present, calculate total charge. Coefficients for each squared state
+    real(dp), intent(in), optional :: occupationVec(:)
+
+    ! Empty complex arrays
+    integer :: kIndexes(0)
+    complex(dp) :: valueCmpl(0, 0, 0, 0), eigVecsCmpl(0, 0), phases(0,0)
+
+    logical, parameter :: isRealInput = .true.
     type(TCalculationContext) :: ctx
 
+    ctx = bundleFlags(isRealInput, addAtomicDensities, useGPU, occupationVec)
+
     @:ASSERT(this%isInitialised)
-    @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
     @:ASSERT(all(shape(valueOnGrid) > [0, 0, 0, 0]))
-    @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
+    @:ASSERT(size(eigVecsReal, dim=1) == this%system%nOrb)
+    @:ASSERT(.not. (ctx%calcAtomicDensity .and. ctx%calcTotalChrg))
+
+    if(ctx%calcTotalChrg) then
+      @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
+      @:ASSERT(size(valueOnGrid, dim=4) == 1)
+    else
+      @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
+    end if
+
+    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
+        & ctx, eigVecsReal, eigVecsCmpl, valueOnGrid, valueCmpl, occupationVec)
+
+  end subroutine TMolecularOrbital_getValue_real_generic
+
+  !> Bundles calls to getValue_cmpl and getTotalChrg_cmpl to allow for cleaner public interfaces.
+  subroutine TMolecularOrbital_getValue_cmpl_generic(this, eigVecsCmpl, kPoints, kIndexes, &
+      &  valueOutReal, valueOutCmplx, useGPU, occupationVec)
+
+    !> MolecularOrbital instance
+    type(TMolecularOrbital), intent(in) :: this
+    !> Summation coefficients for the STOs
+    complex(dp), intent(in) :: eigVecsCmpl(:,:)
+    !> Array of k-points
+    real(dp), intent(in) :: kPoints(:,:)
+    !> Index of the k-points in kPoints for every mol.orbital
+    integer, intent(in) :: kIndexes(:)
+    !> Density output grid (if calcTotalChrg)
+    real(dp), intent(out) :: valueOutReal(:,:,:,:)
+    !> Complex Molecular orbital output grid
+    complex(dp), intent(out) :: valueOutCmplx(:,:,:,:)
+    !> Enable GPU offloading?
+    logical, intent(in), optional :: useGPU
+    !> Calculate total charge. Coefficients for each squared state
+    real(dp), intent(in), optional :: occupationVec(:)
+    ! Dummy real arrays
+    real(dp) :: eigVecsReal(0,0)
+
+    complex(dp), allocatable :: phases(:,:)
+    logical, parameter :: addAtomicDensities = .false.
+    logical, parameter :: isRealInput = .false.
+    type(TCalculationContext) :: ctx
+
+    ctx = bundleFlags(isRealInput, addAtomicDensities, useGPU, occupationVec)
+
+    @:ASSERT(this%isInitialised)
+    @:ASSERT(.not. (ctx%calcAtomicDensity .and. ctx%calcTotalChrg))
+    @:ASSERT(size(eigVecsCmpl, dim=1) == this%system%nOrb)
     @:ASSERT(size(kPoints, dim=1) == 3)
     @:ASSERT(size(kPoints, dim=2) > 0)
     @:ASSERT(size(kIndexes) == size(eigVecsCmpl, dim=2))
     @:ASSERT(maxval(kIndexes) <= size(kPoints, dim=2))
     @:ASSERT(minval(kIndexes) > 0)
-    ctx = bundleFlags(.false., .false., useGPU, occupationVec)
+    if(ctx%calcTotalChrg) then
+      @:ASSERT(all(shape(valueOutReal) > [0, 0, 0, 0]))
+      @:ASSERT(size(occupationVec) == size(eigVecsCmpl, dim=2))
+      @:ASSERT(size(valueOnGrid, dim=4) == 1)
+    else
+      @:ASSERT(all(shape(valueOutCmplx) > [0, 0, 0, 0]))
+      @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
+    end if
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
     if (this%periodic%isPeriodic) then
@@ -414,10 +496,8 @@ contains
     end if
 
     call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
-      & ctx, eigVecsReal, eigVecsCmpl, valueOnGrid, valueCmpl, occupationVec)
+      & ctx, eigVecsReal, eigVecsCmpl, valueOutReal, valueOutCmplx, occupationVec)
 
-  end subroutine TMolecularOrbital_getTotalChrg_cmpl
-
-
+  end subroutine TMolecularOrbital_getValue_cmpl_generic
 
 end module libwavegrid_molorb
