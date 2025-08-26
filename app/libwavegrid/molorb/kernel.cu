@@ -400,7 +400,7 @@ extern "C" void evaluate_on_device_c(
     int nPointsX = grid->nPointsX;
     int nPointsY = grid->nPointsY;
     int nPointsZ = grid->nPointsZ;
-    bool isRealOutput = calc->isRealInput || calc->calcAtomicDensity;
+    bool isRealOutput = calc->isRealInput || calc->calcTotalChrg;
 
     if (calc->nEigIn == 0 || nPointsZ == 0) return; // Nothing to do
     if (calc->calcTotalChrg) {
@@ -439,6 +439,7 @@ extern "C" void evaluate_on_device_c(
     }
     printf("Libwavegrid: Found %d CUDA-enabled GPUs.\n", numGpus);
 
+
 #ifndef _OPENMP
     if (numGpus > 1) {
     printf("\nWARNING: Code not compiled with OpenMP support (-fopenmp). Falling back to single-GPU mode.\n");
@@ -470,18 +471,20 @@ extern "C" void evaluate_on_device_c(
             
             // Determine available shared memory for nEig_per_pass
             size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
-            size_t number_size = isRealOutput ? sizeof(double) : sizeof(complexd);
-            int nEig_per_pass = available_shared / (block_size * number_size);
+            size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
+            int nEig_per_pass = available_shared / (block_size * accumulator_number_size);
             if (nEig_per_pass == 0) nEig_per_pass = 1;
             if (nEig_per_pass > calc->nEigIn) nEig_per_pass = calc->nEigIn;
-            size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * number_size;
+
+            size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * accumulator_number_size;
 
             
             // Determine the number of Z-slices to process in a single batch
             size_t free_mem, total_mem;
             CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
+            size_t output_number_size = isRealOutput ? sizeof(double) : sizeof(complexd);
             size_t available_for_batch = static_cast<size_t>(free_mem * GLOBAL_MEM_FACTOR);
-            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * calc->nEigOut * number_size;
+            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * calc->nEigOut * output_number_size;
             
             // Determine max Z-slices that can fit in available (global) memory
             int z_batch_size = z_count_for_device; 
@@ -490,13 +493,12 @@ extern "C" void evaluate_on_device_c(
                 if (z_batch_size == 0) z_batch_size = 1;
             }
 
-
             // Per-GPU batch buffer for the output
             size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * calc->nEigOut;
             // todo: move this to deviceParams
             DeviceBuffer<complexd> d_valueCmpl_out_batch;
             DeviceBuffer<double> d_valueReal_out_batch;
-            if (calc->isRealInput || calc->calcAtomicDensity) {
+            if (calc->isRealInput || calc->calcTotalChrg) {
                 d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
             } else {
                 d_valueCmpl_out_batch = DeviceBuffer<complexd>(batch_buffer_size_elems);
@@ -507,10 +509,10 @@ extern "C" void evaluate_on_device_c(
             if (deviceId == 0 && debug) {
                 printf("\n--- GPU %d (Lead) Configuration ---\n", deviceId);
                 printf("  Z-slice workload: %d (from index %d to %d)\n", z_count_for_device, z_start_for_device, z_start_for_device + z_count_for_device - 1);
-                printf("  Block size: %d threads, %zub shared mem per block, %d eigs per pass\n",
-                    block_size, shared_mem_for_pass, nEig_per_pass);
+                printf("  Block size: %d threads, %zub shared mem per block, %d eigs of %d per pass\n",
+                    block_size, shared_mem_for_pass, nEig_per_pass, calc->nEigIn);
                 size_t total_size_valueOut = (size_t)nPointsX * nPointsY * nPointsZ * calc->nEigOut * sizeof(double);
-                if (!calc->isRealInput && !calc->calcAtomicDensity) total_size_valueOut *= 2; 
+                if (!isRealOutput) total_size_valueOut *= 2; 
                 printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
                     free_mem / 1e9, nPointsX, nPointsY, nPointsZ, calc->nEigOut,
                     total_size_valueOut / 1e9);
@@ -578,18 +580,18 @@ extern "C" void evaluate_on_device_c(
                 // Copy the computed batch back to the correct slice of the final host array.
                 // The D2H copy will automatically block/ synchronize the kernel for this batch.
                 // This could be improved by using streams / cudaMemcpyAsync.
-                void *d_src_ptr = (isRealOutput ? (void*)d_valueReal_out_batch.get() : (void*)d_valueCmpl_out_batch.get());
-                void* h_dest_ptr = (isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out);
+                void *d_src_ptr = isRealOutput ? (void*)d_valueReal_out_batch.get() : (void*)d_valueCmpl_out_batch.get();
+                void *h_dest_ptr = isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out;
 
-                size_t host_plane_size = (size_t)nPointsZ * nPointsY * nPointsX * number_size;
-                size_t device_plane_size = (size_t)deviceParams.nPointsZ_batch * nPointsY * nPointsX * number_size;
+                size_t host_plane_size = (size_t)nPointsZ * nPointsY * nPointsX * output_number_size;
+                size_t device_plane_size = (size_t)deviceParams.nPointsZ_batch * nPointsY * nPointsX * output_number_size;
 
                 for(int iEig = 0; iEig < calc->nEigOut; ++iEig) {
                     // From: iEig-th slice of GPU batch buffer
                     ptrdiff_t d_offset_bytes = (ptrdiff_t)(iEig * device_plane_size);
                     
                     // To: Global Z-position in the iEig-th slice of host buffer
-                    ptrdiff_t h_offset_bytes = (ptrdiff_t)(iEig * host_plane_size + ( (size_t)deviceParams.z_offset_global * nPointsY * nPointsX) * number_size);
+                    ptrdiff_t h_offset_bytes = (ptrdiff_t)(iEig * host_plane_size + ( (size_t)deviceParams.z_offset_global * nPointsY * nPointsX) * output_number_size);
 
                     CHECK_CUDA(cudaMemcpy((char*)h_dest_ptr + h_offset_bytes, (char*)d_src_ptr + d_offset_bytes, device_plane_size, cudaMemcpyDeviceToHost));
                 }

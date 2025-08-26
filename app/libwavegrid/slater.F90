@@ -32,7 +32,7 @@ module libwavegrid_slater
     real(dp), allocatable :: gridValue(:)
 
     !> Whether to use the cached grid for evaluation
-    logical :: useRadialLut = .true.
+    logical :: useRadialLut = .false.
 
     !> Square of the Cutoff, after which the orbital is assumed to be zero
     real(dp) :: cutoffSq

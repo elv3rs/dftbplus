@@ -43,8 +43,6 @@ typedef struct {
 
     double inverseLutStep;
     const double* lutGridValues;         // [nStos][nLutPoints]
-                                        //
-
 
     int maxNPows;
     int maxNAlphas;
