@@ -15,7 +15,7 @@ module libwavegrid_molorb_parallel
 #:if WITH_CUDA
   use libwavegrid_molorb_offloaded, only : evaluateCuda
 #:endif
-  use libwavegrid_slater, only : realTessY, getRadial
+  use libwavegrid_slater, only : realTessY
   use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   implicit none
   private
@@ -41,7 +41,7 @@ contains
     complex(dp), intent(in) :: phases(:,:)
 
     !> Basis set data in AoS format
-    type(TSlaterOrbital), intent(in) :: stos
+    type(TSlaterOrbital), intent(in) :: stos(:)
 
     !> Calculation control flags
     type(TCalculationContext), intent(in) :: ctx
@@ -97,7 +97,7 @@ contains
     !> System
     type(TSystemParams), intent(in) :: system
     !> Basis set
-    type(TSlaterOrbital), intent(in) :: stos
+    type(TSlaterOrbital), intent(in) :: stos(:)
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in) :: periodic
     integer, intent(in) :: kIndexes(:)

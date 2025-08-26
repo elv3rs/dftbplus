@@ -7,6 +7,7 @@
 #include <cuda_runtime.h>
 #include <thrust/complex.h>
 #include <omp.h>
+#include <vector>
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
@@ -65,11 +66,12 @@ struct DeviceData {
           gridVecs(grid->gridVecs, 9),
           coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
           species(system->species, system->nAtom),
-          iStos(system->iStos, system->nSpecies + 1),
+          iStos(system->iStos, system->nSpecies + 1)
     {
         if (basis->useRadialLut) {
+            int N = basis->nLutPoints;
             // Convert the Fortran passed doubles to floats
-            size_t totalLutValues = (size_t)basis->nStos * basis->nLutPoints;
+            size_t totalLutValues = (size_t)basis->nStos * N;
             std::vector<float> lutGridValuesFloat(totalLutValues);
             for (size_t i = 0; i < totalLutValues; ++i) {
                 lutGridValuesFloat[i] = (float)(basis->lutGridValues[i]);
@@ -77,20 +79,20 @@ struct DeviceData {
 
             // Allocate
             cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-            cudaExtent shape = make_cudaExtent(basis->nLutPoints, basis->nStos, 0);
+            cudaExtent shape = make_cudaExtent(N, basis->nStos, 0);
             cudaArray_t lutArray;
-            CHECK_CUDA(cudaMalloc3DArray(&lutArray, &channelDesc, shape, cudaArrayLayered));
+            CHECK_CUDA(cudaMallocArray(&lutArray, &channelDesc, N, basis->nStos, 0));
 
             // Copy data to array
-            cudaMemcpy2DToArray(
-                lutArray,                              // dst array
-                0, 0,                                  // no offset in dst
-                lutGridValuesFloat.data(),             // src pointer
-                basis->nLutPoints * sizeof(float),     // src pitch (for alignment, bytes tp next row)
-                basis->nLutPoints * sizeof(float),     // width in bytes
-                basis->nStos,                          // height (number of cached stos)
+            CHECK_CUDA(cudaMemcpy2DToArray(
+                lutArray,                   // dst array
+                0, 0,                       // no offset in dst
+                lutGridValuesFloat.data(),  // src pointer
+                N * sizeof(float),          // src pitch (for alignment, bytes tp next row)
+                N * sizeof(float),          // width in bytes
+                basis->nStos,               // height (number of cached stos)
                 cudaMemcpyHostToDevice
-            );
+            ));
 
             // Prepare texture object properties
             cudaResourceDesc resDesc{};
@@ -152,7 +154,7 @@ struct DeviceKernelParams {
     // STO Basis
     int nStos, maxNPows, maxNAlphas;
     // Texture LUTs
-    cudaTextureObject* lutTex;
+    cudaTextureObject_t lutTex;
     double inverseLutStep;
     // STO parameters
     const int*    sto_angMoms;
@@ -311,12 +313,13 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
                         continue;
                     }
                     double r = sqrt(rr);
-
+                    
+                    double radialVal;
                     if constexpr (useLUT) {
                         double lut_pos = 0.5f + r * p.inverseLutStep;
-                        double radialVal = static_cast<double>(tex1DLayered<float>(p.lutTex, lut_pos, iOrb)[0]);
+                        radialVal = (double)tex1DLayered<float>(p.lutTex, lut_pos, iOrb);
                     } else {
-                        double radialVal = getRadialValue(
+                        radialVal = getRadialValue(
                             r, iL, iOrb, p.sto_nPows[iOrb], p.sto_nAlphas[iOrb],
                             p.sto_coeffs, p.sto_alphas, p.maxNPows, p.maxNAlphas);
                     } 
@@ -405,7 +408,7 @@ extern "C" void evaluate_on_device_c(
     
     
     // We currently assume a hardcoded maximum for the number of powers.
-    if (basis->maxNPows > STO_MAX_POWS) {
+    if (!basis->useRadialLut && basis->maxNPows > STO_MAX_POWS) {
         fprintf(stderr, "Error: maxNPows (%d) exceeds STO_MAX_POWS (%d)\n", basis->maxNPows, STO_MAX_POWS);
         exit(EXIT_FAILURE);
     }
@@ -431,7 +434,7 @@ extern "C" void evaluate_on_device_c(
         fprintf(stderr, "No CUDA-enabled GPUs found. Unable to launch Kernel.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Found %d GPUs.", numGpus);
+    printf("Libwavegrid: Found %d CUDA-enabled GPUs.\n", numGpus);
 
 #ifndef _OPENMP
     if (numGpus > 1) {
@@ -538,9 +541,9 @@ extern "C" void evaluate_on_device_c(
                     evaluateKernel<isReal, doAtomic, doChrg, useLut> \
                         <<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
 
-                int idx = (calc->isRealInput     ? 1 : 0)
+                int idx = (calc->isRealInput       ? 1 : 0)
                         + (calc->calcAtomicDensity ? 2 : 0)
-                        + (calc->calcTotalChrg     ? 4 : 0);
+                        + (calc->calcTotalChrg     ? 4 : 0)
                         + (basis->useRadialLut     ? 8 : 0);
 
                 switch (idx) {

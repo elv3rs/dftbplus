@@ -687,7 +687,7 @@ contains
       do iSpecies = 1 , this%input%geo%nSpecies
         mCutoffs(iSpecies) = -1
         do ii = 1, this%basis%basis(iSpecies)%nOrb
-          mCutoffs(iSpecies) = max(mCutoffs(iSpecies), this%basis%basis(iSpecies)%stos(ii)%cutoff)
+          mCutoffs(iSpecies) = sqrt(max(mCutoffs(iSpecies), this%basis%basis(iSpecies)%stos(ii)%cutoffSq))
         end do
       end do
       minvals = this%input%geo%coords(:,1)
@@ -829,6 +829,7 @@ contains
 
     !! Auxiliary variable
     integer :: ii
+    real(dp) :: cutoff
 
     call getChildValue(node, "AtomicNumber", spBasis%atomicNumber)
     call getChildren(node, "Orbital", children)
@@ -844,7 +845,8 @@ contains
       call getItem1(children, ii, tmpNode)
       call getChildValue(tmpNode, "AngularMomentum", spBasis%stos(ii)%angMom)
       call getChildValue(tmpNode, "Occupation", spBasis%stos(ii)%occupation)
-      call getChildValue(tmpNode, "Cutoff", spBasis%stos(ii)%cutoff)
+      call getChildValue(tmpNode, "Cutoff", cutoff)
+      spBasis%stos(ii)%cutoffSq = cutoff ** 2
       call init(bufferExps)
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)
@@ -866,7 +868,7 @@ contains
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
       call spBasis%stos(ii)%init(reshape(coeffs, [size(coeffs) / size(exps),&
-          & size(exps)]), exps, ii - 1, basisResolution, spBasis%stos(ii)%cutoff)
+          & size(exps)]), exps, ii - 1, basisResolution, cutoff)
       deallocate(exps, coeffs)
     end do
 

@@ -105,7 +105,7 @@ contains
       end subroutine evaluate_on_device_c
     end interface
 
-    type(TBasisParams) :: basis
+    type(TBasisParams), target :: basis
 
     type(TGridParamsC) :: grid_p
     type(TSystemParamsC) :: system_p
@@ -143,7 +143,7 @@ contains
 
     call prepareBasisSet(basis, stos)
     basis_p%useRadialLut = merge(1, 0, basis%useRadialLut)
-    if (useRadialLut) then
+    if (basis%useRadialLut) then
       basis_p%nLutPoints = basis%nLutPoints
       basis_p%inverseLutStep = basis%invLutStep
       basis_p%lutGridValues = c_loc(basis%lutGridValues)
@@ -198,7 +198,8 @@ contains
     this%nLutPoints = stos(1)%nGrid
     this%invLutStep = stos(1)%invLutStep
 
-    if (useRadialLut) then
+    if (this%useRadialLut) then
+      print *, "Using radial LUT for STO evaluation with ", this%nLutPoints, " points."
       allocate(this%lutGridValues(this%nLutPoints, this%nStos))
       do iOrb = 1, this%nStos
         @:ASSERT(stos(iOrb)%useRadialLut)
@@ -218,7 +219,7 @@ contains
       do iOrb = 1, this%nStos
         @:ASSERT(.not. stos(iOrb)%useRadialLut)
         this%angMoms(iOrb) = stos(iOrb)%angMom
-        this%cutoffsSq(iOrb) = stos(iOrb)%cutoff ** 2
+        this%cutoffsSq(iOrb) = stos(iOrb)%cutoffSq
         this%nPows(iOrb) = stos(iOrb)%nPow
         this%nAlphas(iOrb) = stos(iOrb)%nAlpha
       end do
@@ -235,6 +236,7 @@ contains
     end if
 
     this%isInitialized = .true.
+  end subroutine prepareBasisSet
 #:endif
 
 end module libwavegrid_molorb_offloaded

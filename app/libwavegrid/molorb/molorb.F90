@@ -90,7 +90,6 @@ contains
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3,3)
 
-    real(dp) :: maxCutoff
 
     @:ASSERT(.not. this%isInitialised)
     @:ASSERT(size(origin) == 3)
@@ -102,13 +101,7 @@ contains
 
     call this%initSpeciesMapping(geometry, basisInput)
     call this%flattenBasis(basisInput)
-
-    maxCutoff = 0.0_dp
-    do i = 1, size(this%stos)
-      maxCutoff = max(maxCutoff, sqrt(this%stos(i)%cutoffSq))
-    end do
-
-    call this%initPeriodic(geometry, maxCutoff)
+    call this%initPeriodic(geometry, maxCutoff(this%stos))
     call this%updateCoords(geometry)
 
     this%isInitialised = .true.
@@ -475,5 +468,19 @@ contains
       & ctx, eigVecsReal, eigVecsCmpl, valueOutReal, valueOutCmplx, occupationVec)
 
   end subroutine TMolecularOrbital_getValue_cmpl_generic
+
+  function maxCutoff(stos) result(maxCut)
+    type(TSlaterOrbital), intent(in) :: stos(:)
+    real(dp) :: maxCut
+    integer :: iSto
+
+    maxCut = 0.0_dp
+    do iSto = 1, size(stos)
+      if (stos(iSto)%cutoffSq > maxCut) then
+        maxCut = stos(iSto)%cutoffSq
+      end if
+    end do
+    maxCut = sqrt(maxCut)
+  end function maxCutoff
 
 end module libwavegrid_molorb
