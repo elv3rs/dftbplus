@@ -43,23 +43,6 @@ module libwavegrid_molorb_types
     integer :: nCell
     logical :: isInitialized = .false.
   end type TPeriodicParams
-
-  !> Data for the basis set in SoA format
-  type TBasisParams
-    integer :: nStos
-    integer :: maxNPows
-    integer :: maxNAlphas
-    !! AoS
-    type(TSlaterOrbital), allocatable :: stos(:)
-    !! SoA
-    integer, allocatable :: angMoms(:)
-    real(dp), allocatable :: cutoffsSq(:)
-    integer, allocatable :: nPows(:)
-    integer, allocatable :: nAlphas(:)
-    real(dp), allocatable :: coeffs(:,:,:)
-    real(dp), allocatable :: alphas(:,:)
-    logical :: isInitialized = .false.
-  end type TBasisParams
   
   !> Control type holding calculation flags
   type :: TCalculationContext

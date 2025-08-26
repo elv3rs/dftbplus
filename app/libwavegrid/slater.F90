@@ -22,6 +22,9 @@ module libwavegrid_slater
     !> Grid distance (resolution)
     real(dp) :: gridDist
 
+    !> Inverse of the grid distance
+    real(dp) :: invLutStep
+
     !> Number of grid points
     integer :: nGrid
 
@@ -29,10 +32,10 @@ module libwavegrid_slater
     real(dp), allocatable :: gridValue(:)
 
     !> Whether to use the cached grid for evaluation
-    logical :: useCache = .true.
+    logical :: useRadialLut = .true.
 
-    !> Cutoff, after which the orbital is assumed to be zero
-    real(dp) :: cutoff
+    !> Square of the Cutoff, after which the orbital is assumed to be zero
+    real(dp) :: cutoffSq
 
     !> Angular momentum of the orbital
     integer :: angMom
@@ -215,7 +218,7 @@ contains
     allocate(this%aa(this%nPow, this%nAlpha))
     allocate(this%alpha(this%nAlpha))
 
-    this%cutoff = cutoff
+    this%cutoffSq = cutoff ** 2
 
     ! Store parameters in case non-interpolated version is requested
     this%angMom = ll
@@ -225,6 +228,7 @@ contains
     ! Obtain STO on a grid
     this%nGrid = floor(cutoff / resolution) + 2
     this%gridDist = resolution
+    this%invLutStep = 1.0_dp / resolution
     allocate(this%gridValue(this%nGrid))
     do iGrid = 1, this%nGrid
       rr = real(iGrid - 1, dp) * resolution
@@ -240,7 +244,7 @@ contains
     real(dp), intent(in) :: rr
     real(dp), intent(out) :: sto
 
-    if (this%useCache) then
+    if (this%useRadialLut) then
       call this%getRadialCached(rr, sto)
     else
       call this%getRadialDirect(rr, sto)
@@ -268,7 +272,7 @@ contains
     @:ASSERT(rr >= 0.0_dp)
 
     ! ind = 1 means zero distance as rr = (ind - 1) * gridDist
-    ind = floor(rr / this%gridDist) + 1
+    ind = floor(rr * this%invLutStep) + 1
     if (ind < this%nGrid) then
       frac = mod(rr, this%gridDist) / this%gridDist
       sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)

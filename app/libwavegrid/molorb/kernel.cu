@@ -68,24 +68,29 @@ struct DeviceData {
           iStos(system->iStos, system->nSpecies + 1),
     {
         if (basis->useRadialLut) {
+            // Convert the Fortran passed doubles to floats
+            size_t totalLutValues = (size_t)basis->nStos * basis->nLutPoints;
+            std::vector<float> lutGridValuesFloat(totalLutValues);
+            for (size_t i = 0; i < totalLutValues; ++i) {
+                lutGridValuesFloat[i] = (float)(basis->lutGridValues[i]);
+            }
+
             // Allocate
             cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-            cudaExtent shape = make_cudaExtent(basis->nLutPoints, 0, basis->nStos);
+            cudaExtent shape = make_cudaExtent(basis->nLutPoints, basis->nStos, 0);
             cudaArray_t lutArray;
             CHECK_CUDA(cudaMalloc3DArray(&lutArray, &channelDesc, shape, cudaArrayLayered));
-            // Copy data to array
-            for (int iOrb = 0; iOrb < basis->nStos; ++iOrb) {
-                const int N = basis->nLutPoints;
-                cudaMemcpy3DParms p{};
-                p.kind = cudaMemcpyHostToDevice;
-                p.extent = make_cudaExtent(N, 1, 1);
-                // args: actual pointer, pitch (bytes to next row), element width, number of rows
-                p.srcPtr = make_cudaPitchedPtr((void*)(basis->lut + iOrb * N), N * sizeof(float), N, 1);
-                p.dstArray = lutArray;
-                p.dstPos = make_cudaPos(0, 0, iOrb);
-                CHECK_CUDA(cudaMemcpy3D(&copyParams));
 
-            }
+            // Copy data to array
+            cudaMemcpy2DToArray(
+                lutArray,                              // dst array
+                0, 0,                                  // no offset in dst
+                lutGridValuesFloat.data(),             // src pointer
+                basis->nLutPoints * sizeof(float),     // src pitch (for alignment, bytes tp next row)
+                basis->nLutPoints * sizeof(float),     // width in bytes
+                basis->nStos,                          // height (number of cached stos)
+                cudaMemcpyHostToDevice
+            );
 
             // Prepare texture object properties
             cudaResourceDesc resDesc{};
@@ -94,11 +99,12 @@ struct DeviceData {
 
             cudaTextureDesc texDesc{};
             texDesc.addressMode[0] = cudaAddressModeClamp;
+            texDesc.addressMode[1] = cudaAddressModeClamp;
             texDesc.filterMode = cudaFilterModeLinear; 
             texDesc.readMode = cudaReadModeElementType; // dont normalize our lut values
             texDesc.normalizedCoords = 0; // access using [0, N-1]
             // Create texture object
-            CHECK_CUDA(cudaCreateTextureObject(&sto_lutTex, &resDesc, &texDesc, nullptr)
+            CHECK_CUDA(cudaCreateTextureObject(&sto_lutTex, &resDesc, &texDesc, nullptr));
 
         } else {
             sto_angMoms.assign(basis->sto_angMoms, basis->nStos);
@@ -147,6 +153,7 @@ struct DeviceKernelParams {
     int nStos, maxNPows, maxNAlphas;
     // Texture LUTs
     cudaTextureObject* lutTex;
+    double inverseLutStep;
     // STO parameters
     const int*    sto_angMoms;
     const int*    sto_nPows;
@@ -191,11 +198,12 @@ struct DeviceKernelParams {
 
         // STO Basis
         nStos = basis->nStos;
-        maxNPows = basis->maxNPows;
-        maxNAlphas = basis->maxNAlphas;
         if (basis->useRadialLut) {
             lutTex = data.sto_lutTex;
+            inverseLutStep = basis->inverseLutStep;
         } else {
+            maxNPows = basis->maxNPows;
+            maxNAlphas = basis->maxNAlphas;
             sto_angMoms = data.sto_angMoms.get();
             sto_nPows = data.sto_nPows.get();
             sto_nAlphas = data.sto_nAlphas.get();
@@ -526,23 +534,32 @@ extern "C" void evaluate_on_device_c(
                     CHECK_CUDA(cudaEventRecord(startKernelOnly));
                 }
                  
-                #define CALL_KERNEL(isReal, doAtomic, doChrg) \
-                    evaluateKernel<isReal, doAtomic, doChrg> \
+                #define CALL_KERNEL(isReal, doAtomic, doChrg, useLut) \
+                    evaluateKernel<isReal, doAtomic, doChrg, useLut> \
                         <<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
 
                 int idx = (calc->isRealInput     ? 1 : 0)
                         + (calc->calcAtomicDensity ? 2 : 0)
                         + (calc->calcTotalChrg     ? 4 : 0);
+                        + (basis->useRadialLut     ? 8 : 0);
 
                 switch (idx) {
-                    case 0: CALL_KERNEL(false, false, false); break;
-                    case 1: CALL_KERNEL(true,  false, false); break;
-                    case 2: CALL_KERNEL(false, true,  false); break;
-                    case 3: CALL_KERNEL(true,  true,  false); break;
-                    case 4: CALL_KERNEL(false, false, true);  break;
-                    case 5: CALL_KERNEL(true,  false, true);  break;
-                    case 6: CALL_KERNEL(false, true,  true);  break;
-                    case 7: CALL_KERNEL(true,  true,  true);  break;
+                    case 0:  CALL_KERNEL(false, false, false, false); break;
+                    case 1:  CALL_KERNEL(true,  false, false, false); break;
+                    case 2:  CALL_KERNEL(false, true,  false, false); break;
+                    case 3:  CALL_KERNEL(true,  true,  false, false); break;
+                    case 4:  CALL_KERNEL(false, false, true,  false); break;
+                    case 5:  CALL_KERNEL(true,  false, true,  false); break;
+                    case 6:  CALL_KERNEL(false, true,  true,  false); break;
+                    case 7:  CALL_KERNEL(true,  true,  true,  false); break;
+                    case 8:  CALL_KERNEL(false, false, false, true);  break;
+                    case 9:  CALL_KERNEL(true,  false, false, true);  break;
+                    case 10: CALL_KERNEL(false, true,  false, true);  break;
+                    case 11: CALL_KERNEL(true,  true,  false, true);  break;
+                    case 12: CALL_KERNEL(false, false, true,  true);  break;
+                    case 13: CALL_KERNEL(true,  false, true,  true);  break;
+                    case 14: CALL_KERNEL(false, true,  true,  true);  break;
+                    case 15: CALL_KERNEL(true,  true,  true,  true);  break;
                 }
                                     
 

@@ -10,7 +10,8 @@
 module libwavegrid_molorb_parallel
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
-  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams, TCalculationContext
+  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TSlaterOrbital, TCalculationContext
+  use libwavegrid_slater, only : TSlaterOrbital
 #:if WITH_CUDA
   use libwavegrid_molorb_offloaded, only : evaluateCuda
 #:endif
@@ -26,7 +27,7 @@ contains
 
   !> Returns the values of several molecular orbitals on grids.
   !> This dispatches to either CPU / GPU implementation, and handles total Charge calculation using occupationVec if present.
-  subroutine evaluateParallel(system, periodic, kIndexes, phases, basis, &
+  subroutine evaluateParallel(system, periodic, kIndexes, phases, stos, &
       & ctx, eigVecsReal, eigVecsCmpl,  valueReal, valueCmpl, occupationVec)
 
     !> System geometry and composition
@@ -39,8 +40,8 @@ contains
     !> Phase factors for periodic images
     complex(dp), intent(in) :: phases(:,:)
 
-    !> Basis set data in SoA format
-    type(TBasisParams), intent(in) :: basis
+    !> Basis set data in AoS format
+    type(TSlaterOrbital), intent(in) :: stos
 
     !> Calculation control flags
     type(TCalculationContext), intent(in) :: ctx
@@ -72,7 +73,7 @@ contains
     if (ctx%runOnGPU) then
       #:if WITH_CUDA
         print *, "Libwavegrid: running on GPU using CUDA"
-        call evaluateCuda(system, basis, periodic, kIndexes, phases, ctx, &
+        call evaluateCuda(system, stos, periodic, kIndexes, phases, ctx, &
             & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
       #:else
         call error("Libwavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
@@ -83,20 +84,20 @@ contains
       #:else
       print *, "Libwavegrid: missing OMP, running serially on CPU"
       #:endif
-      call evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
+      call evaluateOMP(system, stos, periodic, kIndexes, phases, ctx, &
             & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
     end if
 
   end subroutine evaluateParallel
 
 
-  subroutine evaluateOMP(system, basis, periodic, kIndexes, phases, ctx, &
+  subroutine evaluateOMP(system, stos, periodic, kIndexes, phases, ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
     !> System
     type(TSystemParams), intent(in) :: system
     !> Basis set
-    type(TBasisParams), intent(in) :: basis
+    type(TSlaterOrbital), intent(in) :: stos
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in) :: periodic
     integer, intent(in) :: kIndexes(:)
@@ -171,15 +172,15 @@ contains
                 rSq = dot_product(diff, diff)
 
                 lpOrb: do iOrb = system%iStos(iSpecies), system%iStos(iSpecies + 1) - 1
-                  iL = basis%angMoms(iOrb)
+                  iL = stos(iOrb)%angMom
                   ! Calculate wave function only if atom is inside the cutoff
-                  if (rSq > basis%cutoffsSq(iOrb)) then
+                  if (rSq > stos(iOrb)%cutoffSq) then
                     ind = ind + 2*iL + 1
                     cycle lpOrb
                   end if
                   r = sqrt(rSq)
 
-                  call basis%stos(iOrb)%getRadial(r, radialVal)
+                  call stos(iOrb)%getRadial(r, radialVal)
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1

@@ -42,7 +42,7 @@ typedef struct {
     int useRadialLut;
     int nLutPoints;
     double inverseLutStep;
-    const float* lut;         // [nStos][nLutPoints]
+    const float* lutGridValues;         // [nStos][nLutPoints]
 
     int maxNPows;
     int maxNAlphas;

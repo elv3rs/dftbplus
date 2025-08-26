@@ -5,4 +5,5 @@ Todo
 - [ ] unit tests
 
 - [ ] recast flat pointers to multi-dim arrays, get rid of Index calc macro
+- [ ] consider mixed lut step size
 

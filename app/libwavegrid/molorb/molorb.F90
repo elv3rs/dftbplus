@@ -18,7 +18,7 @@ module libwavegrid_molorb
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_io_message, only : error
   use libwavegrid_molorb_parallel, only : evaluateParallel
-  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TBasisParams, &
+  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TSlaterOrbital, &
     & TCalculationContext
   use libwavegrid_slater, only : TSlaterOrbital
 
@@ -31,8 +31,8 @@ module libwavegrid_molorb
     type(TSystemParams) :: system
     !> Periodic boundary conditions
     type(TPeriodicParams) :: periodic
-    !> Basis set in SoA format
-    type(TBasisParams) :: basis
+    !> Basis set in AoS format
+    type(TSlaterOrbital), allocatable :: stos(:)
     !> Boundary conditions handler for coordinate recalculation
     type(TBoundaryConds) :: boundaryCond
 
@@ -41,7 +41,7 @@ module libwavegrid_molorb
     private
     procedure, public :: updateCoords => TMolecularOrbital_updateCoords
     procedure :: initSpeciesMapping
-    procedure :: initBasis
+    procedure :: flattenBasis
     procedure :: initPeriodic
   end type TMolecularOrbital
 
@@ -87,9 +87,7 @@ contains
     type(TGeometry), intent(in) :: geometry
     type(TBoundaryConds), intent(in) :: boundaryCond
     type(TSpeciesBasis), intent(in) :: basisInput(:)
-    !> Origin of the grid
     real(dp), intent(in) :: origin(3)
-    !> Grid vectors of output array
     real(dp), intent(in) :: gridVecs(3,3)
 
     real(dp) :: maxCutoff
@@ -103,8 +101,13 @@ contains
 
 
     call this%initSpeciesMapping(geometry, basisInput)
-    call this%initBasis(basisInput)
-    maxCutoff = sqrt(maxval(this%basis%cutoffsSq))
+    call this%flattenBasis(basisInput)
+
+    maxCutoff = 0.0_dp
+    do i = 1, size(this%stos)
+      maxCutoff = max(maxCutoff, sqrt(this%stos(i)%cutoffSq))
+    end do
+
     call this%initPeriodic(geometry, maxCutoff)
     call this%updateCoords(geometry)
 
@@ -119,7 +122,7 @@ contains
     type(TGeometry), intent(in) :: geometry
     type(TSpeciesBasis), intent(in) :: basis(:)
 
-    integer :: nOrbTotal, iSpec, iAtom, ind, iOrb, angMom, nStosTotal
+    integer :: nOrbTotal, iSpec, iAtom, ind, iOrb, angMom
 
     @:ASSERT(geometry%nSpecies == size(basis))
 
@@ -128,15 +131,9 @@ contains
     allocate(this%system%species(this%system%nAtom))
     this%system%species(:) = geometry%species
 
-    ! Get total number of STOs
-    nStosTotal = 0
-    do iSpec = 1, this%system%nSpecies
-      nStosTotal = nStosTotal + basis(iSpec)%nOrb
-    end do
-    allocate(this%system%iStos(this%system%nSpecies + 1))
-    this%basis%nStos = nStosTotal
 
     ! Create STO index map: iStos(i) points to the first STO of species i
+    allocate(this%system%iStos(this%system%nSpecies + 1))
     ind = 1
     do iSpec = 1, this%system%nSpecies
       this%system%iStos(iSpec) = ind
@@ -159,46 +156,24 @@ contains
   end subroutine initSpeciesMapping
 
 
-  !> Converts basis from AoS to SoA format for performance.
-  subroutine initBasis(this, basisInput)
+  !> Flattens the basis set into an array of STOs. 
+  subroutine flattenBasis(this, basisInput)
     class(TMolecularOrbital), intent(inout) :: this
     type(TSpeciesBasis), intent(in) :: basisInput(:)
-    integer :: iSpec, iOrb, ind
-    !type(TSlaterOrbital), allocatable :: this%basis%stos(:)
+    integer :: iSpec, iOrb, ind, nStos
+    ! Count total number of STOs
+    do iSpec = 1, this%system%nSpecies
+      nStos = nStos + basisInput(iSpec)%nOrb
+    end do
 
-    ! Flatten the basis array for easier iteration
-    allocate(this%basis%stos(this%basis%nStos))
+    ! Flatten the basis array
+    allocate(this%stos(nStos))
     ind = 1
     do iSpec = 1, this%system%nSpecies
-      this%basis%stos(ind:ind+basisInput(iSpec)%nOrb-1) = basisInput(iSpec)%stos(:)
+      this%stos(ind:ind+basisInput(iSpec)%nOrb-1) = basisInput(iSpec)%stos(:)
       ind = ind + basisInput(iSpec)%nOrb
     end do
-
-    ! Allocate SoA arrays
-    allocate(this%basis%angMoms(this%basis%nStos))
-    allocate(this%basis%nPows(this%basis%nStos))
-    allocate(this%basis%nAlphas(this%basis%nStos))
-    allocate(this%basis%cutoffsSq(this%basis%nStos))
-
-    ! Populate SoA arrays
-    do iOrb = 1, this%basis%nStos
-      this%basis%angMoms(iOrb) = this%basis%stos(iOrb)%angMom
-      this%basis%cutoffsSq(iOrb) = this%basis%stos(iOrb)%cutoff ** 2
-      this%basis%nPows(iOrb) = this%basis%stos(iOrb)%nPow
-      this%basis%nAlphas(iOrb) = this%basis%stos(iOrb)%nAlpha
-    end do
-    this%basis%maxNPows = maxval(this%basis%nPows)
-    this%basis%maxNAlphas = maxval(this%basis%nAlphas)
-
-    ! Allocate and populate coefficient/alpha matrices
-    allocate(this%basis%coeffs(this%basis%maxNPows, this%basis%maxNAlphas, this%basis%nStos))
-    allocate(this%basis%alphas(this%basis%maxNAlphas, this%basis%nStos))
-    do iOrb = 1, this%basis%nStos
-      this%basis%coeffs(1:this%basis%stos(iOrb)%nPow, 1:this%basis%stos(iOrb)%nAlpha, iOrb) = this%basis%stos(iOrb)%aa
-      this%basis%alphas(1:this%basis%stos(iOrb)%nAlpha, iOrb) = this%basis%stos(iOrb)%alpha
-    end do
-    this%basis%isInitialized = .true.
-  end subroutine initBasis
+  end subroutine flattenBasis
 
 
   !> Initializes periodic parameters
@@ -437,7 +412,7 @@ contains
       @:ASSERT(size(eigVecsReal, dim=2) == size(valueOnGrid, dim=4))
     end if
 
-    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
+    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%stos, &
         & ctx, eigVecsReal, eigVecsCmpl, valueOnGrid, valueCmpl, occupationVec)
 
   end subroutine TMolecularOrbital_getValue_real_generic
@@ -496,7 +471,7 @@ contains
       phases(1,:) = (1.0_dp, 0.0_dp)
     end if
 
-    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%basis, &
+    call evaluateParallel(this%system, this%periodic, kIndexes, phases, this%stos, &
       & ctx, eigVecsReal, eigVecsCmpl, valueOutReal, valueOutCmplx, occupationVec)
 
   end subroutine TMolecularOrbital_getValue_cmpl_generic
