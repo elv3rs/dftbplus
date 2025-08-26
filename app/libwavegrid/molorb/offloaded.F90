@@ -22,8 +22,8 @@ module libwavegrid_molorb_offloaded
   !> Data for the basis set in SoA format
   type TBasisParams
     integer :: nStos
-    logical :: useRadialLut
 
+    logical :: useRadialLut
     integer :: nLutPoints
     real(dp) :: invLutStep
     real(dp), allocatable :: lutGridValues(:, :)
@@ -142,7 +142,11 @@ contains
 
 
     call prepareBasisSet(basis, stos)
+    basis_p%nStos = basis%nStos
+    basis_p%sto_angMoms = c_loc(basis%angMoms)
+    basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
     basis_p%useRadialLut = merge(1, 0, basis%useRadialLut)
+
     if (basis%useRadialLut) then
       basis_p%nLutPoints = basis%nLutPoints
       basis_p%inverseLutStep = basis%invLutStep
@@ -150,10 +154,8 @@ contains
     else
       basis_p%maxNPows = basis%maxNPows
       basis_p%maxNAlphas = basis%maxNAlphas
-      basis_p%sto_angMoms = c_loc(basis%angMoms)
       basis_p%sto_nPows = c_loc(basis%nPows)
       basis_p%sto_nAlphas = c_loc(basis%nAlphas)
-      basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
       basis_p%sto_coeffs = c_loc(basis%coeffs)
       basis_p%sto_alphas = c_loc(basis%alphas)
     end if
@@ -197,6 +199,13 @@ contains
     this%useRadialLut = stos(1)%useRadialLut
     this%nLutPoints = stos(1)%nGrid
     this%invLutStep = stos(1)%invLutStep
+    allocate(this%angMoms(this%nStos))
+    allocate(this%cutoffsSq(this%nStos))
+
+    do iOrb = 1, this%nStos
+      this%angMoms(iOrb) = stos(iOrb)%angMom
+      this%cutoffsSq(iOrb) = stos(iOrb)%cutoffSq
+    end do
 
     if (this%useRadialLut) then
       print *, "Using radial LUT for STO evaluation with ", this%nLutPoints, " points."
@@ -210,16 +219,12 @@ contains
       end do
     else ! Direct evaluation
       ! Allocate SoA arrays
-      allocate(this%angMoms(this%nStos))
       allocate(this%nPows(this%nStos))
       allocate(this%nAlphas(this%nStos))
-      allocate(this%cutoffsSq(this%nStos))
 
       ! Populate SoA arrays
       do iOrb = 1, this%nStos
         @:ASSERT(.not. stos(iOrb)%useRadialLut)
-        this%angMoms(iOrb) = stos(iOrb)%angMom
-        this%cutoffsSq(iOrb) = stos(iOrb)%cutoffSq
         this%nPows(iOrb) = stos(iOrb)%nPow
         this%nAlphas(iOrb) = stos(iOrb)%nAlpha
       end do

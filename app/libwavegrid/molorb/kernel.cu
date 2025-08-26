@@ -66,9 +66,12 @@ struct DeviceData {
           gridVecs(grid->gridVecs, 9),
           coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
           species(system->species, system->nAtom),
-          iStos(system->iStos, system->nSpecies + 1)
+          iStos(system->iStos, system->nSpecies + 1),
+          sto_angMoms(basis->sto_angMoms, basis->nStos),
+          sto_cutoffsSq(basis->sto_cutoffsSq, basis->nStos)
     {
         if (basis->useRadialLut) {
+            printf("Using radial LUT with %d points for %d STOs\n", basis->nLutPoints, basis->nStos);
             int N = basis->nLutPoints;
             // Convert the Fortran passed doubles to floats
             size_t totalLutValues = (size_t)basis->nStos * N;
@@ -108,11 +111,10 @@ struct DeviceData {
             // Create texture object
             CHECK_CUDA(cudaCreateTextureObject(&sto_lutTex, &resDesc, &texDesc, nullptr));
 
-        } else {
-            sto_angMoms.assign(basis->sto_angMoms, basis->nStos);
+        } else { // Direct STO calculation without LUT
+            printf("Using direct STO evaluation for %d STOs\n", basis->nStos);
             sto_nPows.assign(basis->sto_nPows, basis->nStos);
             sto_nAlphas.assign(basis->sto_nAlphas, basis->nStos);
-            sto_cutoffsSq.assign(basis->sto_cutoffsSq, basis->nStos);
             sto_coeffs.assign(basis->sto_coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos);
             sto_alphas.assign(basis->sto_alphas, (size_t)basis->maxNAlphas * basis->nStos);
         }
@@ -200,16 +202,17 @@ struct DeviceKernelParams {
 
         // STO Basis
         nStos = basis->nStos;
+        sto_angMoms = data.sto_angMoms.get();
+        sto_cutoffsSq = data.sto_cutoffsSq.get();
+
         if (basis->useRadialLut) {
             lutTex = data.sto_lutTex;
             inverseLutStep = basis->inverseLutStep;
         } else {
             maxNPows = basis->maxNPows;
             maxNAlphas = basis->maxNAlphas;
-            sto_angMoms = data.sto_angMoms.get();
             sto_nPows = data.sto_nPows.get();
             sto_nAlphas = data.sto_nAlphas.get();
-            sto_cutoffsSq = data.sto_cutoffsSq.get();
             sto_coeffs = data.sto_coeffs.get();
             sto_alphas = data.sto_alphas.get();
         }
@@ -241,14 +244,14 @@ struct DeviceKernelParams {
 // =========================================================================
 //  CUDA Kernel.
 // =========================================================================
-// To avoid branching (dropped at compile time), we template the kernel 16 ways on (isRealInput, calcDensity, calcTotalChrg, useLUT).
-// useLUT decides whether to use texture memory interpolation for STO radial functions.
+// To avoid branching (dropped at compile time), we template the kernel 16 ways on (isRealInput, calcDensity, calcTotalChrg, useRadialLut).
+// useRadialLut decides whether to use texture memory interpolation for STO radial functions.
 // isPeriodic decides whether to fold coords into unit cell.
 // isRealInput decides whether to use real/complex eigenvectors (and adds phases)
 // calcAtomicDensity squares the basis wavefunction contributions, result in valueReal_out of shape (x,y,z,n)
 // calcTotalChrg accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
 // User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
-template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useLUT>
+template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useRadialLut>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
     using AccumT = typename std::conditional<(isRealInput), double, complexd>::type;
@@ -315,9 +318,9 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
                     double r = sqrt(rr);
                     
                     double radialVal;
-                    if constexpr (useLUT) {
+                    if constexpr (useRadialLut) {
                         double lut_pos = 0.5f + r * p.inverseLutStep;
-                        radialVal = (double)tex1DLayered<float>(p.lutTex, lut_pos, iOrb);
+                        radialVal = (double)tex2D<float>(p.lutTex, lut_pos, (float)iOrb + 0.5f);
                     } else {
                         radialVal = getRadialValue(
                             r, iL, iOrb, p.sto_nPows[iOrb], p.sto_nAlphas[iOrb],
@@ -514,7 +517,6 @@ extern "C" void evaluate_on_device_c(
                 printf("  Processing Z-slices in batches of %d\n", z_batch_size);
 
             }
-
             // --- Populate Kernel Parameter struct ---
             DeviceKernelParams deviceParams(device_data, grid, system, periodic, basis, calc);
             deviceParams.nEig_per_pass = nEig_per_pass; // Set remaining params
