@@ -40,6 +40,42 @@ module libwavegrid_molorb_offloaded
 
     logical :: isInitialized = .false.
   end type TBasisParams
+  
+  !> C bound structs for parameter passing
+  type, bind(c) :: TGridParamsC
+    integer(c_int) :: nPointsX, nPointsY, nPointsZ
+    type(c_ptr) :: origin, gridVecs
+  end type
+
+  type, bind(c) :: TSystemParamsC
+    integer(c_int) :: nAtom, nCell, nSpecies, nOrb
+    type(c_ptr) :: coords, species, iStos
+  end type
+
+  type, bind(c) :: TPeriodicParamsC
+    logical(c_bool) :: isPeriodic
+    type(c_ptr) :: latVecs, recVecs2pi, kIndexes, phases
+  end type
+
+  type, bind(c) :: TSlaterOrbitalC
+    logical(c_bool) :: useRadialLut
+    integer(c_int) :: nStos, nLutPoints
+    real(c_double) :: inverseLutStep
+    type(c_ptr) :: lutGridValues
+
+    integer(c_int) :: maxNPows, maxNAlphas
+    type(c_ptr) :: angMoms, nPows, nAlphas
+    type(c_ptr) :: cutoffsSq, coeffs, alphas
+  end type
+
+  type, bind(c) :: TCalculationParamsC
+    logical(c_bool) :: isRealInput, calcAtomicDensity, calcTotalChrg
+    integer(c_int) :: nEigIn, nEigOut
+    type(c_ptr) :: eigVecsReal, eigVecsCmpl
+    type(c_ptr) :: valueReal_out, valueCmpl_out
+  end type
+
+
 contains
 #:if WITH_CUDA
   subroutine evaluateCuda(system, stos, periodic, kIndexes, phases, ctx, &
@@ -62,40 +98,6 @@ contains
     real(dp), intent(out), target :: valueReal(:, :, :, :)
     complex(dp), intent(out), target :: valueCmpl(:, :, :, :)
 
-    type, bind(c) :: TGridParamsC
-      integer(c_int) :: nPointsX, nPointsY, nPointsZ
-      type(c_ptr) :: origin, gridVecs
-    end type
-
-    type, bind(c) :: TSystemParamsC
-      integer(c_int) :: nAtom, nCell, nSpecies, nOrb
-      type(c_ptr) :: coords, species, iStos
-    end type
-
-    type, bind(c) :: TPeriodicParamsC
-      logical(c_bool) :: isPeriodic
-      type(c_ptr) :: latVecs, recVecs2pi, kIndexes, phases
-    end type
-
-    type, bind(c) :: TSlaterOrbitalC
-      logical(c_bool) :: useRadialLut
-      integer(c_int) :: nStos, nLutPoints
-      real(c_double) :: inverseLutStep
-      type(c_ptr) :: lutGridValues
-
-      integer(c_int) :: maxNPows, maxNAlphas
-      type(c_ptr) :: sto_angMoms, sto_nPows, sto_nAlphas
-      type(c_ptr) :: sto_cutoffsSq, sto_coeffs, sto_alphas
-    end type
-
-    type, bind(c) :: TCalculationParamsC
-      logical(c_bool) :: isRealInput, calcAtomicDensity, calcTotalChrg
-      integer(c_int) :: nEigIn, nEigOut
-      type(c_ptr) :: eigVecsReal, eigVecsCmpl
-      type(c_ptr) :: valueReal_out, valueCmpl_out
-    end type
-
-
     interface
       subroutine evaluate_on_device_c(grid, system, periodic, basis, calc) bind(C, name ='evaluate_on_device_c')
         import
@@ -115,7 +117,9 @@ contains
     type(TSlaterOrbitalC) :: basis_p
     type(TCalculationParamsC) :: calc_p
 
-    ! Populate the structs
+    call prepareBasisSet(basis, stos)
+
+    ! Output grid description
     if (ctx%isRealOutput) then
       grid_p%nPointsX = size(valueReal, dim=1)
       grid_p%nPointsY = size(valueReal, dim=2)
@@ -127,7 +131,8 @@ contains
     end if
     grid_p%origin = c_loc(system%origin)
     grid_p%gridVecs = c_loc(system%gridVecs)
-
+  
+    ! System setup
     system_p%nAtom = system%nAtom
     system_p%nCell = size(system%coords, dim=3)
     system_p%nSpecies = system%nSpecies
@@ -135,18 +140,18 @@ contains
     system_p%coords = c_loc(system%coords)
     system_p%species = c_loc(system%species)
     system_p%iStos = c_loc(system%iStos)
-
+    
+    ! Periodic boundary conditions
     periodic_p%isPeriodic = periodic%isPeriodic
     periodic_p%latVecs = c_loc(periodic%latVecs)
     periodic_p%recVecs2pi = c_loc(periodic%recVecs2pi)
     periodic_p%kIndexes = c_loc(kIndexes)
     periodic_p%phases = c_loc(phases)
-
-
-    call prepareBasisSet(basis, stos)
+    
+    ! Basis set
     basis_p%nStos = basis%nStos
-    basis_p%sto_angMoms = c_loc(basis%angMoms)
-    basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
+    basis_p%angMoms = c_loc(basis%angMoms)
+    basis_p%cutoffsSq = c_loc(basis%cutoffsSq)
     basis_p%useRadialLut = basis%useRadialLut
 
     if (basis%useRadialLut) then
@@ -156,13 +161,13 @@ contains
     else
       basis_p%maxNPows = basis%maxNPows
       basis_p%maxNAlphas = basis%maxNAlphas
-      basis_p%sto_nPows = c_loc(basis%nPows)
-      basis_p%sto_nAlphas = c_loc(basis%nAlphas)
-      basis_p%sto_coeffs = c_loc(basis%coeffs)
-      basis_p%sto_alphas = c_loc(basis%alphas)
+      basis_p%nPows = c_loc(basis%nPows)
+      basis_p%nAlphas = c_loc(basis%nAlphas)
+      basis_p%coeffs = c_loc(basis%coeffs)
+      basis_p%alphas = c_loc(basis%alphas)
     end if
 
-
+    ! Calculation params
     if (ctx%isRealInput) then
       calc_p%nEigIn = size(eigVecsReal, dim=2)
     else
@@ -187,10 +192,13 @@ contains
     call evaluate_on_device_c(grid_p, system_p, periodic_p, basis_p, calc_p)
 
   end subroutine evaluateCuda
+
+
+
  
-  ! Convert the basis set to SoA format or unified Lut table
-  ! Currently, mixed lut/direct calculation is not supported.
-  ! Additionally, all orbitals must use identical LUT settings.
+  !> Convert the basis set to SoA format or unified Lut table
+  !> Currently, mixed lut/direct calculation is not supported.
+  !> Additionally, all orbitals must use identical LUT settings.
   subroutine prepareBasisSet(this, stos)
     type(TBasisParams), intent(out) :: this
     type(TSlaterOrbital), intent(in) :: stos(:)

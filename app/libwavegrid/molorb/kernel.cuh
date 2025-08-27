@@ -1,3 +1,9 @@
+/*-------------------------------------------------------------------------------------------------*
+ *  DFTB+: general package for performing fast atomistic simulations                               *
+ *  Copyright (C) 2006 - 2025  DFTB+ developers group                                              *
+ *                                                                                                 *
+ *  See the LICENSE file for terms of usage and distribution.                                      *
+ *-------------------------------------------------------------------------------------------------*/
 #ifndef KERNEL_CUH_
 #define KERNEL_CUH_
 
@@ -21,9 +27,9 @@ int nAtom;
     int nCell;
     int nSpecies;
     int nOrb;
-    const double* coords;   // [3][nAtom][nCell]
-    const int* species;     // [nAtom]
-    const int* iStos;       // [nSpecies+1]
+    const double* coords; // [3][nAtom][nCell]
+    const int* species;   // [nAtom]
+    const int* iStos;     // [nSpecies+1]
 } SystemParams;
 
 // Additional System information describing periodic boundary conditions
@@ -42,16 +48,16 @@ typedef struct {
     int nLutPoints;
 
     double inverseLutStep;
-    const double* lutGridValues;         // [nStos][nLutPoints]
+    const double* lutGridValues;  // [nStos][nLutPoints]
 
     int maxNPows;
     int maxNAlphas;
-    const int* sto_angMoms;       // [nStos]
-    const int* sto_nPows;         // [nStos]
-    const int* sto_nAlphas;       // [nStos]
-    const double* sto_cutoffsSq;  // [nStos]
-    const double* sto_coeffs;     // [maxNPows][maxNAlphas][nStos]
-    const double* sto_alphas;     // [maxNAlphas][nStos]
+    const int* angMoms;      // [nStos]
+    const int* nPows;        // [nStos]
+    const int* nAlphas;      // [nStos]
+    const double* cutoffsSq; // [nStos]
+    const double* coeffs;    // [maxNPows][maxNAlphas][nStos]
+    const double* alphas;    // [maxNAlphas][nStos]
 } StoBasisParams;
 
 
@@ -61,7 +67,7 @@ typedef struct {
     bool calcAtomicDensity;
     bool calcTotalChrg;
     int nEigIn;
-    int nEigOut; // calcTotalChrg ? 1 : nEigIn
+    int nEigOut;                        // calcTotalChrg ? 1 : nEigIn
     const double* eigVecsReal;          // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]
     double* valueReal_out;              // [nPointsX][nPointsY][nPointsZ][nEigOut]

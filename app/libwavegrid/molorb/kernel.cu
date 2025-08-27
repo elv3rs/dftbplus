@@ -30,7 +30,7 @@ constexpr int block_size = 256;
 
 using complexd = thrust::complex<double>;
 
-// Manages Gpu memory allocation
+// Manages Gpu memory allocation and H2D copy
 struct DeviceData {
     // Grid
     DeviceBuffer<double> origin;
@@ -68,18 +68,18 @@ struct DeviceData {
           coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
           species(system->species, system->nAtom),
           iStos(system->iStos, system->nSpecies + 1),
-          sto_angMoms(basis->sto_angMoms, basis->nStos),
-          sto_cutoffsSq(basis->sto_cutoffsSq, basis->nStos)
+          sto_angMoms(basis->angMoms, basis->nStos),
+          sto_cutoffsSq(basis->cutoffsSq, basis->nStos)
     {
         if (basis->useRadialLut) {
             printf("Using radial LUT with %d points for %d STOs\n", basis->nLutPoints, basis->nStos);
             sto_lut = std::unique_ptr<GpuLutTexture>(new GpuLutTexture(basis->lutGridValues, basis->nLutPoints, basis->nStos));
         } else { // Direct STO calculation without LUT
             printf("Using direct STO evaluation for %d STOs\n", basis->nStos);
-            sto_nPows.assign(basis->sto_nPows, basis->nStos);
-            sto_nAlphas.assign(basis->sto_nAlphas, basis->nStos);
-            sto_coeffs.assign(basis->sto_coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos);
-            sto_alphas.assign(basis->sto_alphas, (size_t)basis->maxNAlphas * basis->nStos);
+            sto_nPows.assign(basis->nPows, basis->nStos);
+            sto_nAlphas.assign(basis->nAlphas, basis->nStos);
+            sto_coeffs.assign(basis->coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos);
+            sto_alphas.assign(basis->alphas, (size_t)basis->maxNAlphas * basis->nStos);
         }
 
         if (calc->isRealInput) {
@@ -96,7 +96,7 @@ struct DeviceData {
     }
 };
 
-// Kernel parameters
+// Kernel parameters struct to simplify the argument list
 struct DeviceKernelParams {
     // Grid
     int nPointsX, nPointsY, nPointsZ_batch, z_offset_global;
@@ -180,7 +180,6 @@ struct DeviceKernelParams {
             sto_alphas = data.sto_alphas.get();
         }
 
-
         // Periodic boundary conditions
         isPeriodic = periodic->isPeriodic;
         latVecs = data.latVecs.get();
@@ -208,12 +207,12 @@ struct DeviceKernelParams {
 //  CUDA Kernel.
 // =========================================================================
 // To avoid branching (dropped at compile time), we template the kernel 16 ways on (isRealInput, calcDensity, calcTotalChrg, useRadialLut).
-// useRadialLut decides whether to use texture memory interpolation for STO radial functions.
-// isPeriodic decides whether to fold coords into unit cell.
-// isRealInput decides whether to use real/complex eigenvectors (and adds phases)
-// calcAtomicDensity squares the basis wavefunction contributions, result in valueReal_out of shape (x,y,z,n)
-// calcTotalChrg accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
-// User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed.
+// o useRadialLut decides whether to use texture memory interpolation for STO radial functions.
+// o isPeriodic decides whether to fold coords into unit cell.
+// o isRealInput decides whether to use real/complex eigenvectors (and adds phases)
+// p calcAtomicDensity squares the basis wavefunction contributions, result in valueReal_out of shape (x,y,z,n)
+// o calcTotalChrg accumulates the density over all states, leading to valueReal_out of shape (x,y,z,1).
+// User is responsible for providing eigenvec multiplied with sqrt(occupation) if needed for total charge calculation.
 template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useRadialLut>
 __global__ void evaluateKernel(const DeviceKernelParams p)
 {
@@ -337,7 +336,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
         }
     }
 
-    // Density stored in first eig : (x,y,z, 1)
+    // Density stored in first eig : (x,y,z,1)
     if constexpr (calcTotalChrg) {
         size_t out_idx = IDX4F(i1, i2, i3_batch, 0, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
         p.valueReal_out_batch[out_idx] = totChrgAcc; 
@@ -545,7 +544,7 @@ extern "C" void evaluate_on_device_c(
                 // --- D2H Copy ---
                 // Copy the computed batch back to the correct slice of the final host array.
                 // The D2H copy will automatically block/ synchronize the kernel for this batch.
-                // This could be improved by using streams / cudaMemcpyAsync.
+                // This could be improved by using streams / cudaMemcpyAsync, but currently is not a bottleneck.
                 void *d_src_ptr = isRealOutput ? (void*)d_valueReal_out_batch.get() : (void*)d_valueCmpl_out_batch.get();
                 void *h_dest_ptr = isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out;
 
@@ -587,8 +586,6 @@ extern "C" void evaluate_on_device_c(
     // Switch back to lead to retrieve timing
     CHECK_CUDA(cudaSetDevice(0));
     CHECK_CUDA(cudaGetLastError());
-
-    // --- Final Timing ---
     CHECK_CUDA(cudaEventRecord(endEverything));
     CHECK_CUDA(cudaEventSynchronize(endEverything));
 
@@ -601,7 +598,8 @@ extern "C" void evaluate_on_device_c(
     printf("\n--- GPU Timing Results ---\n");
     printf("Total Multi-GPU execution time: %.2f ms\n", timeEverything);
     if(debug){
-    printf("(Lead) Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms, (totalKernelTime_ms / timeEverything) * 100.0);
-    printf("(Lead) D2H Copy:         %.2f ms (%.1f%%)\n", totalD2HCopyTime_ms, (totalD2HCopyTime_ms / timeEverything) * 100.0);
+        printf("(Lead) Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms, (totalKernelTime_ms / timeEverything) * 100.0);
+        printf("(Lead) D2H Copy:         %.2f ms (%.1f%%)\n", totalD2HCopyTime_ms, (totalD2HCopyTime_ms / timeEverything) * 100.0);
+        printf("(Lead) Overhead:         %.2f ms (%.1f%%)\n", overhead, (overhead / timeEverything) * 100.0);
     }
 }
