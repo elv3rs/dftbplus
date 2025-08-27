@@ -69,7 +69,7 @@ module libwavegrid_molorb_offloaded
   end type
 
   type, bind(c) :: TCalculationParamsC
-    logical(c_bool) :: isRealInput, calcAtomicDensity, calcTotalChrg
+    logical(c_bool) :: isRealInput, isRealOutput, calcAtomicDensity, calcTotalChrg
     integer(c_int) :: nEigIn, nEigOut
     type(c_ptr) :: eigVecsReal, eigVecsCmpl
     type(c_ptr) :: valueReal_out, valueCmpl_out
@@ -182,6 +182,7 @@ contains
       @:ASSERT(calc_p%nEigOut == 1)
     end if
     calc_p%isRealInput = ctx%isRealInput
+    calc_p%isRealOutput = ctx%isRealOutput
     calc_p%calcAtomicDensity = ctx%calcAtomicDensity
     calc_p%calcTotalChrg = ctx%calcTotalChrg
     calc_p%eigVecsReal = c_loc(eigVecsReal)

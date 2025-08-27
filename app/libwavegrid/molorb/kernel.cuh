@@ -64,6 +64,7 @@ typedef struct {
 // Coefficient Input and Control Flags
 typedef struct {
     bool isRealInput; 
+    bool isRealOutput;
     bool calcAtomicDensity;
     bool calcTotalChrg;
     int nEigIn;

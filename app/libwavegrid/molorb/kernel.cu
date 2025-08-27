@@ -61,8 +61,12 @@ struct DeviceData {
     DeviceBuffer<double> eigVecsReal;
     DeviceBuffer<complexd> eigVecsCmpl;
 
+    // Output (per-GPU batch buffer)
+    DeviceBuffer<complexd> d_valueCmpl_out_batch;
+    DeviceBuffer<double> d_valueReal_out_batch;
+
     // Constructor handles all H2D allocation and copy
-    DeviceData(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic, const StoBasisParams* basis, const CalculationParams* calc)
+    DeviceData(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic, const StoBasisParams* basis, const CalculationParams* calc, int z_per_batch)
         : origin(grid->origin, 3),
           gridVecs(grid->gridVecs, 9),
           coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
@@ -93,13 +97,21 @@ struct DeviceData {
             latVecs.assign(periodic->latVecs, 9);
             recVecs2pi.assign(periodic->recVecs2pi, 9);
         }
+
+        // Per-GPU batch buffer for the output
+        size_t batch_buffer_size_elems = (size_t)grid->nPointsX * grid->nPointsY * z_per_batch * calc->nEigOut;
+        if (calc->isRealOutput) {
+            d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
+        } else {
+            d_valueCmpl_out_batch = DeviceBuffer<complexd>(batch_buffer_size_elems);
+        }
     }
 };
 
 // Kernel parameters struct to simplify the argument list
 struct DeviceKernelParams {
     // Grid
-    int nPointsX, nPointsY, nPointsZ_batch, z_offset_global;
+    int nPointsX, nPointsY, z_per_batch, z_offset_global;
     const double* origin;
     const double* gridVecs;
 
@@ -134,7 +146,7 @@ struct DeviceKernelParams {
     const double* eigVecsReal;
     const complexd* eigVecsCmpl;
 
-    // Output (batch pointers), varied in batch loop
+    // Output (batch pointers)
     double* valueReal_out_batch;
     complexd* valueCmpl_out_batch;
 
@@ -142,12 +154,13 @@ struct DeviceKernelParams {
     // Batch-specific parameters are initialized to zero or nullptr,
     // and need to be set in the loop before kernel launch.
     DeviceKernelParams(
-        const DeviceData& data,
+        DeviceData& data,
         const GridParams* grid,
         const SystemParams* system,
         const PeriodicParams* periodic,
         const StoBasisParams* basis,
-        const CalculationParams* calc
+        const CalculationParams* calc,
+        int nEig_per_pass_in
     ) {
         // Grid
         origin = data.origin.get();
@@ -192,12 +205,14 @@ struct DeviceKernelParams {
         eigVecsReal = data.eigVecsReal.get();
         eigVecsCmpl = data.eigVecsCmpl.get();
 
+        // Output batch buffers
+        valueReal_out_batch = data.d_valueReal_out_batch.get();
+        valueCmpl_out_batch = data.d_valueCmpl_out_batch.get();
+
+        nEig_per_pass = nEig_per_pass_in;
         // Batch-specific kernel config to be updated in the loop
-        nPointsZ_batch = 0;
+        z_per_batch = 0;
         z_offset_global = 0;
-        nEig_per_pass = 0;
-        valueReal_out_batch = nullptr;
-        valueCmpl_out_batch = nullptr;
     }
 };
 
@@ -228,7 +243,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
     // --- Thread to point mapping ---
     // Map each thread to unique 1d index
     int idx_in_batch = blockIdx.x * blockDim.x + threadIdx.x;
-    int total_points_in_batch = p.nPointsX * p.nPointsY * p.nPointsZ_batch;
+    int total_points_in_batch = p.nPointsX * p.nPointsY * p.z_per_batch;
     if (idx_in_batch >= total_points_in_batch) return;
 
     // Map 1d index to point in grid
@@ -319,7 +334,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
         for (int iEig_offset = 0; iEig_offset < p.nEig_per_pass; ++iEig_offset) {
             int iEig = eig_base + iEig_offset;
             if (iEig >= p.nEig) break;
-            size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
+            size_t out_idx = IDX4F(i1, i2, i3_batch, iEig, p.nPointsX, p.nPointsY, p.z_per_batch);
             if constexpr (isRealInput) {
                 if constexpr (calcTotalChrg) {
                     totChrgAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
@@ -338,12 +353,140 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
 
     // Density stored in first eig : (x,y,z,1)
     if constexpr (calcTotalChrg) {
-        size_t out_idx = IDX4F(i1, i2, i3_batch, 0, p.nPointsX, p.nPointsY, p.nPointsZ_batch);
+        size_t out_idx = IDX4F(i1, i2, i3_batch, 0, p.nPointsX, p.nPointsY, p.z_per_batch);
         p.valueReal_out_batch[out_idx] = totChrgAcc; 
     }
 }
 
+struct GpuLaunchConfig {
+    int deviceId;
+    int z_start; // Starting Z-slice for this GPU
+    int z_count; // Number of Z-slices for this GPU
+    int z_per_batch; // Number of Z-slices to process per kernel launch
+    int nEig_per_pass; // Number of eigenstates to accumulate in shared memory
+    size_t shared_mem_for_pass; // Amount of shared memory per block for the accumulators
+};
 
+GpuLaunchConfig setup_gpu_config(int deviceId, int numGpus, const GridParams* grid, const CalculationParams* calc) {
+    GpuLaunchConfig config;
+    config.deviceId = deviceId;
+
+    // Evenly divide work using Z-slices among GPUs
+    config.z_count = grid->nPointsZ / numGpus;
+    config.z_start = deviceId * config.z_count;
+    // Handle uneven Z-slice count: Last GPU takes remaining slices
+    if(deviceId == numGpus - 1) 
+        config.z_count = grid->nPointsZ - config.z_start;
+    
+    // Query available memory sizes with safety margins
+    cudaDeviceProp prop;
+    size_t free_global_mem, total_global_mem;
+    CHECK_CUDA(cudaMemGetInfo(&free_global_mem, &total_global_mem));
+    CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
+    size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
+    size_t available_global = static_cast<size_t>(free_global_mem * GLOBAL_MEM_FACTOR);
+
+    size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
+    size_t output_number_size = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
+    
+    // Determine number of eigenstates that fit into shared memory
+    config.nEig_per_pass = available_shared / (block_size * accumulator_number_size);
+    config.nEig_per_pass = std::min(calc->nEigIn, std::max(1, config.nEig_per_pass)); // clamp to [1, nEigIn]
+    config.shared_mem_for_pass = (size_t)config.nEig_per_pass * block_size * accumulator_number_size;
+  
+    // Determine max Z-slices that can fit in available (global) memory
+    size_t bytes_per_slice = (size_t)grid->nPointsX * grid->nPointsY * calc->nEigOut * output_number_size;
+    config.z_per_batch = std::min(config.z_count, (int) available_global / (int) bytes_per_slice);
+    config.z_per_batch = std::max(1, config.z_per_batch); // at least 1
+
+    // Debug output
+    if (deviceId == 0 && debug) {
+        printf("\n--- GPU %d Configuration ---\n", deviceId);
+        printf("  Z-slice workload: %d (from index %d to %d)\n", config.z_count, config.z_start, config.z_start + config.z_count- 1);
+        printf("  Block size: %d threads, %zub shared mem per block, %d eigs of %d per pass\n",
+            block_size, config.shared_mem_for_pass, config.nEig_per_pass, calc->nEigIn);
+        size_t total_size_valueOut = (size_t)grid->nPointsX * grid->nPointsY * grid->nPointsZ * calc->nEigOut * sizeof(double);
+        if (!calc->isRealOutput) total_size_valueOut *= 2; 
+        printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
+            free_global_mem / 1e9, grid->nPointsX, grid->nPointsY, grid->nPointsZ, calc->nEigOut,
+            total_size_valueOut / 1e9);
+        printf("  Processing Z-slices in batches of %d\n", config.z_per_batch);
+
+    }
+
+    return config;
+}
+// Since the kernel is templated on the different calculation modes, we cannot simply pass booleans at runtime
+// and thus need this dispatch table to call the correct binary.
+void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useRadialLut, int grid_size,
+        size_t shared_mem_for_pass) {
+    #define CALL_KERNEL(isReal, doAtomic, doChrg, useLut) \
+        evaluateKernel<isReal, doAtomic, doChrg, useLut> \
+            <<<grid_size, block_size, shared_mem_for_pass>>>(*params);
+
+    int idx = (isRealInput       ? 1 : 0)
+            + (calcAtomicDensity ? 2 : 0)
+            + (calcTotalChrg     ? 4 : 0)
+            + (useRadialLut      ? 8 : 0);
+
+    assert(!(calcAtomicDensity && calcTotalChrg)); 
+    assert(!(!isRealInput && calcAtomicDensity));
+
+    switch (idx) {
+        case 0:  CALL_KERNEL(false, false, false, false); break;
+        case 1:  CALL_KERNEL(true,  false, false, false); break;
+      //case 2:  CALL_KERNEL(false, true,  false, false); break;
+        case 3:  CALL_KERNEL(true,  true,  false, false); break;
+        case 4:  CALL_KERNEL(false, false, true,  false); break;
+        case 5:  CALL_KERNEL(true,  false, true,  false); break;
+      //case 6:  CALL_KERNEL(false, true,  true,  false); break;
+      //case 7:  CALL_KERNEL(true,  true,  true,  false); break;
+        case 8:  CALL_KERNEL(false, false, false, true);  break;
+        case 9:  CALL_KERNEL(true,  false, false, true);  break;
+      //case 10: CALL_KERNEL(false, true,  false, true);  break;
+        case 11: CALL_KERNEL(true,  true,  false, true);  break;
+        case 12: CALL_KERNEL(false, false, true,  true);  break;
+        case 13: CALL_KERNEL(true,  false, true,  true);  break;
+      //case 14: CALL_KERNEL(false, true,  true,  true);  break;
+      //case 15: CALL_KERNEL(true,  true,  true,  true);  break;
+        default:
+            fprintf(stderr, "Error: invalid kernel configuration index %d\n", idx);
+            exit(EXIT_FAILURE);
+    }
+    #undef CALL_KERNEL
+}
+
+// Copy the computed batch back to the correct slice of the final host array.
+// The D2H copy will automatically block/ synchronize the kernel for this batch.
+// This could be improved by using streams / cudaMemcpyAsync, but currently is not a bottleneck.
+// The output array is of fortran shape (x,y,z,nEigOut), thus z-slices are not contiguous.
+// We slice on Z instead of nEigOut to save on a little computation in the kernel, as well as to allow
+// the total charge calculation mode.
+// which calculates all contributions for each point and then multiplies with the eigenvector coefficients.
+//
+void copyD2H(
+    void* d_src_ptr,
+    void* h_dest_ptr,
+    int nPointsX, int nPointsY, int nPointsZ,
+    int z_per_batch, int z_offset_global,
+    const CalculationParams* calc
+) {
+
+    size_t output_number_size = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
+    size_t host_plane_size = (size_t)nPointsZ * nPointsY * nPointsX * output_number_size;
+    size_t device_plane_size = (size_t)z_per_batch * nPointsY * nPointsX * output_number_size;
+
+    for(int iEig = 0; iEig < calc->nEigOut; ++iEig) {
+        // From: iEig-th slice of GPU batch buffer
+        ptrdiff_t d_offset_bytes = (ptrdiff_t)(iEig * device_plane_size);
+        
+        // To: Global Z-position in the iEig-th slice of host buffer
+        ptrdiff_t h_offset_bytes = (ptrdiff_t)(iEig * host_plane_size + ( (size_t)z_offset_global * nPointsY * nPointsX) * output_number_size);
+
+        CHECK_CUDA(cudaMemcpy((char*)h_dest_ptr + h_offset_bytes, (char*)d_src_ptr + d_offset_bytes, device_plane_size, cudaMemcpyDeviceToHost));
+    }
+    
+}
 
 // =========================================================================
 //  C++ Host Interface (callable from C/Fortran)
@@ -355,20 +498,15 @@ extern "C" void evaluate_on_device_c(
     const StoBasisParams* basis,
     const CalculationParams* calc
 ){
-    // Since we use these often, derefence them and add to namespace
-    int nPointsX = grid->nPointsX;
-    int nPointsY = grid->nPointsY;
-    int nPointsZ = grid->nPointsZ;
-    bool isRealOutput = calc->isRealInput || calc->calcTotalChrg;
-
-    if (calc->nEigIn == 0 || nPointsZ == 0) return; // Nothing to do
+    if (calc->nEigIn * grid->nPointsX * grid->nPointsY * grid->nPointsZ == 0) {
+        fprintf(stderr, "Error: Zero-sized dimension in input parameters.\n");
+        exit(EXIT_FAILURE);
+    }
     if (calc->calcTotalChrg) {
         assert(calc->nEigOut == 1);
     } else {
         assert(calc->nEigOut == calc->nEigIn);
     }
-    
-    
     // We currently assume a hardcoded maximum for the number of powers.
     if (!basis->useRadialLut && basis->maxNPows > STO_MAX_POWS) {
         fprintf(stderr, "Error: maxNPows (%d) exceeds STO_MAX_POWS (%d)\n", basis->maxNPows, STO_MAX_POWS);
@@ -413,153 +551,38 @@ extern "C" void evaluate_on_device_c(
     {
         int deviceId = omp_get_thread_num();
         CHECK_CUDA(cudaSetDevice(deviceId));
+        GpuLaunchConfig config = setup_gpu_config(deviceId, numGpus, grid, calc);
 
-        // --- Work Distribution: Divide Z-slices among GPUs ---
-        int z_slices_per_gpu = nPointsZ / numGpus;
-        int z_start_for_device = deviceId * z_slices_per_gpu;
-        // Handle uneven Z-slice count
-        int z_count_for_device = (deviceId == numGpus - 1) ? (nPointsZ - z_start_for_device) : z_slices_per_gpu;
+        if (config.z_count > 0) {
 
-        if (z_count_for_device > 0) {
-            // --- Allocate on and copy data to gpu---
-            DeviceData device_data(grid, system, periodic, basis, calc);
+            // Device allocation and H2D transfer
+            DeviceData device_data(grid, system, periodic, basis, calc, config.z_per_batch);
 
-            // --- Per-GPU Kernel Configuration ---
-            cudaDeviceProp prop;
-            CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
-            
-            // Determine available shared memory for nEig_per_pass
-            size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
-            size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
-            int nEig_per_pass = available_shared / (block_size * accumulator_number_size);
-            if (nEig_per_pass == 0) nEig_per_pass = 1;
-            if (nEig_per_pass > calc->nEigIn) nEig_per_pass = calc->nEigIn;
-
-            size_t shared_mem_for_pass = (size_t)nEig_per_pass * block_size * accumulator_number_size;
-
-            
-            // Determine the number of Z-slices to process in a single batch
-            size_t free_mem, total_mem;
-            CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
-            size_t output_number_size = isRealOutput ? sizeof(double) : sizeof(complexd);
-            size_t available_for_batch = static_cast<size_t>(free_mem * GLOBAL_MEM_FACTOR);
-            size_t z_slice_size_bytes = (size_t)nPointsX * nPointsY * calc->nEigOut * output_number_size;
-            
-            // Determine max Z-slices that can fit in available (global) memory
-            int z_batch_size = z_count_for_device; 
-            if (z_slice_size_bytes > 0 && ((size_t)z_count_for_device * z_slice_size_bytes) > available_for_batch) {
-                z_batch_size = available_for_batch / z_slice_size_bytes;
-                if (z_batch_size == 0) z_batch_size = 1;
-            }
-
-            // Per-GPU batch buffer for the output
-            size_t batch_buffer_size_elems = (size_t)nPointsX * nPointsY * std::min(z_count_for_device, z_batch_size) * calc->nEigOut;
-            // todo: move this to deviceParams
-            DeviceBuffer<complexd> d_valueCmpl_out_batch;
-            DeviceBuffer<double> d_valueReal_out_batch;
-            if (calc->isRealInput || calc->calcTotalChrg) {
-                d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
-            } else {
-                d_valueCmpl_out_batch = DeviceBuffer<complexd>(batch_buffer_size_elems);
-            }
-
-            // Debug output
-            #pragma omp critical
-            if (deviceId == 0 && debug) {
-                printf("\n--- GPU %d (Lead) Configuration ---\n", deviceId);
-                printf("  Z-slice workload: %d (from index %d to %d)\n", z_count_for_device, z_start_for_device, z_start_for_device + z_count_for_device - 1);
-                printf("  Block size: %d threads, %zub shared mem per block, %d eigs of %d per pass\n",
-                    block_size, shared_mem_for_pass, nEig_per_pass, calc->nEigIn);
-                size_t total_size_valueOut = (size_t)nPointsX * nPointsY * nPointsZ * calc->nEigOut * sizeof(double);
-                if (!isRealOutput) total_size_valueOut *= 2; 
-                printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n",
-                    free_mem / 1e9, nPointsX, nPointsY, nPointsZ, calc->nEigOut,
-                    total_size_valueOut / 1e9);
-                printf("  Processing Z-slices in batches of %d\n", z_batch_size);
-
-            }
-            // --- Populate Kernel Parameter struct ---
-            DeviceKernelParams deviceParams(device_data, grid, system, periodic, basis, calc);
-            deviceParams.nEig_per_pass = nEig_per_pass; // Set remaining params
-            deviceParams.valueReal_out_batch = d_valueReal_out_batch.get();
-            deviceParams.valueCmpl_out_batch = d_valueCmpl_out_batch.get();
-
+            // Populate Kernel Parameter struct
+            DeviceKernelParams deviceParams(device_data, grid, system, periodic, basis, calc, config.nEig_per_pass);
 
             // --- Per-GPU Kernel Execution Loop ---
             // This loop iterates over the Z-slices assigned to *this* GPU.
-            for (int z_offset_in_device_chunk = 0; z_offset_in_device_chunk < z_count_for_device; z_offset_in_device_chunk += z_batch_size) {
-                deviceParams.nPointsZ_batch = std::min(z_batch_size, z_count_for_device - z_offset_in_device_chunk);
+            for (int z_offset = 0; z_offset < config.z_count; z_offset += config.z_per_batch) {
+                deviceParams.z_per_batch = std::min(config.z_per_batch, config.z_count - z_offset);
+                deviceParams.z_offset_global = config.z_start + z_offset; // required to calculate coordinates in kernel
 
-                int total_points_in_batch = nPointsX * nPointsY * deviceParams.nPointsZ_batch;
-                if (total_points_in_batch == 0) continue;
-
-                // The global z_offset is what the kernel needs to calculate correct coordinates
-                deviceParams.z_offset_global = z_start_for_device + z_offset_in_device_chunk;
+                int total_points_in_batch = grid->nPointsX * grid->nPointsY * deviceParams.z_per_batch;
                 int grid_size = (total_points_in_batch + block_size - 1) / block_size;
-                if(deviceId == 0) {
-                    CHECK_CUDA(cudaEventRecord(startKernelOnly));
-                }
-                 
-                #define CALL_KERNEL(isReal, doAtomic, doChrg, useLut) \
-                    evaluateKernel<isReal, doAtomic, doChrg, useLut> \
-                        <<<grid_size, block_size, shared_mem_for_pass>>>(deviceParams);
 
-                int idx = (calc->isRealInput       ? 1 : 0)
-                        + (calc->calcAtomicDensity ? 2 : 0)
-                        + (calc->calcTotalChrg     ? 4 : 0)
-                        + (basis->useRadialLut     ? 8 : 0);
+                if(deviceId == 0) CHECK_CUDA(cudaEventRecord(startKernelOnly));
+                
+                dispatchKernel(&deviceParams, calc->isRealInput, calc->calcAtomicDensity, calc->calcTotalChrg, basis->useRadialLut, grid_size, config.shared_mem_for_pass);
 
-                assert(!(calc->calcAtomicDensity && calc->calcTotalChrg)); 
-                assert(!(!calc->isRealInput && calc->calcAtomicDensity));
+                if(deviceId == 0) { CHECK_CUDA(cudaEventRecord(endKernelOnly)); CHECK_CUDA(cudaEventRecord(startCopyOnly)); }
 
-                switch (idx) {
-                    case 0:  CALL_KERNEL(false, false, false, false); break;
-                    case 1:  CALL_KERNEL(true,  false, false, false); break;
-                  //case 2:  CALL_KERNEL(false, true,  false, false); break;
-                    case 3:  CALL_KERNEL(true,  true,  false, false); break;
-                    case 4:  CALL_KERNEL(false, false, true,  false); break;
-                    case 5:  CALL_KERNEL(true,  false, true,  false); break;
-                  //case 6:  CALL_KERNEL(false, true,  true,  false); break;
-                  //case 7:  CALL_KERNEL(true,  true,  true,  false); break;
-                    case 8:  CALL_KERNEL(false, false, false, true);  break;
-                    case 9:  CALL_KERNEL(true,  false, false, true);  break;
-                  //case 10: CALL_KERNEL(false, true,  false, true);  break;
-                    case 11: CALL_KERNEL(true,  true,  false, true);  break;
-                    case 12: CALL_KERNEL(false, false, true,  true);  break;
-                    case 13: CALL_KERNEL(true,  false, true,  true);  break;
-                  //case 14: CALL_KERNEL(false, true,  true,  true);  break;
-                  //case 15: CALL_KERNEL(true,  true,  true,  true);  break;
-                    default:
-                        fprintf(stderr, "Error: invalid kernel configuration index %d\n", idx);
-                        exit(EXIT_FAILURE);
-                }
-                                    
-
-
-                if(deviceId == 0) {
-                    CHECK_CUDA(cudaEventRecord(endKernelOnly));
-                    CHECK_CUDA(cudaEventRecord(startCopyOnly));
-                }
-
-                // --- D2H Copy ---
-                // Copy the computed batch back to the correct slice of the final host array.
-                // The D2H copy will automatically block/ synchronize the kernel for this batch.
-                // This could be improved by using streams / cudaMemcpyAsync, but currently is not a bottleneck.
-                void *d_src_ptr = isRealOutput ? (void*)d_valueReal_out_batch.get() : (void*)d_valueCmpl_out_batch.get();
-                void *h_dest_ptr = isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out;
-
-                size_t host_plane_size = (size_t)nPointsZ * nPointsY * nPointsX * output_number_size;
-                size_t device_plane_size = (size_t)deviceParams.nPointsZ_batch * nPointsY * nPointsX * output_number_size;
-
-                for(int iEig = 0; iEig < calc->nEigOut; ++iEig) {
-                    // From: iEig-th slice of GPU batch buffer
-                    ptrdiff_t d_offset_bytes = (ptrdiff_t)(iEig * device_plane_size);
-                    
-                    // To: Global Z-position in the iEig-th slice of host buffer
-                    ptrdiff_t h_offset_bytes = (ptrdiff_t)(iEig * host_plane_size + ( (size_t)deviceParams.z_offset_global * nPointsY * nPointsX) * output_number_size);
-
-                    CHECK_CUDA(cudaMemcpy((char*)h_dest_ptr + h_offset_bytes, (char*)d_src_ptr + d_offset_bytes, device_plane_size, cudaMemcpyDeviceToHost));
-                }
+                copyD2H(
+                    calc->isRealOutput ? (void*)device_data.d_valueReal_out_batch.get() : (void*)device_data.d_valueCmpl_out_batch.get(),
+                    calc->isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out,
+                    grid->nPointsX, grid->nPointsY, grid->nPointsZ,
+                    deviceParams.z_per_batch, deviceParams.z_offset_global,
+                    calc
+                );
 
 
                 if(deviceId == 0) {
@@ -603,3 +626,5 @@ extern "C" void evaluate_on_device_c(
         printf("(Lead) Overhead:         %.2f ms (%.1f%%)\n", overhead, (overhead / timeEverything) * 100.0);
     }
 }
+
+
