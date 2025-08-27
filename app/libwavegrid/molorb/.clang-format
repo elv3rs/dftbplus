@@ -1,14 +1,14 @@
 BasedOnStyle: Google
 IndentWidth: 4
-ColumnLimit: 150
+ColumnLimit: 120
 
 BreakBeforeBraces: Attach
 AllowShortIfStatementsOnASingleLine: true
 AllowShortLoopsOnASingleLine: false
 
 AlignAfterOpenBracket: DontAlign
-BinPackArguments: false
-BinPackParameters: false
+BinPackArguments: true
+BinPackParameters: true
 
 PointerAlignment: Left
 ReferenceAlignment: Left
@@ -21,3 +21,5 @@ SpacesInParentheses: false
 SpaceBeforeParens: ControlStatements
 
 AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AllowShortCaseLabelsOnASingleLine: true
