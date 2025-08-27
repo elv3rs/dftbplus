@@ -91,7 +91,7 @@ struct DeviceData {
                 lutArray,                   // dst array
                 0, 0,                       // no offset in dst
                 lutGridValuesFloat.data(),  // src pointer
-                N * sizeof(float),          // src pitch (for alignment, bytes tp next row)
+                N * sizeof(float),          // src pitch (for alignment, bytes to next row)
                 N * sizeof(float),          // width in bytes
                 basis->nStos,               // height (number of cached stos)
                 cudaMemcpyHostToDevice

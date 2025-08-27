@@ -28,7 +28,7 @@ int nAtom;
 
 // Additional System information describing periodic boundary conditions
 typedef struct {
-    int isPeriodic;
+    bool isPeriodic;
     const double* latVecs;        // [3][3]
     const double* recVecs2pi;     // [3][3]
     const int* kIndexes;          // [nEig]
@@ -37,8 +37,8 @@ typedef struct {
 
 // Basis parameters describing orbitals
 typedef struct {
+    bool useRadialLut;
     int nStos;
-    int useRadialLut;
     int nLutPoints;
 
     double inverseLutStep;
@@ -57,11 +57,11 @@ typedef struct {
 
 // Coefficient Input and Control Flags
 typedef struct {
+    bool isRealInput; 
+    bool calcAtomicDensity;
+    bool calcTotalChrg;
     int nEigIn;
     int nEigOut; // calcTotalChrg ? 1 : nEigIn
-    int isRealInput; 
-    int calcAtomicDensity;
-    int calcTotalChrg;
     const double* eigVecsReal;          // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl; // [nOrb][nEigIn]
     double* valueReal_out;              // [nPointsX][nPointsY][nPointsZ][nEigOut]

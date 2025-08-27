@@ -73,12 +73,13 @@ contains
     end type
 
     type, bind(c) :: TPeriodicParamsC
-      integer(c_int) :: isPeriodic
+      logical(c_bool) :: isPeriodic
       type(c_ptr) :: latVecs, recVecs2pi, kIndexes, phases
     end type
 
     type, bind(c) :: TSlaterOrbitalC
-      integer(c_int) :: nStos, useRadialLut, nLutPoints
+      logical(c_bool) :: useRadialLut
+      integer(c_int) :: nStos, nLutPoints
       real(c_double) :: inverseLutStep
       type(c_ptr) :: lutGridValues
 
@@ -88,7 +89,8 @@ contains
     end type
 
     type, bind(c) :: TCalculationParamsC
-      integer(c_int) :: nEigIn, nEigOut, isRealInput, calcAtomicDensity, calcTotalChrg
+      logical(c_bool) :: isRealInput, calcAtomicDensity, calcTotalChrg
+      integer(c_int) :: nEigIn, nEigOut
       type(c_ptr) :: eigVecsReal, eigVecsCmpl
       type(c_ptr) :: valueReal_out, valueCmpl_out
     end type
@@ -134,7 +136,7 @@ contains
     system_p%species = c_loc(system%species)
     system_p%iStos = c_loc(system%iStos)
 
-    periodic_p%isPeriodic = merge(1, 0, periodic%isPeriodic)
+    periodic_p%isPeriodic = periodic%isPeriodic
     periodic_p%latVecs = c_loc(periodic%latVecs)
     periodic_p%recVecs2pi = c_loc(periodic%recVecs2pi)
     periodic_p%kIndexes = c_loc(kIndexes)
@@ -145,7 +147,7 @@ contains
     basis_p%nStos = basis%nStos
     basis_p%sto_angMoms = c_loc(basis%angMoms)
     basis_p%sto_cutoffsSq = c_loc(basis%cutoffsSq)
-    basis_p%useRadialLut = merge(1, 0, basis%useRadialLut)
+    basis_p%useRadialLut = basis%useRadialLut
 
     if (basis%useRadialLut) then
       basis_p%nLutPoints = basis%nLutPoints
@@ -174,9 +176,9 @@ contains
     if (ctx%calcTotalChrg) then
       @:ASSERT(calc_p%nEigOut == 1)
     end if
-    calc_p%isRealInput = merge(1, 0, ctx%isRealInput)
-    calc_p%calcAtomicDensity = merge(1, 0, ctx%calcAtomicDensity)
-    calc_p%calcTotalChrg = merge(1, 0, ctx%calcTotalChrg)
+    calc_p%isRealInput = ctx%isRealInput
+    calc_p%calcAtomicDensity = ctx%calcAtomicDensity
+    calc_p%calcTotalChrg = ctx%calcTotalChrg
     calc_p%eigVecsReal = c_loc(eigVecsReal)
     calc_p%eigVecsCmpl = c_loc(eigVecsCmpl)
     calc_p%valueReal_out = c_loc(valueReal)
