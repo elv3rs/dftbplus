@@ -227,8 +227,6 @@ contains
       allocate(sf%eigenvecCmpl(sf%nOrb, sf%nCached))
     end if
 
-
-
     nAll = size(levelIndex, dim=2)
     allocate(sf%levelIndex(3, nAll))
     ! Make sure, entries are correctly sorted in the list
@@ -364,8 +362,7 @@ contains
     !> If all orbitals had been processed.
     logical, intent(out) :: isFinished
 
-    integer :: iEnd, iStartAbs, iEndAbs, iLevel, iKPoint, iSpin
-    integer :: ind, tmp
+    integer :: iEnd, iStartAbs, iEndAbs
     real(dp), pointer :: eigReal(:,:)
     complex(dp), pointer :: eigCmpl(:,:)
 

@@ -153,7 +153,7 @@ contains
   subroutine flattenBasis(this, basisInput)
     class(TMolecularOrbital), intent(inout) :: this
     type(TSpeciesBasis), intent(in) :: basisInput(:)
-    integer :: iSpec, iOrb, ind, nStos
+    integer :: iSpec, ind, nStos
     ! Count total number of STOs
     do iSpec = 1, this%system%nSpecies
       nStos = nStos + basisInput(iSpec)%nOrb

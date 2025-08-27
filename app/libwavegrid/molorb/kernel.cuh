@@ -13,6 +13,12 @@
 extern "C" {
 #endif
 
+
+/*
+ * Important:
+ * These struct definitions must be mirrored at the c bound Fortran call site in offloaded.F90.
+ */
+
 // Calculation grid
 typedef struct {
     int nPointsX;

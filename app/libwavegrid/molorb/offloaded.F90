@@ -41,7 +41,8 @@ module libwavegrid_molorb_offloaded
     logical :: isInitialized = .false.
   end type TBasisParams
   
-  !> C bound structs for parameter passing
+  !> C bound structs for parameter passing.
+  !> These *must* match the struct definitions in kernel.cuh.
   type, bind(c) :: TGridParamsC
     integer(c_int) :: nPointsX, nPointsY, nPointsZ
     type(c_ptr) :: origin, gridVecs
