@@ -20,8 +20,10 @@
 #define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
 
 
-// A simple RAII wrapper for device memory.
-// Use get() to retrieve the raw pointer.
+/*
+ * A simple RAII wrapper for device memory.
+ * Use get() to retrieve the raw pointer. 
+ */
 template <typename T>
 class DeviceBuffer {
 public:
@@ -114,5 +116,81 @@ private:
     T* _devicePtr = nullptr;
     size_t _count = 0;
 };
+
+
+
+/*
+ * We implement the LUT as a 2D texture with a single float channel.
+ * The radial Functions are stored row-wise.
+ * We assume identical radial grids for all STOs.
+ * GPUs have dedicated hardware for texture access & interpolation.
+ */
+class GpuLutTexture {
+public:
+    GpuLutTexture(const double* lutData, int nPoints, int nStos) {
+        // Convert the Fortran passed doubles to floats
+        size_t totalValues = (size_t)nStos * nPoints;
+        std::vector<float> lutFloats(totalValues);
+        for (size_t i = 0; i < totalValues; ++i) 
+            lutFloats[i] = static_cast<float>(lutData[i]);
+        
+
+        // Allocate memory on device
+        cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
+        CHECK_CUDA(cudaMallocArray(&_lutArray, &channelDesc, nPoints, nStos, 0));
+
+        // Copy data to array
+        CHECK_CUDA(cudaMemcpy2DToArray(
+            _lutArray,                  // dst array
+            0, 0,                       // no offset in dst
+            lutFloats.data(),           // src pointer
+            nPoints * sizeof(float),    // src pitch (for alignment, bytes to next row)
+            nPoints * sizeof(float),    // width in bytes
+            nStos,                      // height (number of cached stos)
+            cudaMemcpyHostToDevice
+        ));
+
+        // Prepare texture object properties
+        cudaResourceDesc resDesc{};
+        resDesc.resType = cudaResourceTypeArray;
+        resDesc.res.array.array = _lutArray;
+
+        cudaTextureDesc texDesc{};
+        // OOB access clamped to edge values
+        // (Should not occur if sto_cutoffs are set correctly)
+        texDesc.addressMode[0] = cudaAddressModeClamp; 
+        texDesc.addressMode[1] = cudaAddressModeClamp;
+        // Enable linear interpolation
+        texDesc.filterMode = cudaFilterModeLinear;
+        // Do not normalize the lut values
+        texDesc.readMode = cudaReadModeElementType;
+        // Access using texel coords, i.e. [0, N-1]
+        // Imagine a pixel, add 0.5f to get the center.
+        texDesc.normalizedCoords = 0;
+        
+        // Create texture object
+        CHECK_CUDA(cudaCreateTextureObject(&_textureObject, &resDesc, &texDesc, nullptr));
+    }
+
+    ~GpuLutTexture() {
+        if (_textureObject) cudaDestroyTextureObject(_textureObject);
+        if (_lutArray) cudaFreeArray(_lutArray);
+    }
+
+    // Disable copy
+    GpuLutTexture(const GpuLutTexture&) = delete;
+    GpuLutTexture& operator=(const GpuLutTexture&) = delete;
+
+    cudaTextureObject_t get() const { return _textureObject; }
+
+private:
+    cudaArray_t _lutArray = nullptr;
+    cudaTextureObject_t _textureObject = 0;
+};
+
+
+
+
+
 
 #endif // UTILS_CUH_

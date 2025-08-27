@@ -119,15 +119,18 @@ contains
     complex(dp), allocatable :: orbValsPerPointCmpl(:)
     !! Loop Variables
     integer :: i1, i2, i3, iAtom, iOrb, iM, iL, iCell
-    integer :: nPoints(4)
+    integer :: gridDimensions(4)
 
     if (ctx%isRealInput .or. ctx%calcTotalChrg) then
       valueReal = 0.0_dp
-      nPoints = shape(valueReal)
+      gridDimensions = shape(valueReal)
     else
       valueCmpl = 0.0_dp
-      nPoints = shape(valueCmpl)
+      gridDimensions = shape(valueCmpl)
     end if
+
+    @:ASSERT(.not.(.not. ctx%isRealInput .and. ctx%calcAtomicDensity))
+    @:ASSERT(.not.(ctx%calcTotalChrg .and. ctx%calcAtomicDensity))
 
 
     !$omp parallel private(i1, i2, i3, iCell, iAtom, iOrb, iL, iM, xyz, frac, diff, &
@@ -142,9 +145,9 @@ contains
     end if
 
     !$omp do collapse(3)
-    lpI3: do i3 = 1, nPoints(3)
-      lpI2: do i2 = 1, nPoints(2)
-        lpI1: do i1 = 1, nPoints(1)
+    lpI3: do i3 = 1, gridDimensions(3)
+      lpI2: do i2 = 1, gridDimensions(2)
+        lpI1: do i1 = 1, gridDimensions(1)
             xyz(:) = system%origin(:) + real(i1 - 1, dp) * system%gridVecs(:, 1) &
                                     & + real(i2 - 1, dp) * system%gridVecs(:, 2) &
                                     & + real(i3 - 1, dp) * system%gridVecs(:, 3)

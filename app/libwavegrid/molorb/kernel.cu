@@ -12,6 +12,7 @@
 #include <cmath>
 #include <algorithm>
 #include <assert.h>
+#include <memory>
 
 #include "kernel.cuh"
 #include "utils.cuh"
@@ -54,7 +55,7 @@ struct DeviceData {
     DeviceBuffer<double> sto_coeffs;
     DeviceBuffer<double> sto_alphas;
     // Texture for radial LUT
-    cudaTextureObject_t sto_lutTex;
+    std::unique_ptr<GpuLutTexture> sto_lut;
 
     // Eigenvectors
     DeviceBuffer<double> eigVecsReal;
@@ -72,45 +73,7 @@ struct DeviceData {
     {
         if (basis->useRadialLut) {
             printf("Using radial LUT with %d points for %d STOs\n", basis->nLutPoints, basis->nStos);
-            int N = basis->nLutPoints;
-            // Convert the Fortran passed doubles to floats
-            size_t totalLutValues = (size_t)basis->nStos * N;
-            std::vector<float> lutGridValuesFloat(totalLutValues);
-            for (size_t i = 0; i < totalLutValues; ++i) {
-                lutGridValuesFloat[i] = (float)(basis->lutGridValues[i]);
-            }
-
-            // Allocate
-            cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-            cudaExtent shape = make_cudaExtent(N, basis->nStos, 0);
-            cudaArray_t lutArray;
-            CHECK_CUDA(cudaMallocArray(&lutArray, &channelDesc, N, basis->nStos, 0));
-
-            // Copy data to array
-            CHECK_CUDA(cudaMemcpy2DToArray(
-                lutArray,                   // dst array
-                0, 0,                       // no offset in dst
-                lutGridValuesFloat.data(),  // src pointer
-                N * sizeof(float),          // src pitch (for alignment, bytes to next row)
-                N * sizeof(float),          // width in bytes
-                basis->nStos,               // height (number of cached stos)
-                cudaMemcpyHostToDevice
-            ));
-
-            // Prepare texture object properties
-            cudaResourceDesc resDesc{};
-            resDesc.resType = cudaResourceTypeArray;
-            resDesc.res.array.array = lutArray;
-
-            cudaTextureDesc texDesc{};
-            texDesc.addressMode[0] = cudaAddressModeClamp;
-            texDesc.addressMode[1] = cudaAddressModeClamp;
-            texDesc.filterMode = cudaFilterModeLinear; 
-            texDesc.readMode = cudaReadModeElementType; // dont normalize our lut values
-            texDesc.normalizedCoords = 0; // access using [0, N-1]
-            // Create texture object
-            CHECK_CUDA(cudaCreateTextureObject(&sto_lutTex, &resDesc, &texDesc, nullptr));
-
+            sto_lut = std::unique_ptr<GpuLutTexture>(new GpuLutTexture(basis->lutGridValues, basis->nLutPoints, basis->nStos));
         } else { // Direct STO calculation without LUT
             printf("Using direct STO evaluation for %d STOs\n", basis->nStos);
             sto_nPows.assign(basis->sto_nPows, basis->nStos);
@@ -206,7 +169,7 @@ struct DeviceKernelParams {
         sto_cutoffsSq = data.sto_cutoffsSq.get();
 
         if (basis->useRadialLut) {
-            lutTex = data.sto_lutTex;
+            lutTex = data.sto_lut->get();
             inverseLutStep = basis->inverseLutStep;
         } else {
             maxNPows = basis->maxNPows;
@@ -334,6 +297,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
 
                     for (int iM = -iL; iM <= iL; ++iM) {
                         double val = radialVal * realTessY(iL, iM, diff, inv_r, inv_r2);
+                        if constexpr (calcAtomicDensity) val = val * val;
                         
                         // Accumulate into the small shared memory buffer for the current chunk
                         for (int iEig_offset = 0; iEig_offset < p.nEig_per_pass; ++iEig_offset) {
@@ -360,16 +324,12 @@ __global__ void evaluateKernel(const DeviceKernelParams p)
             if constexpr (isRealInput) {
                 if constexpr (calcTotalChrg) {
                     totChrgAcc += point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
-                } else if (calcAtomicDensity) {
-                    p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset] * point_results_pass[iEig_offset];
                 } else {
                     p.valueReal_out_batch[out_idx] = point_results_pass[iEig_offset];
                 }
             } else {
                 if constexpr (calcTotalChrg) {
                     totChrgAcc += thrust::norm(point_results_pass[iEig_offset]);
-                } else if constexpr (calcAtomicDensity) {
-                    p.valueReal_out_batch[out_idx] = thrust::norm(point_results_pass[iEig_offset]);
                 } else {
                     p.valueCmpl_out_batch[out_idx] = point_results_pass[iEig_offset];
                 }
@@ -550,23 +510,29 @@ extern "C" void evaluate_on_device_c(
                         + (calc->calcTotalChrg     ? 4 : 0)
                         + (basis->useRadialLut     ? 8 : 0);
 
+                assert(!(calc->calcAtomicDensity && calc->calcTotalChrg)); 
+                assert(!(!calc->isRealInput && calc->calcAtomicDensity));
+
                 switch (idx) {
                     case 0:  CALL_KERNEL(false, false, false, false); break;
                     case 1:  CALL_KERNEL(true,  false, false, false); break;
-                    case 2:  CALL_KERNEL(false, true,  false, false); break;
+                  //case 2:  CALL_KERNEL(false, true,  false, false); break;
                     case 3:  CALL_KERNEL(true,  true,  false, false); break;
                     case 4:  CALL_KERNEL(false, false, true,  false); break;
                     case 5:  CALL_KERNEL(true,  false, true,  false); break;
-                    case 6:  CALL_KERNEL(false, true,  true,  false); break;
-                    case 7:  CALL_KERNEL(true,  true,  true,  false); break;
+                  //case 6:  CALL_KERNEL(false, true,  true,  false); break;
+                  //case 7:  CALL_KERNEL(true,  true,  true,  false); break;
                     case 8:  CALL_KERNEL(false, false, false, true);  break;
                     case 9:  CALL_KERNEL(true,  false, false, true);  break;
-                    case 10: CALL_KERNEL(false, true,  false, true);  break;
+                  //case 10: CALL_KERNEL(false, true,  false, true);  break;
                     case 11: CALL_KERNEL(true,  true,  false, true);  break;
                     case 12: CALL_KERNEL(false, false, true,  true);  break;
                     case 13: CALL_KERNEL(true,  false, true,  true);  break;
-                    case 14: CALL_KERNEL(false, true,  true,  true);  break;
-                    case 15: CALL_KERNEL(true,  true,  true,  true);  break;
+                  //case 14: CALL_KERNEL(false, true,  true,  true);  break;
+                  //case 15: CALL_KERNEL(true,  true,  true,  true);  break;
+                    default:
+                        fprintf(stderr, "Error: invalid kernel configuration index %d\n", idx);
+                        exit(EXIT_FAILURE);
                 }
                                     
 
