@@ -231,8 +231,8 @@ program waveplot
 
   doRequireIndividual =  wp%opt%doPlotChrgDiff &
                     & .or. wp%opt%doPlotReal .or. wp%opt%doPlotImag .or. wp%opt%doPlotTotSpin
-  !doRequireIndividual = .true.
-  ! The cuda kernel supports fast inplace accumulation for total charge. (speedup ~ 6x)
+
+  ! Libwavegrid supports fast inplace accumulation for total charge. (speedup ~ 6x)
   if (.not. doRequireIndividual .and. wp%opt%doCalcTotChrg) then
       print *, "Using library total charge calculation"
       ! Get occupation by state

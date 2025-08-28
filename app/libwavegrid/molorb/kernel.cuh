@@ -20,18 +20,18 @@ extern "C" {
 
 // Calculation grid
 typedef struct {
-    int           nPointsX;
-    int           nPointsY;
-    int           nPointsZ;
+    const int     nPointsX;
+    const int     nPointsY;
+    const int     nPointsZ;
     const double* origin;    // [3]
     const double* gridVecs;  // [3][3]
 } GridParams;
 
 typedef struct {
-    int           nAtom;
-    int           nCell;
-    int           nSpecies;
-    int           nOrb;
+    const int     nAtom;
+    const int     nCell;
+    const int     nSpecies;
+    const int     nOrb;
     const double* coords;   // [3][nAtom][nCell]
     const int*    species;  // [nAtom]
     const int*    iStos;    // [nSpecies+1]
@@ -39,7 +39,7 @@ typedef struct {
 
 // Additional System information describing periodic boundary conditions
 typedef struct {
-    bool                   isPeriodic;
+    const bool             isPeriodic;
     const double*          latVecs;     // [3][3]
     const double*          recVecs2pi;  // [3][3]
     const int*             kIndexes;    // [nEig]
@@ -48,15 +48,15 @@ typedef struct {
 
 // Basis parameters describing orbitals
 typedef struct {
-    bool useRadialLut;
-    int  nStos;
-    int  nLutPoints;
+    const bool useRadialLut;
+    const int  nStos;
+    const int  nLutPoints;
 
-    double        inverseLutStep;
+    const double  inverseLutStep;
     const double* lutGridValues;  // [nStos][nLutPoints]
 
-    int           maxNPows;
-    int           maxNAlphas;
+    const int     maxNPows;
+    const int     maxNAlphas;
     const int*    angMoms;    // [nStos]
     const int*    nPows;      // [nStos]
     const int*    nAlphas;    // [nStos]
@@ -67,20 +67,24 @@ typedef struct {
 
 // Coefficient Input and Control Flags
 typedef struct {
-    bool                   isRealInput;
-    bool                   isRealOutput;
-    bool                   calcAtomicDensity;
-    bool                   calcTotalChrg;
-    int                    nEigIn;
-    int                    nEigOut;        // calcTotalChrg ? 1 : nEigIn
+    const bool             isRealInput;
+    const bool             isRealOutput;
+    const bool             calcAtomicDensity;
+    const bool             calcTotalChrg;
+    const int              nEigIn;
+    const int              nEigOut;        // calcTotalChrg ? 1 : nEigIn
     const double*          eigVecsReal;    // [nOrb][nEigIn]
     const cuDoubleComplex* eigVecsCmpl;    // [nOrb][nEigIn]
     double*                valueReal_out;  // [nPointsX][nPointsY][nPointsZ][nEigOut]
     cuDoubleComplex*       valueCmpl_out;  // [nPointsX][nPointsY][nPointsZ][nEigOut]
 } CalculationParams;
 
-void evaluate_on_device_c(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic,
-    const StoBasisParams* basis, const CalculationParams* calc);
+void evaluate_on_device_c(
+        const GridParams* grid,
+        const SystemParams* system,
+        const PeriodicParams* periodic,
+        const StoBasisParams* basis,
+        const CalculationParams* calc);
 
 #ifdef __cplusplus
 }

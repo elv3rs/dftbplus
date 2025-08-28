@@ -199,7 +199,7 @@ contains
 
  
   !> Convert the basis set to SoA format or unified Lut table
-  !> Currently, mixed lut/direct calculation is not supported.
+  !> Currently, mixed lut/direct calculation is not supported on the GPU.
   !> Additionally, all orbitals must use identical LUT settings.
   subroutine prepareBasisSet(this, stos)
     type(TBasisParams), intent(out) :: this

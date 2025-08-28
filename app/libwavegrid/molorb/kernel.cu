@@ -292,7 +292,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
 
                     double radialVal;
                     if constexpr (useRadialLut) {
-                        double lut_pos = 0.5f + r * p.inverseLutStep;
+                        double lut_pos = 0.5f + r * p.inverseLutStep; // Add 0.5 to adress texel center (imagine pixels)
                         radialVal      = (double)tex2D<float>(p.lutTex, lut_pos, (float)iOrb + 0.5f);
                     } else {
                         radialVal = getRadialValue(r, iL, iOrb, p.sto_nPows[iOrb], p.sto_nAlphas[iOrb], p.sto_coeffs,
@@ -442,16 +442,14 @@ void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool cal
 // The D2H copy will automatically block/ synchronize the kernel for this batch.
 // This could be improved by using streams / cudaMemcpyAsync, but currently is not a bottleneck.
 // The output array is of fortran shape (x,y,z,nEigOut), thus z-slices are not contiguous.
-// We slice on Z instead of nEigOut to save on a little computation in the kernel, as well as to
-// allow the total charge calculation mode. which calculates all contributions for each point and
-// then multiplies with the eigenvector coefficients.
-//
+// We slice on Z instead of nEigOut to save on a little computation in the kernel.
 void copyD2H(void* d_src_ptr, void* h_dest_ptr, int nPointsX, int nPointsY, int nPointsZ, int z_per_batch,
     int z_offset_global, const CalculationParams* calc) {
     size_t output_num_size = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
     size_t host_plane_size    = (size_t)nPointsZ * nPointsY * nPointsX * output_num_size;
     size_t device_plane_size  = (size_t)z_per_batch * nPointsY * nPointsX * output_num_size;
 
+    // Memcpy3D could be used to squash this loop.
     for (int iEig = 0; iEig < calc->nEigOut; ++iEig) {
         // From: iEig-th slice of GPU batch buffer
         ptrdiff_t d_offset_bytes = (ptrdiff_t)(iEig * device_plane_size);
@@ -508,9 +506,7 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
 
 #ifndef _OPENMP
     if (numGpus > 1) {
-        printf(
-            "\nWARNING: Code not compiled with OpenMP support (-fopenmp). Falling back to "
-            "single-GPU mode.\n");
+        fprintf(stderr, "\nWARNING: Code not compiled with OpenMP support (-fopenmp). Falling back to single-GPU mode.\n");
         numGpus = 1;
         printf("Running on GPU 0 only.\n");
     }
@@ -587,6 +583,7 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
     float overhead = timeEverything - (totalKernelTime_ms + totalD2HCopyTime_ms);
     if (debug) printf("\n--- GPU Timing Results ---\n");
     printf("Total Multi-GPU execution time: %.2f ms\n", timeEverything);
+    // Timings are run on device 0 only.
     if (debug) {
         printf("(Lead) Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms,
             (totalKernelTime_ms / timeEverything) * 100.0);

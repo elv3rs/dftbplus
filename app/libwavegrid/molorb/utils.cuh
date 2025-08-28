@@ -140,7 +140,7 @@ class GpuLutTexture {
 
         // Copy data to array
         CHECK_CUDA(cudaMemcpy2DToArray(_lutArray,  // dst array
-            0,
+            0,                        // no offset in dst
             0,                        // no offset in dst
             lutFloats.data(),         // src pointer
             nPoints * sizeof(float),  // src pitch (for alignment, bytes to next row)

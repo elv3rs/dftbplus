@@ -1,9 +1,7 @@
 Todo
-- [ ] interpolation radial part CUDA
 - [ ] move occupation out of sto
 - [ ] readme
 - [ ] unit tests
-
-- [ ] recast flat pointers to multi-dim arrays, get rid of Index calc macro
 - [ ] consider mixed lut step size
+- cleanup waveplot, gridcache
 

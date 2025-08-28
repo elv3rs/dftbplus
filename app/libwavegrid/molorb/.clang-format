@@ -3,7 +3,9 @@ IndentWidth: 4
 ColumnLimit: 120
 
 BreakBeforeBraces: Attach
+
 AllowShortIfStatementsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
 AllowShortLoopsOnASingleLine: false
 
 AlignAfterOpenBracket: DontAlign
@@ -22,4 +24,3 @@ SpaceBeforeParens: ControlStatements
 
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
-AllowShortCaseLabelsOnASingleLine: true
