@@ -65,6 +65,9 @@ module libwavegrid_slater
     !> Initialises a SlaterOrbital.
     procedure :: init => TSlaterOrbital_init
 
+    !> Initialises using a LUT for radial values.
+    procedure :: initFromLut => TSlaterOrbital_initFromLut
+
     !> Returns the value of the Lut in a given point.
     procedure :: getRadialCached => TSlaterOrbital_getRadialValueCached
   
@@ -195,6 +198,7 @@ contains
     integer, intent(in) :: angMom
     real(dp), intent(in) :: cutoff
 
+    this%useRadialLut = .true.
     this%angMom = angMom
     this%cutoffSq = cutoff**2
     this%gridDist = gridDist
@@ -203,7 +207,6 @@ contains
 
     allocate(this%gridValue(this%nGrid))
     this%gridValue(:) = gridValue(:)
-    this%useRadialLut = .true.
 
   end subroutine TSlaterOrbital_initFromLut
 
@@ -238,6 +241,19 @@ contains
 
     this%angMom = ll
     this%cutoffSq = cutoff ** 2
+
+    ! Print arguments
+    print *, "Initialising STO with parameters:"
+    print *, "aa = ", aa
+    print *, "shape(aa) = ", shape(aa)
+    print *, "alpha = ", alpha
+    print *, "shape(alpha) = ", shape(alpha)
+    print *, "ll = ", ll
+    print *, "resolution = ", resolution
+    print *, "cutoff = ", cutoff
+    print *, "useRadialLut = ", this%useRadialLut
+
+
 
 
     ! Store parameters for direct calculation
@@ -307,7 +323,7 @@ contains
     ! ind = 1 means zero distance as rr = (ind - 1) * gridDist
     ind = floor(rr * this%invLutStep) + 1
     if (ind < this%nGrid) then
-      frac = mod(rr, this%gridDist) / this%gridDist
+      frac = mod(rr, this%gridDist) * this%invLutStep
       sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)
     else
       sto = 0.0_dp

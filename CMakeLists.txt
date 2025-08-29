@@ -111,7 +111,7 @@ if(WITH_ELSI AND NOT TARGET elsi::elsi)
     message(STATUS "ELSI v2.5.0")
   endif()
 
-  if(WITH_GPU)
+  if(WITH_GPU OR WITH_CUDA)
     find_package(CUDAToolkit REQUIRED)
   endif()
 

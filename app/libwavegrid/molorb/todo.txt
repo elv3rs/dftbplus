@@ -1,4 +1,7 @@
 Todo
+- [ ] Check if gridDistance index needs + 1 since r=0 => i=1
+- [ ] Rename STO to something else
+- [ ] Perhaps subclass STO?
 - [ ] allow directly passing luts to init sto (sto%initFromLut(gridDist, vals))
 - [ ] move occupation out of sto
 - [ ] readme
