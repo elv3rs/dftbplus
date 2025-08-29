@@ -35,6 +35,8 @@ endif()
 target_include_directories(libwavegrid PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/molorb>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/molorb>
 )
 
 target_link_libraries(libwavegrid PUBLIC dftbplus)

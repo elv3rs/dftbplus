@@ -1,8 +1,8 @@
-set(test-collection "waveplot")
+set(test-collection "libwavegrid")
 
 set(sources-f90 testapp.f90)
 
-set(sources-fypp cache.F90)
+set(sources-fypp simple.F90)
 
 set(sources-fypp-f90)
 
@@ -15,5 +15,5 @@ endforeach()
 set(testapp "testapp_${test-collection}")
 add_executable(${testapp})
 target_sources(${testapp} PRIVATE ${sources-f90} ${sources-fypp-f90})
-target_link_libraries(${testapp} dftbplus waveplot_lib Fortuno::fortuno_serial)
+target_link_libraries(${testapp} dftbplus libwavegrid Fortuno::fortuno_serial)
 add_test(NAME ${unit-test-prefix}/${test-collection} COMMAND ${testapp})
