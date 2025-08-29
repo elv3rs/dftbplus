@@ -844,9 +844,11 @@ contains
     do ii = 1, spBasis%nOrb
       call getItem1(children, ii, tmpNode)
       call getChildValue(tmpNode, "AngularMomentum", spBasis%stos(ii)%angMom)
+      @:ASSERT(spBasis%stos(ii)%angMom == ii - 1)
+
       call getChildValue(tmpNode, "Occupation", spBasis%stos(ii)%occupation)
       call getChildValue(tmpNode, "Cutoff", cutoff)
-      spBasis%stos(ii)%cutoffSq = cutoff ** 2
+      !spBasis%stos(ii)%cutoffSq = cutoff ** 2
       call init(bufferExps)
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)

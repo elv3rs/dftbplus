@@ -1,4 +1,5 @@
 Todo
+- [ ] allow directly passing luts to init sto (sto%initFromLut(gridDist, vals))
 - [ ] move occupation out of sto
 - [ ] readme
 - [ ] unit tests

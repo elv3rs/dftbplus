@@ -19,6 +19,16 @@ module libwavegrid_slater
 
   !> Data type for STOs.
   type TSlaterOrbital
+    !> Angular momentum of the orbital
+    integer :: angMom
+
+    !> Square of the Cutoff, after which the orbital is assumed to be zero
+    real(dp) :: cutoffSq
+
+    !> Whether to use cached values instead of direct calculation.
+    logical :: useRadialLut = .false.
+
+    ! --  LUT parameters --
     !> Grid distance (resolution)
     real(dp) :: gridDist
 
@@ -31,18 +41,7 @@ module libwavegrid_slater
     !> STO values on the distance grid
     real(dp), allocatable :: gridValue(:)
 
-    !> Whether to use the cached grid for evaluation
-    logical :: useRadialLut = .false.
-
-    !> Square of the Cutoff, after which the orbital is assumed to be zero
-    real(dp) :: cutoffSq
-
-    !> Angular momentum of the orbital
-    integer :: angMom
-
-    !> Occupation of the orbital (for atomic density)
-    real(dp) :: occupation
-
+    ! -- Direct calculation STO parameters --
     !> Maximum power of the radial distance
     integer :: nPow
 
@@ -55,18 +54,24 @@ module libwavegrid_slater
     !> Exponential coefficients
     real(dp), allocatable :: alpha(:)
 
+
+    !! TODO: remove this from struct and store elsewhere.
+    !> Occupation of the orbital (for atomic density)
+    real(dp) :: occupation
+
+
   contains
 
     !> Initialises a SlaterOrbital.
     procedure :: init => TSlaterOrbital_init
 
-    !> Returns the value of the Slater orbital in a given point.
+    !> Returns the value of the Lut in a given point.
     procedure :: getRadialCached => TSlaterOrbital_getRadialValueCached
   
-    !> Non-interpolated version
+    !> Non-interpolated version using direct STO calculation.
     procedure :: getRadialDirect => TSlaterOrbital_getRadialValueDirect
 
-    !> Dispatch to cached or direct version based on this%useCache
+    !> Dispatch to cached or direct version based on this%useRadialLut
     procedure :: getRadial
 
   end type TSlaterOrbital
@@ -182,9 +187,28 @@ contains
 
   end function realTessY
 
+  !> Initialises using a LUT for radial values.
+  subroutine TSlaterOrbital_initFromLut(this, gridValue, gridDist, angMom, cutoff)
+    class(TSlaterOrbital), intent(inout) :: this
+    real(dp), intent(in) :: gridValue(:)
+    real(dp), intent(in) :: gridDist
+    integer, intent(in) :: angMom
+    real(dp), intent(in) :: cutoff
+
+    this%angMom = angMom
+    this%cutoffSq = cutoff**2
+    this%gridDist = gridDist
+    this%invLutStep = 1.0_dp / gridDist
+    this%nGrid = size(gridValue)
+
+    allocate(this%gridValue(this%nGrid))
+    this%gridValue(:) = gridValue(:)
+    this%useRadialLut = .true.
+
+  end subroutine TSlaterOrbital_initFromLut
 
   !> Initialises a SlaterOrbital.
-  subroutine TSlaterOrbital_init(this, aa, alpha, ll, resolution, cutoff)
+  subroutine TSlaterOrbital_init(this, aa, alpha, ll, resolution, cutoff, useRadialLut)
 
     !> SlaterOrbital instance to initialise
     class(TSlaterOrbital), intent(inout) :: this
@@ -204,37 +228,46 @@ contains
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
+    !> Whether to use the cached grid for evaluation
+    logical, intent(in), optional :: useRadialLut
+
     integer :: iGrid, ii
     real(dp) :: rr
-    this%nAlpha = size(alpha)
-    this%nPow = size(aa, dim=1)
 
-  
-
-    @:ASSERT(size(aa, dim=2) == this%nAlpha)
     @:ASSERT(cutoff > 0.0_dp)
-    @:ASSERT(resolution > 0.0_dp)
 
-    allocate(this%aa(this%nPow, this%nAlpha))
-    allocate(this%alpha(this%nAlpha))
-
+    this%angMom = ll
     this%cutoffSq = cutoff ** 2
 
-    ! Store parameters in case non-interpolated version is requested
-    this%angMom = ll
+
+    ! Store parameters for direct calculation
+    @:ASSERT(size(aa, dim=2) == this%nAlpha)
+    this%nAlpha = size(alpha)
+    this%nPow = size(aa, dim=1)
+    allocate(this%aa(this%nPow, this%nAlpha))
+    allocate(this%alpha(this%nAlpha))
     this%aa(:,:) = aa
     this%alpha(:) = -1.0_dp * alpha
 
-    ! Obtain STO on a grid
-    this%nGrid = floor(cutoff / resolution) + 2
-    this%gridDist = resolution
-    this%invLutStep = 1.0_dp / resolution
-    allocate(this%gridValue(this%nGrid))
-    do iGrid = 1, this%nGrid
-      rr = real(iGrid - 1, dp) * resolution
-      call this%getRadialDirect(rr, this%gridValue(iGrid))
-    end do
-    print *, "Initialized STO with l=", ll, " cutoff=", cutoff, " resolution=", resolution, " nGrid=", this%nGrid
+    if (present(useRadialLut)) then
+      this%useRadialLut = useRadialLut
+    else
+      this%useRadialLut = .false.
+    end if
+
+    if (this%useRadialLut) then
+      ! Obtain STO on a grid
+      @:ASSERT(resolution > 0.0_dp)
+      this%nGrid = floor(cutoff / resolution) + 2
+      this%gridDist = resolution
+      this%invLutStep = 1.0_dp / resolution
+
+      allocate(this%gridValue(this%nGrid))
+      do iGrid = 1, this%nGrid
+        rr = real(iGrid - 1, dp) * resolution
+        call this%getRadialDirect(rr, this%gridValue(iGrid))
+      end do
+    end if
 
   end subroutine TSlaterOrbital_init
 
