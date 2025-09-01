@@ -13,6 +13,7 @@ module test_libwavegrid_simple
                        & getValue, getAtomicDensities, getTotalChrg
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_common_status, only : TStatus
+  use dftbp_math_simplealgebra, only : determinant33
   use dftbp_dftb_boundarycond, only : TBoundaryConds, boundaryCondsEnum, TBoundaryConds_init
   use fortuno_serial, only : suite => serial_suite_item, test_list, all_close
   $:FORTUNO_SERIAL_IMPORTS()
@@ -32,9 +33,9 @@ contains
     real(dp), parameter :: sto_cutoff = 6.0_dp
     real(dp), parameter :: sto_alpha(3) = [0.5_dp, 1.0_dp, 2.0_dp]
     real(dp), parameter :: sto_aa(3,3) = reshape([ &
-        -2.2765228685565400_dp, 17.453716731738609_dp, -12.701455953438341_dp, &
-         0.26641083435260687_dp, -5.4229751699602433_dp, -6.5568796727250120_dp, &
-        -7.9427553748566294E-003_dp, 0.96370929548055750_dp, -0.85307020704514269_dp], [3,3])
+        -2.2765228685565400_dp, 0.26641083435260687_dp, -7.9427553748566294E-003_dp, &
+         17.453716731738609_dp, -5.4229751699602433_dp, 0.96370929548055750_dp, &
+        -12.701455953438341_dp, -6.5568796727250120_dp, -0.85307020704514269_dp], [3,3])
     call sto%init(sto_aa, sto_alpha, sto_ll, lut_resolution, sto_cutoff, useRadialLut=useRadialLut)
   end subroutine initOrbitalHydrogenS
 
@@ -110,9 +111,9 @@ contains
     allocate(geometry%species(3))
     geometry%species = [1, 2, 2]
     allocate(geometry%coords(3,3))
-    geometry%coords(:,1) = [0.0_dp, 0.0_dp, 0.0_dp]
-    geometry%coords(:,2) = [0.0_dp, 0.0_dp, 1.4797763915205659_dp]
-    geometry%coords(:,3) = [0.0_dp, -1.8897259885789233_dp, -1.4797763915205659_dp]
+    geometry%coords(:,1) = [0.0_dp, -1.89_dp, 0.0_dp]
+    geometry%coords(:,2) = [0.0_dp, 0.0_dp, 1.48_dp]
+    geometry%coords(:,3) = [0.0_dp, 0.0_dp, -1.48_dp]
     geometry%nSpecies = 2
     geometry%speciesNames = ["O", "H"]
     geometry%tHelical = .false.
@@ -143,14 +144,33 @@ contains
 
 
 
-
-
-
-  $:TEST("LibwavegridH2O")
+  $:TEST("LibwavegridH2O_totChrg_real")
     type(TMolecularOrbital) :: molorb
     logical, parameter :: useRadialLut = .false.
+    logical, parameter :: useGPU = .true.
+    real(dp), allocatable :: valueOnGrid(:,:,:,:)
+    real(dp), parameter :: eigVecsReal(6,4) = reshape([ &
+         0.93075335285360816_dp,        5.4749851762277632E-003_dp,   6.5189438567696949E-019_dp,   0.0000000000000000_dp, &
+        -0.11131233240146322_dp,      -0.11131233240146322_dp,      -0.27821574567737223_dp,      -0.73551457100773243_dp, &
+        -7.8726661848432967E-018_dp,   0.0000000000000000_dp,      -0.33117590117481399_dp,      -0.33117590117481405_dp, &
+         2.7154435594648282E-018_dp,  -9.9931138111063277E-018_dp,  0.73160204739108692_dp,        1.1102230246251565E-016_dp, &
+         0.39813631802212995_dp,      -0.39813631802212995_dp,        3.7150709608707145E-033_dp,  -8.1237292785459783E-033_dp, &
+         9.7504438592516575E-017_dp,   1.0000000000000000_dp,       -6.6858833593547624E-017_dp,   6.6858833593547636E-017_dp], &
+         & [6,4])
+    real(dp), parameter :: occupationVec(4) = [2.0_dp, 2.0_dp, 2.0_dp, 2.0_dp]
+    real(dp) :: gridVol, sumTotChrg
+
+    call initMolorbH2O(molorb, useRadialLut)
+    gridVol = abs(determinant33(molorb%system%gridVecs))
+
   
-    call initMolorbH2O(molorb, useRadialLut=useRadialLut)
+    allocate(valueOnGrid(100, 100, 100, 1))
+    call getTotalChrg(molorb, eigVecsReal, valueOnGrid, occupationVec, useGPU)
+    sumTotChrg = sum(valueOnGrid) * gridVol
+    print *, "Total charge:", sumTotChrg
+    @:ASSERT(abs(sumTotChrg - 8.007785) < 1.0e-3_dp)
+
+
 
     @:ASSERT(.true.)
     ! Cases to handle:
