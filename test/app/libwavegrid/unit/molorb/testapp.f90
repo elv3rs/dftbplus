@@ -7,10 +7,5 @@ program testapp
       simple_tests()&
     ])&
   )
-  ! Cases to handle:
-  ! Both cpu, gpu.
-  ! real : default, totChrg, addDensities, lut
-  ! cmplx: default, totChrg, lut
-
 
 end program testapp
