@@ -26,15 +26,25 @@ module test_libwavegrid_simple
     integer :: idx(4)
     real(dp) :: expected
   end type spotCheck
+  !> Allow 0.01% relative error (LUT interpolation etc.)
+  real(dp), parameter :: rtol = 1.0e-4_dp
+  
+  !> Real Eigenvectors for H2O molecule
+  real(dp), parameter :: eigVecsReal(6,4) = reshape([ &
+       0.93075335285360816_dp,       5.4749851762277632E-003_dp,   6.5189438567696949E-019_dp,  0.0000000000000000_dp,       &
+      -0.11131233240146322_dp,      -0.11131233240146322_dp,      -0.27821574567737223_dp,     -0.73551457100773243_dp,      &
+      -7.8726661848432967E-018_dp,   0.0000000000000000_dp,      -0.33117590117481399_dp,      -0.33117590117481405_dp,      &
+       2.7154435594648282E-018_dp,  -9.9931138111063277E-018_dp,  0.73160204739108692_dp,       1.1102230246251565E-016_dp,  &
+       0.39813631802212995_dp,      -0.39813631802212995_dp,      3.7150709608707145E-033_dp,  -8.1237292785459783E-033_dp,  &
+       9.7504438592516575E-017_dp,   1.0000000000000000_dp,      -6.6858833593547624E-017_dp,   6.6858833593547636E-017_dp], &
+       & [6,4])
+  !> Atomic density occupations for H2O per Orb(distributed evenly over same angMom)
+  real(dp), parameter :: occupationAtomDens(6,1) = reshape([2.0_dp, 4.0_dp / 3.0_dp, 4.0_dp / 3.0_dp, 4.0_dp / 3.0_dp, 1.0_dp,&
+  1.0_dp], [6,1])
+  !> Occupation per state as computed by DFTB+
+  real(dp), parameter :: occupationVecH2O(4) = [2.0_dp, 2.0_dp, 2.0_dp, 2.0_dp]
 
-    real(dp), parameter :: eigVecsReal(6,4) = reshape([ &
-         0.93075335285360816_dp,       5.4749851762277632E-003_dp,   6.5189438567696949E-019_dp,  0.0000000000000000_dp,       &
-        -0.11131233240146322_dp,      -0.11131233240146322_dp,      -0.27821574567737223_dp,     -0.73551457100773243_dp,      &
-        -7.8726661848432967E-018_dp,   0.0000000000000000_dp,      -0.33117590117481399_dp,      -0.33117590117481405_dp,      &
-         2.7154435594648282E-018_dp,  -9.9931138111063277E-018_dp,  0.73160204739108692_dp,       1.1102230246251565E-016_dp,  &
-         0.39813631802212995_dp,      -0.39813631802212995_dp,      3.7150709608707145E-033_dp,  -8.1237292785459783E-033_dp,  &
-         9.7504438592516575E-017_dp,   1.0000000000000000_dp,      -6.6858833593547624E-017_dp,   6.6858833593547636E-017_dp], &
-         & [6,4])
+  !> Complex eigenvectors for H chain
 
 contains
 
@@ -159,12 +169,12 @@ contains
 
 
 
-  $:TEST("LibwavegridH2O_totChrg_real")
+  ! -- Real (H2O) : Total charge calculation --
+  $:TEST("molorb_real_totChrg")
     type(TMolecularOrbital) :: molorb
     logical, parameter :: useRadialLut = .true.
     logical, parameter :: useGPU = .false.
-    real(dp), allocatable :: valueOnGrid(:,:,:,:)
-    real(dp), parameter :: occupationVec(4) = [2.0_dp, 2.0_dp, 2.0_dp, 2.0_dp]
+    real(dp) :: valueOnGrid(100,100,100,1)
     real(dp) :: gridVol, actual, expected
     integer :: i, idx(4)
     type(spotCheck) :: spotChecks(6) = [ &
@@ -176,33 +186,103 @@ contains
         spotCheck([52, 40, 51, 1], 0.5131651070097035_dp) & ! Symmetric: molecule in YZ plane
     ]
 
-
     call initMolorbH2O(molorb, useRadialLut)
     gridVol = abs(determinant33(molorb%system%gridVecs))
 
     ! -- Real (H2O) : Total charge calculation --
-    allocate(valueOnGrid(100, 100, 100, 1))
-    call getTotalChrg(molorb, eigVecsReal, valueOnGrid, occupationVec, useGPU)
+    call getTotalChrg(molorb, eigVecsReal, valueOnGrid, occupationVecH2O, useGPU)
     ! Check sum over grid
     expected = 8.0040445629655839_dp
     actual = sum(valueOnGrid) * gridVol
     print *, "Total charge:", actual
-    @:CHECK(is_close(actual, expected, 1.0e-4_dp))
+    @:CHECK(is_close(actual, expected, rtol=rtol))
     ! Spot check values
     do i = 1, size(spotChecks)
       idx = spotChecks(i)%idx
       expected = spotChecks(i)%expected
       actual = valueOnGrid(idx(1), idx(2), idx(3), idx(4))
-      @:CHECK(is_close(actual, expected, 1.0e-6_dp))
+      @:CHECK(is_close(actual, expected, rtol=rtol))
     end do
+  $:END_TEST()
+
+  ! -- Real (H2O) : Atomic densities calculation --
+  $:TEST("molorb_real_atomicDensities")
+    type(TMolecularOrbital) :: molorb
+    logical, parameter :: useRadialLut = .true.
+    logical, parameter :: useGPU = .false.
+    real(dp) :: valueOnGrid(100,100,100,1)
+    real(dp) :: gridVol, actual, expected
+    integer :: i, idx(4)
+    type(spotCheck) :: spotChecks(6) = [ &
+        spotCheck([50, 31, 50, 1], 1.238914874283217_dp), & ! O at (0,-1.89,0)
+        spotCheck([1, 1, 1, 1], 0.0_dp), & ! Grid bounds
+        spotCheck([100, 100, 100, 1], 0.0_dp), & ! Grid bounds
+        spotCheck([51, 51, 51, 1], 0.5835226183394406E-01_dp), & ! Grid Center
+        spotCheck([50, 40, 51, 1], 0.6846187059267557_dp), & ! Symmetry: molecule in YZ plane
+        spotCheck([52, 40, 51, 1], 0.6846187059267551_dp) & ! Symmetric: molecule in YZ plane
+    ]
+
+    call initMolorbH2O(molorb, useRadialLut)
+    gridVol = abs(determinant33(molorb%system%gridVecs))
 
     ! Real (H2O) : Atomic densities calculation
+    call getAtomicDensities(molorb, occupationAtomDens, valueOnGrid, useGPU)
+    ! Check sum over grid
+    expected = 8.004352_dp
+    actual = sum(valueOnGrid) * gridVol
+    print *, "Total charge:", actual
+    @:CHECK(is_close(actual, expected, rtol=rtol))
+    ! Spot check values
+    do i = 1, size(spotChecks)
+      idx = spotChecks(i)%idx
+      expected = spotChecks(i)%expected
+      actual = valueOnGrid(idx(1), idx(2), idx(3), idx(4))
+      @:CHECK(is_close(actual, expected, rtol=rtol))
+    end do
+  $:END_TEST()
+
+  ! -- Real (H2O) : All states calculation --
+  $:TEST("molorb_real_allStates")
+    type(TMolecularOrbital) :: molorb
+    logical, parameter :: useRadialLut = .true.
+    logical, parameter :: useGPU = .false.
+    real(dp) :: valueOnGrid(100,100,100,4)
+    real(dp) :: gridVol, actual, expected
+    integer :: i, idx(4)
+    ! 2 randomly chosen points per state.
+    ! [random.randrange(1,101) for _ in "123"] 
+    type(spotCheck) :: spotChecks(8) = [ &
+        spotCheck([31, 82, 52, 1], -0.4237591897694508E-03_dp), & 
+        spotCheck([93, 19, 63, 1], -0.8172698875983751E-04_dp), & 
+        spotCheck([80, 82, 83, 2], -0.1274610827226662E-03_dp), & 
+        spotCheck([32, 28, 73, 2], -0.2681614272853517E-03_dp), & 
+        spotCheck([68, 17, 95, 3], 0.1151590378991745E-03), & 
+        spotCheck([39, 88, 09, 3], -0.9397073043782955E-04_dp), & 
+        spotCheck([09, 78, 23, 4], 0.4296017603685945E-20_dp), & 
+        spotCheck([47, 59, 06, 4], -0.9990029155728657E-06_dp)  & 
+    ]
+
+    call initMolorbH2O(molorb, useRadialLut)
+    gridVol = abs(determinant33(molorb%system%gridVecs))
+    
     ! Real (H2O) : All states calculation
-    ! OLD   
-    ! CPU     8.004 0445629655839
-    ! GPU     8.004 0445629655839
-    ! CPU LUT 8.004 1122133449658
-    ! GPU LUT 8.004 1087880444035
+    call getValue(molorb, eigVecsReal, valueOnGrid, useGPU)
+    ! Check sum over grid
+    expected = -11.36846731051559_dp
+    actual = sum(valueOnGrid) * gridVol
+    print *, "Total charge:", actual
+    @:CHECK(is_close(actual, expected, rtol=rtol))
+    ! Spot check values
+    do i = 1, size(spotChecks)
+      idx = spotChecks(i)%idx
+      expected = spotChecks(i)%expected
+      actual = valueOnGrid(idx(1), idx(2), idx(3), idx(4))
+      @:CHECK(is_close(actual, expected, rtol=rtol))
+    end do
+  $:END_TEST()
+
+
+
 
 
 
@@ -220,14 +300,19 @@ contains
     ! Init sto using lut, check if lut access works
     !
     ! todo: Allow mixed lut/direct evaluation in gpu kernel by resampling to uniform luts in fortran
-  $:END_TEST()
+    ! Tolerance considerations:
+    ! OLD   
+    ! CPU     8.004 0445629655839
+    ! GPU     8.004 0445629655839
+    ! CPU LUT 8.004 1122133449658
+    ! GPU LUT 8.004 1087880444035
 
 
   function tests()
     type(test_list) :: tests
 
     tests = test_list([&
-        suite("wpcache", test_list([&
+        suite("libwavegrid", test_list([&
             $:TEST_ITEMS()
         ]))&
     ])
