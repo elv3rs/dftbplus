@@ -6,6 +6,7 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include "fortuno_serial.fypp"
+#:include 'common.fypp'
 
 module test_libwavegrid_simple
   use test_libwavegrid_initmolorb, only : initMolorbH2O, initMolorbHchain
@@ -42,11 +43,14 @@ module test_libwavegrid_simple
   end type
 
   !> All 4 combinations of LUT/Direct and CPU/GPU
-  type(TLaunchConfig), parameter :: launchConfigs(4) = [ &
+  #:set configCount = 4 if WITH_CUDA else 2
+  type(TLaunchConfig), parameter :: launchConfigs(${configCount}$) = [ &
       TLaunchConfig(.false., .false.), & ! Direct CPU
-      TLaunchConfig(.true.,  .false.), & ! LUT CPU
-      TLaunchConfig(.false., .true. ), & ! Direct GPU
-      TLaunchConfig(.true.,  .true. )  & ! LUT GPU
+      TLaunchConfig(.true.,  .false.) & ! LUT CPU
+      #:if WITH_CUDA
+        ,TLaunchConfig(.false., .true. ), & ! Direct GPU
+        TLaunchConfig(.true.,  .true. )  & ! LUT GPU
+      #:endif
   ]
 
 
