@@ -2,7 +2,7 @@ set(test-collection "libwavegrid")
 
 set(sources-f90 testapp.f90)
 
-set(sources-fypp simple.F90)
+set(sources-fypp simple.F90 initmolorb.F90)
 
 set(sources-fypp-f90)
 
