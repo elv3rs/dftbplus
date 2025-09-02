@@ -26,6 +26,12 @@ module test_libwavegrid_simple
     integer :: idx(4)
     real(dp) :: expected
   end type spotCheck
+
+  type :: spotCheckCmpl
+    integer :: idx(4)
+    complex(dp) :: expected
+  end type spotCheckCmpl
+
   !> Allow 0.01% relative error (LUT interpolation etc.)
   real(dp), parameter :: rtol = 1.0e-4_dp
   
@@ -45,6 +51,20 @@ module test_libwavegrid_simple
   real(dp), parameter :: occupationVecH2O(4) = [2.0_dp, 2.0_dp, 2.0_dp, 2.0_dp]
 
   !> Complex eigenvectors for H chain
+  complex(dp), parameter :: eigVecsCmpl(1,4) = reshape([ &
+       (0.62981679983963734_dp, 0.0_dp), (0.68885855972586518_dp, 0.0_dp), &
+       (0.81991408755170758_dp, 0.0_dp), (1.0501565770378785_dp, 0.0_dp) &
+       ], [1,4])
+  !> Occupation per state as computed by DFTB+
+  real(dp), parameter :: occupationVecHchain(4) = [0.25_dp, 0.25_dp, 0.25_dp, 0.25_dp]
+  !> k-points for H chain
+  real(dp), parameter :: kPointsHchain(3,8) = reshape([ &
+       0.0_dp, 0.0_dp, 0.19634954084936207_dp, 0.0_dp, 0.0_dp, 0.58904862254808621_dp, 0.0_dp, 0.0_dp, &
+       0.98174770424681035_dp, 0.0_dp, 0.0_dp, 1.3744467859455345_dp, 0.0_dp, 0.0_dp, 1.7671458676442586_dp, &
+       0.0_dp, 0.0_dp, 2.1598449493429825_dp, 0.0_dp, 0.0_dp, 2.5525440310417071_dp, 0.0_dp, 0.0_dp, &
+       2.9452431127404308_dp], [3,8])
+  integer, parameter :: kIndexesHchain(4) = [1, 2, 3, 4]
+
 
 contains
 
@@ -135,14 +155,68 @@ contains
     allocate(geometry%species(3))
     geometry%species = [1, 2, 2]
     allocate(geometry%coords(3,3))
-
     geometry%coords(:,1) = [0.0_dp, -1.8897259885789233_dp, 0.0_dp]
     geometry%coords(:,2) = [0.0_dp, 0.0_dp, 1.4797763915205659_dp]
     geometry%coords(:,3) = [0.0_dp, 0.0_dp, -1.4797763915205659_dp]
+
     geometry%nSpecies = 2
+    allocate(geometry%speciesNames(2))
     geometry%speciesNames = ["O", "H"]
     geometry%tHelical = .false.
   end subroutine initGeometryH2O
+
+
+  subroutine initGeometryHchain(geometry)
+    type(TGeometry), intent(out) :: geometry
+    geometry%nAtom = 1
+    geometry%tPeriodic = .true.
+    geometry%tFracCoord = .false.
+    allocate(geometry%species(1))
+    geometry%species = [1]
+    allocate(geometry%coords(3,1))
+    geometry%coords(:,1) = 0.0_dp
+    geometry%nSpecies = 1
+    allocate(geometry%origin(3))
+    geometry%origin = 0.0_dp
+    allocate(geometry%latVecs(3,3))
+    geometry%latVecs = 0.0_dp
+    geometry%latVecs(1,1) = 188.97259885789234_dp
+    geometry%latVecs(2,2) = 188.97259885789234_dp
+    geometry%latVecs(3,3) = 1.5117807908631387_dp
+    allocate(geometry%recVecs2p(3,3))
+    geometry%recVecs2p = 0.0_dp
+    geometry%recVecs2p(1,1) = 5.2917724899999999E-003_dp
+    geometry%recVecs2p(2,2) = 5.2917724899999999E-003_dp
+    geometry%recVecs2p(3,3) = 0.66147156125000006_dp
+    allocate(geometry%speciesNames(1))
+    geometry%speciesNames = ["H"]
+    geometry%tHelical = .false.
+  end subroutine initGeometryHchain
+
+
+  
+  subroutine initMolorbHchain(molorb, useRadialLut)
+    type(TMolecularOrbital), intent(out) :: molorb
+    logical, intent(in), optional :: useRadialLut
+    
+    real(dp), parameter :: gridOrigin(3) = [-5.0_dp, -5.0_dp, -5.0_dp]
+    real(dp), parameter :: gridVecs(3,3) = reshape([ &
+        0.1_dp, 0.0_dp, 0.0_dp, &
+        0.0_dp, 0.1_dp, 0.0_dp, &
+        0.0_dp, 0.0_dp, 0.1_dp], [3,3])
+    type(TSpeciesBasis) :: speciesBasis(1)
+    type(TGeometry) :: geometry
+    type(TBoundaryConds) :: bconds
+    type(TStatus) :: status
+
+    call initSpeciesBasisH(speciesBasis, useRadialLut=useRadialLut)
+    call initGeometryHchain(geometry)
+    call TBoundaryConds_init(bconds, boundaryCondsEnum%pbc3d, errStatus=status)
+    @:ASSERT(status%isOk())
+
+    call molorb%init(geometry, bconds, speciesBasis, gridOrigin, gridVecs)
+  end subroutine initMolorbHchain
+
 
 
   subroutine initMolorbH2O(molorb, useRadialLut)
@@ -167,7 +241,7 @@ contains
     call molorb%init(geometry, bconds, speciesBasis, gridOrigin, gridVecs)
   end subroutine initMolorbH2O
 
-
+  ! ### Real (H2O) Test cases ###
 
   ! -- Real (H2O) : Total charge calculation --
   $:TEST("molorb_real_totChrg")
@@ -256,9 +330,9 @@ contains
         spotCheck([93, 19, 63, 1], -0.8172698875983751E-04_dp), & 
         spotCheck([80, 82, 83, 2], -0.1274610827226662E-03_dp), & 
         spotCheck([32, 28, 73, 2], -0.2681614272853517E-03_dp), & 
-        spotCheck([68, 17, 95, 3], 0.1151590378991745E-03), & 
+        spotCheck([68, 17, 95, 3],  0.1151590378991745E-03), & 
         spotCheck([39, 88, 09, 3], -0.9397073043782955E-04_dp), & 
-        spotCheck([09, 78, 23, 4], 0.4296017603685945E-20_dp), & 
+        spotCheck([09, 78, 23, 4],  0.4296017603685945E-20_dp), & 
         spotCheck([47, 59, 06, 4], -0.9990029155728657E-06_dp)  & 
     ]
 
@@ -282,18 +356,92 @@ contains
   $:END_TEST()
 
 
+  ! ### Complex (H-chain) Test cases ###
+  ! -- Complex (H-chain) : Total charge calculation --
+  $:TEST("molorb_cmplx_totChrg")
+    type(TMolecularOrbital) :: molorb
+    logical, parameter :: useRadialLut = .false.
+    logical, parameter :: useGPU = .false.
+    real(dp) :: valueOnGrid(100,100,100,1)
+    real(dp) :: gridVol, actual, expected
+    integer :: i, idx(4)
+    ! Randomly chosen points.
+    ! [random.randrange(1,101) for _ in "123"] 
+    type(spotCheck) :: spotChecks(6) = [ &
+        spotCheck([31, 82, 52, 1], 0.1854186607568482E-04_dp), & 
+        spotCheck([93, 19, 63, 1], 0.4554475419034117E-08_dp), & 
+        spotCheck([80, 82, 83, 1], 0.1400485004792566E-05_dp), & 
+        spotCheck([32, 28, 73, 1], 0.2821278119060284E-03_dp), & 
+        spotCheck([68, 17, 95, 1], 0.1144197239608134E-04_dp), & 
+        spotCheck([39, 88, 09, 1], 0.7705316328219835E-05_dp) & 
+    ]
+    call initMolorbHchain(molorb, useRadialLut)
+    gridVol = abs(determinant33(molorb%system%gridVecs))
+    ! -- Complex (H-chain) : Total charge calculation --
+    call getTotalChrg(molorb, eigVecsCmpl, kPointsHchain, kIndexesHchain, valueOnGrid, occupationVecHchain, useGPU)
+    ! Check sum over grid
+    expected = 6.637263751554149_dp
+    actual = sum(valueOnGrid) * gridVol
+    print *, "Total charge:", actual
+    @:CHECK(is_close(actual, expected, rtol=rtol))
+    ! Spot check values
+    do i = 1, size(spotChecks)
+      idx = spotChecks(i)%idx
+      expected = spotChecks(i)%expected
+      actual = valueOnGrid(idx(1), idx(2), idx(3), idx(4))
+      @:CHECK(is_close(actual, expected, rtol=rtol))
+    end do
+    $:END_TEST()
 
 
+    ! -- Complex (H-chain) : All states calculation --
+    $:TEST("molorb_cmplx_allStates")
+      type(TMolecularOrbital) :: molorb
+      logical, parameter :: useRadialLut = .false.
+      logical, parameter :: useGPU = .false.
+      complex(dp) :: valueOnGrid(100,100,100,4)
+      real(dp) :: gridVol
+      complex(dp) :: actual, expected
+      integer :: i, idx(4)
+      ! 2 randomly chosen points per state.
+      ! [random.randrange(1,101) for _ in "123"] 
+      type(spotCheckCmpl) :: spotChecks(8) = [ &
+          spotCheckCmpl([31, 82, 52, 1], (0.4618562431412820E-02_dp, 0.5805855442516971E-04_dp)), &
+          spotCheckCmpl([93, 19, 63, 1], (0.8330079947653005E-04_dp, 0.8753533677015034E-05_dp)), &
+          spotCheckCmpl([80, 82, 83, 2], (0.1222651639518469E-02_dp, 0.8048672887188940E-04_dp)), &
+          spotCheckCmpl([32, 28, 73, 2], (0.1690763857502260E-01_dp, 0.4646391064170055E-02_dp)), &
+          spotCheckCmpl([68, 17, 95, 3], (0.2091620118572572E-02_dp, 0.2596145058129883E-02_dp)), &
+          spotCheckCmpl([39, 88, 09, 3], (0.2671119431633243E-02_dp, 0.5944536018057613E-03_dp)), &
+          spotCheckCmpl([09, 78, 23, 4], (0.8227151295698438E-04_dp, 0.1991128564447004E-04_dp)), &
+          spotCheckCmpl([47, 59, 06, 4], (0.2967129806717818_dp, 0.8175874030009455E-02_dp)) &
+      ]
 
+      call initMolorbHchain(molorb, useRadialLut)
+      gridVol = abs(determinant33(molorb%system%gridVecs))
+      ! Complex (H-chain) : All states calculation
+      call getValue(molorb, eigVecsCmpl, kPointsHchain, kIndexesHchain, valueOnGrid, useGPU)
+      ! Check sum over grid
+      expected = (113.9831688331955_dp, 45.30115350686194_dp)
+      actual = sum(valueOnGrid) * gridVol
+      print *, "Total charge:", actual
+      @:CHECK(is_close(real(actual), real(expected), rtol=rtol))
+      @:CHECK(is_close(aimag(actual), aimag(expected), rtol=rtol))
 
+      ! Spot check values
+      do i = 1, size(spotChecks)
+        idx = spotChecks(i)%idx
+        expected = spotChecks(i)%expected
+        actual = valueOnGrid(idx(1), idx(2), idx(3), idx(4))
+
+        @:CHECK(is_close(real(actual), real(expected), rtol=rtol))
+        @:CHECK(is_close(aimag(actual), aimag(expected), rtol=rtol))
+      end do
+    $:END_TEST()
+
+    ! ### Summary / todo ###
     ! Cases to handle:
     ! Parametrisation: Run on both cpu, gpu, lut ond and off (template 4x).
     ! Idea: Generate reference data with old code, spot check values & check sum
-    ! Run all on cpu, gpu, lut, and no lut
-    ! That leaves:
-    ! real (H2O): all states, totChrg, addDensities
-    ! cmplx(H-chain): all states, totChrg
-    !
     !
     ! Additional tests:
     ! Init an sto, and spot check values

@@ -242,6 +242,7 @@ contains
       end do
       this%maxNPows = maxval(this%nPows)
       this%maxNAlphas = maxval(this%nAlphas)
+      !print *, "nStos=", this%nStos, " maxNPows=", this%maxNPows, " maxNAlphas=", this%maxNAlphas
 
       ! Allocate and populate coefficient/alpha matrices
       allocate(this%coeffs(this%maxNPows, this%maxNAlphas, this%nStos))

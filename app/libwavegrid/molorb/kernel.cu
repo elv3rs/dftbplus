@@ -20,7 +20,7 @@
 #include "utils.cuh"
 
 // more print statements
-constexpr bool debug = true;
+constexpr bool debug = false;
 // Avoid division by zero
 constexpr double INV_R_EPSILON = 1.0e-12;
 // amount of shared memory set aside for nEig accumulators

@@ -39,7 +39,9 @@ module libwavegrid_molorb
     logical :: isInitialised = .false.
   contains
     private
+    procedure, public :: init => TMolecularOrbital_init
     procedure, public :: updateCoords => TMolecularOrbital_updateCoords
+
     procedure :: initSpeciesMapping
     procedure :: flattenBasis
     procedure :: initPeriodic
@@ -83,13 +85,13 @@ contains
   !> The coordinates may be updated later by calling updateCoords on the molorb data object.
   subroutine TMolecularOrbital_init(this, geometry, boundaryCond, basisInput, origin, gridVecs)
     !> TMolecularOrbital data object to initialise
-    type(TMolecularOrbital), intent(out) :: this
+    class(TMolecularOrbital), intent(out) :: this
     type(TGeometry), intent(in) :: geometry
     type(TBoundaryConds), intent(in) :: boundaryCond
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3,3)
-
+    integer :: iOrb
 
     @:ASSERT(.not. this%isInitialised)
     @:ASSERT(size(origin) == 3)
@@ -97,8 +99,7 @@ contains
     this%boundaryCond = boundaryCond
     this%system%origin = origin
     this%system%gridVecs = gridVecs
-
-
+    
     call this%initSpeciesMapping(geometry, basisInput)
     call this%flattenBasis(basisInput)
     call this%initPeriodic(geometry, maxCutoff(this%stos))
@@ -154,9 +155,11 @@ contains
     class(TMolecularOrbital), intent(inout) :: this
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     integer :: iSpec, ind, nStos
+    nStos = 0
     ! Count total number of STOs
     do iSpec = 1, this%system%nSpecies
       nStos = nStos + basisInput(iSpec)%nOrb
+      @:ASSERT(basisInput(iSpec)%nOrb == size(basisInput(iSpec)%stos))
     end do
 
     ! Flatten the basis array
@@ -208,7 +211,6 @@ contains
 
       @:ASSERT(this%system%speciesInitialised)
       @:ASSERT(this%periodic%isInitialized)
-
       allocate(this%system%coords(3, this%system%nAtom, this%periodic%nCell))
       this%system%coords(:,:,1) = geometry%coords
       call this%boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
@@ -264,7 +266,6 @@ contains
 
   !> Returns molecular orbitals on a real grid. 
   subroutine TMolecularOrbital_getValue_real(this, eigVecsReal, valueOnGrid, useGPU)
-
     !> MolecularOrbital data instance
     type(TMolecularOrbital), intent(in) :: this
     !> Summation coefficients for the STOs
@@ -273,14 +274,13 @@ contains
     real(dp), intent(out) :: valueOnGrid(:,:,:,:)
     !> Enable GPU offloading?
     logical, intent(in), optional :: useGPU
-
+  
     call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU)
   end subroutine TMolecularOrbital_getValue_real
 
   !> Returns the total charge density on a grid.
   !> This squares each state and sums them up weighted by occupationVec.
   subroutine TMolecularOrbital_getTotalChrg_real(this, eigVecsReal, valueOnGrid, occupationVec, useGPU)
-
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
     !> Summation coefficients for the STOs
@@ -291,14 +291,19 @@ contains
     real(dp), intent(in) :: occupationVec(:)
     !> Enable GPU offloading?
     logical, intent(in), optional :: useGPU
-
+  
     call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
         & addAtomicDensities=.false., occupationVec=occupationVec)
   end subroutine TMolecularOrbital_getTotalChrg_real
 
+
+
+
+
+
+
   !> Calculates the atomic densities by squaring each STO *before* summation.
   subroutine TMolecularOrbital_getAtomicDensities_real(this, eigVecsReal, valueOnGrid, useGPU)
-
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
     !> Summation coefficients for the STOs
@@ -318,7 +323,6 @@ contains
 
   !> Returns molecular orbitals on a complex grid.
   subroutine TMolecularOrbital_getValue_cmpl(this, eigVecsCmpl, kPoints, kIndexes, valueOnGrid, useGPU)
-
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
     !> Summation coefficients for the STOs
@@ -341,7 +345,6 @@ contains
 
   !> Returns the total charge density on a grid.
   subroutine TMolecularOrbital_getTotalChrg_cmpl(this, eigVecsCmpl, kPoints, kIndexes, valueOnGrid, occupationVec, useGPU)
-
     !> MolecularOrbital instance
     type(TMolecularOrbital), intent(in) :: this
     !> Summation coefficients for the STOs
@@ -364,6 +367,24 @@ contains
 
   end subroutine TMolecularOrbital_getTotalChrg_cmpl
 
+  function hashRealArr(arr) result(res)
+    real(dp), intent(in) :: arr(:)
+    integer :: res, i
+    res = 0
+    do i = 1, size(arr)
+      res = ieor(res, ieor(transfer(arr(i), res), i))
+    end do
+  end function hashRealArr
+
+  function hashCmplxArr(arr) result(res)
+    complex(dp), intent(in) :: arr(:)
+    integer :: res, i
+    res = 0
+    do i = 1, size(arr)
+      res = ieor(res, ieor(transfer(real(arr(i)), res), i))
+      res = ieor(res, ieor(transfer(aimag(arr(i)), res), i))
+    end do
+  end function hashCmplxArr
 
 
   !> Bundles calls to addAtomicDensities, getTotalChrg and the regular molorb to allow for 

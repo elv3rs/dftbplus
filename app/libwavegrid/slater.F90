@@ -76,7 +76,7 @@ module libwavegrid_slater
 
     !> Dispatch to cached or direct version based on this%useRadialLut
     procedure :: getRadial
-
+  
   end type TSlaterOrbital
 
 
@@ -242,20 +242,6 @@ contains
     this%angMom = ll
     this%cutoffSq = cutoff ** 2
 
-    ! Print arguments
-    print *, "Initialising STO with parameters:"
-    print *, "aa = ", aa
-    print *, "shape(aa) = ", shape(aa)
-    print *, "alpha = ", alpha
-    print *, "shape(alpha) = ", shape(alpha)
-    print *, "ll = ", ll
-    print *, "resolution = ", resolution
-    print *, "cutoff = ", cutoff
-    print *, "useRadialLut = ", this%useRadialLut
-
-
-
-
     ! Store parameters for direct calculation
     @:ASSERT(size(aa, dim=2) == this%nAlpha)
     this%nAlpha = size(alpha)
@@ -368,8 +354,6 @@ contains
     end do
 
   end subroutine TSlaterOrbital_getRadialValueDirect
-
-
 
 
 end module libwavegrid_slater

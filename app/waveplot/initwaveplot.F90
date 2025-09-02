@@ -228,7 +228,7 @@ module waveplot_initwaveplot
 
 
   !> Program version
-  character(len=*), parameter :: version = "0.3"
+  character(len=*), parameter :: version = "0.4"
 
   !> Root node name of the input tree
   character(len=*), parameter :: rootTag = "waveplot"
