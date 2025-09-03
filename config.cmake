@@ -7,8 +7,6 @@
 # automatically default to RelWithDebInfo if used in a single configuration build. Uncomment or
 # override it only if you want a non-default single configuration build.
 
-option(WITH_CUDA "Whether CUDA support should be enabled" FALSE)
-
 option(WITH_OMP "Whether OpenMP thread parallisation should be enabled" TRUE)
 
 option(WITH_MPI "Whether DFTB+ should support MPI-parallelism" FALSE)
@@ -18,6 +16,9 @@ option(WITH_MPI "Whether DFTB+ should support MPI-parallelism" FALSE)
 option(WITH_GPU "Whether DFTB+ should support GPU-acceleration" FALSE)
 # For serial builds, the GPU support requires the MAGMA library. For MPI parallel builds it
 # requires the ELSI library built with GPU support.
+
+option(WITH_CUDA "Whether CUDA support should be enabled" FALSE)
+# Enable offloading support for Libwavegrids MO calculations
 
 option(WITH_ELSI "Whether DFTB+ with MPI-parallelism should use the ELSI libraries" FALSE)
 # Works only with MPI-parallel build. If WITH_GPU was selected above, the ELSI library must be
