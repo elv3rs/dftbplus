@@ -105,8 +105,10 @@ program waveplot
     call fillPlottedRegion(wp)
   end if
  
-  doRequireIndividual =  wp%opt%doPlotChrgDiff &
-                    & .or. wp%opt%doPlotReal .or. wp%opt%doPlotImag .or. wp%opt%doPlotTotSpin
+  doRequireIndividual = wp%opt%doPlotChrgDiff &
+                   .or. wp%opt%doPlotReal &
+                   .or. wp%opt%doPlotImag &
+                   .or. wp%opt%doPlotTotSpin
 
   ! Libwavegrid supports fast inplace accumulation for total charge.
   ! This avoids having to store all states in memory and can offer a
@@ -184,7 +186,7 @@ program waveplot
         end if
       end if
     end do lpStates
-end if
+  end if
 
 #:if WITH_MPI
   call mpifx_allreduceip(env%mpi%globalComm, hasIoError, MPI_LOR)
@@ -278,6 +280,7 @@ contains
     type(TProgramVariables), intent(inout) :: wp
     real(dp), intent(out) :: totChrg(:,:,:)
     real(dp), allocatable :: totChrg4d(:,:,:,:), eigCoeffs(:)
+
     if (wp%opt%beVerbose) then
       write(stdOut, "(A)") "Calculating total charge in-place."
     end if

@@ -52,14 +52,12 @@ contains
       r = checkedPairs(1, i)
       expected = checkedPairs(2, i)
       val = sto%getRadial(r)
-      print *, "r=", r, " val=", val, " expected=", expected
       @:CHECK(is_close(val, expected, rtol=rtol))
     end do 
   $:END_TEST()
 
 
   !> Register test cases with Fortuno
-
   function tests()
     type(test_list) :: tests
 
