@@ -149,6 +149,9 @@ module waveplot_initwaveplot
     !> Resolution of the radial wfcs
     real(dp) :: basisResolution
 
+    !> Reference/Ground state atomic occupations for each species
+    real(dp), allocatable :: referenceOccupations(:,:)
+
   end type TBasis
 
 
@@ -242,6 +245,9 @@ module waveplot_initwaveplot
   !> Version of the input document
   integer, parameter :: parserVersion = 3
 
+  !> Maximum possible angular momentum in the basis set
+  !! Safe value, used for referenceOccupations array size
+  integer, parameter :: maxExpectedAngMom = 5
 contains
 
 
@@ -780,7 +786,6 @@ contains
 
     !! Total number of species in the system
     integer :: nSpecies
-
     !! Auxiliary variable
     integer :: ii
 
@@ -792,11 +797,14 @@ contains
 
     allocate(this%basis%basis(nSpecies))
     allocate(this%aNr%atomicNumbers(nSpecies))
+    
+    allocate(this%basis%referenceOccupations(maxExpectedAngMom + 1, nSpecies), source=0.0_dp)
 
     do ii = 1, nSpecies
       speciesName = speciesNames(ii)
       call getChild(node, speciesName, speciesNode)
-      call readSpeciesBasis(speciesNode, this%basis%basisResolution, this%basis%basis(ii))
+      call readSpeciesBasis(speciesNode, this%basis%basisResolution, this%basis%basis(ii), &
+        & this%basis%referenceOccupations(:, ii))
       this%aNr%atomicNumbers(ii) = this%basis%basis(ii)%atomicNumber
     end do
 
@@ -804,7 +812,7 @@ contains
 
 
   !> Read in basis function for a species.
-  subroutine readSpeciesBasis(node, basisResolution, spBasis)
+  subroutine readSpeciesBasis(node, basisResolution, spBasis, atomicOcc)
 
     !> Node containing the basis definition for a species
     type(fnode), pointer :: node
@@ -814,6 +822,9 @@ contains
 
     !> Contains the basis on return
     type(TSpeciesBasis), intent(out) :: spBasis
+
+    !> Atomic occupations for the species
+    real(dp), intent(out) :: atomicOcc(maxExpectedAngMom + 1)
 
     !! Input node instances, containing the information
     type(fnode), pointer :: tmpNode, child
@@ -846,7 +857,7 @@ contains
       call getChildValue(tmpNode, "AngularMomentum", spBasis%stos(ii)%angMom)
       @:ASSERT(spBasis%stos(ii)%angMom == ii - 1)
 
-      call getChildValue(tmpNode, "Occupation", spBasis%stos(ii)%occupation)
+      call getChildValue(tmpNode, "Occupation", atomicOcc(ii), child=child)
       call getChildValue(tmpNode, "Cutoff", cutoff)
       !spBasis%stos(ii)%cutoffSq = cutoff ** 2
       call init(bufferExps)

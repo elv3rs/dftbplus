@@ -54,12 +54,6 @@ module libwavegrid_slater
     !> Exponential coefficients
     real(dp), allocatable :: alpha(:)
 
-
-    !! TODO: remove this from struct and store elsewhere.
-    !> Occupation of the orbital (for atomic density)
-    real(dp) :: occupation
-
-
   contains
 
     !> Initialises a SlaterOrbital.
