@@ -28,7 +28,7 @@ module libwavegrid_slater
     !> Whether to use cached values instead of direct calculation.
     logical :: useRadialLut = .false.
 
-    ! --  LUT parameters --
+    ! ##  LUT parameters ##
     !> Grid distance (resolution)
     real(dp) :: gridDist
 
@@ -41,7 +41,7 @@ module libwavegrid_slater
     !> STO values on the distance grid
     real(dp), allocatable :: gridValue(:)
 
-    ! -- Direct calculation STO parameters --
+    ! ## Direct calculation STO parameters ##
     !> Maximum power of the radial distance
     integer :: nPow
 

@@ -43,13 +43,7 @@ program waveplot
   real(dp), allocatable :: buffer(:,:,:), totChrg(:,:,:), atomicChrg(:,:,:,:), spinUp(:,:,:), totChrg4d(:,:,:,:)
 
   !> Occupation of orbitals
-  real(dp), allocatable :: orbitalOcc(:,:), eigCoeffs(:)
-
-  !> Array holding temporary coordinate information
-  real(dp), allocatable :: coords(:,:)
-
-  !> Array holding temporary species information
-  integer, allocatable :: species(:)
+  real(dp), allocatable :: eigCoeffs(:)
 
   !> Summation of all grid points
   real(dp) :: sumTotChrg, sumChrg, sumAtomicChrg
@@ -57,20 +51,9 @@ program waveplot
   !> Indices of current level, K-point and spin
   integer :: levelIndex(3)
 
-  !> Onedimensional real-valued list of coordinate arrays
-  type(TListRealR1) :: coordList
-
-  !> Onedimensional integer-valued list of atomic species indices
-  type(TListInt) :: speciesList
-
   !> Auxiliary variables
-  integer :: i1, i2, i3, ioStat, nEig, iEig
-  integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iOrb, mAng, ind, nBox
-  logical :: isFinished, doPlotLevel, hasIoError, doRequireIndividual
-  real(dp) :: mDist, dist
-  real(dp) :: cellMiddle(3), boxMiddle(3), frac(3), cubeCorner(3), coord(3), shift(3)
-  real(dp) :: invBoxVecs(3,3), recVecs2pi(3,3)
-  real(dp), allocatable :: fCellVec(:,:), rCellVec(:,:)
+  integer :: i1, ioStat, nEig, iEig, iLevel, iKPoint, iSpin
+  logical :: isFinished, doPlotLevel, hasIoError, doRequireIndividual, doRepeatBox
 
   call initGlobalEnv()
   call TEnvironment_init(env)
@@ -91,37 +74,9 @@ program waveplot
   hasIoError = .false.
 
   ! Repeat boxes if necessary
-  nBox = product(wp%opt%repeatBox)
-  if (nBox > 1) then
-    ! If doFillBox is off, coordinates must be repeated here.
-    ! Otherwise the part for filling with atoms will do that.
-    if (.not. wp%opt%doFillBox) then
-      allocate(coords(3, size(wp%input%geo%coords)))
-      allocate(species(size(wp%input%geo%species)))
-      coords(:,:) = wp%input%geo%coords
-      species(:) = wp%input%geo%species
-      deallocate(wp%input%geo%coords)
-      deallocate(wp%input%geo%species)
-      allocate(wp%input%geo%coords(3, nBox * wp%input%geo%nAtom))
-      allocate(wp%input%geo%species(nBox * wp%input%geo%nAtom))
-      ind = 0
-      do i1 = 0, wp%opt%repeatBox(1) - 1
-        do i2 = 0, wp%opt%repeatBox(2) - 1
-          do i3 = 0, wp%opt%repeatBox(3) - 1
-            shift(:) = matmul(wp%opt%boxVecs, real([i1, i2, i3], dp))
-            do iAtom = 1, wp%input%geo%nAtom
-              wp%input%geo%coords(:,ind+iAtom) = coords(:,iAtom) + shift
-            end do
-            wp%input%geo%species(ind+1:ind+wp%input%geo%nAtom) = species
-            ind = ind + wp%input%geo%nAtom
-          end do
-        end do
-      end do
-      wp%input%geo%nAtom = nBox * wp%input%geo%nAtom
-    end if
-    do i1 = 1, 3
-      wp%opt%boxVecs(:,i1) = wp%opt%boxVecs(:,i1) * real(wp%opt%repeatBox(i1), dp)
-    end do
+  doRepeatBox = product(wp%opt%repeatBox) > 1
+  if (doRepeatBox) then
+    call expandToSupercell(wp)
   end if
 
   write(stdOut, "(A)") "Origin"
@@ -137,35 +92,7 @@ program waveplot
   ! Create density superposition of the atomic orbitals. Occupation is distributed equally on
   ! orbitals with the same angular momentum.
   if (wp%opt%doCalcAtomDens) then
-    allocate(atomicChrg(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3), 1))
-    allocate(orbitalOcc(wp%input%nOrb, 1))
-    if (env%tGlobalLead) then
-      ind = 1
-      do iAtom = 1, wp%input%geo%nAtom
-        iSpecies = wp%input%geo%species(iAtom)
-        do iOrb = 1, wp%basis%basis(iSpecies)%nOrb
-          mAng = 2 * wp%basis%basis(iSpecies)%stos(iOrb)%angMom + 1
-          orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%basis(iSpecies)%stos(iOrb)%occupation&
-              & / real(mAng, dp)
-          ind = ind + mAng
-        end do
-      end do
-      call getAtomicDensities(wp%loc%molorb, orbitalOcc, atomicChrg)
-      sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
-      buffer(:,:,:) = atomicChrg(:,:,:, 1)
-
-      if (wp%opt%beVerbose) then
-        write(stdOut, "('Total charge of atomic densities:',F12.6,/)") sumAtomicChrg
-      end if
-      if (wp%opt%doPlotAtomDens) then
-        call writePropertyToCube("atomdens", buffer, wp, iostat=ioStat)
-        hasIoError = hasIoError .or. ioStat /= 0
-      end if
-    end if
-  #:if WITH_MPI
-    call mpifx_bcast(env%mpi%globalComm, atomicChrg)
-    call mpifx_bcast(env%mpi%globalComm, sumAtomicChrg)
-  #:endif
+    call calcAtomicDensities(wp, env, hasIoError, atomicChrg, sumAtomicChrg)
   end if
 
   if (wp%opt%beVerbose) then
@@ -173,67 +100,22 @@ program waveplot
         & "Action", "Norm", "W. Occup."
   end if
 
-  ! Fold in coordinates
   if (wp%opt%doFoldCoords) then
-    call invert33(invBoxVecs, wp%opt%boxVecs)
-    call invert33(recVecs2pi, wp%input%geo%latVecs)
-    recVecs2pi = reshape(recVecs2pi, [3, 3], order=[2, 1])
     call wp%boundaryCond%foldCoordsToCell(wp%input%geo%coords, wp%input%geo%latVecs)
   end if
 
-  ! Fill the box with atoms
+  ! If requested, repeat the unit cell and keep all atoms that fall in the plotted region
   if (wp%opt%doFillBox) then
-    ! Shifting plotted region by integer lattice vectors, to have its center as close to the center
-    ! of the lattice unit cell as possible.
-    cellMiddle(:) = 0.5_dp * sum(wp%input%geo%latVecs, dim=2)
-    boxMiddle(:) = wp%opt%origin + 0.5_dp * sum(wp%opt%boxVecs, dim=2)
-    ! Workaround for intel 2021 ICE, replacing matmul(boxMiddle - cellMiddle, recVecs2pi)
-    shift(:) = boxMiddle - cellMiddle
-    frac(:) = matmul(shift, recVecs2pi)
-    wp%opt%origin(:) = wp%opt%origin - matmul(wp%input%geo%latVecs, real(anint(frac), dp))
-    wp%opt%gridOrigin(:) = wp%opt%gridOrigin - matmul(wp%input%geo%latVecs, real(anint(frac), dp))
-    ! We need all cells around, which could contain atoms in the sphere, drawn from the center of
-    ! the unit cell, containing the entire plotted region
-    mDist = 0.0_dp
-    do i1 = 0, 1
-      do i2 = 0, 1
-        do i3 = 0, 1
-          cubeCorner(:) = wp%opt%origin + matmul(wp%opt%boxVecs, real([i1, i2, i3], dp))
-          dist = norm2(cubeCorner - cellMiddle)
-          mDist = max(dist, mDist)
-        end do
-      end do
-    end do
-    call getCellTranslations(fCellVec, rCellVec, wp%input%geo%latVecs, recVecs2pi, mDist)
-    ! Check all atoms in the shifted cells, if they fall in the plotted region
-    call init(coordList)
-    call init(speciesList)
-    do iCell = 1, size(rCellVec, dim=2)
-      do iAtom = 1, wp%input%geo%nAtom
-        coord(:) = wp%input%geo%coords(:,iAtom) + rCellVec(:,iCell)
-        frac(:) = matmul(invBoxVecs, coord - wp%opt%origin)
-        if (all(frac > -1e-04_dp) .and. all(frac < 1.0_dp + 1e-04_dp)) then
-          call append(coordList, coord)
-          call append(speciesList, wp%input%geo%species(iAtom))
-        end if
-      end do
-    end do
-    deallocate(wp%input%geo%coords)
-    deallocate(wp%input%geo%species)
-    wp%input%geo%nAtom = len(coordList)
-    allocate(wp%input%geo%coords(3, wp%input%geo%nAtom))
-    allocate(wp%input%geo%species(wp%input%geo%nAtom))
-    call asArray(coordList, wp%input%geo%coords)
-    call asArray(speciesList, wp%input%geo%species)
-    deallocate(fCellVec)
-    deallocate(rCellVec)
+    call fillPlottedRegion(wp)
   end if
-
+ 
   doRequireIndividual =  wp%opt%doPlotChrgDiff &
                     & .or. wp%opt%doPlotReal .or. wp%opt%doPlotImag .or. wp%opt%doPlotTotSpin
 
-  ! Libwavegrid supports fast inplace accumulation for total charge. (speedup ~ 6x)
-  if (.not. doRequireIndividual .and. wp%opt%doCalcTotChrg) then
+  ! Libwavegrid supports fast inplace accumulation for total charge.
+  ! This avoids having to store all states in memory and can offer a
+  ! significant speedup for large systems.
+  if (wp%opt%doCalcTotChrg .and. .not. doRequireIndividual) then
       print *, "Using library total charge calculation"
       ! Get occupation by state
       nEig = wp%loc%grid%nCached
@@ -258,7 +140,6 @@ program waveplot
   if (doRequireIndividual) then
     ! Calculate the molecular orbitals and write them to the disk
     isFinished = .false.
-    hasIoError = .false.
     lpStates: do while (.not. isFinished)
       ! Get the next grid and its parameters
       if (wp%input%isRealHam) then
@@ -344,9 +225,9 @@ end if
   end if
   if (env%tGlobalLead .and. wp%opt%doPlotTotChrg) then
     call writePropertyToCube("total_charge", totChrg, wp)
-    !if (wp%opt%beVerbose) then
+    if (wp%opt%beVerbose) then
       write(stdOut, "(/,'Total charge:',F12.6,/)") sumTotChrg
-    !end if
+    end if
   end if
 
   ! Dump total charge difference
@@ -372,6 +253,169 @@ end if
 
 
 contains
+
+  !> Calculates atomic densities and their sum and saves to disk if requested.
+  subroutine calcAtomicDensities(wp, env, hasIoError, atomicChrg, sumAtomicChrg)
+    type(TProgramVariables), intent(in) :: wp
+    type(TEnvironment), intent(in) :: env
+    logical, intent(inout) :: hasIoError
+    real(dp), allocatable, intent(out) :: atomicChrg(:,:,:,:)
+    real(dp), intent(out) :: sumAtomicChrg
+    real(dp), allocatable :: orbitalOcc(:,:)
+    integer :: iAtom, iSpecies, iOrb, mAng, ind, ioStat
+
+    allocate(atomicChrg(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3), 1))
+    allocate(orbitalOcc(wp%input%nOrb, 1))
+    if (env%tGlobalLead) then
+      ind = 1
+      do iAtom = 1, wp%input%geo%nAtom
+        iSpecies = wp%input%geo%species(iAtom)
+        do iOrb = 1, wp%basis%basis(iSpecies)%nOrb
+          mAng = 2 * wp%basis%basis(iSpecies)%stos(iOrb)%angMom + 1
+          orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%basis(iSpecies)%stos(iOrb)%occupation&
+              & / real(mAng, dp)
+          ind = ind + mAng
+        end do
+      end do
+      call getAtomicDensities(wp%loc%molorb, orbitalOcc, atomicChrg)
+      sumAtomicChrg = sum(atomicChrg) * wp%loc%gridVol
+
+      if (wp%opt%beVerbose) then
+        write(stdOut, "('Total charge of atomic densities:',F12.6,/)") sumAtomicChrg
+      end if
+      if (wp%opt%doPlotAtomDens) then
+        call writePropertyToCube("atomdens", atomicChrg(:,:,:,1), wp, iostat=ioStat)
+        hasIoError = hasIoError .or. ioStat /= 0
+      end if
+    end if
+  #:if WITH_MPI
+    call mpifx_bcast(env%mpi%globalComm, atomicChrg)
+    call mpifx_bcast(env%mpi%globalComm, sumAtomicChrg)
+  #:endif
+    deallocate(orbitalOcc)
+  end subroutine calcAtomicDensities
+
+  !> Repeats the unit cell to a supercell as described in wp%opt%repeatBox.
+  subroutine expandToSupercell(wp)
+    type(TProgramVariables), intent(inout) :: wp
+    integer :: nBox, i1, i2, i3, iAtom, ind
+    real(dp) :: shift(3)
+    real(dp), allocatable :: coords(:,:)
+    integer, allocatable :: species(:)
+    
+    nBox = product(wp%opt%repeatBox)
+    @:ASSERT(nBox > 1)
+
+    if (wp%opt%beVerbose) then
+      write(stdOut, "(A,I0)") "Expanding unit cell to supercell with ", nBox, " boxes."
+    end if
+
+    ! If doFillBox is off, coordinates must be repeated here.
+    ! Otherwise the part for filling with atoms will do that.
+    if (.not. wp%opt%doFillBox) then
+      ! Store old coordinates and species
+      allocate(coords(3, size(wp%input%geo%coords)))
+      allocate(species(size(wp%input%geo%species)))
+      coords(:,:) = wp%input%geo%coords
+      species(:) = wp%input%geo%species
+
+      deallocate(wp%input%geo%coords)
+      deallocate(wp%input%geo%species)
+      allocate(wp%input%geo%coords(3, nBox * wp%input%geo%nAtom))
+      allocate(wp%input%geo%species(nBox * wp%input%geo%nAtom))
+      ind = 0
+      do i1 = 0, wp%opt%repeatBox(1) - 1
+        do i2 = 0, wp%opt%repeatBox(2) - 1
+          do i3 = 0, wp%opt%repeatBox(3) - 1
+            shift(:) = matmul(wp%opt%boxVecs, real([i1, i2, i3], dp))
+            do iAtom = 1, wp%input%geo%nAtom
+              wp%input%geo%coords(:,ind+iAtom) = coords(:,iAtom) + shift
+            end do
+            wp%input%geo%species(ind+1:ind+wp%input%geo%nAtom) = species
+            ind = ind + wp%input%geo%nAtom
+          end do
+        end do
+      end do
+      wp%input%geo%nAtom = nBox * wp%input%geo%nAtom
+    end if
+    do i1 = 1, 3
+      wp%opt%boxVecs(:,i1) = wp%opt%boxVecs(:,i1) * real(wp%opt%repeatBox(i1), dp)
+    end do
+  end subroutine expandToSupercell
+  
+  !> Fills the plotted region with atoms from periodic images of the unit cell.
+  subroutine fillPlottedRegion(wp)
+    type(TProgramVariables), intent(inout) :: wp
+    real(dp) :: invBoxVecs(3,3), recVecs2pi(3,3)
+    real(dp) :: cellMiddle(3), boxMiddle(3), frac(3), cubeCorner(3), coord(3), shift(3)
+    real(dp) :: mDist, dist
+    integer :: i1, i2, i3, iCell, iAtom, nTrans
+    real(dp), allocatable :: fCellVec(:,:), rCellVec(:,:)
+    type(TListRealR1) :: coordList
+    type(TListInt) :: speciesList
+
+    if (wp%opt%beVerbose) then
+      write(stdOut, "(A)") "Filling plotted region with atoms from periodic images."
+    end if
+
+    ! Inverse box vectors and reciprocal lattice vectors of the unit cell
+    call invert33(invBoxVecs, wp%opt%boxVecs)
+    call invert33(recVecs2pi, wp%input%geo%latVecs)
+    recVecs2pi = reshape(recVecs2pi, [3, 3], order=[2, 1])
+
+    ! Shifting plotted region by integer lattice vectors, to have its center as close to the center
+    ! of the lattice unit cell as possible.
+    cellMiddle(:) = 0.5_dp * sum(wp%input%geo%latVecs, dim=2)
+    boxMiddle(:) = wp%opt%origin + 0.5_dp * sum(wp%opt%boxVecs, dim=2)
+    ! Workaround for intel 2021 ICE, replacing matmul(boxMiddle - cellMiddle, recVecs2pi)
+    shift(:) = boxMiddle - cellMiddle
+    frac(:) = matmul(shift, recVecs2pi)
+    wp%opt%origin(:) = wp%opt%origin - matmul(wp%input%geo%latVecs, real(anint(frac), dp))
+    wp%opt%gridOrigin(:) = wp%opt%gridOrigin - matmul(wp%input%geo%latVecs, real(anint(frac), dp))
+
+    ! Determine how many unit cells to include
+    ! We need all cells around, which could contain atoms in the sphere, drawn from the center of
+    ! the unit cell, containing the entire plotted region
+    mDist = 0.0_dp
+    do i1 = 0, 1
+      do i2 = 0, 1
+        do i3 = 0, 1
+          cubeCorner(:) = wp%opt%origin + matmul(wp%opt%boxVecs, real([i1, i2, i3], dp))
+          dist = norm2(cubeCorner - cellMiddle)
+          mDist = max(dist, mDist)
+        end do
+      end do
+    end do
+    ! Get all translation vectors that fall within this distance
+    call getCellTranslations(fCellVec, rCellVec, wp%input%geo%latVecs, recVecs2pi, mDist)
+  
+    ! Loop over all atoms in the shifted cells and include them, if they fall in the plotted region
+    call init(coordList)
+    call init(speciesList)
+    do iCell = 1, size(rCellVec, dim=2)
+      do iAtom = 1, wp%input%geo%nAtom
+        coord(:) = wp%input%geo%coords(:,iAtom) + rCellVec(:,iCell)
+        frac(:) = matmul(invBoxVecs, coord - wp%opt%origin)
+        if (all(frac > -1e-04_dp) .and. all(frac < 1.0_dp + 1e-04_dp)) then
+          call append(coordList, coord)
+          call append(speciesList, wp%input%geo%species(iAtom))
+        end if
+      end do
+    end do
+
+    ! Replace coordinates and species in wp with the new ones
+    deallocate(wp%input%geo%coords)
+    deallocate(wp%input%geo%species)
+    wp%input%geo%nAtom = len(coordList)
+    allocate(wp%input%geo%coords(3, wp%input%geo%nAtom))
+    allocate(wp%input%geo%species(wp%input%geo%nAtom))
+    call asArray(coordList, wp%input%geo%coords)
+    call asArray(speciesList, wp%input%geo%species)
+    deallocate(fCellVec)
+    deallocate(rCellVec)
+  end subroutine fillPlottedRegion
+
+  
 
   !> Writes a 3D function as cube file.
   subroutine writeCubeFile(geo, atomicNumbers, gridVecs, origin, gridVal, fileName, comments,&
@@ -485,8 +529,8 @@ contains
 
 
   !> Helper routine to write a data grid to a cube file with standardized name and comments.
-  !> Error handling depends on the presence of ioStat.
-  !> If not passed and the writing fails, an error will be raised.
+  !! Error handling depends on the presence of ioStat.
+  !! If not passed and the writing fails, an error will be raised.
   subroutine writePropertyToCube(plotType, data, wp, levelIndex, ioStat)
     !> Determines file suffix and comment
     character(len=*), intent(in) :: plotType
