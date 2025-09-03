@@ -40,10 +40,7 @@ program waveplot
   complex(dp), pointer :: gridValCmpl(:,:,:)
 
   !> Arrays holding the volumetric data
-  real(dp), allocatable :: buffer(:,:,:), totChrg(:,:,:), atomicChrg(:,:,:,:), spinUp(:,:,:), totChrg4d(:,:,:,:)
-
-  !> Occupation of orbitals
-  real(dp), allocatable :: eigCoeffs(:)
+  real(dp), allocatable :: buffer(:,:,:), totChrg(:,:,:), atomicChrg(:,:,:,:), spinUp(:,:,:)
 
   !> Summation of all grid points
   real(dp) :: sumTotChrg, sumChrg, sumAtomicChrg
@@ -66,7 +63,6 @@ program waveplot
   allocate(buffer(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)))
   if (wp%opt%doCalcTotChrg) then
     allocate(totChrg(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)), source=0.0_dp)
-    allocate(totChrg4d(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3), 1), source=0.0_dp)
     if (wp%opt%doPlotTotSpin) then
       allocate(spinUp(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3)), source=0.0_dp)
     end if
@@ -116,25 +112,7 @@ program waveplot
   ! This avoids having to store all states in memory and can offer a
   ! significant speedup for large systems.
   if (wp%opt%doCalcTotChrg .and. .not. doRequireIndividual) then
-      print *, "Using library total charge calculation"
-      ! Get occupation by state
-      nEig = wp%loc%grid%nCached
-      call wp%loc%grid%loadEigenvecs(nEig)
-      allocate(eigCoeffs(nEig))
-
-      do iEig = 1, nEig
-          levelIndex = wp%loc%grid%levelIndex(:, iEig)
-          iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
-          eigCoeffs(iEig) = wp%input%occupations(iLevel, iKPoint, iSpin)
-      end do
-      if (wp%input%isRealHam) then
-        call getTotalChrg(wp%loc%molorb, wp%loc%grid%eigenvecReal, &
-          & totChrg4d, eigCoeffs, wp%opt%useGPU)
-      else
-        call getTotalChrg(wp%loc%molorb, wp%loc%grid%eigenvecCmpl, &
-          & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d, eigCoeffs, wp%opt%useGPU)
-      end if
-      totChrg(:,:,:) = totChrg4d(:,:,:,1)
+      call calcTotChrgInplace(wp, totChrg)
   end if
 
   if (doRequireIndividual) then
@@ -294,6 +272,40 @@ contains
   #:endif
     deallocate(orbitalOcc)
   end subroutine calcAtomicDensities
+  
+  !> Calculates the total charge in-place, without storing all states in memory.
+  subroutine calcTotChrgInplace(wp, totChrg)
+    type(TProgramVariables), intent(inout) :: wp
+    real(dp), intent(out) :: totChrg(:,:,:)
+    real(dp), allocatable :: totChrg4d(:,:,:,:), eigCoeffs(:)
+    if (wp%opt%beVerbose) then
+      write(stdOut, "(A)") "Calculating total charge in-place."
+    end if
+
+    allocate(totChrg4d(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3), 1), source=0.0_dp)
+    ! Get occupation by state
+    nEig = wp%loc%grid%nCached
+    call wp%loc%grid%loadEigenvecs(nEig)
+    allocate(eigCoeffs(nEig))
+
+    do iEig = 1, nEig
+        levelIndex = wp%loc%grid%levelIndex(:, iEig)
+        iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
+        eigCoeffs(iEig) = wp%input%occupations(iLevel, iKPoint, iSpin)
+    end do
+    if (wp%input%isRealHam) then
+      call getTotalChrg(wp%loc%molorb, wp%loc%grid%eigenvecReal, &
+        & totChrg4d, eigCoeffs, wp%opt%useGPU)
+    else
+      call getTotalChrg(wp%loc%molorb, wp%loc%grid%eigenvecCmpl, &
+        & wp%loc%grid%kPoints, wp%loc%grid%levelIndex(2,:), totChrg4d, eigCoeffs, wp%opt%useGPU)
+    end if
+    totChrg(:,:,:) = totChrg4d(:,:,:,1)
+    deallocate(eigCoeffs)
+    deallocate(totChrg4d)
+  end subroutine calcTotChrgInplace
+
+
 
   !> Repeats the unit cell to a supercell as described in wp%opt%repeatBox.
   subroutine expandToSupercell(wp)
@@ -349,7 +361,7 @@ contains
     real(dp) :: invBoxVecs(3,3), recVecs2pi(3,3)
     real(dp) :: cellMiddle(3), boxMiddle(3), frac(3), cubeCorner(3), coord(3), shift(3)
     real(dp) :: mDist, dist
-    integer :: i1, i2, i3, iCell, iAtom, nTrans
+    integer :: i1, i2, i3, iCell, iAtom
     real(dp), allocatable :: fCellVec(:,:), rCellVec(:,:)
     type(TListRealR1) :: coordList
     type(TListInt) :: speciesList
