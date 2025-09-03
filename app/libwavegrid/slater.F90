@@ -191,19 +191,21 @@ contains
   end function realTessY
 
   !> Initialises using a LUT for radial values.
-  subroutine TSlaterOrbital_initFromLut(this, gridValue, gridDist, angMom, cutoff)
+  subroutine TSlaterOrbital_initFromLut(this, gridValue, gridDist, angMom)
     class(TSlaterOrbital), intent(inout) :: this
     real(dp), intent(in) :: gridValue(:)
     real(dp), intent(in) :: gridDist
     integer, intent(in) :: angMom
-    real(dp), intent(in) :: cutoff
+    real(dp) :: cutoff
 
     this%useRadialLut = .true.
     this%angMom = angMom
-    this%cutoffSq = cutoff**2
     this%gridDist = gridDist
     this%invLutStep = 1.0_dp / gridDist
     this%nGrid = size(gridValue)
+
+    cutoff = this%gridDist * real(this%nGrid - 1, dp)
+    this%cutoffSq = cutoff**2
 
     allocate(this%gridValue(this%nGrid))
     this%gridValue(:) = gridValue(:)
@@ -267,30 +269,30 @@ contains
       allocate(this%gridValue(this%nGrid))
       do iGrid = 1, this%nGrid
         rr = real(iGrid - 1, dp) * resolution
-        call this%getRadialDirect(rr, this%gridValue(iGrid))
+        this%gridValue(iGrid) = this%getRadialDirect(rr)
       end do
     end if
 
   end subroutine TSlaterOrbital_init
 
 
-  subroutine getRadial(this, rr, sto)
+  function getRadial(this, rr) result(sto)
     class(TSlaterOrbital), intent(in) :: this
     real(dp), intent(in) :: rr
-    real(dp), intent(out) :: sto
+    real(dp) :: sto
 
     if (this%useRadialLut) then
-      call this%getRadialCached(rr, sto)
+      sto = this%getRadialCached(rr)
     else
-      call this%getRadialDirect(rr, sto)
+      sto = this%getRadialDirect(rr)
     end if
 
-  end subroutine getRadial
+  end function getRadial
 
   !> Returns the value of the SlaterOrbital in a given point.
   !! Builds a 1d cache grid across which the result is interpolated
   !! in order to speed up evaluation for subsequent calls.
-  subroutine TSlaterOrbital_getRadialValueCached(this, rr, sto)
+  function TSlaterOrbital_getRadialValueCached(this, rr) result(sto)
 
     !> SlaterOrbital instance
     class(TSlaterOrbital), intent(in) :: this
@@ -299,7 +301,7 @@ contains
     real(dp), intent(in) :: rr
 
     !> Contains the value of the function on return
-    real(dp), intent(out) :: sto
+    real(dp) :: sto
 
     integer :: ind
     real(dp) :: frac
@@ -315,11 +317,11 @@ contains
       sto = 0.0_dp
     end if
 
-  end subroutine TSlaterOrbital_getRadialValueCached
+  end function TSlaterOrbital_getRadialValueCached
 
 
   !> Calculates the value of an STO analytically.
-  subroutine TSlaterOrbital_getRadialValueDirect(this, rr, sto)
+  function TSlaterOrbital_getRadialValueDirect(this, rr) result(sto)
 
     !> SlaterOrbital instance
     class(TSlaterOrbital), intent(in) :: this
@@ -328,7 +330,7 @@ contains
     real(dp), intent(in) :: rr
 
     !> Value of the STO on return
-    real(dp), intent(out) :: sto
+    real(dp) :: sto
 
     real(dp) :: pows(this%nPow)
     real(dp) :: rTmp
@@ -353,7 +355,7 @@ contains
       sto = sto + rTmp * exp(this%alpha(ii) * rr)
     end do
 
-  end subroutine TSlaterOrbital_getRadialValueDirect
+  end function TSlaterOrbital_getRadialValueDirect
 
 
 end module libwavegrid_slater

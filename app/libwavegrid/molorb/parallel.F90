@@ -183,7 +183,7 @@ contains
                   end if
                   r = sqrt(rSq)
 
-                  call stos(iOrb)%getRadial(r, radialVal)
+                  radialVal = stos(iOrb)%getRadial(r)
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1

@@ -8,4 +8,21 @@ Todo
 - [ ] unit tests
 - [ ] consider mixed lut step size
 - cleanup waveplot, gridcache
+  ! ### Summary / todo ###
+  ! Cases to handle:
+  ! Parametrisation: Run on both cpu, gpu, lut ond and off (template 4x).
+  ! Idea: Generate reference data with old code, spot check values & check sum
+  !
+  ! Additional tests:
+  ! Init an sto, and spot check values
+  ! Init sto using lut, check if lut access works
+  !
+  ! todo: Allow mixed lut/direct evaluation in gpu kernel by resampling to uniform luts in fortran
+  ! Tolerance considerations:
+  ! OLD   
+  ! CPU     8.004 0445629655839
+  ! GPU     8.004 0445629655839
+  ! CPU LUT 8.004 1122133449658
+  ! GPU LUT 8.004 1087880444035
 
+!> Run method of the parametrized test (executing the check directly)
