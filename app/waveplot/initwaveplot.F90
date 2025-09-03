@@ -149,7 +149,7 @@ module waveplot_initwaveplot
     !> Resolution of the radial wfcs
     real(dp) :: basisResolution
 
-    !> Reference/Ground state atomic occupations for each species
+    !> Non perturbed occupations for each species
     real(dp), allocatable :: referenceOccupations(:,:)
 
   end type TBasis

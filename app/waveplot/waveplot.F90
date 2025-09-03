@@ -242,7 +242,7 @@ contains
     real(dp), allocatable, intent(out) :: atomicChrg(:,:,:,:)
     real(dp), intent(out) :: sumAtomicChrg
     real(dp), allocatable :: orbitalOcc(:,:)
-    integer :: iAtom, iSpecies, iOrb, mAng, ind, ioStat
+    integer :: iAtom, iSpecies, iOrb, mAng, ind, ioStat, iL
 
     allocate(atomicChrg(wp%opt%nPoints(1), wp%opt%nPoints(2), wp%opt%nPoints(3), 1))
     allocate(orbitalOcc(wp%input%nOrb, 1))
@@ -251,8 +251,9 @@ contains
       do iAtom = 1, wp%input%geo%nAtom
         iSpecies = wp%input%geo%species(iAtom)
         do iOrb = 1, wp%basis%basis(iSpecies)%nOrb
-          mAng = 2 * wp%basis%basis(iSpecies)%stos(iOrb)%angMom + 1
-          orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%referenceOccupations(iOrb, iSpecies)&
+          iL = wp%basis%basis(iSpecies)%stos(iOrb)%angMom
+          mAng = 2 * iL + 1
+          orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%referenceOccupations(iOrb, iSpecies) &
               & / real(mAng, dp)
           ind = ind + mAng
         end do
@@ -320,16 +321,17 @@ contains
     
     nBox = product(wp%opt%repeatBox)
     @:ASSERT(nBox > 1)
+    wp%input%nOrb = wp%input%nOrb * nBox
 
     if (wp%opt%beVerbose) then
-      write(stdOut, "(A,I0)") "Expanding unit cell to supercell with ", nBox, " boxes."
+      write(stdOut, "(A,I1,A)") "Expanding unit cell to supercell with ", nBox, " boxes."
     end if
 
     ! If doFillBox is off, coordinates must be repeated here.
     ! Otherwise the part for filling with atoms will do that.
     if (.not. wp%opt%doFillBox) then
       ! Store old coordinates and species
-      allocate(coords(3, size(wp%input%geo%coords)))
+      allocate(coords(3, size(wp%input%geo%coords, dim=2)))
       allocate(species(size(wp%input%geo%species)))
       coords(:,:) = wp%input%geo%coords
       species(:) = wp%input%geo%species
