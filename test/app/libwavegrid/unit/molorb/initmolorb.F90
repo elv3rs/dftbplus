@@ -6,16 +6,12 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include "fortuno_serial.fypp"
-
 module test_libwavegrid_initmolorb
+  use libwavegrid, only : TMolecularOrbital, TSlaterOrbital, TSpeciesBasis
   use dftbp_common_accuracy, only : dp
-  use libwavegrid, only : TSlaterOrbital, TSpeciesBasis, TMolecularOrbital, &
-                       & getValue, getAtomicDensities, getTotalChrg
-  use dftbp_type_typegeometry, only : TGeometry
   use dftbp_common_status, only : TStatus
-  use dftbp_math_simplealgebra, only : determinant33
-  use dftbp_dftb_boundarycond, only : TBoundaryConds, boundaryCondsEnum, TBoundaryConds_init
-  use fortuno_serial, only : suite => serial_suite_item, test_list, is_close, serial_case_base
+  use dftbp_dftb_boundarycond, only : boundaryCondsEnum, TBoundaryConds, TBoundaryConds_init
+  use dftbp_type_typegeometry, only : TGeometry
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
 

@@ -8,15 +8,13 @@
 #:include 'common.fypp'
 
 module libwavegrid_molorb_parallel
+  use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
+  use libwavegrid_slater, only : realTessY, TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
-  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TSlaterOrbital, TCalculationContext
-  use libwavegrid_slater, only : TSlaterOrbital
 #:if WITH_CUDA
   use libwavegrid_molorb_offloaded, only : evaluateCuda
 #:endif
-  use libwavegrid_slater, only : realTessY
-  use omp_lib, only : omp_is_initial_device, omp_get_num_devices
   implicit none
   private
 

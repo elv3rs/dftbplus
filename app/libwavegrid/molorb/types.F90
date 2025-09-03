@@ -10,7 +10,6 @@
 !> Contains shared data types for the molecular orbital calculator.
 module libwavegrid_molorb_types
   use dftbp_common_accuracy, only : dp
-  use libwavegrid_slater, only : TSlaterOrbital
 
   implicit none
 

@@ -9,8 +9,8 @@
 
 !> Contains the routines for initialising Waveplot.
 module waveplot_initwaveplot
-  use waveplot_gridcache, only : TGridCache
   use libwavegrid, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
+  use waveplot_gridcache, only : TGridCache
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
   use dftbp_common_file, only : closeFile, openFile, setDefaultBinaryAccess, TFileDescr
@@ -18,8 +18,7 @@ module waveplot_initwaveplot
   use dftbp_common_release, only : releaseYear
   use dftbp_common_status, only : TStatus
   use dftbp_common_unitconversion, only : lengthUnits
-  use dftbp_dftb_boundarycond, only : boundaryCondsEnum, TBoundaryConds,&
-      & TBoundaryConds_init
+  use dftbp_dftb_boundarycond, only : boundaryCondsEnum, TBoundaryConds, TBoundaryConds_init
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_extlibs_xmlf90, only : char, destroyNode, fnode, fNodeList, getItem1, getLength,&
       & getNodeName, string
@@ -881,7 +880,7 @@ contains
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
       call spBasis%stos(ii)%init(reshape(coeffs, [size(coeffs) / size(exps),&
-          & size(exps)]), exps, ii - 1, basisResolution, cutoff)
+          & size(exps)]), exps, ii - 1, basisResolution, cutoff, useRadialLut=.true.)
       deallocate(exps, coeffs)
     end do
 

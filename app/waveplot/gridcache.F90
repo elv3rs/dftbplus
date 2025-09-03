@@ -11,16 +11,16 @@
 !! This object is responsible for reading in the eigenvectors from a specified file and passing the
 !! appropriate eigenvectors to the molecule orbital calculator.
 module waveplot_gridcache
+  use libwavegrid, only : getValue, TMolecularOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : pi
   use dftbp_common_environment, only : TEnvironment
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
   use dftbp_common_globalenv, only : stdOut
+  use dftbp_io_message, only : error
 #:if WITH_MPI
   use dftbp_common_schedule, only : getStartAndEndIndex
 #:endif
-  use libwavegrid, only : getValue, TMolecularOrbital
-  use dftbp_io_message, only : error
   implicit none
 
   private

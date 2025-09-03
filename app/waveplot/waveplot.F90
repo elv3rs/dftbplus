@@ -9,8 +9,8 @@
 
 !> Program for plotting molecular orbitals as cube files.
 program waveplot
+  use libwavegrid, only : getAtomicDensities, getTotalChrg
   use waveplot_initwaveplot, only : TProgramVariables, TProgramVariables_init
-  use libwavegrid, only : getValue, getTotalChrg, getAtomicDensities
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment, TEnvironment_init
   use dftbp_common_file, only : closeFile, openFile, TFileDescr

@@ -26,7 +26,7 @@ module libwavegrid_slater
     real(dp) :: cutoffSq
 
     !> Whether to use cached values instead of direct calculation.
-    logical :: useRadialLut = .false.
+    logical :: useRadialLut
 
     ! ##  LUT parameters ##
     !> Grid distance (resolution)

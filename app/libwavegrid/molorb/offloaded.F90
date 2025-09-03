@@ -8,11 +8,10 @@
 #:include 'common.fypp'
 
 module libwavegrid_molorb_offloaded
-  use dftbp_common_accuracy, only : dp
-  use libwavegrid_molorb_types, only : TSystemParams, TPeriodicParams, TCalculationContext
+  use, intrinsic :: iso_c_binding, only : c_bool, c_double, c_int, c_loc, c_ptr
+  use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
   use libwavegrid_slater, only : TSlaterOrbital
-  use, intrinsic :: iso_c_binding, only : c_int, c_double, c_double_complex, c_bool, c_ptr, c_loc, &
-      & c_null_ptr
+  use dftbp_common_accuracy, only : dp
   implicit none
   private
 
