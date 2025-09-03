@@ -155,26 +155,27 @@ contains
     case(3)
 
       !> general set for f orbitals (not cubic), see
-      !> http://winter.group.shef.ac.uk/orbitron/AOs/4f/equations.html
+      !> https://web.archive.org/web/20180121003200/http://winter.group.shef.ac.uk/orbitron/AOs/4f/equations.html
+      !> Todo: Fix misleading comments below 
       select case (mm)
       case(-3)
         ! y(3x**2-y**2)
         rty = 0.5900435899266435_dp * yy * (3.0_dp * xx**2 - yy**2) / rr**3
       case(-2)
-        ! x**2+y**2+z**2
+        ! x**2+y**2+z**2    ? (actually xyz.)
         rty = 2.890611442640554_dp * xx * yy *zz / rr**3
       case(-1)
-        ! yz**2
+        ! yz**2             ? also wrong comment
         rty = -0.4570457994644658_dp * (-4.0_dp * zz**2 + xx**2 + yy**2) * yy / rr**3
       case(0)
-        ! z**3
+        ! z**3   ? no.
         rty = -0.3731763325901155_dp * zz * (-2.0_dp * zz**2 + 3.0_dp * xx**2 + 3.0_dp * yy**2)&
             & / rr**3
       case(1)
-        ! xz**2
+        ! xz**2   ? no.
         rty = -0.4570457994644658_dp * (-4.0_dp * zz**2 + xx**2 + yy**2) * xx / rr**3
       case(2)
-        ! z(x**2-y**2)
+        ! z(x**2-y**2) 
         rty = 1.445305721320277_dp * zz * (xx**2 - yy**2) / rr**3
       case(3)
         ! x(x**2-3y**2)
@@ -245,6 +246,8 @@ contains
     allocate(this%aa(this%nPow, this%nAlpha))
     allocate(this%alpha(this%nAlpha))
     this%aa(:,:) = aa
+
+    ! Directly store -alpha as we need exp(-alpha * r)
     this%alpha(:) = -1.0_dp * alpha
 
     if (present(useRadialLut)) then
@@ -298,14 +301,17 @@ contains
     real(dp) :: sto
 
     integer :: ind
-    real(dp) :: frac
+    real(dp) :: frac, posOnGrid
 
     @:ASSERT(rr >= 0.0_dp)
 
     ! ind = 1 means zero distance as rr = (ind - 1) * gridDist
-    ind = floor(rr * this%invLutStep) + 1
+    posOnGrid = rr * this%invLutStep
+    ind = floor(posOnGrid) + 1
     if (ind < this%nGrid) then
-      frac = mod(rr, this%gridDist) * this%invLutStep
+      !frac = mod(rr, this%gridDist) * this%invLutStep
+      frac = posOnGrid - real(ind - 1, dp)
+
       sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)
     else
       sto = 0.0_dp

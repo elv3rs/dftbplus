@@ -181,7 +181,7 @@ program waveplot
 
         if (wp%opt%doPlotImag) then
           buffer(:,:,:) = aimag(gridValCmpl)
-          call writePropertyToCube("imag", buffer, wp, levelIndex)
+          call writePropertyToCube("imag", buffer, wp, levelIndex, ioStat=ioStat)
           hasIoError = hasIoError .or. ioStat /= 0
         end if
       end if
@@ -527,11 +527,11 @@ contains
                 ii = mod(i3 - 1, bufferSize) + 1
                 buffer(ii) = gridVal(i1, i2, i3)
                 if (ii == bufferSize) then
-                  write(fd%unit, formBuffer) real(buffer)
+                  write(fd%unit, formBuffer) buffer
                 end if
               end do
               if (ii /= bufferSize) then
-                write(fd%unit, "(" // i2c(ii) // "E16.8)") real(buffer(:ii))
+                write(fd%unit, "(" // i2c(ii) // "E16.8)") buffer(:ii)
               end if
             end do
           end do
