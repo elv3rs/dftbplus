@@ -24,15 +24,15 @@ contains
     type(TSlaterOrbital), intent(out) :: sto
     logical, intent(in), optional :: useRadialLut
 
-    integer, parameter :: sto_ll = 0
-    real(dp), parameter :: lut_resolution = 0.01_dp
-    real(dp), parameter :: sto_cutoff = 6.0_dp
-    real(dp), parameter :: sto_alpha(3) = [0.5_dp, 1.0_dp, 2.0_dp]
-    real(dp), parameter :: sto_aa(3,3) = reshape([ &
+    integer, parameter :: angMom = 0
+    real(dp), parameter :: lutResolution = 0.01_dp
+    real(dp), parameter :: cutoff = 6.0_dp
+    real(dp), parameter :: alpha(3) = [0.5_dp, 1.0_dp, 2.0_dp]
+    real(dp), parameter :: aa(3,3) = reshape([ &
         -2.2765228685565400_dp, 0.26641083435260687_dp, -7.9427553748566294E-003_dp, &
          17.453716731738609_dp, -5.4229751699602433_dp, 0.96370929548055750_dp, &
         -12.701455953438341_dp, -6.5568796727250120_dp, -0.85307020704514269_dp], [3,3])
-    call sto%init(sto_aa, sto_alpha, sto_ll, lut_resolution, sto_cutoff, useRadialLut=useRadialLut)
+    call sto%init(aa, alpha, angMom, lutResolution, cutoff, useRadialLut=useRadialLut)
   end subroutine initOrbitalHydrogenS
 
 
@@ -40,15 +40,15 @@ contains
     type(TSlaterOrbital), intent(out) :: sto
     logical, intent(in), optional :: useRadialLut
 
-    integer, parameter :: sto_ll = 0
-    real(dp), parameter :: lut_resolution = 0.01_dp
-    real(dp), parameter :: sto_cutoff = 6.0_dp
-    real(dp), parameter :: sto_alpha(4) = [0.5_dp, 1.26_dp, 3.17_dp, 8.0_dp]
-    real(dp), parameter :: sto_aa(3,4) = reshape([ &
+    integer, parameter :: angMom = 0
+    real(dp), parameter :: lutResolution = 0.01_dp
+    real(dp), parameter :: cutoff = 6.0_dp
+    real(dp), parameter :: alpha(4) = [0.5_dp, 1.26_dp, 3.17_dp, 8.0_dp]
+    real(dp), parameter :: aa(3,4) = reshape([ &
         0.21323488915449521_dp, -0.031152441012403959_dp, 0.0011303933349092960_dp, -9.0596686234211106_dp, &
         4.0675254100925002_dp, -0.60689938592758674_dp, 10.444780695232501_dp, -3.1373217750406419_dp, &
         4.4644627824691749_dp, 8.9215282105208260_dp, 7.2210396633361826_dp, 16.146571373535430_dp], [3,4])
-    call sto%init(sto_aa, sto_alpha, sto_ll, lut_resolution, sto_cutoff, useRadialLut=useRadialLut)
+    call sto%init(aa, alpha, angMom, lutResolution, cutoff, useRadialLut=useRadialLut)
   end subroutine initOrbitalOxygenS
 
 
@@ -56,15 +56,15 @@ contains
     type(TSlaterOrbital), intent(out) :: sto
     logical, intent(in), optional :: useRadialLut
 
-    integer, parameter :: sto_ll = 1
-    real(dp), parameter :: lut_resolution = 0.01_dp
-    real(dp), parameter :: sto_cutoff = 6.0_dp
-    real(dp), parameter :: sto_alpha(4) = [0.5_dp, 1.26_dp, 3.17_dp, 8.0_dp]
-    real(dp), parameter :: sto_aa(3,4) = reshape([ &
+    integer, parameter :: angMom = 1
+    real(dp), parameter :: lutResolution = 0.01_dp
+    real(dp), parameter :: cutoff = 6.0_dp
+    real(dp), parameter :: alpha(4) = [0.5_dp, 1.26_dp, 3.17_dp, 8.0_dp]
+    real(dp), parameter :: aa(3,4) = reshape([ &
         -0.021351405651207991_dp, 0.0028544859270132768_dp, -9.4141846289124166E-005_dp, 1.8517392789336220_dp, &
         -0.79114942586812875_dp, 0.10094277989615121_dp, 16.210706533770320_dp, -10.077615056451849_dp, &
         7.7615980276616314_dp, -1.7017045797631820_dp, -10.773616241206961_dp, -35.439076485248712_dp], [3,4])
-    call sto%init(sto_aa, sto_alpha, sto_ll, lut_resolution, sto_cutoff, useRadialLut=useRadialLut)
+    call sto%init(aa, alpha, angMom, lutResolution, cutoff, useRadialLut=useRadialLut)
   end subroutine initOrbitalOxygenP
 
   subroutine initSpeciesBasisH(speciesBasis, useRadialLut)

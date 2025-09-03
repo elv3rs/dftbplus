@@ -47,8 +47,8 @@ module test_libwavegrid_simple
   #:set configCount = 4 if WITH_CUDA else 2
   type(TLaunchConfig), parameter :: launchConfigs(${configCount}$) = [ &
     #:if WITH_CUDA
-      TLaunchConfig(.false., .true. ), & ! Direct GPU
-      TLaunchConfig(.true.,  .true. ),  & ! LUT GPU
+      TLaunchConfig(.false., .true.), & ! Direct GPU
+      TLaunchConfig(.true.,  .true.), & ! LUT GPU
     #:endif
       TLaunchConfig(.false., .false.), & ! Direct CPU
       TLaunchConfig(.true.,  .false.) & ! LUT CPU
