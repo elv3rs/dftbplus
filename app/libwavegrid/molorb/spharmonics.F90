@@ -47,7 +47,7 @@ module libwavegrid_molorb_spharmonics
 
 contains
 
-  !> Computes real tesseral spherical harmonics Y_lm(r) up to l=4.
+  !> Computes real tesseral spherical harmonics Y_lm(r) up to l=4 without performing divisions.
   !> All Definitions taken from:
   !> https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
   pure function realTessY(l, m, coord, inv_r) result(rty)
@@ -58,8 +58,8 @@ contains
     !> Magnetic quantum number
     integer, intent(in) :: m
     !> Coordinate vector (x, y, z) where the value should be calculated
-    real(dp), intent(in) :: coord(3)
-    !> Pre-calculated 1/r
+    real(dp), intent(in) :: coord(:)
+    !> Pre-calculated 1/r. (At origin, pass 0 to avoid NaNs)
     real(dp), intent(in) :: inv_r
 
     !> The value of the real spherical harmonic.
@@ -67,6 +67,10 @@ contains
 
     real(dp) :: x_r, y_r, z_r
     real(dp) :: x_r2, y_r2, z_r2
+
+    @:ASSERT(l >= 0 .and. l <= 4)
+    @:ASSERT(abs(m) <= l)
+    @:ASSERT(size(coord) == 3)
 
     x_r = coord(1) * inv_r
     y_r = coord(2) * inv_r
@@ -119,8 +123,8 @@ contains
           case (0);  rty = C4_0 * (35.0_dp * z_r2 * z_r2 - 30.0_dp * z_r2 + 3.0_dp)
           case (1);  rty = C4_abs1 * (z_r * x_r * (7.0_dp * z_r2 - 3.0_dp))
           case (2);  rty = C4_2 * ((x_r2 - y_r2) * (7.0_dp * z_r2 - 1.0_dp))
-          case (3); rty = C4_abs3 * (z_r * x_r * (x_r2 - 3.0_dp * y_r2))
-          case (4); rty = C4_4 * (x_r2 * x_r2 - 6.0_dp * x_r2 * y_r2 + y_r2 * y_r2)
+          case (3);  rty = C4_abs3 * (z_r * x_r * (x_r2 - 3.0_dp * y_r2))
+          case (4);  rty = C4_4 * (x_r2 * x_r2 - 6.0_dp * x_r2 * y_r2 + y_r2 * y_r2)
         end select
     end select
 

@@ -33,7 +33,7 @@ namespace RealTessYConsts {
 
 
 /**
- * @brief Computes real tesseral spherical harmonics Y_lm(r) up to l=4.
+ * @brief Computes real tesseral spherical harmonics Y_lm(r) up to l=4 without performing divisions.
  *
  * All Definitions taken from:
  * https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
@@ -42,7 +42,7 @@ namespace RealTessYConsts {
  * @param l      Orbital quantum number
  * @param m      Magnetic quantum number
  * @param diff   Pointer to (x, y, z) vector
- * @param inv_r  Pre-calculated 1/r
+ * @param inv_r  Pre-calculated 1/r. (At origin, pass 0 to avoid NaNs)
  * @return The value of the real spherical harmonic.
  */
 __device__ __forceinline__ double realTessY(int l, int m, const double* diff, double inv_r) {

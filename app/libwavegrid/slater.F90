@@ -122,7 +122,7 @@ contains
     !> Whether to use the cached grid for evaluation
     logical, intent(in), optional :: useRadialLut
 
-    integer :: iGrid, ii
+    integer :: iGrid
     real(dp) :: r
 
     @:ASSERT(cutoff > 0.0_dp)

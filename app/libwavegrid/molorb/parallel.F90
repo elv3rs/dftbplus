@@ -112,7 +112,7 @@ contains
     !! Thread private variables
     integer ::  ind, iSpecies
     real(dp) :: xyz(3), diff(3), frac(3)
-    real(dp) :: invR, r, rSq val, radialVal
+    real(dp) :: invR, r, rSq, val, radialVal
     !! Variables for inplace charge calculation
     real(dp), allocatable :: orbValsPerPointReal(:)
     complex(dp), allocatable :: orbValsPerPointCmpl(:)
@@ -183,7 +183,12 @@ contains
                   r = sqrt(rSq)
 
                   radialVal = stos(iOrb)%getRadial(r)
-                  invR = 1.0_dp / r
+                  
+                  ! Only calculate inverse once
+                  invR = 0.0_dp
+                  if (r > epsilon(1.0_dp)) then
+                    invR = 1.0_dp / r
+                  end if 
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1
@@ -249,7 +254,12 @@ contains
 
     if (ctx%calcTotalChrg) then
       print *, "Baking occupationVec into Eigenvector coefficients"
-      @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
+      if(ctx%isRealInput) then
+        @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
+      else
+        @:ASSERT(size(occupationVec) == size(eigVecsCmpl, dim=2))
+      end if
+
       do iEig = 1, size(eigVecsReal, dim=2)
         coeffVecReal(:, iEig) = eigVecsReal(:, iEig) * sqrt(occupationVec(iEig))
       end do

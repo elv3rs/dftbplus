@@ -212,9 +212,9 @@ contains
       @:ASSERT(this%periodic%isInitialized)
       allocate(this%system%coords(3, this%system%nAtom, this%periodic%nCell))
       this%system%coords(:,:,1) = geometry%coords
-      call this%boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
 
       if (this%periodic%isPeriodic) then
+        call this%boundaryCond%foldCoordsToCell(this%system%coords(:,:,1), this%periodic%latVecs)
         do iCell = 2, this%periodic%nCell
           do iAtom = 1, this%system%nAtom
             this%system%coords(:, iAtom, iCell) = this%system%coords(:, iAtom, 1) + this%periodic%rCellVec(:, iCell)
@@ -242,7 +242,6 @@ contains
     ctx%calcTotalChrg = .false.
     if (present(occupationVec)) then
       ctx%calcTotalChrg = .true.
-      @:ASSERT(size(occupationVec) == size(this%system%nOrb))
     end if
     
     ctx%runOnGPU = .false.
@@ -366,26 +365,6 @@ contains
 
   end subroutine TMolecularOrbital_getTotalChrg_cmpl
 
-  function hashRealArr(arr) result(res)
-    real(dp), intent(in) :: arr(:)
-    integer :: res, i
-    res = 0
-    do i = 1, size(arr)
-      res = ieor(res, ieor(transfer(arr(i), res), i))
-    end do
-  end function hashRealArr
-
-  function hashCmplxArr(arr) result(res)
-    complex(dp), intent(in) :: arr(:)
-    integer :: res, i
-    res = 0
-    do i = 1, size(arr)
-      res = ieor(res, ieor(transfer(real(arr(i)), res), i))
-      res = ieor(res, ieor(transfer(aimag(arr(i)), res), i))
-    end do
-  end function hashCmplxArr
-
-
   !> Bundles calls to addAtomicDensities, getTotalChrg and the regular molorb to allow for 
   !> Cleaner public interfaces.
   subroutine TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
@@ -471,10 +450,10 @@ contains
     if(ctx%calcTotalChrg) then
       @:ASSERT(all(shape(valueOutReal) > [0, 0, 0, 0]))
       @:ASSERT(size(occupationVec) == size(eigVecsCmpl, dim=2))
-      @:ASSERT(size(valueOnGrid, dim=4) == 1)
+      @:ASSERT(size(valueOutReal, dim=4) == 1)
     else
       @:ASSERT(all(shape(valueOutCmplx) > [0, 0, 0, 0]))
-      @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOnGrid, dim=4))
+      @:ASSERT(size(eigVecsCmpl, dim=2) == size(valueOutCmplx, dim=4))
     end if
 
     allocate(phases(this%periodic%nCell, size(kPoints, dim =2)))
@@ -492,15 +471,16 @@ contains
   function maxCutoff(stos) result(maxCut)
     type(TSlaterOrbital), intent(in) :: stos(:)
     real(dp) :: maxCut
+    real(dp) :: maxCutSq
     integer :: iSto
 
-    maxCut = 0.0_dp
+    maxCutSq = 0.0_dp
     do iSto = 1, size(stos)
-      if (stos(iSto)%cutoffSq > maxCut) then
-        maxCut = stos(iSto)%cutoffSq
+      if (stos(iSto)%cutoffSq > maxCutSq) then
+        maxCutSq = stos(iSto)%cutoffSq
       end if
     end do
-    maxCut = sqrt(maxCut)
+    maxCut = sqrt(maxCutSq)
   end function maxCutoff
 
 end module libwavegrid_molorb
