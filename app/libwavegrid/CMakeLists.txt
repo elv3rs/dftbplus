@@ -44,9 +44,3 @@ target_link_libraries(libwavegrid PUBLIC dftbplus)
 if(WITH_MPI) 
   target_link_libraries(libwavegrid PUBLIC MPI::MPI_Fortran)
 endif()
-
-
-
-
-
-

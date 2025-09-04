@@ -129,8 +129,8 @@ struct DeviceKernelParams {
 
     // Periodic boundary cond.
     bool            isPeriodic;
-    const double*   latVecs;
-    const double*   recVecs2pi;
+    const double    (*latVecs)[3];
+    const double    (*recVecs2pi)[3];
     const int*      kIndexes;
     const complexd* phases;
 
@@ -195,8 +195,8 @@ struct DeviceKernelParams {
 
         // Periodic boundary conditions
         isPeriodic = periodic->isPeriodic;
-        latVecs    = data.latVecs.get();
-        recVecs2pi = data.recVecs2pi.get();
+        latVecs    = reinterpret_cast<const double(*)[3]>(data.latVecs.get());
+        recVecs2pi = reinterpret_cast<const double(*)[3]>(data.recVecs2pi.get());
         kIndexes   = data.kIndexes.get();
         phases     = data.phases.get();
 
@@ -256,11 +256,8 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
                       +        i2 * p.gridVecs[IDX2F(i, 1, 3)]
                       + i3_global * p.gridVecs[IDX2F(i, 2, 3)];
 
-    // If periodic, fold into cell by discarding the non-fractional part in lattice vector
-    // multiples.
-    if (p.isPeriodic)
-        foldCoordsIntoCell(
-            xyz, reinterpret_cast<const double(*)[3]>(p.latVecs), reinterpret_cast<const double(*)[3]>(p.recVecs2pi));
+    // If periodic, fold into cell by discarding the non-fractional part in lattice vector multiples.
+    if (p.isPeriodic) foldCoordsIntoCell(xyz, p.latVecs, p.recVecs2pi);
 
     double totChrgAcc = 0.0;
     // --- Loop over eigenstates in chunks that fit in shared memory ---

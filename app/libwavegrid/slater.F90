@@ -6,7 +6,7 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include 'common.fypp'
-
+#:set pure = "" if defined('WITH_ASSERT') else "pure"
 !> Routines to calculate the radial part of a Slater type orbital (STO).
 module libwavegrid_slater
   use dftbp_common_accuracy, only : dp
@@ -15,7 +15,7 @@ module libwavegrid_slater
   private
 
   public :: TSlaterOrbital
-
+  
 
   !> Data type for STOs.
   type TSlaterOrbital
@@ -138,7 +138,8 @@ contains
     allocate(this%alpha(this%nAlpha))
     this%aa(:,:) = aa
 
-    ! Directly store -alpha as we need exp(-alpha * r)
+    ! The STO formula uses exp(-alpha * r).
+    ! Directly store -alpha to avoid repated negation when calculating.
     this%alpha(:) = -1.0_dp * alpha
 
     if (present(useRadialLut)) then
@@ -164,7 +165,7 @@ contains
   end subroutine TSlaterOrbital_init
 
 
-  function getRadial(this, r) result(sto)
+  ${pure}$ function getRadial(this, r) result(sto)
     class(TSlaterOrbital), intent(in) :: this
     real(dp), intent(in) :: r
     real(dp) :: sto
@@ -180,7 +181,7 @@ contains
   !> Returns the value of the SlaterOrbital in a given point.
   !! Builds a 1d cache grid across which the result is interpolated
   !! in order to speed up evaluation for subsequent calls.
-  function TSlaterOrbital_getRadialValueCached(this, r) result(sto)
+  ${pure}$ function TSlaterOrbital_getRadialValueCached(this, r) result(sto)
 
     !> SlaterOrbital instance
     class(TSlaterOrbital), intent(in) :: this
@@ -200,9 +201,7 @@ contains
     posOnGrid = r * this%invLutStep
     ind = floor(posOnGrid) + 1
     if (ind < this%nGrid) then
-      !frac = mod(r, this%gridDist) * this%invLutStep
       frac = posOnGrid - real(ind - 1, dp)
-
       sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)
     else
       sto = 0.0_dp
@@ -212,7 +211,7 @@ contains
 
 
   !> Calculates the value of an STO analytically.
-  function TSlaterOrbital_getRadialValueDirect(this, r) result(sto)
+  ${pure}$ function TSlaterOrbital_getRadialValueDirect(this, r) result(sto)
 
     !> SlaterOrbital instance
     class(TSlaterOrbital), intent(in) :: this
@@ -227,12 +226,13 @@ contains
     real(dp) :: rTmp
     integer :: ii, jj
 
-    ! Avoid 0.0**0 as it may lead to arithmetic exception
+    ! Avoid 0.0**0 as it may lead to arithmetic exception on pre-2008 compilers
     if (this%angMom == 0 .and. r < epsilon(1.0_dp)) then
       rTmp = 1.0_dp
     else
       rTmp = r**this%angMom
     end if
+
     do ii = 1, this%nPow
       pows(ii) = rTmp
       rTmp = rTmp * r

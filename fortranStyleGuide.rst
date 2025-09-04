@@ -1,0 +1,423 @@
+*******************
+Fortran style guide
+*******************
+
+The main principle when contributing code to Fortran projects should be
+readability. If your code can not be easily read and understood by others it
+will be hard to maintain and extend. It should also fit well with the existing
+parts of the code (in style as well as in its programming paradigms) maintaining
+the principle of least surprise.
+
+Below you will find some explicit coding rules we try to follow. The list can
+not cover all aspects, so also look at the existing source code and try to
+follow the conventions being used.
+
+If you use Emacs as editor, consider adding `appropriate customisation settings
+<https://gist.github.com/aradi/68a4ff8430a735de13f13393213f0ea8>`_ to your
+config file in order to automatically enforce some of the conventions below.
+You may also wish to use `ws-butler <https://github.com/lewang/ws-butler>`_.
+
+
+Line length and indentation
+===========================
+
+* Max allowed **line length** is **100** characters. For lines longer than that, use
+  continuation lines.
+
+* **Nested blocks** are indented by **2** white spaces::
+
+     write(*, *) "Nested block follows"
+     do ii = 1, 100
+       write(*, *) "This is the nested block"
+       if (ii == 50) then
+         write(*, *) "Next nested block"
+       end if
+     end do
+
+* **Continuation lines** are indented by **4** white spaces. Make sure to
+  place continuation characters (`&`) both at the end of the line as well as at
+  the beginning of the continuation line::
+
+      call someRoutineWithManyParameters(param1, param2, param3, param4,&
+          & param5)
+
+  Try to break lines at natural places (e.g. at white space characters) and
+  include one white space character after the opening ampersand in the
+  continuation line.
+
+* **Single line preprocessor directives** are indented as normal code::
+
+      @:ASSERT(someCondition)
+      call someRoutine(...)
+
+* **Preprocessor block directives** (directives with starting and ending
+  constructs) are outdented by **2** characters with respect of the code they
+  enclose. The enclosed code must be aligned as if the preprocessor directives
+  were not present::
+
+      call doSomething()
+    #:if WITH_SCALAPACK
+      call someRoutineScalapackVersion(...)
+    #:else
+      call someRoutineSerialVersion(...)
+    #:endif
+
+    do iKS = 1, nKS
+    #:if WITH_SCALAPACK
+      call someRoutineScalapackVersion(iKS, ...)
+    #:else
+      call someRoutineSerialVersion(iKS, ...)
+    #:endif
+    end do
+
+
+
+Naming
+======
+
+The naming conventions basically follow those in the `Google Style Guide for
+Java naming convention
+<https://google.github.io/styleguide/javaguide.html#s5-naming>`_, with minor
+modifications.
+
+* **Variable** names follow the **lowerCamelCase** convention::
+
+      logical :: hasComponent
+
+* **Constants** (parameters) use the **lowerCamelCase** convention similar to
+  variables ::
+
+      integer, parameter :: maxArraySize = 100
+
+  with the exception of the constants used to define the kind parameter for
+  intrinsic types, which should be all lowercase (and short)::
+
+      integer, parameter :: dp = kind(1.0d0)
+      real(dp) :: val
+
+
+* **Subroutine** and **function** names follow also the **lowerCamelCase**
+  notation::
+
+      subroutine testSomeFunctionality()
+      myValue = getSomeValue(...)
+
+
+* **Type** (object) names are written **UpperCamelCase**::
+
+      type :: TRealList
+      type(TRealList) :: myList
+
+  All type names should be prefixed with a capital 'T', in order to clarify the
+  distinction between type names and variable names::
+
+      type :: TBroydenMixer
+      :
+      end type TBroydenMixer
+      :
+      type(TBroydenMixer) :: broydenMixer
+
+
+* **Instances** referenced out of type-bound procedures are to be named `this`::
+
+      subroutine typeBoundProcedure(this, ...)
+        class(TType), intent(inout) :: this
+	:
+      end subroutine typeBoundProcedure
+
+
+* **Module** names follow **lower_case_with_underscore** convention::
+
+      use dftb_common_accuracy
+
+  Underscores are used for name-spacing only, so the module above would be
+  typically found at the path `dftb/common/accuracy.f90`. The individual
+  component names (``dftb``, ``common``, ``accuracy``) may not contain any
+  underscores and must be shorter than 15 characters.
+
+
+* **Preprocessor** variables and macros follow **UPPER_CASE_WITH_UNDERSCORE**
+  convention::
+
+    #:if WITH_MPI
+      withMpi = ${FORTRAN_LOGICAL(WITH_MPI)}$
+    #:endif
+
+
+White spaces
+============
+
+Please use white spaces to make the code readable. In general, you **must use**
+white spaces in following situations:
+
+* Around arithmetic operators::
+
+      2 + 2
+
+* Around assignment and pointer assignment operators::
+
+      aa = 3 + 2
+      pWindow => array(1:3)
+
+* Around the ``::`` separator in declarations::
+
+      integer :: ind
+
+* After commas (``,``) in general and especially in declarations, calls and
+  lists::
+
+      real(wp), allocatable :: array(:)
+      type, extends(TBaseType) :: TDerivedType
+      subroutine myRoutine(par1, par2)
+      call myRoutine(val1, val2)
+      print *, 'My value:', val
+      do ii = 1, 3
+      array(1:3) = [1, 2, 3]
+
+* When separating array indices, when the actual index value for an index
+  contains an expression::
+
+      myArray(ii + 2, jj) = 12
+
+You **may omit** white space in following cases:
+
+* When separating array indices and the actual index values are simple and
+  short (typically two letters) variable names, one or two digit integers or the
+  range operator ``:``::
+
+      myArray(:,1) = vector
+      latVecs(1,1) = 1.0_wp
+      myArray(ii,jj) = myArray(jj,ii)
+
+You **must omit** white spaces in following cases:
+
+* Around opening and closing braces of any kind::
+
+      call mySubroutine(aa, bb)  ! and NOT call mySubroutine( aa, bb )
+      myVector(:) = [1, 2, 3]    ! instead of myVector(:) = [ 1, 2, 3 ]
+      tmp = 2 * (aa + bb)        ! instead of 2 * ( aa + bb )
+
+* Around the equal (``=``) sign, when passing named arguments to a function or
+  subroutine::
+
+      call mySubroutine(aa, optionalArgument=.true.)
+
+* Around the power operator::
+
+      val = base**power   (instead of val = base ** power)
+
+**Avoid** white spaces for **visual aligning** of code, use::
+
+      integer, intent(in) :: nNeighbors
+      real(wp), intent(out) :: interaction
+
+instead of::
+
+      integer, intent(in)   :: nNeighbors
+      real(wp), intent(out) :: energy
+
+Although latter may look more readable, it makes rather difficult to track real
+changes in the code with the revision control system. For example when a new
+line is added to the block making the realignment of previous (but otherwise
+unchanged) lines necessary ::
+
+      integer, intent(in)             :: nNeighbors
+      real(wp), intent(out)           :: energy
+      real(wp), intent(out), optional :: forces(:)
+
+the version control system will indicate all of those lines having been
+modified, although only the alignment (but not the actual instructions) were
+changed.
+
+
+Comments
+========
+
+* **Module**, **Subroutine** and **function** comments should be consistent with
+  `doxygen <http://doxygen.org/>`_ / `FORD
+  <https://github.com/cmacmackin/ford>`_ literate comments for publicly visible
+  interfaces and variables.
+
+* Variable/module/routine comments on multiple lines should use a
+  double-bang for the second and subsequent lines, with the first line
+  capitalised ::
+
+    !> This is a multi-line comment for something,
+    !! it continues on a second line.
+
+* Adapt your comment if it starts with a term that is expected to be in
+  lower-case ::
+
+    !> The k-point
+
+  instead of ::
+
+    !> K-point
+
+* Comments are indented to the same position as the code they document::
+
+      ! Take spin degeneracy into account
+      energy = 2.0_wp * energy
+
+* Generally, write the comment *before* the code snippet it documents::
+
+      ! Loop over all neighbours
+      do iNeigh = 1, nNeighbours
+        :
+      end do
+
+* Try to avoid mixing code and comments within one line as this is often hard to
+  read::
+
+      bb = 2 * aa   ! this comment should be before the line.
+
+* Never use multi-line suffix comments, as an indenting editor would mess up the
+  indentation of subsequent lines::
+
+      bb = 2 * aa  ! This comment goes over multiple lines, therefore, it
+                   ! should stay ALWAYS before the code snippet and NOT HERE.
+
+* Specifically comment any workarounds, include the compiler name and the
+  version number for which the workaround had to be made. Always use the
+  following pattern, so that searching for workarounds which can be possibly
+  removed is easy::
+
+      ! Workaround: gfortran 4.8
+      ! Finalisation not working, we have to deallocate explicitly
+      deallocate(myPointer)
+
+
+* Comments should always start with one bang only. Comments with two bangs are
+  reserved for source code documentation systems::
+
+      ! This block needs a documentation
+      do ii = 1, 2
+        :
+      end do
+
+* If you need a comment for a longer block of code, consider instead packaging
+  that block of code into a properly named function (if the additional function
+  call would be performance critical, write it as an internal procedure)::
+
+      somePreviousStatement
+      ind = getFirstNonZero(array)
+      someStatementAfter
+
+  instead of ::
+
+      somePreviousStatement
+
+      ! Look for the first nonzero element
+      found = .false.
+      do ind = 1, size(array)
+        if (array(ind) > 0) then
+	  found = .true.
+	  exit
+	end if
+      end do
+      if (.not. found) then
+        ind = 0
+      end if
+
+      someStatementAfter
+
+
+Block constructs
+================
+
+* Block constructs are normally used in their verbose form, with block opening
+  and corresponding block closing in separate lines::
+
+    if (some_conditions) then
+      ! Do something
+      ...
+    end if
+
+* The closing form should have a space between the ``end`` keyword and the
+  construct type::
+
+    do ii = 1, 10
+      ...
+    end do  ! instead of "enddo"
+
+* If the block construct contains an expression within obligatory parentheses,
+  insert one space between the block type and the opening parenthesis::
+
+    if (some_condition) then  ! instead of "if(some_condition)"
+    
+    where (aa == 0)           ! instead of "where(aa == 0)"
+
+* Some block constructs have alternative one-line short forms without closing
+  statements (e.g. ``if``, ``where``). Only use their short form, if it is
+  readable and fits into a single line::
+
+    if (ioStat /= 0) return
+
+    if (allocated(someArray)) someArray(:,:) = 0.0_dp
+
+    where (abs(aa) >= epsilon(0.0_dp)) aa = 1.0_dp / aa
+
+    
+Allocation status
+=================
+
+At several places, the allocation status of a variable is used to signal choices
+about logical flow in the code::
+
+  !> SCC module internal variables
+  type(TScc), allocatable :: sccCalc
+  .
+  .
+  .
+  if (allocated(sccCalc)) then
+
+  end if
+
+This is to be preferred to the use of additional logical variables if possible.
+
+Part of the reason for this choice is that from Fortran 2008 onwards, optional
+arguments to subroutines and functions are treated as not-present if not
+allocated.
+
+
+File I/O
+========
+
+All files must be opened (i.e., connected to a descriptor) by the ``openFile()``
+routine, which initializes a ``type(TFileDescriptor)`` instance. Whenever
+possible, use the ``mode`` argument to specify the file opening type::
+
+  call openFile(fd, "test.dat", mode="r")
+
+The ``mode`` specifier accepts the following possible options:
+
+  * ``r``: read (file must exist, the descriptor is at the start of the file
+    contents),
+
+  * ``r+``: read and write (file must exist, the descriptor is at the start of
+    the file contents),
+
+  * ``w``: write (file will be replaced if already existing, otherwise created)
+
+  * ``w+``: read and write (file will be replaced if it already exists,
+     otherwise created)
+
+  * ``a``: appended write (file will be opened if it already exists, otherwise
+    created; the descriptor will be positioned at its end)
+
+  * ``a+``: appended read and write (file will be opened if it already exists,
+    otherwise created; the descriptor will be positioned at its end)
+
+Additionally the letter ``b`` can be appended to open the file in binary
+(unformatted) mode (e.g. ``rb`` for reading a binary file or ``a+b`` for
+appending to a binary file in read and write mode).
+
+For reading, writing and rewinding, the ``%unit`` field of the descriptor should
+be used. Do not change the value of ``%unit``. Do not close the file with the
+``close`` statement, but use the ``closeFile()`` routine instead. (Actually,
+files are automatically closed, if the connected descriptor leaves code scope,
+but for better readability of the code, we close them explicitely by calling
+the ``closeFile()`` routine.) Calling ``closeFile()`` with an unconnected
+descriptor is fine, it will simply do nothing. This should allow you to
+eliminate most guarding ``if`` statements around any ``closeFile()`` calls.
+

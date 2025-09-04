@@ -6,6 +6,7 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include 'common.fypp'
+#:set pure = "" if defined('WITH_ASSERT') else "pure"
 
 !> Real spherical harmonics up to l=4.
 !! See also: spharmonics.cuh
@@ -50,8 +51,7 @@ contains
   !> Computes real tesseral spherical harmonics Y_lm(r) up to l=4 without performing divisions.
   !> All Definitions taken from:
   !> https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
-  pure function realTessY(l, m, coord, inv_r) result(rty)
-    !$omp declare target
+  ${pure}$ function realTessY(l, m, coord, inv_r) result(rty)
 
     !> Orbital quantum number (0 <= l <= 4)
     integer, intent(in) :: l
@@ -132,6 +132,3 @@ contains
 
 
 end module libwavegrid_molorb_spharmonics
-
-
- 

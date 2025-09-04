@@ -154,12 +154,7 @@ contains
     class(TMolecularOrbital), intent(inout) :: this
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     integer :: iSpec, ind, nStos
-    nStos = 0
-    ! Count total number of STOs
-    do iSpec = 1, this%system%nSpecies
-      nStos = nStos + basisInput(iSpec)%nOrb
-      @:ASSERT(basisInput(iSpec)%nOrb == size(basisInput(iSpec)%stos))
-    end do
+    nStos = sum(basisInput(:)%nOrb)
 
     ! Flatten the basis array
     allocate(this%stos(nStos))
