@@ -7,14 +7,14 @@
 
 #:include 'common.fypp'
 
-!> Routines to calculate a Slater type orbital (STO).
+!> Routines to calculate the radial part of a Slater type orbital (STO).
 module libwavegrid_slater
   use dftbp_common_accuracy, only : dp
   implicit none
 
   private
 
-  public :: TSlaterOrbital, realTessY
+  public :: TSlaterOrbital
 
 
   !> Data type for STOs.
@@ -74,116 +74,7 @@ module libwavegrid_slater
   end type TSlaterOrbital
 
 
-
 contains
-
-
-  !> Returns the real tesseral spherical harmonics in a given point.
-  !! This function only work for angular momenta between 0 and 3 (s-f).
-  function realTessY(ll, mm, coord, rrOpt) result(rty)
-    !$omp declare target
-
-    !> Angular momentum of the spherical harmonics (0 <= ll <= 3)
-    integer, intent(in) :: ll
-
-    !> Magnetic quantum number
-    integer, intent(in) :: mm
-
-    !> Coordinate where the value should be calculated
-    real(dp), intent(in) :: coord(:)
-
-    !> Length of the coordinate vector, if known in advance
-    real(dp), intent(in), optional :: rrOpt
-
-    real(dp) :: rty
-
-    real(dp) :: rr, xx, yy, zz
-
-    if (present(rrOpt)) then
-      rr = rrOpt
-    else
-      rr = norm2(coord)
-    end if
-
-    @:ASSERT(ll >= 0 .and. ll <= 3)
-    @:ASSERT(abs(mm) <= ll)
-    @:ASSERT(size(coord) == 3)
-    @:ASSERT(rr >= 0.0_dp)
-
-    xx = coord(1)
-    yy = coord(2)
-    zz = coord(3)
-
-    if (rr < epsilon(1.0_dp) .and. ll /= 0) then
-      rty = 0.0_dp
-      return
-    end if
-
-    select case (ll)
-    case(0)
-      rty = 0.2820947917738782_dp
-    case(1)
-      select case(mm)
-      case(-1)
-        ! y
-        rty = 0.4886025119029198_dp * yy / rr
-      case(0)
-        ! z
-        rty = 0.4886025119029198_dp * zz / rr
-      case(1)
-        ! x
-        rty = 0.4886025119029198_dp * xx / rr
-      end select
-    case(2)
-      select case(mm)
-      case(-2)
-        ! xy
-        rty = 1.092548430592079_dp * xx * yy / rr**2
-      case(-1)
-        ! yz
-        rty = 1.092548430592079_dp * yy * zz / rr**2
-      case(0)
-        ! z**2
-        rty = -0.3153915652525200_dp * (-2.0_dp * zz**2 + xx**2 + yy**2) / rr**2
-      case(1)
-        ! xz
-        rty = 1.092548430592079_dp * xx * zz / rr**2
-      case(2)
-        ! x**2-y**2
-        rty = 0.5462742152960395_dp * (xx**2 - yy**2) / rr**2
-      end select
-    case(3)
-
-      !> general set for f orbitals (not cubic), see
-      !> https://web.archive.org/web/20180121003200/http://winter.group.shef.ac.uk/orbitron/AOs/4f/equations.html
-      !> Todo: Fix misleading comments below 
-      select case (mm)
-      case(-3)
-        ! y(3x**2-y**2)
-        rty = 0.5900435899266435_dp * yy * (3.0_dp * xx**2 - yy**2) / rr**3
-      case(-2)
-        ! x**2+y**2+z**2    ? (actually xyz.)
-        rty = 2.890611442640554_dp * xx * yy *zz / rr**3
-      case(-1)
-        ! yz**2             ? also wrong comment
-        rty = -0.4570457994644658_dp * (-4.0_dp * zz**2 + xx**2 + yy**2) * yy / rr**3
-      case(0)
-        ! z**3   ? no.
-        rty = -0.3731763325901155_dp * zz * (-2.0_dp * zz**2 + 3.0_dp * xx**2 + 3.0_dp * yy**2)&
-            & / rr**3
-      case(1)
-        ! xz**2   ? no.
-        rty = -0.4570457994644658_dp * (-4.0_dp * zz**2 + xx**2 + yy**2) * xx / rr**3
-      case(2)
-        ! z(x**2-y**2) 
-        rty = 1.445305721320277_dp * zz * (xx**2 - yy**2) / rr**3
-      case(3)
-        ! x(x**2-3y**2)
-        rty = 0.5900435899266435_dp * xx * (xx**2 - 3.0_dp * yy**2) / rr**3
-      end select
-    end select
-
-  end function realTessY
 
   !> Initialises using a LUT for radial values.
   subroutine TSlaterOrbital_initFromLut(this, gridValue, gridDist, angMom)
@@ -232,7 +123,7 @@ contains
     logical, intent(in), optional :: useRadialLut
 
     integer :: iGrid, ii
-    real(dp) :: rr
+    real(dp) :: r
 
     @:ASSERT(cutoff > 0.0_dp)
 
@@ -240,8 +131,8 @@ contains
     this%cutoffSq = cutoff ** 2
 
     ! Store parameters for direct calculation
-    @:ASSERT(size(aa, dim=2) == this%nAlpha)
     this%nAlpha = size(alpha)
+    @:ASSERT(size(aa, dim=2) == this%nAlpha)
     this%nPow = size(aa, dim=1)
     allocate(this%aa(this%nPow, this%nAlpha))
     allocate(this%alpha(this%nAlpha))
@@ -265,23 +156,23 @@ contains
 
       allocate(this%gridValue(this%nGrid))
       do iGrid = 1, this%nGrid
-        rr = real(iGrid - 1, dp) * resolution
-        this%gridValue(iGrid) = this%getRadialDirect(rr)
+        r = real(iGrid - 1, dp) * resolution
+        this%gridValue(iGrid) = this%getRadialDirect(r)
       end do
     end if
 
   end subroutine TSlaterOrbital_init
 
 
-  function getRadial(this, rr) result(sto)
+  function getRadial(this, r) result(sto)
     class(TSlaterOrbital), intent(in) :: this
-    real(dp), intent(in) :: rr
+    real(dp), intent(in) :: r
     real(dp) :: sto
 
     if (this%useRadialLut) then
-      sto = this%getRadialCached(rr)
+      sto = this%getRadialCached(r)
     else
-      sto = this%getRadialDirect(rr)
+      sto = this%getRadialDirect(r)
     end if
 
   end function getRadial
@@ -289,13 +180,13 @@ contains
   !> Returns the value of the SlaterOrbital in a given point.
   !! Builds a 1d cache grid across which the result is interpolated
   !! in order to speed up evaluation for subsequent calls.
-  function TSlaterOrbital_getRadialValueCached(this, rr) result(sto)
+  function TSlaterOrbital_getRadialValueCached(this, r) result(sto)
 
     !> SlaterOrbital instance
     class(TSlaterOrbital), intent(in) :: this
 
     !> Distance, where STO should be calculated
-    real(dp), intent(in) :: rr
+    real(dp), intent(in) :: r
 
     !> Contains the value of the function on return
     real(dp) :: sto
@@ -303,13 +194,13 @@ contains
     integer :: ind
     real(dp) :: frac, posOnGrid
 
-    @:ASSERT(rr >= 0.0_dp)
+    @:ASSERT(r >= 0.0_dp)
 
-    ! ind = 1 means zero distance as rr = (ind - 1) * gridDist
-    posOnGrid = rr * this%invLutStep
+    ! ind = 1 means zero distance as r = (ind - 1) * gridDist
+    posOnGrid = r * this%invLutStep
     ind = floor(posOnGrid) + 1
     if (ind < this%nGrid) then
-      !frac = mod(rr, this%gridDist) * this%invLutStep
+      !frac = mod(r, this%gridDist) * this%invLutStep
       frac = posOnGrid - real(ind - 1, dp)
 
       sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)
@@ -321,13 +212,13 @@ contains
 
 
   !> Calculates the value of an STO analytically.
-  function TSlaterOrbital_getRadialValueDirect(this, rr) result(sto)
+  function TSlaterOrbital_getRadialValueDirect(this, r) result(sto)
 
     !> SlaterOrbital instance
     class(TSlaterOrbital), intent(in) :: this
 
     !> Distance, where the STO should be calculated
-    real(dp), intent(in) :: rr
+    real(dp), intent(in) :: r
 
     !> Value of the STO on return
     real(dp) :: sto
@@ -337,14 +228,14 @@ contains
     integer :: ii, jj
 
     ! Avoid 0.0**0 as it may lead to arithmetic exception
-    if (this%angMom == 0 .and. rr < epsilon(1.0_dp)) then
+    if (this%angMom == 0 .and. r < epsilon(1.0_dp)) then
       rTmp = 1.0_dp
     else
-      rTmp = rr**this%angMom
+      rTmp = r**this%angMom
     end if
     do ii = 1, this%nPow
       pows(ii) = rTmp
-      rTmp = rTmp * rr
+      rTmp = rTmp * r
     end do
     sto = 0.0_dp
     do ii = 1, this%nAlpha
@@ -352,7 +243,7 @@ contains
       do jj = 1, this%nPow
         rTmp = rTmp + this%aa(jj, ii) * pows(jj)
       end do
-      sto = sto + rTmp * exp(this%alpha(ii) * rr)
+      sto = sto + rTmp * exp(this%alpha(ii) * r)
     end do
 
   end function TSlaterOrbital_getRadialValueDirect

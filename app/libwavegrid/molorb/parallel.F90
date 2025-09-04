@@ -9,7 +9,8 @@
 
 module libwavegrid_molorb_parallel
   use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use libwavegrid_slater, only : realTessY, TSlaterOrbital
+  use libwavegrid_molorb_spharmonics, only: realTessY
+  use libwavegrid_slater, only : TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
 #:if WITH_CUDA
@@ -111,7 +112,7 @@ contains
     !! Thread private variables
     integer ::  ind, iSpecies
     real(dp) :: xyz(3), diff(3), frac(3)
-    real(dp) :: rSq, r, val, radialVal
+    real(dp) :: invR, r, rSq val, radialVal
     !! Variables for inplace charge calculation
     real(dp), allocatable :: orbValsPerPointReal(:)
     complex(dp), allocatable :: orbValsPerPointCmpl(:)
@@ -132,7 +133,7 @@ contains
 
 
     !$omp parallel private(i1, i2, i3, iCell, iAtom, iOrb, iL, iM, xyz, frac, diff, &
-    !$omp&              r, val, radialVal, ind, iSpecies, rSq, &
+    !$omp&              r, invR, val, radialVal, ind, iSpecies, rSq, &
     !$omp&              orbValsPerPointReal, orbValsPerPointCmpl)
     if (ctx%calcTotalChrg) then
       if (ctx%isRealInput) then
@@ -182,10 +183,11 @@ contains
                   r = sqrt(rSq)
 
                   radialVal = stos(iOrb)%getRadial(r)
+                  invR = 1.0_dp / r
 
                   lpM : do iM = -iL, iL
                     ind = ind + 1
-                    val = radialVal * realTessY(iL, iM, diff, r)
+                    val = radialVal * realTessY(iL, iM, diff, invR)
                     if (ctx%calcAtomicDensity) val = val * val
 
                     if (ctx%calcTotalChrg) then
