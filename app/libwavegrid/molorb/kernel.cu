@@ -17,6 +17,7 @@
 
 #include "kernel.cuh"
 #include "slater.cuh"
+#include "spharmonics.cuh"
 #include "utils.cuh"
 
 // more print statements
@@ -251,8 +252,9 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
     // Map point to global coordinates.
     double xyz[3];
     for (int i = 0; i < 3; ++i)
-        xyz[i] = p.origin[i] + i1 * p.gridVecs[IDX2F(i, 0, 3)] + i2 * p.gridVecs[IDX2F(i, 1, 3)] +
-                 i3_global * p.gridVecs[IDX2F(i, 2, 3)];
+        xyz[i] = p.origin[i] + i1 * p.gridVecs[IDX2F(i, 0, 3)]
+                      +        i2 * p.gridVecs[IDX2F(i, 1, 3)]
+                      + i3_global * p.gridVecs[IDX2F(i, 2, 3)];
 
     // If periodic, fold into cell by discarding the non-fractional part in lattice vector
     // multiples.
@@ -301,10 +303,9 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
 
                     // precompute inverse used across several realTessY calls
                     double inv_r  = (r < INV_R_EPSILON) ? 0.0 : 1.0 / r;
-                    double inv_r2 = inv_r * inv_r;
 
                     for (int iM = -iL; iM <= iL; ++iM) {
-                        double val = radialVal * realTessY(iL, iM, diff, inv_r, inv_r2);
+                        double val = radialVal * realTessY(iL, iM, diff, inv_r);
                         if constexpr (calcAtomicDensity) val = val * val;
 
                         // Accumulate into the small shared memory buffer for the current chunk
@@ -423,16 +424,16 @@ void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool cal
     assert(!(!isRealInput && calcAtomicDensity));
 
     switch (idx) {
-        case 0: CALL_KERNEL(false, false, false, false); break;
-        case 1: CALL_KERNEL(true, false, false, false); break;
-        case 3: CALL_KERNEL(true, true, false, false); break;
-        case 4: CALL_KERNEL(false, false, true, false); break;
-        case 5: CALL_KERNEL(true, false, true, false); break;
-        case 8: CALL_KERNEL(false, false, false, true); break;
-        case 9: CALL_KERNEL(true, false, false, true); break;
-        case 11: CALL_KERNEL(true, true, false, true); break;
-        case 12: CALL_KERNEL(false, false, true, true); break;
-        case 13: CALL_KERNEL(true, false, true, true); break;
+        case 0:  CALL_KERNEL(false, false, false, false); break;
+        case 1:  CALL_KERNEL(true,  false, false, false); break;
+        case 3:  CALL_KERNEL(true,  true,  false, false); break;
+        case 4:  CALL_KERNEL(false, false, true,  false); break;
+        case 5:  CALL_KERNEL(true,  false, true,  false); break;
+        case 8:  CALL_KERNEL(false, false, false, true); break;
+        case 9:  CALL_KERNEL(true,  false, false, true); break;
+        case 11: CALL_KERNEL(true,  true,  false, true); break;
+        case 12: CALL_KERNEL(false, false, true,  true); break;
+        case 13: CALL_KERNEL(true,  false, true,  true); break;
         default: fprintf(stderr, "Error: invalid kernel configuration index %d\n", idx); exit(EXIT_FAILURE);
     }
 #undef CALL_KERNEL
