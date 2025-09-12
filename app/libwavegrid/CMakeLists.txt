@@ -4,6 +4,10 @@ set(sources_lib_fpp
   slater.F90
   libwavegrid.F90
 )
+set(sources_lib_cuda
+    molorb/cuda/kernel.cu
+    molorb/cuda/host_logic.cu
+)
 
 add_subdirectory(molorb)
 
@@ -12,14 +16,11 @@ list(APPEND fypp_flags -I${projectdir}/src/dftbp/include)
 
 dftbp_preprocess("${FYPP}" "${fypp_flags}" "F90" "f90" "${sources_lib_fpp}" sources_lib_f90_preproc)
 
-add_library(libwavegrid STATIC
-  ${sources_lib_f90_preproc}
-  ${sources_lib_cuda}
-)
+add_library(libwavegrid STATIC ${sources_lib_f90_preproc} )
 
 
 if(WITH_CUDA)
-    add_library(wavegrid_cuda STATIC molorb/kernel.cu)
+    add_library(wavegrid_cuda STATIC ${sources_lib_cuda})
 
     if(WITH_OMP)
         target_compile_options(wavegrid_cuda PRIVATE "-Xcompiler=-fopenmp")

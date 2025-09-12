@@ -1,5 +1,12 @@
+/*-------------------------------------------------------------------------------------------------*
+ *  DFTB+: general package for performing fast atomistic simulations                               *
+ *  Copyright (C) 2006 - 2025  DFTB+ developers group                                              *
+ *                                                                                                 *
+ *  See the LICENSE file for terms of usage and distribution.                                      *
+ *-------------------------------------------------------------------------------------------------*/
 // Real spherical harmonics up to l=4.
 // See also: spharmonics.F90
+#pragma once
 
 namespace RealTessYConsts {
     // l = 0

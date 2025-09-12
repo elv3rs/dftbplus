@@ -16,208 +16,20 @@
 #include <vector>
 
 #include "kernel.cuh"
+#include "host_logic.cuh"
+#include "kernel_sig.cuh"
+#include "device_params.cuh"
 #include "slater.cuh"
 #include "spharmonics.cuh"
 #include "utils.cuh"
 
-// More print statements
-constexpr bool debug = false;
 // Avoid division by zero
 constexpr double INV_R_EPSILON = 1.0e-12;
-// amount of shared memory set aside for nEig accumulators
-constexpr float SHARED_MEM_FACTOR = 0.95f;
-// max output array share of free global memory
-constexpr float GLOBAL_MEM_FACTOR = 0.80f;
-// Threads per block, multiple of warp size 32
-constexpr int block_size = 256;
 
 using complexd = thrust::complex<double>;
 
-// Manages Gpu memory allocation and H2D copy
-struct DeviceData {
-    // Grid
-    DeviceBuffer<double> origin;
-    DeviceBuffer<double> gridVecs;
-
-    // System
-    DeviceBuffer<double> coords;
-    DeviceBuffer<int>    species;
-    DeviceBuffer<int>    iStos;
-
-    // Periodic
-    DeviceBuffer<double>   latVecs;
-    DeviceBuffer<double>   recVecs2pi;
-    DeviceBuffer<int>      kIndexes;
-    DeviceBuffer<complexd> phases;
-
-    // STO Basis
-    DeviceBuffer<int>    sto_angMoms;
-    DeviceBuffer<int>    sto_nPows;
-    DeviceBuffer<int>    sto_nAlphas;
-    DeviceBuffer<double> sto_cutoffsSq;
-    DeviceBuffer<double> sto_coeffs;
-    DeviceBuffer<double> sto_alphas;
-    // Texture for radial LUT
-    std::unique_ptr<GpuLutTexture> sto_lut;
-
-    // Eigenvectors
-    DeviceBuffer<double>   eigVecsReal;
-    DeviceBuffer<complexd> eigVecsCmpl;
-
-    // Output (per-GPU batch buffer)
-    DeviceBuffer<complexd> d_valueCmpl_out_batch;
-    DeviceBuffer<double>   d_valueReal_out_batch;
-
-    // Constructor handles all H2D allocation and copy
-    DeviceData(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic,
-        const StoBasisParams* basis, const CalculationParams* calc, int z_per_batch)
-        : origin(grid->origin, 3),
-          gridVecs(grid->gridVecs, 9),
-          coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
-          species(system->species, system->nAtom),
-          iStos(system->iStos, system->nSpecies + 1),
-          sto_angMoms(basis->angMoms, basis->nStos),
-          sto_cutoffsSq(basis->cutoffsSq, basis->nStos) {
-        if (basis->useRadialLut) {
-            if (debug) printf("Using radial LUT with %d points for %d STOs\n", basis->nLutPoints, basis->nStos);
-            sto_lut = std::unique_ptr<GpuLutTexture>(
-                new GpuLutTexture(basis->lutGridValues, basis->nLutPoints, basis->nStos));
-        } else {
-            if (debug) printf("Using direct STO evaluation for %d STOs\n", basis->nStos);
-            sto_nPows.assign(basis->nPows, basis->nStos);
-            sto_nAlphas.assign(basis->nAlphas, basis->nStos);
-            sto_coeffs.assign(basis->coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos);
-            sto_alphas.assign(basis->alphas, (size_t)basis->maxNAlphas * basis->nStos);
-        }
-
-        if (calc->isRealInput) {
-            eigVecsReal.assign(calc->eigVecsReal, (size_t)system->nOrb * calc->nEigIn);
-        } else {
-            eigVecsCmpl.assign(
-                reinterpret_cast<const complexd*>(calc->eigVecsCmpl), (size_t)system->nOrb * calc->nEigIn);
-            phases.assign(reinterpret_cast<const complexd*>(periodic->phases), (size_t)system->nCell * calc->nEigIn);
-            kIndexes.assign(periodic->kIndexes, calc->nEigIn);
-        }
-        if (periodic->isPeriodic) {
-            latVecs.assign(periodic->latVecs, 9);
-            recVecs2pi.assign(periodic->recVecs2pi, 9);
-        }
-
-        // Per-GPU batch buffer for the output
-        size_t batch_buffer_size_elems = (size_t)grid->nPointsX * grid->nPointsY * z_per_batch * calc->nEigOut;
-        if (calc->isRealOutput) {
-            d_valueReal_out_batch = DeviceBuffer<double>(batch_buffer_size_elems);
-        } else {
-            d_valueCmpl_out_batch = DeviceBuffer<complexd>(batch_buffer_size_elems);
-        }
-    }
-};
-
-// Kernel parameters struct to simplify the argument list
-struct DeviceKernelParams {
-    // Grid
-    int           nPointsX, nPointsY, z_per_batch, z_offset_global;
-    const double* origin;
-    const double* gridVecs;
-
-    // System
-    int nAtom, nCell, nOrb;
-
-    const double* coords;
-    const int*    species;
-    const int*    iStos;
-
-    // Periodic boundary cond.
-    bool            isPeriodic;
-    const double    (*latVecs)[3];
-    const double    (*recVecs2pi)[3];
-    const int*      kIndexes;
-    const complexd* phases;
-
-    // STO Basis
-    int nStos, maxNPows, maxNAlphas;
-    // Texture LUTs
-    cudaTextureObject_t lutTex;
-    double              inverseLutStep;
-    // STO parameters
-    const int*    sto_angMoms;
-    const int*    sto_nPows;
-    const int*    sto_nAlphas;
-    const double* sto_cutoffsSq;
-    const double* sto_coeffs;
-    const double* sto_alphas;
-
-    // Eigenvectors
-    int             nEig, nEig_per_pass;
-    const double*   eigVecsReal;
-    const complexd* eigVecsCmpl;
-
-    // Output (batch pointers)
-    double*   valueReal_out_batch;
-    complexd* valueCmpl_out_batch;
-
-    // Constructor to initialize the parameters from host data
-    // Batch-specific parameters are initialized to zero or nullptr,
-    // and need to be set in the loop before kernel launch.
-    DeviceKernelParams(DeviceData& data, const GridParams* grid, const SystemParams* system,
-        const PeriodicParams* periodic, const StoBasisParams* basis, const CalculationParams* calc,
-        int nEig_per_pass_in) {
-        // Grid
-        origin   = data.origin.get();
-        gridVecs = data.gridVecs.get();
-        nPointsX = grid->nPointsX;
-        nPointsY = grid->nPointsY;
-
-        // System
-        nAtom   = system->nAtom;
-        nCell   = system->nCell;
-        nOrb    = system->nOrb;
-        coords  = data.coords.get();
-        species = data.species.get();
-        iStos   = data.iStos.get();
-
-        // STO Basis
-        nStos         = basis->nStos;
-        sto_angMoms   = data.sto_angMoms.get();
-        sto_cutoffsSq = data.sto_cutoffsSq.get();
-
-        if (basis->useRadialLut) {
-            lutTex         = data.sto_lut->get();
-            inverseLutStep = basis->inverseLutStep;
-        } else {
-            maxNPows    = basis->maxNPows;
-            maxNAlphas  = basis->maxNAlphas;
-            sto_nPows   = data.sto_nPows.get();
-            sto_nAlphas = data.sto_nAlphas.get();
-            sto_coeffs  = data.sto_coeffs.get();
-            sto_alphas  = data.sto_alphas.get();
-        }
-
-        // Periodic boundary conditions
-        isPeriodic = periodic->isPeriodic;
-        latVecs    = reinterpret_cast<const double(*)[3]>(data.latVecs.get());
-        recVecs2pi = reinterpret_cast<const double(*)[3]>(data.recVecs2pi.get());
-        kIndexes   = data.kIndexes.get();
-        phases     = data.phases.get();
-
-        // Eigenvectors
-        nEig        = calc->nEigIn;
-        eigVecsReal = data.eigVecsReal.get();
-        eigVecsCmpl = data.eigVecsCmpl.get();
-
-        // Output batch buffers
-        valueReal_out_batch = data.d_valueReal_out_batch.get();
-        valueCmpl_out_batch = data.d_valueCmpl_out_batch.get();
-
-        nEig_per_pass = nEig_per_pass_in;
-        // Batch-specific kernel config to be updated in the loop
-        z_per_batch     = 0;
-        z_offset_global = 0;
-    }
-};
-
 // ================================================================================================
-//  CUDA Kernel.
+//  Main MolOrb CUDA Kernel
 // ================================================================================================
 // To avoid branching (dropped at compile time), we template the kernel 16 ways on boolean flags:
 // <isRealInput> decides whether real/complex eigenvectors are used (and adds phases).
@@ -351,63 +163,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
     }
 }
 
-struct GpuLaunchConfig {
-    int    deviceId;
-    int    z_start;              // Starting Z-slice for this GPU
-    int    z_count;              // Number of Z-slices for this GPU
-    int    z_per_batch;          // Number of Z-slices to process per kernel launch
-    int    nEig_per_pass;        // Number of eigenstates to accumulate in shared memory
-    size_t shared_mem_for_pass;  // Amount of shared memory per block for the accumulators
-};
 
-GpuLaunchConfig setup_gpu_config(int deviceId, int numGpus, const GridParams* grid, const CalculationParams* calc) {
-    GpuLaunchConfig config;
-    config.deviceId = deviceId;
-
-    // Evenly divide work using Z-slices among GPUs
-    config.z_count = grid->nPointsZ / numGpus;
-    config.z_start = deviceId * config.z_count;
-    // Handle uneven Z-slice count: Last GPU takes remaining slices
-    if (deviceId == numGpus - 1) config.z_count = grid->nPointsZ - config.z_start;
-
-    // Query available memory sizes with safety margins
-    cudaDeviceProp prop;
-    size_t         free_global_mem, total_global_mem;
-    CHECK_CUDA(cudaMemGetInfo(&free_global_mem, &total_global_mem));
-    CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
-    size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
-    size_t available_global = static_cast<size_t>(free_global_mem * GLOBAL_MEM_FACTOR);
-
-    size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
-    size_t output_number_size      = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
-
-    // Determine number of eigenstates that fit into shared memory
-    config.nEig_per_pass       = available_shared / (block_size * accumulator_number_size);
-    config.nEig_per_pass       = std::min(calc->nEigIn, std::max(1, config.nEig_per_pass));  // clamp to [1, nEigIn]
-    config.shared_mem_for_pass = (size_t)config.nEig_per_pass * block_size * accumulator_number_size;
-
-    // Determine max Z-slices that can fit in available (global) memory
-    size_t bytes_per_slice = (size_t)grid->nPointsX * grid->nPointsY * calc->nEigOut * output_number_size;
-    config.z_per_batch     = std::min(config.z_count, (int)available_global / (int)bytes_per_slice);
-    config.z_per_batch     = std::max(1, config.z_per_batch);  // at least 1
-
-    // Debug output
-    if (deviceId == 0 && debug) {
-        printf("\n--- GPU %d Configuration ---\n", deviceId);
-        printf("  Z-slice workload: %d (from index %d to %d)\n", config.z_count, config.z_start,
-            config.z_start + config.z_count - 1);
-        printf("  Block size: %d threads, %zub shared mem per block, %d eigs of %d per pass\n", block_size,
-            config.shared_mem_for_pass, config.nEig_per_pass, calc->nEigIn);
-        size_t total_size_valueOut =
-            (size_t)grid->nPointsX * grid->nPointsY * grid->nPointsZ * calc->nEigOut * sizeof(double);
-        if (!calc->isRealOutput) total_size_valueOut *= 2;
-        printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n", free_global_mem / 1e9,
-            grid->nPointsX, grid->nPointsY, grid->nPointsZ, calc->nEigOut, total_size_valueOut / 1e9);
-        printf("  Processing Z-slices in batches of %d\n", config.z_per_batch);
-    }
-
-    return config;
-}
 // Since the kernel is templated on the different calculation modes, we cannot simply pass booleans
 // at runtime and thus need this dispatch table to call the correct binary.
 void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg,
@@ -436,33 +192,10 @@ void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool cal
 #undef CALL_KERNEL
 }
 
-// Copy the computed batch back to the correct slice of the final host array.
-// The D2H copy will automatically block/ synchronize the kernel for this batch.
-// This could be improved by using streams / cudaMemcpyAsync, but currently is not a bottleneck.
-// The output array is of fortran shape (x,y,z,nEigOut), thus z-slices are not contiguous.
-// We slice on Z instead of nEigOut to save on a little computation in the kernel.
-void copyD2H(void* d_src_ptr, void* h_dest_ptr, int nPointsX, int nPointsY, int nPointsZ, int z_per_batch,
-    int z_offset_global, const CalculationParams* calc) {
-    size_t output_num_size = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
-    size_t host_plane_size    = (size_t)nPointsZ * nPointsY * nPointsX * output_num_size;
-    size_t device_plane_size  = (size_t)z_per_batch * nPointsY * nPointsX * output_num_size;
 
-    // Strided Memcpy3D could be used to squash this loop.
-    for (int iEig = 0; iEig < calc->nEigOut; ++iEig) {
-        // From: iEig-th slice of GPU batch buffer
-        ptrdiff_t d_offset_bytes = (ptrdiff_t)(iEig * device_plane_size);
-
-        // To: Global Z-position in the iEig-th slice of host buffer
-        ptrdiff_t h_offset_bytes = (ptrdiff_t)(iEig * host_plane_size + ((size_t)z_offset_global * nPointsY * nPointsX) * output_num_size);
-
-        CHECK_CUDA(cudaMemcpy((char*)h_dest_ptr + h_offset_bytes, (char*)d_src_ptr + d_offset_bytes, device_plane_size,
-            cudaMemcpyDeviceToHost));
-    }
-}
-
-// =========================================================================
-//  C++ Host Interface (callable from C/Fortran)
-// =========================================================================
+// C++ Host Interface (extern "C", then called from Fortran)
+// Handles the high-level flow of querying devices, and then
+// concurrently preparing data, launching kernels, and copying back results.
 extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic,
     const StoBasisParams* basis, const CalculationParams* calc) {
     if (calc->nEigIn * grid->nPointsX * grid->nPointsY * grid->nPointsZ == 0) {
