@@ -50,7 +50,7 @@ program waveplot
 
   !> Auxiliary variables
   integer :: i1, ioStat, nEig, iEig, iLevel, iKPoint, iSpin
-  logical :: isFinished, doPlotLevel, hasIoError, doRequireIndividual, doRepeatBox
+  logical :: isFinished, doPlotLevel, hasIoError, doRequireIndividual, doRepeatBox, doNeedCharge
 
   call initGlobalEnv()
   call TEnvironment_init(env)
@@ -127,27 +127,30 @@ program waveplot
       else
         call wp%loc%grid%next(gridValCmpl, levelIndex, isFinished)
       end if
-      iLevel = levelIndex(1)
-      iKPoint = levelIndex(2)
-      iSpin = levelIndex(3)
 
-      ! Build charge if needed for total charge or was explicitely required
-      doPlotLevel = any(wp%opt%plottedSpins == iSpin) &
-          &.and. any(wp%opt%plottedKPoints == iKPoint) .and. any(wp%opt%plottedLevels == iLevel)
-      if (wp%opt%doCalcTotChrg .or. (doPlotLevel .and. (wp%opt%doPlotChrg .or. wp%opt%doPlotChrgDiff)))&
-          & then
+      ! Was the current state requested separately?
+      iLevel = levelIndex(1); iKPoint = levelIndex(2); iSpin = levelIndex(3)
+      doPlotLevel = any(wp%opt%plottedSpins   == iSpin) &
+            & .and. any(wp%opt%plottedKPoints == iKPoint) &
+            & .and. any(wp%opt%plottedLevels  == iLevel)
+
+      ! Square the wavefunction if neccessary
+      doNeedCharge = wp%opt%doCalcTotChrg .or. (doPlotLevel .and. (wp%opt%doPlotChrg .or. wp%opt%doPlotChrgDiff))
+      if (doNeedCharge) then
         if (wp%input%isRealHam) then
           buffer(:,:,:) = gridValReal**2
         else
           buffer(:,:,:) = abs(gridValCmpl)**2
         end if
-        if (wp%opt%doCalcTotChrg) then
-          totChrg(:,:,:) = totChrg + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
-        end if
+
         sumChrg = sum(buffer) * wp%loc%gridVol
         if (wp%opt%beVerbose) then
-          write(*, "(I5,I7,I7,A8,F12.6,F12.6)") iSpin, iKPoint, iLevel, "calc", sumChrg,&
+          write(stdOut, "(I5,I7,I7,A8,F12.6,F12.6)") iSpin, iKPoint, iLevel, "calc", sumChrg,&
               & wp%input%occupations(iLevel, iKPoint, iSpin)
+        end if
+
+        if (wp%opt%doCalcTotChrg) then
+          totChrg(:,:,:) = totChrg + wp%input%occupations(iLevel, iKPoint, iSpin) * buffer
         end if
       end if
 
