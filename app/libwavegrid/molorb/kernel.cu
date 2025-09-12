@@ -20,7 +20,7 @@
 #include "spharmonics.cuh"
 #include "utils.cuh"
 
-// more print statements
+// More print statements
 constexpr bool debug = false;
 // Avoid division by zero
 constexpr double INV_R_EPSILON = 1.0e-12;
@@ -447,7 +447,7 @@ void copyD2H(void* d_src_ptr, void* h_dest_ptr, int nPointsX, int nPointsY, int 
     size_t host_plane_size    = (size_t)nPointsZ * nPointsY * nPointsX * output_num_size;
     size_t device_plane_size  = (size_t)z_per_batch * nPointsY * nPointsX * output_num_size;
 
-    // Memcpy3D could be used to squash this loop.
+    // Strided Memcpy3D could be used to squash this loop.
     for (int iEig = 0; iEig < calc->nEigOut; ++iEig) {
         // From: iEig-th slice of GPU batch buffer
         ptrdiff_t d_offset_bytes = (ptrdiff_t)(iEig * device_plane_size);
@@ -480,18 +480,9 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
         exit(EXIT_FAILURE);
     }
 
-    // Timing events.
-    cudaEvent_t startEverything, endEverything, startKernelOnly, endKernelOnly, startCopyOnly, endCopyOnly;
+    // Debug kernel timing
+    GpuTimer everything_timer(true), kernel_timer, d2h_timer;
 
-    float totalKernelTime_ms  = 0.0f;
-    float totalD2HCopyTime_ms = 0.0f;
-    CHECK_CUDA(cudaEventCreate(&startEverything));
-    CHECK_CUDA(cudaEventCreate(&endEverything));
-    CHECK_CUDA(cudaEventCreate(&startKernelOnly));
-    CHECK_CUDA(cudaEventCreate(&endKernelOnly));
-    CHECK_CUDA(cudaEventCreate(&startCopyOnly));
-    CHECK_CUDA(cudaEventCreate(&endCopyOnly));
-    CHECK_CUDA(cudaEventRecord(startEverything));
 
     // --- Multi-GPU Setup ---
     int numGpus;
@@ -510,9 +501,9 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
     }
 #endif
 
-// Use OMP to split across available GPUs
-// This works irrespective of the number of threads set in OMP_NUM_THREADS.
-#pragma omp parallel num_threads(numGpus)
+    // Use OMP to split across available GPUs
+    // This works irrespective of the number of threads set in OMP_NUM_THREADS.
+    #pragma omp parallel num_threads(numGpus)
     {
         int deviceId = omp_get_thread_num();
         CHECK_CUDA(cudaSetDevice(deviceId));
@@ -529,20 +520,19 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
             // This loop iterates over the Z-slices assigned to *this* GPU.
             for (int z_offset = 0; z_offset < config.z_count; z_offset += config.z_per_batch) {
                 deviceParams.z_per_batch = std::min(config.z_per_batch, config.z_count - z_offset);
-                deviceParams.z_offset_global =
-                    config.z_start + z_offset;  // required to calculate coordinates in kernel
+                deviceParams.z_offset_global = config.z_start + z_offset;  // required to calculate coordinates in kernel
 
                 int total_points_in_batch = grid->nPointsX * grid->nPointsY * deviceParams.z_per_batch;
                 int grid_size             = (total_points_in_batch + block_size - 1) / block_size;
 
-                if (deviceId == 0) CHECK_CUDA(cudaEventRecord(startKernelOnly));
+                if (deviceId == 0) kernel_timer.start();
 
                 dispatchKernel(&deviceParams, calc->isRealInput, calc->calcAtomicDensity, calc->calcTotalChrg,
                     basis->useRadialLut, grid_size, config.shared_mem_for_pass);
 
                 if (deviceId == 0) {
-                    CHECK_CUDA(cudaEventRecord(endKernelOnly));
-                    CHECK_CUDA(cudaEventRecord(startCopyOnly));
+                    kernel_timer.stop();
+                    d2h_timer.start();
                 }
 
                 copyD2H(calc->isRealOutput ? (void*)device_data.d_valueReal_out_batch.get()
@@ -550,15 +540,7 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
                     calc->isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out, grid->nPointsX,
                     grid->nPointsY, grid->nPointsZ, deviceParams.z_per_batch, deviceParams.z_offset_global, calc);
 
-                if (deviceId == 0) {
-                    float iterKernel_ms, iterCopy_ms;
-                    CHECK_CUDA(cudaEventRecord(endCopyOnly));
-                    CHECK_CUDA(cudaEventSynchronize(endCopyOnly));
-                    CHECK_CUDA(cudaEventElapsedTime(&iterKernel_ms, startKernelOnly, endKernelOnly));
-                    CHECK_CUDA(cudaEventElapsedTime(&iterCopy_ms, endKernelOnly, endCopyOnly));
-                    totalKernelTime_ms += iterKernel_ms;
-                    totalD2HCopyTime_ms += iterCopy_ms;
-                }
+                if (deviceId == 0) d2h_timer.stop();
             }
         }
     }  // End of omp parallel region
@@ -568,25 +550,14 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
         CHECK_CUDA(cudaSetDevice(i));
         CHECK_CUDA(cudaDeviceSynchronize());
     }
-
-    // Switch back to lead to retrieve timing
     CHECK_CUDA(cudaSetDevice(0));
     CHECK_CUDA(cudaGetLastError());
-    CHECK_CUDA(cudaEventRecord(endEverything));
-    CHECK_CUDA(cudaEventSynchronize(endEverything));
+    everything_timer.stop();
 
-    float timeEverything;
-    CHECK_CUDA(cudaEventElapsedTime(&timeEverything, startEverything, endEverything));
-
-    float overhead = timeEverything - (totalKernelTime_ms + totalD2HCopyTime_ms);
-    if (debug) printf("\n--- GPU Timing Results ---\n");
-    printf("Total Multi-GPU execution time: %.2f ms\n", timeEverything);
-    // Timings are run on device 0 only.
     if (debug) {
-        printf("(Lead) Kernel execution: %.2f ms (%.1f%%)\n", totalKernelTime_ms,
-            (totalKernelTime_ms / timeEverything) * 100.0);
-        printf("(Lead) D2H Copy:         %.2f ms (%.1f%%)\n", totalD2HCopyTime_ms,
-            (totalD2HCopyTime_ms / timeEverything) * 100.0);
-        printf("(Lead) Overhead:         %.2f ms (%.1f%%)\n", overhead, (overhead / timeEverything) * 100.0);
+        printf("\nGPU 0 execution time: %.1f ms\n", everything_timer.elapsed_ms());
+        float kernel_share = kernel_timer.elapsed_ms() / everything_timer.elapsed_ms();
+        printf(" -> Kernel:   %.1f ms (%.1f%%)\n", kernel_timer.elapsed_ms(), kernel_share * 100.0f);
+        printf(" -> D2H copy: %.1f ms (%.1f%%)\n", d2h_timer.elapsed_ms(), (1.0f - kernel_share) * 100.0f);
     }
 }

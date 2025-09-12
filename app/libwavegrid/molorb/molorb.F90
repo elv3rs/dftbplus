@@ -90,7 +90,6 @@ contains
     type(TSpeciesBasis), intent(in) :: basisInput(:)
     real(dp), intent(in) :: origin(3)
     real(dp), intent(in) :: gridVecs(3,3)
-    integer :: iOrb
 
     @:ASSERT(.not. this%isInitialised)
     @:ASSERT(size(origin) == 3)
@@ -220,7 +219,6 @@ contains
   end subroutine TMolecularOrbital_updateCoords
 
 
-
   function bundleFlags(isRealInput, addAtomicDensities, useGPU, occupationVec) result(ctx)
     logical, intent(in) :: isRealInput
     logical, intent(in), optional :: addAtomicDensities, useGPU
@@ -250,11 +248,9 @@ contains
       #:endif
     end if
 
-
     ctx%isRealOutput = ctx%isRealInput .or. ctx%calcTotalChrg
 
   end function bundleFlags
-
 
 
   !> Returns molecular orbitals on a real grid. 
@@ -270,6 +266,7 @@ contains
   
     call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU)
   end subroutine TMolecularOrbital_getValue_real
+
 
   !> Returns the total charge density on a grid.
   !> This squares each state and sums them up weighted by occupationVec.
@@ -290,11 +287,6 @@ contains
   end subroutine TMolecularOrbital_getTotalChrg_real
 
 
-
-
-
-
-
   !> Calculates the atomic densities by squaring each STO *before* summation.
   subroutine TMolecularOrbital_getAtomicDensities_real(this, eigVecsReal, valueOnGrid, useGPU)
     !> MolecularOrbital instance
@@ -309,9 +301,6 @@ contains
     call TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
         & addAtomicDensities=.true.)
   end subroutine TMolecularOrbital_getAtomicDensities_real
-
-
-
 
 
   !> Returns molecular orbitals on a complex grid.
@@ -360,6 +349,7 @@ contains
 
   end subroutine TMolecularOrbital_getTotalChrg_cmpl
 
+
   !> Bundles calls to addAtomicDensities, getTotalChrg and the regular molorb to allow for 
   !> Cleaner public interfaces.
   subroutine TMolecularOrbital_getValue_real_generic(this, eigVecsReal, valueOnGrid, useGPU, &
@@ -403,6 +393,7 @@ contains
         & ctx, eigVecsReal, eigVecsCmpl, valueOnGrid, valueCmpl, occupationVec)
 
   end subroutine TMolecularOrbital_getValue_real_generic
+
 
   !> Bundles calls to getValue_cmpl and getTotalChrg_cmpl to allow for cleaner public interfaces.
   subroutine TMolecularOrbital_getValue_cmpl_generic(this, eigVecsCmpl, kPoints, kIndexes, &
@@ -462,6 +453,7 @@ contains
       & ctx, eigVecsReal, eigVecsCmpl, valueOutReal, valueOutCmplx, occupationVec)
 
   end subroutine TMolecularOrbital_getValue_cmpl_generic
+
 
   function maxCutoff(stos) result(maxCut)
     type(TSlaterOrbital), intent(in) :: stos(:)

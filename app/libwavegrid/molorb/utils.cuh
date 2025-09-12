@@ -23,6 +23,7 @@
     } while (0)
 
 // Helper macros for column-major (Fortran-style) index calculations
+// We cannot cast to explicit shape because dimensions need to be fixed at compile time
 #define IDX2F(i, j, lda) ((j) * (size_t)(lda) + (i))
 #define IDX3F(i, j, k, lda, ldb) (((k) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
 #define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
@@ -163,7 +164,7 @@ class GpuLutTexture {
         // Do not normalize the lut values
         texDesc.readMode = cudaReadModeElementType;
         // Access using texel coords, i.e. [0, N-1]
-        // Imagine a pixel, add 0.5f to get the center.
+        // (Imagine pixels, add 0.5f to get the center.)
         texDesc.normalizedCoords = 0;
 
         // Create texture object
@@ -185,5 +186,61 @@ class GpuLutTexture {
     cudaArray_t         _lutArray      = nullptr;
     cudaTextureObject_t _textureObject = 0;
 };
+
+/* 
+ * Wraps CUDA event calls to provide a simple way to time GPU execution.
+ * Use elapsed() to retrieve the accumulated time without stopping the timer.
+ * The timer is initially stopped unless startNow=true is passed to the constructor.
+ */
+class GpuTimer {
+public:
+    explicit GpuTimer(bool startNow = false) : _accumulated_ms(0.0f), _running(false) {
+        CHECK_CUDA(cudaEventCreate(&_startEvent));
+        CHECK_CUDA(cudaEventCreate(&_stopEvent));
+        if (startNow) start();
+        
+    }
+
+    ~GpuTimer() {
+        cudaEventDestroy(_startEvent);
+        cudaEventDestroy(_stopEvent);
+    }
+
+    void start() {
+        if (!_running) {
+            CHECK_CUDA(cudaEventRecord(_startEvent));
+            _running = true;
+        }
+    }
+
+    float elapsed_ms() {
+        if (_running) {
+            CHECK_CUDA(cudaEventRecord(_stopEvent));
+            CHECK_CUDA(cudaEventSynchronize(_stopEvent));
+            float elapsed;
+            CHECK_CUDA(cudaEventElapsedTime(&elapsed, _startEvent, _stopEvent));
+            _accumulated_ms += elapsed;
+        }
+        return _accumulated_ms;
+    }
+
+    float stop() {
+        _accumulated_ms = elapsed_ms();
+        _running = false;
+        return _accumulated_ms;
+    }
+
+    // Disallow copy and assign
+    GpuTimer(const GpuTimer&) = delete;
+    GpuTimer& operator=(const GpuTimer&) = delete;
+
+private:
+    cudaEvent_t _startEvent{};
+    cudaEvent_t _stopEvent{};
+    float _accumulated_ms;
+    bool _running;
+};
+
+
 
 #endif  // UTILS_CUH_
