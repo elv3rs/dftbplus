@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <cstdio>
 
-
+// Splits work among GPUs using Z-slices, and calculate gpu batch array sizes.
 GpuLaunchConfig setup_gpu_config(int deviceId, int numGpus, const GridParams* grid, const CalculationParams* calc) {
     GpuLaunchConfig config;
     config.deviceId = deviceId;

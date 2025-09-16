@@ -42,7 +42,7 @@ namespace RealTessYConsts {
 /**
  * @brief Computes real tesseral spherical harmonics Y_lm(r) up to l=4 without performing divisions.
  *
- * All Definitions taken from:
+ * All Definitions in accordance with:
  * https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
  * 
  * 

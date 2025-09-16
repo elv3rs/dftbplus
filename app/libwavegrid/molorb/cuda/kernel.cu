@@ -17,7 +17,6 @@
 
 #include "kernel.cuh"
 #include "host_logic.cuh"
-#include "kernel_sig.cuh"
 #include "device_params.cuh"
 #include "slater.cuh"
 #include "spharmonics.cuh"
@@ -29,16 +28,22 @@ constexpr double INV_R_EPSILON = 1.0e-12;
 using complexd = thrust::complex<double>;
 
 // ================================================================================================
-//  Main MolOrb CUDA Kernel
+//  Main Molorb CUDA Kernel
 // ================================================================================================
-// To avoid branching (dropped at compile time), we template the kernel 16 ways on boolean flags:
-// <isRealInput> decides whether real/complex eigenvectors are used (and adds phases).
-// <useRadialLut> decides whether to use texture memory interpolation for the STO radial functions.
-// <isPeriodic> enables folding of coords into the unit cell.
-// <calcAtomicDensity> squares the basis wavefunction contributions.
-//   In this case, the occupation should be passed as the eigenvector.
-// <calcTotalChrg> accumulates the density over all states in valueReal_out of shape (x,y,z,1).
-//   Here, occupation should be passed by multiplying the eigenvecs with sqrt(occupation).
+// The kernel calculation closely follows the (easier to read) CPU implementation in parallel.F90.
+// Main differences arise due to the GPU architecture:
+// - We use shared memory to accumulate results per thread, which is much faster than global memory.
+// - Because shared memory is limited, we have to chunk the eigenstates into nEig_per_pass pieces.
+//   This means the spatial calculation is repeated for each chunk, but the accumulation is fast.
+//  - The radial function lookup table uses hardware accelerated texture interpolation (if enabled).
+//  - To avoid branching (dropped at compile time), we template the kernel 16 ways on boolean flags:
+//    <isRealInput> decides whether real/complex eigenvectors are used (and adds phases).
+//    <useRadialLut> decides whether to use texture memory interpolation for the STO radial functions.
+//    <isPeriodic> enables folding of coords into the unit cell.
+//    <calcAtomicDensity> squares the basis wavefunction contributions.
+//      In this case, the occupation should be passed as the eigenvector.
+//    <calcTotalChrg> accumulates the density over all states in valueReal_out of shape (x,y,z,1).
+//      Here, occupation should be passed by multiplying the eigenvecs with sqrt(occupation).
 template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useRadialLut>
 __global__ void evaluateKernel(const DeviceKernelParams p) {
     using AccumT = typename std::conditional<(isRealInput), double, complexd>::type;
@@ -49,7 +54,6 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
     extern __shared__ char shared_workspace[];
     AccumT* point_results_pass = reinterpret_cast<AccumT*>(shared_workspace) + threadIdx.x * p.nEig_per_pass;
 
-    // --- Thread to point mapping ---
     // Map each thread to unique 1d index
     int idx_in_batch          = blockIdx.x * blockDim.x + threadIdx.x;
     int total_points_in_batch = p.nPointsX * p.nPointsY * p.z_per_batch;
@@ -72,7 +76,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
     if (p.isPeriodic) foldCoordsIntoCell(xyz, p.latVecs, p.recVecs2pi);
 
     double totChrgAcc = 0.0;
-    // --- Loop over eigenstates in chunks that fit in shared memory ---
+    // Loop over eigenstates in chunks that fit in shared memory
     for (int eig_base = 0; eig_base < p.nEig; eig_base += p.nEig_per_pass) {
         // Initialize the small, per-pass buffer for this thread
         for (int i = 0; i < p.nEig_per_pass; ++i) {
