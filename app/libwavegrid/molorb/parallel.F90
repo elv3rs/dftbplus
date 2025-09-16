@@ -6,7 +6,7 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include 'common.fypp'
-
+!> Dispatches to either the GPU or CPU implementation, and contains the OMP parallel CPU implementation.
 module libwavegrid_molorb_parallel
   use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
   use libwavegrid_molorb_spharmonics, only: realTessY

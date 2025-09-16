@@ -7,8 +7,9 @@
 
 #:include 'common.fypp'
 
-!> Contains routines to calculate the value of one or more molecular orbitals composed from STOs on
+!> Provides routines to calculate the value of one or more molecular orbitals on
 !! an equidistant grid.
+!! Contains argument preparation and public interfaces to the private evaluateParallel routine.
 module libwavegrid_molorb
   use libwavegrid_molorb_parallel, only : evaluateParallel
   use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams

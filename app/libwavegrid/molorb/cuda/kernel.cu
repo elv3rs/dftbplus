@@ -27,23 +27,27 @@ constexpr double INV_R_EPSILON = 1.0e-12;
 
 using complexd = thrust::complex<double>;
 
-// ================================================================================================
-//  Main Molorb CUDA Kernel
-// ================================================================================================
-// The kernel calculation closely follows the (easier to read) CPU implementation in parallel.F90.
-// Main differences arise due to the GPU architecture:
-// - We use shared memory to accumulate results per thread, which is much faster than global memory.
-// - Because shared memory is limited, we have to chunk the eigenstates into nEig_per_pass pieces.
-//   This means the spatial calculation is repeated for each chunk, but the accumulation is fast.
-//  - The radial function lookup table uses hardware accelerated texture interpolation (if enabled).
-//  - To avoid branching (dropped at compile time), we template the kernel 16 ways on boolean flags:
-//    <isRealInput> decides whether real/complex eigenvectors are used (and adds phases).
-//    <useRadialLut> decides whether to use texture memory interpolation for the STO radial functions.
-//    <isPeriodic> enables folding of coords into the unit cell.
-//    <calcAtomicDensity> squares the basis wavefunction contributions.
-//      In this case, the occupation should be passed as the eigenvector.
-//    <calcTotalChrg> accumulates the density over all states in valueReal_out of shape (x,y,z,1).
-//      Here, occupation should be passed by multiplying the eigenvecs with sqrt(occupation).
+/**
+ * @brief Main Molorb CUDA Kernel
+ *
+ * The kernel calculation closely follows the (easier to read) CPU implementation in parallel.F90.
+ * Main differences arise due to the GPU architecture:
+ * - We use shared memory to accumulate results per thread, which is much faster than global memory.
+ * - Because shared memory is limited, we have to chunk the eigenstates into nEig_per_pass pieces.
+ *   This means the spatial calculation is repeated for each chunk, but the accumulation is fast.
+ * - The radial function lookup table uses hardware accelerated texture interpolation (if enabled).
+ * - To avoid branching (dropped at compile time), we template the kernel 16 ways on boolean flags:
+ *
+ * @tparam isRealInput       whether real/complex eigenvectors are used (and adds phases).
+ * @tparam useRadialLut      whether to use texture memory interpolation for the STO radial functions.
+ * @tparam isPeriodic        enables folding of coords into the unit cell.
+ * @tparam calcAtomicDensity squares the basis wavefunction contributions. In this case, the
+ *                           occupation should be passed as the eigenvector.
+ * @tparam calcTotalChrg     accumulates the density over all states in valueReal_out of shape (x,y,z,1).
+ *                           Here, occupation should be passed by multiplying the eigenvecs with sqrt(occupation).
+ *
+ * @param p The DeviceKernelParams struct containing all necessary parameters for the kernel.
+ */
 template <bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg, bool useRadialLut>
 __global__ void evaluateKernel(const DeviceKernelParams p) {
     using AccumT = typename std::conditional<(isRealInput), double, complexd>::type;
@@ -168,17 +172,27 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
 }
 
 
-// Since the kernel is templated on the different calculation modes, we cannot simply pass booleans
-// at runtime and thus need this dispatch table to call the correct binary.
-void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool calcAtomicDensity, bool calcTotalChrg,
-    bool useRadialLut, int grid_size, size_t shared_mem_for_pass) {
+/**
+ * @brief Dispatches the appropriate templated kernel based on input flags.
+ *
+ * Since the kernel is templated on the different calculation modes, we cannot simply pass booleans
+ * at runtime and thus need this dispatch table to call the correct binary.
+ *
+ * @param params    Pointer to DeviceKernelParams struct containing all necessary parameters for the kernel.
+ * @param config    The GpuLaunchConfig struct containing template flags and launch configuration.
+ * @param grid_size Total number of thread blocks to launch.
+ */
+void dispatchKernel(const DeviceKernelParams* params, GpuLaunchConfig config, int grid_size) {
 #define CALL_KERNEL(isReal, doAtomic, doChrg, useLut) \
-    evaluateKernel<isReal, doAtomic, doChrg, useLut><<<grid_size, block_size, shared_mem_for_pass>>>(*params);
+    evaluateKernel<isReal, doAtomic, doChrg, useLut><<<grid_size, block_size, config.shared_mem_for_pass>>>(*params);
 
-    int idx = (isRealInput ? 1 : 0) + (calcAtomicDensity ? 2 : 0) + (calcTotalChrg ? 4 : 0) + (useRadialLut ? 8 : 0);
+    int idx = (config.isRealInput       ? 1 : 0)
+            + (config.calcAtomicDensity ? 2 : 0)
+            + (config.calcTotalChrg     ? 4 : 0)
+            + (config.useRadialLut      ? 8 : 0);
 
-    assert(!(calcAtomicDensity && calcTotalChrg));
-    assert(!(!isRealInput && calcAtomicDensity));
+    assert(!(config.calcAtomicDensity && config.calcTotalChrg));
+    assert(!(!config.isRealInput && config.calcAtomicDensity));
 
     switch (idx) {
         case 0:  CALL_KERNEL(false, false, false, false); break;
@@ -197,9 +211,77 @@ void dispatchKernel(const DeviceKernelParams* params, bool isRealInput, bool cal
 }
 
 
-// C++ Host Interface (extern "C", then called from Fortran)
-// Handles the high-level flow of querying devices, and then
-// concurrently preparing data, launching kernels, and copying back results.
+struct elapsedTime_ms {float kernel, d2h, everything;};
+
+/**
+ * @brief Evaluates the assigned batch on a single GPU.
+ *
+ * Copies Data to the device, launches the kernel in a loop over Z-slices,
+ * and copies the results back to the host.
+ * Also returns elapsed time during kernel execution and D2H copy.
+ *
+ * @param config   The GpuLaunchConfig struct containing launch configuration and template flags.
+ * @param grid     Pointer to GridParams struct containing grid parameters.
+ * @param system   Pointer to SystemParams struct containing system parameters.
+ * @param periodic Pointer to PeriodicParams struct containing periodic boundary parameters.
+ * @param basis    Pointer to StoBasisParams struct containing STO basis parameters.
+ * @param calc     Pointer to CalculationParams struct containing calculation parameters and output arrays.
+ * @return An elapsedTime_ms struct containing the time spent in kernel execution and D2H copy.
+ */
+elapsedTime_ms runBatchOnDevice(const GpuLaunchConfig& config, const GridParams* grid,
+    const SystemParams* system, const PeriodicParams* periodic, const StoBasisParams* basis,
+    const CalculationParams* calc) {
+    if (!config.z_count) return {0.0f, 0.0f, 0.0f};
+
+    CHECK_CUDA(cudaSetDevice(config.deviceId));
+
+    GpuTimer everything_timer(true), kernel_timer, d2h_timer;
+
+    // Device allocation and H2D transfer
+    DeviceData device_data(grid, system, periodic, basis, calc, config.z_per_batch);
+
+    // Populate Kernel Parameter struct
+    DeviceKernelParams deviceParams(device_data, grid, system, periodic, basis, calc, config.nEig_per_pass);
+
+    // Process task in in batches (Z-slices)
+    for (int z_offset = 0; z_offset < config.z_count; z_offset += config.z_per_batch) {
+        deviceParams.z_per_batch = std::min(config.z_per_batch, config.z_count - z_offset);
+        deviceParams.z_offset_global = config.z_start + z_offset;  // required to calculate coordinates in kernel
+
+        int total_points_in_batch = grid->nPointsX * grid->nPointsY * deviceParams.z_per_batch;
+        int grid_size             = (total_points_in_batch + block_size - 1) / block_size;
+
+        kernel_timer.start();
+        dispatchKernel(&deviceParams, config, grid_size);
+        kernel_timer.stop();
+
+        d2h_timer.start();
+        copyD2H(calc->isRealOutput ? (void*)device_data.d_valueReal_out_batch.get()
+                                   : (void*)device_data.d_valueCmpl_out_batch.get(),
+            calc->isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out, grid->nPointsX,
+            grid->nPointsY, grid->nPointsZ, deviceParams.z_per_batch, deviceParams.z_offset_global, calc);
+        d2h_timer.stop();
+    }
+
+    // Ensure we finished before returning
+    CHECK_CUDA(cudaDeviceSynchronize());
+    return {kernel_timer.elapsed_ms(), d2h_timer.elapsed_ms(), everything_timer.elapsed_ms()};
+}
+
+/**
+ * @brief Entry point for evaluating molecular orbitals on a 3D grid using CUDA.
+ *
+ * C++ Host Interface (extern "C", then called from Fortran)
+ * Handles the high-level flow of querying devices, and then
+ * concurrently preparing data, launching kernels, and copying back results.
+ *
+ * @param grid     Pointer to GridParams struct containing grid parameters.
+ * @param system   Pointer to SystemParams struct containing system parameters.
+ * @param periodic Pointer to PeriodicParams struct containing periodic boundary parameters.
+ * @param basis    Pointer to StoBasisParams struct containing STO basis parameters.
+ * @param calc     Pointer to CalculationParams struct containing calculation parameters and output arrays.
+ *                 Output is written to calc->valueReal_out or calc->valueCmpl_out depending on calc->isRealOutput.
+ */
 extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic,
     const StoBasisParams* basis, const CalculationParams* calc) {
     if (calc->nEigIn * grid->nPointsX * grid->nPointsY * grid->nPointsZ == 0) {
@@ -217,11 +299,7 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
         exit(EXIT_FAILURE);
     }
 
-    // Debug kernel timing
-    GpuTimer everything_timer(true), kernel_timer, d2h_timer;
-
-
-    // --- Multi-GPU Setup ---
+    // Multi-GPU Setup
     int numGpus;
     CHECK_CUDA(cudaGetDeviceCount(&numGpus));
     if (numGpus == 0) {
@@ -237,64 +315,24 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
         printf("Running on GPU 0 only.\n");
     }
 #endif
-
+    elapsedTime_ms timings, threadTimings;
     // Use OMP to split across available GPUs
     // This works irrespective of the number of threads set in OMP_NUM_THREADS.
     #pragma omp parallel num_threads(numGpus)
     {
         int deviceId = omp_get_thread_num();
-        CHECK_CUDA(cudaSetDevice(deviceId));
-        GpuLaunchConfig config = setup_gpu_config(deviceId, numGpus, grid, calc);
-
-        if (config.z_count > 0) {
-            // Device allocation and H2D transfer
-            DeviceData device_data(grid, system, periodic, basis, calc, config.z_per_batch);
-
-            // Populate Kernel Parameter struct
-            DeviceKernelParams deviceParams(device_data, grid, system, periodic, basis, calc, config.nEig_per_pass);
-
-            // --- Per-GPU Kernel Execution Loop ---
-            // This loop iterates over the Z-slices assigned to *this* GPU.
-            for (int z_offset = 0; z_offset < config.z_count; z_offset += config.z_per_batch) {
-                deviceParams.z_per_batch = std::min(config.z_per_batch, config.z_count - z_offset);
-                deviceParams.z_offset_global = config.z_start + z_offset;  // required to calculate coordinates in kernel
-
-                int total_points_in_batch = grid->nPointsX * grid->nPointsY * deviceParams.z_per_batch;
-                int grid_size             = (total_points_in_batch + block_size - 1) / block_size;
-
-                if (deviceId == 0) kernel_timer.start();
-
-                dispatchKernel(&deviceParams, calc->isRealInput, calc->calcAtomicDensity, calc->calcTotalChrg,
-                    basis->useRadialLut, grid_size, config.shared_mem_for_pass);
-
-                if (deviceId == 0) {
-                    kernel_timer.stop();
-                    d2h_timer.start();
-                }
-
-                copyD2H(calc->isRealOutput ? (void*)device_data.d_valueReal_out_batch.get()
-                                           : (void*)device_data.d_valueCmpl_out_batch.get(),
-                    calc->isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out, grid->nPointsX,
-                    grid->nPointsY, grid->nPointsZ, deviceParams.z_per_batch, deviceParams.z_offset_global, calc);
-
-                if (deviceId == 0) d2h_timer.stop();
-            }
-        }
+        GpuLaunchConfig config(deviceId, numGpus, grid, calc, basis->useRadialLut);
+        threadTimings = runBatchOnDevice(config, grid, system, periodic, basis, calc);
+        if (deviceId == 0) timings = threadTimings;
     }  // End of omp parallel region
 
-    // Synchronize all devices
-    for (int i = 0; i < numGpus; ++i) {
-        CHECK_CUDA(cudaSetDevice(i));
-        CHECK_CUDA(cudaDeviceSynchronize());
-    }
-    CHECK_CUDA(cudaSetDevice(0));
-    CHECK_CUDA(cudaGetLastError());
-    everything_timer.stop();
-
     if (debug) {
-        printf("\nGPU 0 execution time: %.1f ms\n", everything_timer.elapsed_ms());
-        float kernel_share = kernel_timer.elapsed_ms() / everything_timer.elapsed_ms();
-        printf(" -> Kernel:   %.1f ms (%.1f%%)\n", kernel_timer.elapsed_ms(), kernel_share * 100.0f);
-        printf(" -> D2H copy: %.1f ms (%.1f%%)\n", d2h_timer.elapsed_ms(), (1.0f - kernel_share) * 100.0f);
+        printf("\nGPU 0 execution time: %.1f ms\n", timings.everything);
+        float kernel_share = timings.kernel / timings.everything;
+        printf(" -> Kernel:   %.1f ms (%.1f%%)\n", timings.kernel, kernel_share * 100.0f);
+        printf(" -> D2H copy: %.1f ms (%.1f%%)\n", timings.d2h, (1.0f - kernel_share) * 100.0f);
     }
 }
+
+
+
