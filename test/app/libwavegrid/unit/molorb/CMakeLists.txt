@@ -1,8 +1,8 @@
 set(test-collection "libwavegrid")
 
-set(sources-f90 testapp.f90)
+set(sources-f90 testapp.f90 refharmonics.f90)
 
-set(sources-fypp simple.F90 slater.F90 initmolorb.F90)
+set(sources-fypp simple.F90 slater.F90 initmolorb.F90 spharmonics.F90)
 
 set(sources-fypp-f90)
 
