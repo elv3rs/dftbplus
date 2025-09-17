@@ -4,16 +4,12 @@
  *                                                                                                 *
  *  See the LICENSE file for terms of usage and distribution.                                      *
  *-------------------------------------------------------------------------------------------------*/
-#include <assert.h>
 #include <cuda_runtime.h>
 #include <omp.h>
 #include <thrust/complex.h>
 
-#include <algorithm>
-#include <cmath>
 #include <cstdio>
-#include <memory>
-#include <vector>
+#include <stdexcept>
 
 #include "kernel.cuh"
 #include "host_logic.cuh"
@@ -103,6 +99,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
 
                 for (int iOrb = p.iStos[iSpecies] - 1; iOrb < p.iStos[iSpecies + 1] - 1; ++iOrb) {
                     int iL = p.sto_angMoms[iOrb];
+                    // Skip calculating all -l...+l orbitals if outside cutoff
                     if (rr > p.sto_cutoffsSq[iOrb]) {
                         orbital_idx_counter += 2 * iL + 1;
                         continue;
@@ -111,7 +108,7 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
 
                     double radialVal;
                     if constexpr (useRadialLut) {
-                        double lut_pos = 0.5f + r * p.inverseLutStep; // Add 0.5 to adress texel center (imagine pixels)
+                        double lut_pos = 0.5 + r * p.inverseLutStep; // Add 0.5 to adress texel center (imagine pixels)
                         radialVal      = (double)tex2D<float>(p.lutTex, lut_pos, (float)iOrb + 0.5f);
                     } else {
                         radialVal = getRadialValue(r, iL, iOrb, p.sto_nPows[iOrb], p.sto_nAlphas[iOrb], p.sto_coeffs,
@@ -184,15 +181,18 @@ __global__ void evaluateKernel(const DeviceKernelParams p) {
  */
 void dispatchKernel(const DeviceKernelParams* params, GpuLaunchConfig config, int grid_size) {
 #define CALL_KERNEL(isReal, doAtomic, doChrg, useLut) \
-    evaluateKernel<isReal, doAtomic, doChrg, useLut><<<grid_size, block_size, config.shared_mem_for_pass>>>(*params);
+    evaluateKernel<isReal, doAtomic, doChrg, useLut><<<grid_size, THREADS_PER_BLOCK, config.shared_mem_for_pass>>>(*params);
 
     int idx = (config.isRealInput       ? 1 : 0)
             + (config.calcAtomicDensity ? 2 : 0)
             + (config.calcTotalChrg     ? 4 : 0)
             + (config.useRadialLut      ? 8 : 0);
 
-    assert(!(config.calcAtomicDensity && config.calcTotalChrg));
-    assert(!(!config.isRealInput && config.calcAtomicDensity));
+    // Refrain from compiling invalid combinations
+    if(config.calcAtomicDensity && config.calcTotalChrg)
+        throw std::runtime_error("Error: calcAtomicDensity and calcTotalChrg cannot both be true.\n");
+    if(config.calcAtomicDensity && !config.isRealInput)
+        throw std::runtime_error("Error: calcAtomicDensity requires real input vectors.\n");
 
     switch (idx) {
         case 0:  CALL_KERNEL(false, false, false, false); break;
@@ -205,7 +205,7 @@ void dispatchKernel(const DeviceKernelParams* params, GpuLaunchConfig config, in
         case 11: CALL_KERNEL(true,  true,  false, true); break;
         case 12: CALL_KERNEL(false, false, true,  true); break;
         case 13: CALL_KERNEL(true,  false, true,  true); break;
-        default: fprintf(stderr, "Error: invalid kernel configuration index %d\n", idx); exit(EXIT_FAILURE);
+        default: throw std::runtime_error("Error: invalid kernel configuration index.\n");
     }
 #undef CALL_KERNEL
 }
@@ -227,53 +227,58 @@ void dispatchKernel(const DeviceKernelParams* params, GpuLaunchConfig config, in
  */
 extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams* system, const PeriodicParams* periodic,
     const StoBasisParams* basis, const CalculationParams* calc) {
-    if (calc->nEigIn * grid->nPointsX * grid->nPointsY * grid->nPointsZ == 0) {
-        fprintf(stderr, "Error: Zero-sized dimension in input parameters.\n");
-        exit(EXIT_FAILURE);
-    }
-    if (calc->calcTotalChrg) {
-        assert(calc->nEigOut == 1);
-    } else {
-        assert(calc->nEigOut == calc->nEigIn);
-    }
-    // We currently assume a hardcoded maximum for the number of powers.
-    if (!basis->useRadialLut && basis->maxNPows > STO_MAX_POWS) {
-        fprintf(stderr, "Error: maxNPows (%d) exceeds STO_MAX_POWS (%d)\n", basis->maxNPows, STO_MAX_POWS);
-        exit(EXIT_FAILURE);
-    }
+    try {
+        // We currently assume a hardcoded maximum for the number of powers.
+        if (!basis->useRadialLut && basis->maxNPows > STO_MAX_POWS)
+            throw std::runtime_error("Error: STO basis maxNPows exceeds STO_MAX_POWS.\n");
+        if (calc->nEigIn * grid->nPointsX * grid->nPointsY * grid->nPointsZ == 0)
+            throw std::runtime_error("Error: Zero-sized dimension in input parameters.\n");
+        if (calc->calcTotalChrg && calc->nEigOut != 1)
+            throw std::runtime_error("Error: When calculating total charge density, nEigOut must be 1.\n");
+        if (!calc->calcTotalChrg && calc->nEigOut != calc->nEigIn)
+            throw std::runtime_error("Error: nEigOut must match nEigIn unless calculating total charge density.\n");
 
-    // Multi-GPU Setup
-    int numGpus;
-    CHECK_CUDA(cudaGetDeviceCount(&numGpus));
-    if (numGpus == 0) {
-        fprintf(stderr, "No CUDA-enabled GPUs found. Unable to launch Kernel.\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("Libwavegrid: Found %d CUDA-enabled GPUs.\n", numGpus);
+
+        // Multi-GPU Setup
+        int numGpus;
+        CHECK_CUDA(cudaGetDeviceCount(&numGpus));
+        if (numGpus == 0)
+            throw std::runtime_error("No CUDA-enabled GPUs found. Unable to launch Kernel.\n");
+        printf("Libwavegrid: Found %d CUDA-enabled GPUs.\n", numGpus);
 
 #ifndef _OPENMP
-    if (numGpus > 1) {
-        fprintf(stderr, "\nWARNING: Code not compiled with OpenMP support (-fopenmp). Falling back to single-GPU mode.\n");
-        numGpus = 1;
-        printf("Running on GPU 0 only.\n");
-    }
+        if (numGpus > 1) {
+            fprintf(stderr, "\nWARNING: Code not compiled with OpenMP support (-fopenmp). Falling back to single-GPU mode.\n");
+            numGpus = 1;
+            printf("Running on GPU 0 only.\n");
+        }
 #endif
-    elapsedTime_ms timings, threadTimings;
-    // Use OMP to split across available GPUs
-    // This works irrespective of the number of threads set in OMP_NUM_THREADS.
-    #pragma omp parallel num_threads(numGpus)
-    {
-        int deviceId = omp_get_thread_num();
-        GpuLaunchConfig config(deviceId, numGpus, grid, calc, basis->useRadialLut);
-        threadTimings = runBatchOnDevice(config, grid, system, periodic, basis, calc);
-        if (deviceId == 0) timings = threadTimings;
-    }  // End of omp parallel region
+        elapsedTime_ms timings, threadTimings;
+        // Use OMP to split across available GPUs
+        // This works irrespective of the number of threads set in OMP_NUM_THREADS.
+        #pragma omp parallel num_threads(numGpus)
+        {
+            int deviceId = omp_get_thread_num();
+            GpuLaunchConfig config(deviceId, numGpus, grid, calc, basis->useRadialLut);
+            if(DEBUG) config.print_summary(grid, calc);
 
-    if (debug) {
-        printf("\nGPU 0 execution time: %.1f ms\n", timings.everything);
-        float kernel_share = timings.kernel / timings.everything;
-        printf(" -> Kernel:   %.1f ms (%.1f%%)\n", timings.kernel, kernel_share * 100.0f);
-        printf(" -> D2H copy: %.1f ms (%.1f%%)\n", timings.d2h, (1.0f - kernel_share) * 100.0f);
+            threadTimings = runBatchOnDevice(config, grid, system, periodic, basis, calc);
+            if (deviceId == 0) timings = threadTimings;
+        } // End of omp parallel region
+
+        if (DEBUG) {
+            printf("\nGPU 0 execution time: %.1f ms\n", timings.everything);
+            float kernel_share = timings.kernel / timings.everything;
+            printf(" -> Kernel:   %.1f ms (%.1f%%)\n", timings.kernel, kernel_share * 100.0f);
+            printf(" -> D2H copy: %.1f ms (%.1f%%)\n", timings.d2h, (1.0f - kernel_share) * 100.0f);
+        }
+
+    // Since the Fortran library does not currently support exceptions, we simply
+    // terminate the program upon encountering any.
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Error during CUDA offloading, in evaluate_on_device_c:");
+        fprintf(stderr, "%s\n", e.what());
+        exit(EXIT_FAILURE);
     }
 }
 

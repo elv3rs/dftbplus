@@ -6,15 +6,18 @@
  *-------------------------------------------------------------------------------------------------*/
 #pragma once
 #include <cuda_runtime.h>
+#include <stdexcept>
+#include <string>
 
 // Helper macro for robust CUDA calls
-#define CHECK_CUDA(call)                                                                                       \
-    do {                                                                                                       \
-        cudaError_t err = call;                                                                                \
-        if (err != cudaSuccess) {                                                                              \
-            fprintf(stderr, "CUDA Error in %s at line %d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
-            exit(EXIT_FAILURE);                                                                                \
-        }                                                                                                      \
+#define CHECK_CUDA(call)                                                         \
+    do {                                                                         \
+        cudaError_t __err = call;                                                \
+        if (__err != cudaSuccess) {                                              \
+            throw std::runtime_error(std::string("CUDA Error at ") +             \
+                                     __FILE__ + ":" + std::to_string(__LINE__) + \
+                                     " -> " + cudaGetErrorString(__err));        \
+        }                                                                        \
     } while (0)
 
 // Helper macros for column-major (Fortran-style) index calculations
@@ -24,5 +27,5 @@
 #define IDX4F(i, j, k, l, lda, ldb, ldc) ((((l) * (size_t)(ldc) + (k)) * (size_t)(ldb) + (j)) * (size_t)(lda) + (i))
 
 // Enable additional print statements
-constexpr bool debug = false;
+#define DEBUG 0
 

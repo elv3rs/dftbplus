@@ -7,12 +7,17 @@
 // This file contains the kernel parameter struct and
 // helpers to manage allocating and copying data to the GPU.
 #pragma once
-#include "utils.cuh"
-#include <thrust/complex.h>
-#include <cuda_runtime.h>
-#include "kernel.cuh"
+
 #include <memory>
+#include <stdexcept>
 #include <vector>
+
+#include <cuda_runtime.h>
+#include <thrust/complex.h>
+
+#include "kernel.cuh"
+#include "utils.cuh"
+
 
 using complexd = thrust::complex<double>;
 
@@ -63,7 +68,7 @@ class DeviceBuffer {
     }
     DeviceBuffer& operator=(DeviceBuffer&& other) noexcept {
         if (this != &other) {
-            if (_devicePtr) cudaFree(_devicePtr);
+            deallocate();
             _devicePtr       = other._devicePtr;
             _count           = other._count;
             other._devicePtr = nullptr;
@@ -77,22 +82,18 @@ class DeviceBuffer {
     size_t   size() const { return _count; }
 
     void copy_to_host(T* host_ptr, size_t count_to_copy) const {
-        if (count_to_copy > _count) {
-            fprintf(stderr, "Error: trying to copy more elements than buffer contains.\n");
-            exit(EXIT_FAILURE);
-        }
+        if (count_to_copy > _count) 
+            throw std::runtime_error("Error: trying to copy more elements than buffer contains.");
+
         CHECK_CUDA(cudaMemcpy(host_ptr, _devicePtr, count_to_copy * sizeof(T), cudaMemcpyDeviceToHost));
     }
 
     void copy_to_device(const T* host_ptr, size_t count_to_copy) {
-        if (!_devicePtr) {
-            fprintf(stderr, "Error: device pointer is null. Cannot copy to device.\n");
-            exit(EXIT_FAILURE);
-        }
-        if (count_to_copy > _count) {
-            fprintf(stderr, "Error: trying to copy more elements than buffer contains.\n");
-            exit(EXIT_FAILURE);
-        }
+        if (!_devicePtr) 
+            throw std::runtime_error("Error: device pointer is null. Cannot copy to device.");
+        if (count_to_copy > _count)
+            throw std::runtime_error("Error: trying to copy more elements than buffer contains.");
+
         CHECK_CUDA(cudaMemcpy(_devicePtr, host_ptr, count_to_copy * sizeof(T), cudaMemcpyHostToDevice));
     }
 
@@ -188,8 +189,6 @@ struct DeviceData {
     DeviceBuffer<int>    iStos;
 
     // Periodic
-    DeviceBuffer<double>   latVecs;
-    DeviceBuffer<double>   recVecs2pi;
     DeviceBuffer<int>      kIndexes;
     DeviceBuffer<complexd> phases;
 
@@ -222,11 +221,11 @@ struct DeviceData {
           sto_angMoms(basis->angMoms, basis->nStos),
           sto_cutoffsSq(basis->cutoffsSq, basis->nStos) {
         if (basis->useRadialLut) {
-            if (debug) printf("Using radial LUT with %d points for %d STOs\n", basis->nLutPoints, basis->nStos);
+            if (DEBUG) printf("Using radial LUT with %d points for %d STOs\n", basis->nLutPoints, basis->nStos);
             sto_lut = std::unique_ptr<GpuLutTexture>(
                 new GpuLutTexture(basis->lutGridValues, basis->nLutPoints, basis->nStos));
         } else {
-            if (debug) printf("Using direct STO evaluation for %d STOs\n", basis->nStos);
+            if (DEBUG) printf("Using direct STO evaluation for %d STOs\n", basis->nStos);
             sto_nPows.assign(basis->nPows, basis->nStos);
             sto_nAlphas.assign(basis->nAlphas, basis->nStos);
             sto_coeffs.assign(basis->coeffs, (size_t)basis->maxNPows * basis->maxNAlphas * basis->nStos);
@@ -240,10 +239,6 @@ struct DeviceData {
                 reinterpret_cast<const complexd*>(calc->eigVecsCmpl), (size_t)system->nOrb * calc->nEigIn);
             phases.assign(reinterpret_cast<const complexd*>(periodic->phases), (size_t)system->nCell * calc->nEigIn);
             kIndexes.assign(periodic->kIndexes, calc->nEigIn);
-        }
-        if (periodic->isPeriodic) {
-            latVecs.assign(periodic->latVecs, 9);
-            recVecs2pi.assign(periodic->recVecs2pi, 9);
         }
 
         // Per-GPU batch buffer for the output
@@ -272,8 +267,8 @@ struct DeviceKernelParams {
 
     // Periodic boundary cond.
     bool            isPeriodic;
-    const double    (*latVecs)[3];
-    const double    (*recVecs2pi)[3];
+    double          latVecs[3][3];
+    double          recVecs2pi[3][3];
     const int*      kIndexes;
     const complexd* phases;
 
@@ -338,10 +333,15 @@ struct DeviceKernelParams {
 
         // Periodic boundary conditions
         isPeriodic = periodic->isPeriodic;
-        latVecs    = reinterpret_cast<const double(*)[3]>(data.latVecs.get());
-        recVecs2pi = reinterpret_cast<const double(*)[3]>(data.recVecs2pi.get());
         kIndexes   = data.kIndexes.get();
         phases     = data.phases.get();
+        for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j) {
+                latVecs[i][j]    = periodic->latVecs[IDX2F(i, j, 3)];
+                // Transpose to reuse matmul3x3_vec instead of implementing matmul_vec3x3
+                // Consider implementing matmul_vec3x3 to avoid hiding the transpose here.
+                recVecs2pi[i][j] = periodic->recVecs2pi[IDX2F(j, i, 3)];
+            }
 
         // Eigenvectors
         nEig        = calc->nEigIn;

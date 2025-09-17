@@ -46,7 +46,7 @@ elapsedTime_ms runBatchOnDevice(const GpuLaunchConfig& config, const GridParams*
         deviceParams.z_offset_global = config.z_start + z_offset;  // required to calculate coordinates in kernel
 
         int total_points_in_batch = grid->nPointsX * grid->nPointsY * deviceParams.z_per_batch;
-        int grid_size             = (total_points_in_batch + block_size - 1) / block_size;
+        int grid_size             = (total_points_in_batch + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
         kernel_timer.start();
         dispatchKernel(&deviceParams, config, grid_size);

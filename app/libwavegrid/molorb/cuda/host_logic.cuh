@@ -8,21 +8,23 @@
 #include "kernel.cuh"
 #include "device_params.cuh"
 
-#include <assert.h>
 #include <algorithm>
 #include <cstdio>
+#include <stdexcept>
 
 // amount of shared memory set aside for nEig accumulators
 constexpr float SHARED_MEM_FACTOR = 0.95f;
 // max output array share of free global memory
+// Leaves room for input arrays such as eigenvectors.
 constexpr float GLOBAL_MEM_FACTOR = 0.80f;
-// Threads per block, multiple of warp size 32
-constexpr int block_size = 256;
+// Should be a multiple of warp size 32
+constexpr int THREADS_PER_BLOCK = 256;
 
 // Debug kernel execution timing data
 struct elapsedTime_ms {float kernel, d2h, everything;};
 
-struct GpuLaunchConfig {
+class GpuLaunchConfig {
+   public:
     int    deviceId;            // CUDA device ID
     int    z_count;             // Number of Z-slices for this GPU
     int    z_start;             // Starting Z-slice for this GPU
@@ -34,6 +36,7 @@ struct GpuLaunchConfig {
     const bool calcAtomicDensity;
     const bool calcTotalChrg;
     const bool useRadialLut;
+
 
     /** 
      * @brief Splits work among GPUs using Z-slices, and calculate gpu launch parameters based on available memory.
@@ -50,48 +53,116 @@ struct GpuLaunchConfig {
         isRealInput(calc->isRealInput),
         calcAtomicDensity(calc->calcAtomicDensity),
         calcTotalChrg(calc->calcTotalChrg),
-        useRadialLut(useRadialLut) {
+        useRadialLut(useRadialLut)
+    {
         // Evenly split Z-slices among GPUs
-        z_count = grid->nPointsZ / numGpus;
-        z_start = deviceId * z_count;
-        // Handle uneven Z-slice count: Last GPU takes remaining slices
-        if (deviceId == numGpus - 1) z_count = grid->nPointsZ - z_start;
+        distribute_z_slices(deviceId, numGpus, grid);
+        // Query global memory and determine z_per_batch
+        z_per_batch = determine_batch_size(grid, calc);
+        // How many nEig can we fit in our shared shared memory accumulator?
+        nEig_per_pass = determine_accumulator_size(grid, calc);
+        // How much memory do we need for the accumulators?
+        size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
+        shared_mem_for_pass = (size_t)nEig_per_pass * THREADS_PER_BLOCK * accumulator_number_size;
+    }
+    /**
+     * @brief Prints a summary of the GPU configuration.
+     * @param grid Pointer to the GridParams structure containing grid dimensions.
+     * @param calc Pointer to the CalculationParams structure containing calculation parameters.
+     */
+    void print_summary(const GridParams* grid, const CalculationParams* calc) const {
+        printf("\n--- GPU %d Configuration ---\n", deviceId);
+        printf("  Z-slice workload: %d (from index %d to %d)\n", z_count, z_start,
+            z_start + z_count - 1);
+        printf("  Block size: %d threads, %zub shared mem per block, %d eigs of %d per pass\n", THREADS_PER_BLOCK,
+            shared_mem_for_pass, nEig_per_pass, calc->nEigIn);
+        size_t free_global_mem = get_available_global_bytes();
+        size_t total_size_valueOut =
+            (size_t)grid->nPointsX * grid->nPointsY * grid->nPointsZ * calc->nEigOut * sizeof(double);
+        if (!calc->isRealOutput) total_size_valueOut *= 2;
+        printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n", free_global_mem / 1e9,
+            grid->nPointsX, grid->nPointsY, grid->nPointsZ, calc->nEigOut, total_size_valueOut / 1e9);
+        printf("  Processing Z-slices in batches of %d\n", z_per_batch);
+    }
 
+   private:
+    /**
+     * @brief Determine the Z-slice range for this GPU based on device ID and total number of GPUs.
+     * @param deviceId The CUDA GPU device ID (0 to numGpus-1).
+     * @param numGpus Total number of GPUs used for splitting the work.
+     * @param grid Pointer to the GridParams structure containing grid dimensions.
+     */
+    void distribute_z_slices(int deviceId, int numGpus, const GridParams* grid) {
+        // Evenly distribute slices among GPUs
+        int base_count = grid->nPointsZ / numGpus;
+        int remainder = grid->nPointsZ % numGpus;
+    
+        // The first remainder GPUs (ID in 0...remainder-1) get additional slice
+        z_count = base_count + (deviceId < remainder ? 1 : 0);
+    
+        // Calculate starting position
+        z_start = deviceId * base_count + std::min(deviceId, remainder);
+    }
+
+    /**
+     * @brief Determine the amount of available global memory on the device.
+     * @return Available global memory in bytes, reduced by SHARED_MEM_FACTOR safety margin.
+     */
+    size_t get_available_global_bytes() const { 
         // Query available memory sizes with safety margins
-        cudaDeviceProp prop;
         size_t         free_global_mem, total_global_mem;
         CHECK_CUDA(cudaMemGetInfo(&free_global_mem, &total_global_mem));
-        CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
-        size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
         size_t available_global = static_cast<size_t>(free_global_mem * GLOBAL_MEM_FACTOR);
+        return available_global;
+    }
 
-        size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
-        size_t output_number_size      = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
-
-        // Determine number of eigenstates that fit into shared memory
-        nEig_per_pass       = available_shared / (block_size * accumulator_number_size);
-        nEig_per_pass       = std::min(calc->nEigIn, std::max(1, nEig_per_pass));  // clamp to [1, nEigIn]
-        shared_mem_for_pass = (size_t)nEig_per_pass * block_size * accumulator_number_size;
+    /**
+     * @brief Determine the number of Z-slices that can be processed in a single batch,
+     *        limited by available global memory for output arrays.
+     * @param grid Pointer to the GridParams structure containing grid dimensions.
+     * @param calc Pointer to the CalculationParams structure containing calculation flags.
+     * @return Number of Z-slices that can be processed in one batch.
+     */
+    int determine_batch_size(const GridParams* grid, const CalculationParams* calc) const {
+        size_t available_global   = get_available_global_bytes();
+        size_t output_number_size = calc->isRealOutput ? sizeof(double) : sizeof(complexd);
 
         // Determine max Z-slices that can fit in available (global) memory
         size_t bytes_per_slice = (size_t)grid->nPointsX * grid->nPointsY * calc->nEigOut * output_number_size;
-        z_per_batch     = std::min(z_count, (int)available_global / (int)bytes_per_slice);
-        z_per_batch     = std::max(1, z_per_batch);  // at least 1
+        int z_per_batch        = std::min(z_count, (int)(available_global / bytes_per_slice));
+        if(!z_per_batch) throw std::runtime_error(
+            "Insufficient global GPU memory available, unable to fit output array Z-slice.");
+        return z_per_batch;
+    }
+    
+    /**
+     * @brief Determines the max amount of shared memory available to a block.
+     * @return Available shared memory in bytes, reduced by SHARED_MEM_FACTOR safety margin.
+     */
+    size_t get_available_shared_bytes() const {
+        // Query available memory sizes with safety margins
+        cudaDeviceProp prop;
+        CHECK_CUDA(cudaGetDeviceProperties(&prop, deviceId));
+        size_t available_shared = prop.sharedMemPerBlock * SHARED_MEM_FACTOR;
+        return available_shared;
+    }
 
-        // Debug output
-        if (deviceId == 0 && debug) {
-            printf("\n--- GPU %d Configuration ---\n", deviceId);
-            printf("  Z-slice workload: %d (from index %d to %d)\n", z_count, z_start,
-                z_start + z_count - 1);
-            printf("  Block size: %d threads, %zub shared mem per block, %d eigs of %d per pass\n", block_size,
-                shared_mem_for_pass, nEig_per_pass, calc->nEigIn);
-            size_t total_size_valueOut =
-                (size_t)grid->nPointsX * grid->nPointsY * grid->nPointsZ * calc->nEigOut * sizeof(double);
-            if (!calc->isRealOutput) total_size_valueOut *= 2;
-            printf(" (Free device mem: %.2f GB, Grid size: %d x %d x %d (x %d eigs) = %.2f GB)\n", free_global_mem / 1e9,
-                grid->nPointsX, grid->nPointsY, grid->nPointsZ, calc->nEigOut, total_size_valueOut / 1e9);
-            printf("  Processing Z-slices in batches of %d\n", z_per_batch);
-        }
+    /**
+     * @brief Determine the number of eigenstates that each thread can accumulate in shared memory.
+     * @param grid Pointer to the GridParams structure containing grid dimensions.
+     * @param calc Pointer to the CalculationParams structure containing calculation flags.
+     * @return Number of eigenstates that can be accumulated in shared memory per thread.
+     */
+    int determine_accumulator_size(const GridParams* grid, const CalculationParams* calc) const {
+        size_t available_shared        = get_available_shared_bytes();
+        size_t accumulator_number_size = calc->isRealInput ? sizeof(double) : sizeof(complexd);
+ 
+        // Determine number of eigenstates that fit into shared memory
+        int accumulator_size  = available_shared / (THREADS_PER_BLOCK * accumulator_number_size);
+        accumulator_size      = std::min(calc->nEigIn, accumulator_size);
+        if(!accumulator_size) throw std::runtime_error(
+            "Insufficient shared GPU memory available, unable to fit eigenstate accumulators.");
+        return accumulator_size;
     }
 
 
@@ -107,6 +178,7 @@ struct GpuLaunchConfig {
  * Wraps CUDA event calls to provide a simple way to time GPU execution.
  * Use elapsed() to retrieve the accumulated time without stopping the timer.
  * The timer is initially stopped unless startNow=true is passed to the constructor.
+ * Not thread safe.
  */
 class GpuTimer {
 public:
@@ -147,6 +219,7 @@ public:
             CHECK_CUDA(cudaEventSynchronize(_stopEvent));
             float elapsed;
             CHECK_CUDA(cudaEventElapsedTime(&elapsed, _startEvent, _stopEvent));
+            CHECK_CUDA(cudaEventRecord(_startEvent));
             _accumulated_ms += elapsed;
         }
         return _accumulated_ms;
