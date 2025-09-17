@@ -19,6 +19,9 @@ constexpr float GLOBAL_MEM_FACTOR = 0.80f;
 // Threads per block, multiple of warp size 32
 constexpr int block_size = 256;
 
+// Debug kernel execution timing data
+struct elapsedTime_ms {float kernel, d2h, everything;};
+
 struct GpuLaunchConfig {
     int    deviceId;            // CUDA device ID
     int    z_count;             // Number of Z-slices for this GPU
@@ -175,3 +178,7 @@ private:
 // Function declarations
 void copyD2H(void* d_src_ptr, void* h_dest_ptr, int nPointsX, int nPointsY, int nPointsZ, int z_per_batch,
     int z_offset_global, const CalculationParams* calc);
+void dispatchKernel(const DeviceKernelParams* params, GpuLaunchConfig config, int grid_size);
+elapsedTime_ms runBatchOnDevice(const GpuLaunchConfig& config, const GridParams* grid,
+    const SystemParams* system, const PeriodicParams* periodic, const StoBasisParams* basis,
+    const CalculationParams* calc);

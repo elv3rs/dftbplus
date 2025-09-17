@@ -211,69 +211,12 @@ void dispatchKernel(const DeviceKernelParams* params, GpuLaunchConfig config, in
 }
 
 
-struct elapsedTime_ms {float kernel, d2h, everything;};
-
-/**
- * @brief Evaluates the assigned batch on a single GPU.
- *
- * Copies Data to the device, launches the kernel in a loop over Z-slices,
- * and copies the results back to the host.
- * Also returns elapsed time during kernel execution and D2H copy.
- *
- * @param config   The GpuLaunchConfig struct containing launch configuration and template flags.
- * @param grid     Pointer to GridParams struct containing grid parameters.
- * @param system   Pointer to SystemParams struct containing system parameters.
- * @param periodic Pointer to PeriodicParams struct containing periodic boundary parameters.
- * @param basis    Pointer to StoBasisParams struct containing STO basis parameters.
- * @param calc     Pointer to CalculationParams struct containing calculation parameters and output arrays.
- * @return An elapsedTime_ms struct containing the time spent in kernel execution and D2H copy.
- */
-elapsedTime_ms runBatchOnDevice(const GpuLaunchConfig& config, const GridParams* grid,
-    const SystemParams* system, const PeriodicParams* periodic, const StoBasisParams* basis,
-    const CalculationParams* calc) {
-    if (!config.z_count) return {0.0f, 0.0f, 0.0f};
-
-    CHECK_CUDA(cudaSetDevice(config.deviceId));
-
-    GpuTimer everything_timer(true), kernel_timer, d2h_timer;
-
-    // Device allocation and H2D transfer
-    DeviceData device_data(grid, system, periodic, basis, calc, config.z_per_batch);
-
-    // Populate Kernel Parameter struct
-    DeviceKernelParams deviceParams(device_data, grid, system, periodic, basis, calc, config.nEig_per_pass);
-
-    // Process task in in batches (Z-slices)
-    for (int z_offset = 0; z_offset < config.z_count; z_offset += config.z_per_batch) {
-        deviceParams.z_per_batch = std::min(config.z_per_batch, config.z_count - z_offset);
-        deviceParams.z_offset_global = config.z_start + z_offset;  // required to calculate coordinates in kernel
-
-        int total_points_in_batch = grid->nPointsX * grid->nPointsY * deviceParams.z_per_batch;
-        int grid_size             = (total_points_in_batch + block_size - 1) / block_size;
-
-        kernel_timer.start();
-        dispatchKernel(&deviceParams, config, grid_size);
-        kernel_timer.stop();
-
-        d2h_timer.start();
-        copyD2H(calc->isRealOutput ? (void*)device_data.d_valueReal_out_batch.get()
-                                   : (void*)device_data.d_valueCmpl_out_batch.get(),
-            calc->isRealOutput ? (void*)calc->valueReal_out : (void*)calc->valueCmpl_out, grid->nPointsX,
-            grid->nPointsY, grid->nPointsZ, deviceParams.z_per_batch, deviceParams.z_offset_global, calc);
-        d2h_timer.stop();
-    }
-
-    // Ensure we finished before returning
-    CHECK_CUDA(cudaDeviceSynchronize());
-    return {kernel_timer.elapsed_ms(), d2h_timer.elapsed_ms(), everything_timer.elapsed_ms()};
-}
 
 /**
  * @brief Entry point for evaluating molecular orbitals on a 3D grid using CUDA.
  *
  * C++ Host Interface (extern "C", then called from Fortran)
- * Handles the high-level flow of querying devices, and then
- * concurrently preparing data, launching kernels, and copying back results.
+ * Launches the evaluation on available GPUs, splitting the work in Z-slices.
  *
  * @param grid     Pointer to GridParams struct containing grid parameters.
  * @param system   Pointer to SystemParams struct containing system parameters.
