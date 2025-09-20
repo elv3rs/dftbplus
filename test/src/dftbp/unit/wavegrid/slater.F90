@@ -7,9 +7,9 @@
 
 #:include "fortuno_serial.fypp"
 
-module test_libwavegrid_slater
+module test_wavegrid_slater
   use fortuno_serial, only : is_close, suite => serial_suite_item, test_list
-  use libwavegrid, only : TSlaterOrbital
+  use dftbp_wavegrid, only : TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
@@ -70,4 +70,4 @@ contains
 
   end function tests
 
-end module test_libwavegrid_slater
+end module test_wavegrid_slater

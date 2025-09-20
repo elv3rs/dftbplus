@@ -37,6 +37,7 @@ add_subdirectory(timedep)
 add_subdirectory(type)
 add_subdirectory(solvation)
 add_subdirectory(transport)
+add_subdirectory(wavegrid)
 if(WITH_API)
   add_subdirectory(api/mm)
 endif()
@@ -70,6 +71,10 @@ if(WITH_API)
   target_include_directories(dftbplus INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/api/mm>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_INCLUDEDIR}>)
+endif()
+
+if(WITH_CUDA)
+    target_link_libraries(dftbplus PUBLIC wavegrid_cuda)
 endif()
 
 

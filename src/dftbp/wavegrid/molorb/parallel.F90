@@ -7,14 +7,14 @@
 
 #:include 'common.fypp'
 !> Dispatches to either the GPU or CPU implementation, and contains the OMP parallel CPU implementation.
-module libwavegrid_molorb_parallel
-  use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use libwavegrid_molorb_spharmonics, only: realTessY
-  use libwavegrid_slater, only : TSlaterOrbital
+module dftbp_wavegrid_molorb_parallel
+  use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
+  use dftbp_wavegrid_molorb_spharmonics, only: realTessY
+  use dftbp_wavegrid_slater, only : TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
 #:if WITH_CUDA
-  use libwavegrid_molorb_offloaded, only : evaluateCuda
+  use dftbp_wavegrid_molorb_offloaded, only : evaluateCuda
 #:endif
   implicit none
   private
@@ -71,17 +71,17 @@ contains
     ! Dispatch to CPU / GPU implementation
     if (ctx%runOnGPU) then
       #:if WITH_CUDA
-        print *, "Libwavegrid: running on GPU using CUDA"
+        print *, "Wavegrid: running on GPU using CUDA"
         call evaluateCuda(system, stos, periodic, kIndexes, phases, ctx, &
             & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
       #:else
-        call error("Libwavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
+        call error("Wavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
       #:endif
     else ! CPU implementation
       #:if WITH_OMP
-        print *, "Libwavegrid: running OMP parallel on CPU"
+        print *, "Wavegrid: running OMP parallel on CPU"
       #:else
-      print *, "Libwavegrid: missing OMP, running serially on CPU"
+      print *, "Wavegrid: missing OMP, running serially on CPU"
       #:endif
       call evaluateOMP(system, stos, periodic, kIndexes, phases, ctx, &
             & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
@@ -273,4 +273,4 @@ contains
 
   end subroutine prepareCoefficients
 
-end module libwavegrid_molorb_parallel
+end module dftbp_wavegrid_molorb_parallel

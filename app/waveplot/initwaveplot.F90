@@ -9,7 +9,7 @@
 
 !> Contains the routines for initialising Waveplot.
 module waveplot_initwaveplot
-  use libwavegrid, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
+  use dftbp_wavegrid, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
   use waveplot_gridcache, only : TGridCache
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
@@ -386,7 +386,7 @@ contains
         & this%basis%basis, this%opt%origin, this%loc%gridVec)
     
     ! Dont run multiple MPI processes on the same GPU.
-    ! This avoids cuda memory allocation race conditions in libwavegrid.
+    ! This avoids cuda memory allocation race conditions in dftbp_wavegrid.
     #:if WITH_MPI
       print *, "Waveplot running with MPI using", env%mpi%globalComm%size, "processes"
       if(this%opt%useGPU .and. env%mpi%globalComm%size > 1) then

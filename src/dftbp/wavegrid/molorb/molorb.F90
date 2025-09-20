@@ -10,10 +10,10 @@
 !> Provides routines to calculate the value of one or more molecular orbitals on
 !! an equidistant grid.
 !! Contains argument preparation and public interfaces to the private evaluateParallel routine.
-module libwavegrid_molorb
-  use libwavegrid_molorb_parallel, only : evaluateParallel
-  use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use libwavegrid_slater, only : TSlaterOrbital
+module dftbp_wavegrid_molorb
+  use dftbp_wavegrid_molorb_parallel, only : evaluateParallel
+  use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
+  use dftbp_wavegrid_slater, only : TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
@@ -471,4 +471,4 @@ contains
     maxCut = sqrt(maxCutSq)
   end function maxCutoff
 
-end module libwavegrid_molorb
+end module dftbp_wavegrid_molorb

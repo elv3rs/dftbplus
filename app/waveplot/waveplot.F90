@@ -9,7 +9,7 @@
 
 !> Program for plotting molecular orbitals as cube files.
 program waveplot
-  use libwavegrid, only : getAtomicDensities, getTotalChrg
+  use dftbp_wavegrid, only : getAtomicDensities, getTotalChrg
   use waveplot_initwaveplot, only : TProgramVariables, TProgramVariables_init
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment, TEnvironment_init
@@ -110,7 +110,7 @@ program waveplot
                    .or. wp%opt%doPlotImag &
                    .or. wp%opt%doPlotTotSpin
 
-  ! Libwavegrid supports fast inplace accumulation for total charge.
+  ! Wavegrid supports fast inplace accumulation for total charge.
   ! This avoids having to store all states in memory and can offer a
   ! significant speedup for large systems.
   if (wp%opt%doCalcTotChrg .and. .not. doRequireIndividual) then

@@ -244,7 +244,7 @@ extern "C" void evaluate_on_device_c(const GridParams* grid, const SystemParams*
         CHECK_CUDA(cudaGetDeviceCount(&numGpus));
         if (numGpus == 0)
             throw std::runtime_error("No CUDA-enabled GPUs found. Unable to launch Kernel.\n");
-        printf("Libwavegrid: Found %d CUDA-enabled GPUs.\n", numGpus);
+        printf("Wavegrid: Found %d CUDA-enabled GPUs.\n", numGpus);
 
 #ifndef _OPENMP
         if (numGpus > 1) {

@@ -18,7 +18,7 @@ option(WITH_GPU "Whether DFTB+ should support GPU-acceleration" FALSE)
 # requires the ELSI library built with GPU support.
 
 option(WITH_CUDA "Whether CUDA support should be enabled" FALSE)
-# Enable offloading support for Libwavegrids MO calculations
+# Enable offloading support for Wavegrids MO calculations
 
 option(WITH_ELSI "Whether DFTB+ with MPI-parallelism should use the ELSI libraries" FALSE)
 # Works only with MPI-parallel build. If WITH_GPU was selected above, the ELSI library must be

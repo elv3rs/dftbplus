@@ -5,7 +5,7 @@
 ! Configuration: MAX_L=4, POINTS_PER_LM=10, DECIMAL_PLACES=18,
 !                RADIAL_RANGE=(0.001, 1000.0), RANDOM_SEED=42
 
-module test_libwavegrid_spharmonics_ref
+module test_wavegrid_spharmonics_ref
   use dftbp_common_accuracy, only : dp
   implicit none
 
@@ -313,4 +313,4 @@ module test_libwavegrid_spharmonics_ref
     spotCheck(4, 4, -300.414006154423645967_dp, 87.634794152205344631_dp, 31.512554756073232198_dp, 0.258714112476041647_dp) &
   ]
 
-end module test_libwavegrid_spharmonics_ref
+end module test_wavegrid_spharmonics_ref

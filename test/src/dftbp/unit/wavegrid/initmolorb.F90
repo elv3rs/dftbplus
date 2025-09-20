@@ -6,8 +6,8 @@
 !--------------------------------------------------------------------------------------------------!
 
 #:include "fortuno_serial.fypp"
-module test_libwavegrid_initmolorb
-  use libwavegrid, only : TMolecularOrbital, TSlaterOrbital, TSpeciesBasis
+module test_wavegrid_initmolorb
+  use dftbp_wavegrid, only : TMolecularOrbital, TSlaterOrbital, TSpeciesBasis
   use dftbp_common_accuracy, only : dp
   use dftbp_common_status, only : TStatus
   use dftbp_dftb_boundarycond, only : boundaryCondsEnum, TBoundaryConds, TBoundaryConds_init
@@ -193,4 +193,4 @@ contains
     call molorb%init(geometry, bconds, speciesBasis, gridOrigin, gridVecs)
   end subroutine initMolorbH2O
 
-end module test_libwavegrid_initmolorb
+end module test_wavegrid_initmolorb

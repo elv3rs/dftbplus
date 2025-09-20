@@ -8,7 +8,7 @@
 #:include 'common.fypp'
 #:set pure = "" if defined('WITH_ASSERT') else "pure"
 !> Routines to calculate the radial part of a Slater type orbital (STO).
-module libwavegrid_slater
+module dftbp_wavegrid_slater
   use dftbp_common_accuracy, only : dp
   implicit none
 
@@ -249,4 +249,4 @@ contains
   end function TSlaterOrbital_getRadialValueDirect
 
 
-end module libwavegrid_slater
+end module dftbp_wavegrid_slater

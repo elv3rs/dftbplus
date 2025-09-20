@@ -8,10 +8,10 @@
 #:include 'common.fypp'
 
 !> Contains <evaluateCuda>, an Interface to call the C bound Cuda implementation.
-module libwavegrid_molorb_offloaded
+module dftbp_wavegrid_molorb_offloaded
   use, intrinsic :: iso_c_binding, only : c_bool, c_double, c_int, c_loc, c_ptr
-  use libwavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use libwavegrid_slater, only : TSlaterOrbital
+  use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
+  use dftbp_wavegrid_slater, only : TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   implicit none
   private
@@ -257,4 +257,4 @@ contains
   end subroutine prepareBasisSet
 #:endif
 
-end module libwavegrid_molorb_offloaded
+end module dftbp_wavegrid_molorb_offloaded
