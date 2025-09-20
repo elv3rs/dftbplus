@@ -253,7 +253,6 @@ contains
     allocate(coeffVecCmpl(size(eigVecsCmpl, dim=1), size(eigVecsCmpl, dim=2)))
 
     if (ctx%calcTotalChrg) then
-      print *, "Baking occupationVec into Eigenvector coefficients"
       if(ctx%isRealInput) then
         @:ASSERT(size(occupationVec) == size(eigVecsReal, dim=2))
       else

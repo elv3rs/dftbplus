@@ -17,7 +17,7 @@ option(WITH_GPU "Whether DFTB+ should support GPU-acceleration" FALSE)
 # For serial builds, the GPU support requires the MAGMA library. For MPI parallel builds it
 # requires the ELSI library built with GPU support.
 
-option(WITH_CUDA "Whether CUDA support should be enabled" FALSE)
+option(WITH_CUDA "Whether CUDA support should be enabled" TRUE)
 # Enable offloading support for Wavegrids MO calculations
 
 option(WITH_ELSI "Whether DFTB+ with MPI-parallelism should use the ELSI libraries" FALSE)

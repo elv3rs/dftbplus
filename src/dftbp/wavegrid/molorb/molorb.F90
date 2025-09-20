@@ -219,7 +219,7 @@ contains
       this%system%coordsInitialised = .true.
   end subroutine TMolecularOrbital_updateCoords
 
-
+  !> Bundles input flags / flattens optional arguments into a calculation context struct.
   function bundleFlags(isRealInput, addAtomicDensities, useGPU, occupationVec) result(ctx)
     logical, intent(in) :: isRealInput
     logical, intent(in), optional :: addAtomicDensities, useGPU

@@ -55,6 +55,18 @@ __device__ __forceinline__ void matmul3x3_vec(const double mat[3][3], const doub
     }
 }
 
+/**
+ * @brief Multiplies a 3D vector with a 3x3 matrix.
+ * @param vec    The 3D vector.
+ * @param mat    The 3x3 matrix. 
+ * @param result The resulting 3D vector after multiplication.
+ */
+__device__ __forceinline__ void vecmul3x3_mat(const double vec[3], const double mat[3][3], double result[3]) {
+    for (int i = 0; i < 3; i++) {
+        result[i] = vec[0] * mat[0][i] + vec[1] * mat[1][i] + vec[2] * mat[2][i];
+    }
+}
+
 
 /**
  * @brief Folds coordinates into the unit cell by discarding non-fractional part in lattice vector multiples.
@@ -65,7 +77,7 @@ __device__ __forceinline__ void matmul3x3_vec(const double mat[3][3], const doub
 __device__ __forceinline__ void foldCoordsIntoCell(
     double xyz[3], const double latVecs[3][3], const double recVecs2p[3][3]) {
     double frac[3];
-    matmul3x3_vec(recVecs2p, xyz, frac);
+    vecmul3x3_mat(xyz, recVecs2p, frac);
 
     for (int i = 0; i < 3; i++) {
         frac[i] -= floor(frac[i]);

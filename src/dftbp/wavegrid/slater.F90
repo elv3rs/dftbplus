@@ -178,7 +178,7 @@ contains
 
   end function getRadial
 
-  !> Returns the value of the SlaterOrbital in a given point.
+  !> Returns the value of the SlaterOrbital at a given point.
   !! Builds a 1d cache grid across which the result is interpolated
   !! in order to speed up evaluation for subsequent calls.
   ${pure}$ function TSlaterOrbital_getRadialValueCached(this, r) result(sto)

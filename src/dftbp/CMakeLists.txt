@@ -60,6 +60,10 @@ if(WITH_SOCKETS)
   target_sources(dftbplus PRIVATE $<TARGET_OBJECTS:fsockets_objlib>)
 endif()
 
+if(WITH_CUDA)
+    target_sources(dftbplus PRIVATE $<TARGET_OBJECTS:wavegrid_cuda_objlib>)
+endif()
+
 set(includedir ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 set_target_properties(dftbplus PROPERTIES Fortran_MODULE_DIRECTORY ${includedir})
@@ -73,9 +77,6 @@ if(WITH_API)
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_INCLUDEDIR}>)
 endif()
 
-if(WITH_CUDA)
-    target_link_libraries(dftbplus PUBLIC wavegrid_cuda)
-endif()
 
 
 # External libraries

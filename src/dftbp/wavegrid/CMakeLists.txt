@@ -15,12 +15,15 @@ if(WITH_CUDA)
         molorb/cuda/kernel.cu
         molorb/cuda/host_logic.cu
     )
-    add_library(wavegrid_cuda STATIC ${sources_lib_cuda})
+    add_library(wavegrid_cuda_objlib OBJECT ${sources_lib_cuda})
 
     if(WITH_OMP)
-        target_compile_options(wavegrid_cuda PRIVATE "-Xcompiler=-fopenmp")
-        target_link_libraries(wavegrid_cuda PUBLIC OpenMP::OpenMP_CXX)
+        target_compile_options(wavegrid_cuda_objlib PRIVATE "-Xcompiler=-fopenmp")
+        target_link_libraries(wavegrid_cuda_objlib PRIVATE OpenMP::OpenMP_CXX)
     endif()
-
-    #target_link_libraries(dftbplus PUBLIC wavegrid_cuda)
 endif()
+
+
+
+
+# Add the CUDA object files directly into dftbplus

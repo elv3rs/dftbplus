@@ -44,6 +44,8 @@ namespace RealTessYConsts {
  *
  * All Definitions in accordance with:
  * https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
+ * See also (general set):
+ * https://winter.group.shef.ac.uk/orbitron/atomic_orbitals/4f/4f_equations.html
  * 
  * 
  * @param l      Orbital quantum number

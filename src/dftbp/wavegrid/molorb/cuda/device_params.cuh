@@ -335,12 +335,11 @@ struct DeviceKernelParams {
         isPeriodic = periodic->isPeriodic;
         kIndexes   = data.kIndexes.get();
         phases     = data.phases.get();
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j) {
-                latVecs[i][j]    = periodic->latVecs[IDX2F(i, j, 3)];
-                // Transpose to reuse matmul3x3_vec instead of implementing matmul_vec3x3
-                // Consider implementing matmul_vec3x3 to avoid hiding the transpose here.
-                recVecs2pi[i][j] = periodic->recVecs2pi[IDX2F(j, i, 3)];
+        if (isPeriodic)
+            for (int i = 0; i < 3; ++i)
+                for (int j = 0; j < 3; ++j) {
+                    latVecs[i][j]    = periodic->latVecs[IDX2F(i, j, 3)];
+                    recVecs2pi[i][j] = periodic->recVecs2pi[IDX2F(i, j, 3)];
             }
 
         // Eigenvectors

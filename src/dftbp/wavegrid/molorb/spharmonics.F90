@@ -51,6 +51,8 @@ contains
   !> Computes real tesseral spherical harmonics Y_lm(r) up to l=4 without performing divisions.
   !> All Definitions in accordance with:
   !> https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
+  !> See also (general set):
+  !> https://winter.group.shef.ac.uk/orbitron/atomic_orbitals/4f/4f_equations.html
   ${pure}$ function realTessY(l, m, coord, inv_r) result(rty)
 
     !> Orbital quantum number (0 <= l <= 4)
