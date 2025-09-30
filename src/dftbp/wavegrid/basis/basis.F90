@@ -5,17 +5,20 @@
 !  See the LICENSE file for terms of usage and distribution.                                       !
 !--------------------------------------------------------------------------------------------------!
 
-module dftbp_wavegrid
-  use dftbp_wavegrid_molorb, only: TSpeciesBasis, TMolecularOrbital, TMolecularOrbital_init
-  use dftbp_wavegrid_molorb, only: getValue, getAtomicDensities, getTotalChrg
-  use dftbp_wavegrid_wavefunction_spharmonics, only: realTessY
-  use dftbp_wavegrid_radial, only: TSlaterOrbital
+module dftbp_wavegrid_basis
+  use dftbp_common_accuracy, only : dp
+  use dftbp_wavegrid_basis_spharmonics, only: realTessY
+  use dftbp_wavegrid_basis_orbital, only: TOrbital
+  use dftbp_wavegrid_basis_slater, only: TSlaterOrbital
+  use dftbp_wavegrid_basis_lut, only: TRadialTableOrbital
+  use dftbp_wavegrid_basis_gaussian, only: TGaussianOrbital
   implicit none
 
-  public :: TSpeciesBasis, TMolecularOrbital, TSlaterOrbital
-  public :: TMolecularOrbital_init
-  public :: realTessY
-  public :: getValue, getAtomicDensities, getTotalChrg
+  private
 
-end module dftbp_wavegrid
+  public :: realTessY
+  public :: TOrbital
+  public :: TSlaterOrbital, TGaussianOrbital, TRadialTableOrbital
+
+end module dftbp_wavegrid_basis
 

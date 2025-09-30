@@ -11,7 +11,7 @@
 module dftbp_wavegrid_molorb_offloaded
   use, intrinsic :: iso_c_binding, only : c_bool, c_double, c_int, c_loc, c_ptr
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_slater, only : TSlaterOrbital
+  use dftbp_wavegrid_wavefunction, only : TOrbital
   use dftbp_common_accuracy, only : dp
   implicit none
   private
@@ -58,7 +58,7 @@ module dftbp_wavegrid_molorb_offloaded
     type(c_ptr) :: latVecs, recVecs2pi, kIndexes, phases
   end type
 
-  type, bind(c) :: TSlaterOrbitalC
+  type, bind(c) :: TOrbitalC
     logical(c_bool) :: useRadialLut
     integer(c_int) :: nStos, nLutPoints
     real(c_double) :: inverseLutStep
@@ -85,7 +85,7 @@ contains
     !> System
     type(TSystemParams), intent(in), target :: system
     !> Basis set
-    type(TSlaterOrbital), intent(in), target :: stos(:)
+    type(TOrbital), intent(in), target :: stos(:)
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in), target :: periodic
     integer, intent(in), target :: kIndexes(:)
@@ -105,7 +105,7 @@ contains
         type(TGridParamsC), intent(in) :: grid
         type(TSystemParamsC), intent(in) :: system
         type(TPeriodicParamsC), intent(in) :: periodic
-        type(TSlaterOrbitalC), intent(in) :: basis
+        type(TOrbitalC), intent(in) :: basis
         type(TCalculationParamsC), intent(in) :: calc
       end subroutine evaluate_on_device_c
     end interface
@@ -115,7 +115,7 @@ contains
     type(TGridParamsC) :: grid_p
     type(TSystemParamsC) :: system_p
     type(TPeriodicParamsC) :: periodic_p
-    type(TSlaterOrbitalC) :: basis_p
+    type(TOrbitalC) :: basis_p
     type(TCalculationParamsC) :: calc_p
 
     call prepareBasisSet(basis, stos)
@@ -203,13 +203,15 @@ contains
   !> Additionally, all orbitals must use identical LUT settings.
   subroutine prepareBasisSet(this, stos)
     type(TBasisParams), intent(out) :: this
-    type(TSlaterOrbital), intent(in) :: stos(:)
+    type(TOrbital), intent(in) :: stos(:)
     integer :: iOrb
+
+    !! Convert to Lut format
 
     this%nStos = size(stos)
     ! We will assert that all orbitals use identical LUT settings
     this%useRadialLut = stos(1)%useRadialLut
-    this%nLutPoints = stos(1)%nGrid
+    this%nLutPoints = size(stos(1)%gridValue)
     this%invLutStep = stos(1)%invLutStep
     allocate(this%angMoms(this%nStos))
     allocate(this%cutoffsSq(this%nStos))

@@ -9,8 +9,7 @@
 !> Dispatches to either the GPU or CPU implementation, and contains the OMP parallel CPU implementation.
 module dftbp_wavegrid_molorb_parallel
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_molorb_spharmonics, only: realTessY
-  use dftbp_wavegrid_slater, only : TSlaterOrbital
+  use dftbp_wavegrid_basis, only: TOrbital, realTessY
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
 #:if WITH_CUDA
@@ -25,7 +24,7 @@ contains
 
 
   !> Returns the values of several molecular orbitals on grids.
-  !> This dispatches to either CPU / GPU implementation, and handles total Charge calculation using occupationVec if present.
+  !> This dispatches to either the CPU or GPU implementation, and handles total charge calculation using occupationVec if present.
   subroutine evaluateParallel(system, periodic, kIndexes, phases, stos, &
       & ctx, eigVecsReal, eigVecsCmpl,  valueReal, valueCmpl, occupationVec)
 
@@ -40,7 +39,7 @@ contains
     complex(dp), intent(in) :: phases(:,:)
 
     !> Basis set data in AoS format
-    type(TSlaterOrbital), intent(in) :: stos(:)
+    type(TOrbital), intent(in) :: stos(:)
 
     !> Calculation control flags
     type(TCalculationContext), intent(in) :: ctx
@@ -96,7 +95,7 @@ contains
     !> System
     type(TSystemParams), intent(in) :: system
     !> Basis set
-    type(TSlaterOrbital), intent(in) :: stos(:)
+    type(TOrbital), intent(in) :: stos(:)
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in) :: periodic
     integer, intent(in) :: kIndexes(:)

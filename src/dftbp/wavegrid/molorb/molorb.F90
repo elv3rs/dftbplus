@@ -13,7 +13,7 @@
 module dftbp_wavegrid_molorb
   use dftbp_wavegrid_molorb_parallel, only : evaluateParallel
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_slater, only : TSlaterOrbital
+  use dftbp_wavegrid_radial, only : TSlaterOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
@@ -49,12 +49,15 @@ module dftbp_wavegrid_molorb
 
   !> Data type containing information about the basis for a species.
   type TSpeciesBasis
-    !> Atomic number of the species
+    !> Atomic number of the species. Todo: Check if there are plans for this, else remove.
     integer :: atomicNumber
+
     !> Nr. of orbitals
+    !! Todo: check usage elsewhere, refactor to use size(stos)
     integer :: nOrb
-    !> STO for each orbital
-    type(TSlaterOrbital), allocatable :: stos(:)
+
+    !> Array of orbitals for this species
+    type(TOrbital), allocatable :: stos(:)
   end type TSpeciesBasis
 
   !> Returns the value of one or more molecular orbitals on a grid
