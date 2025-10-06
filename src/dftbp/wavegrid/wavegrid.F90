@@ -8,13 +8,10 @@
 module dftbp_wavegrid
   use dftbp_wavegrid_molorb, only: TSpeciesBasis, TMolecularOrbital, TMolecularOrbital_init
   use dftbp_wavegrid_molorb, only: getValue, getAtomicDensities, getTotalChrg
-  use dftbp_wavegrid_wavefunction_spharmonics, only: realTessY
-  use dftbp_wavegrid_radial, only: TSlaterOrbital
   implicit none
 
-  public :: TSpeciesBasis, TMolecularOrbital, TSlaterOrbital
+  public :: TSpeciesBasis, TMolecularOrbital
   public :: TMolecularOrbital_init
-  public :: realTessY
   public :: getValue, getAtomicDensities, getTotalChrg
 
 end module dftbp_wavegrid

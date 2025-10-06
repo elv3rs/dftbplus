@@ -11,6 +11,7 @@
 !> This allows for arbitrary radial functions.
 module dftbp_wavegrid_basis_lut
   use dftbp_common_accuracy, only : dp
+  use dftbp_io_message, only : error
   use dftbp_wavegrid_basis_orbital, only : TOrbital
   implicit none
 
@@ -28,22 +29,22 @@ module dftbp_wavegrid_basis_lut
     !> Orbital values on the grid
     real(dp), allocatable :: gridValue(:)
   contains
-    procedure :: getRadial => TRadialTable_getRadial
+    procedure :: getRadial => TRadialTableOrbital_getRadial
     procedure :: initFromArray => TRadialTableOrbital_initFromArray
-    procedure :: initFromOrbital => 
+    procedure :: initFromOrbital => TRadialTableOrbital_initFromOrbital
+    procedure, pass(lhs) :: assign => TRadialTableOrbital_assign
   end type TRadialTableOrbital
 
 contains
 
   !> Initialises using a verbatim array of values.
-  subroutine TRadialTable_initFromArray(this, gridValue, gridDist, angMom)
-    class(TRadialTable), intent(out) :: this
+  subroutine TRadialTableOrbital_initFromArray(this, gridValue, gridDist, angMom)
+    class(TRadialTableOrbital), intent(out) :: this
     real(dp), intent(in) :: gridValue(:)
     real(dp), intent(in) :: gridDist
     integer, intent(in) :: angMom
     real(dp) :: cutoff
 
-    this%useRadialLut = .true.
     this%angMom = angMom
     this%gridDist = gridDist
     this%invLutStep = 1.0_dp / gridDist
@@ -53,17 +54,27 @@ contains
 
     allocate(this%gridValue, source=gridValue)
 
-  end subroutine TRadialTable_initFromArray
+  end subroutine TRadialTableOrbital_initFromArray
 
   !> Resamples another orbital onto a LUT with given resolution.
-  subroutine TRadialTable_initFromOrbital(this, other, resolution)
-    class(TRadialTable), intent(out) :: this
+  subroutine TRadialTableOrbital_initFromOrbital(this, other, resolution, newCutoff)
+    class(TRadialTableOrbital), intent(out) :: this
     class(TOrbital), intent(in) :: other
     real(dp), intent(in) :: resolution
+    !> New cutoff, required to be larger than original cutoff.
+    real(dp), intent(in), optional :: newCutoff
+
     integer :: iGrid
     real(dp) :: r, cutoff
 
     @:ASSERT(resolution > 0.0_dp)
+
+    ! Optionally enlarge cutoff
+    cutoff = sqrt(other%cutoffSq)
+    if (present(newCutoff)) then
+      @:ASSERT(newCutoff >= cutoff)
+      cutoff = newCutoff
+    end if
 
     ! Set parameters
     this%angMom = other%angMom
@@ -72,7 +83,6 @@ contains
     this%invLutStep = 1.0_dp / resolution
     
     ! Allocate LUT grid
-    cutoff = sqrt(this%cutoffSq)
     allocate(this%gridValue(floor(cutoff / resolution) + 2))
 
     ! Populate LUT by sampling the other orbital
@@ -81,16 +91,16 @@ contains
       this%gridValue(iGrid) = other%getRadial(r)
     end do
 
-  end subroutine TOrbital_resampleToLut
+  end subroutine TRadialTableOrbital_initFromOrbital
 
 
   !> Returns the value of the RadialFunction at a given point.
   !! Builds a 1d cache grid across which the result is interpolated
   !! in order to speed up evaluation for subsequent calls.
-  ${pure}$ function TRadialTable_getRadial(this, r) result(sto)
+  ${pure}$ function TRadialTableOrbital_getRadial(this, r) result(sto)
 
     !> RadialTable instance
-    class(TRadialTable), intent(in) :: this
+    class(TRadialTableOrbital), intent(in) :: this
 
     !> Distance, where STO should be calculated
     real(dp), intent(in) :: r
@@ -106,12 +116,34 @@ contains
     ! ind = 1 means zero distance as r = (ind - 1) * gridDist
     posOnGrid = r * this%invLutStep
     ind = floor(posOnGrid) + 1
-    if (ind < this%nGrid) then
+    if (ind < size(this%gridValue)) then
       frac = posOnGrid - real(ind - 1, dp)
       sto = (1.0_dp - frac) * this%gridValue(ind) + frac * this%gridValue(ind+1)
     else
       sto = 0.0_dp
     end if
 
-  end function TRadialTable_getRadial
+  end function TRadialTableOrbital_getRadial
+
+  !> Assignment operator for TRadialTableOrbital
+  subroutine TRadialTableOrbital_assign(lhs, rhs)
+    class(TRadialTableOrbital), intent(out) :: lhs
+    class(TOrbital), intent(in) :: rhs
+
+    select type (rhs)
+      type is (TRadialTableOrbital)
+        lhs%angMom = rhs%angMom
+        lhs%cutoffSq = rhs%cutoffSq
+        lhs%gridDist = rhs%gridDist
+        lhs%invLutStep = rhs%invLutStep
+
+        if (allocated(lhs%gridValue)) deallocate(lhs%gridValue)
+        allocate(lhs%gridValue, source=rhs%gridValue)
+      class default
+        call error("Implicit conversion to TRadialTableOrbital not allowed, use initFromOrbital instead.")
+    end select
+
+  end subroutine TRadialTableOrbital_assign
+
+
 end module dftbp_wavegrid_basis_lut

@@ -10,6 +10,7 @@
 !> Contains the routines for initialising Waveplot.
 module waveplot_initwaveplot
   use dftbp_wavegrid, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
+  use dftbp_wavegrid_basis, only : TSlaterOrbital, TSlaterOrbital_init
   use waveplot_gridcache, only : TGridCache
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
@@ -691,7 +692,7 @@ contains
       allocate(mcutoffs(this%input%geo%nSpecies))
       do iSpecies = 1 , this%input%geo%nSpecies
         mCutoffs(iSpecies) = -1
-        do ii = 1, this%basis%basis(iSpecies)%nOrb
+        do ii = 1, size(this%basis%basis(iSpecies)%stos)
           mCutoffs(iSpecies) = sqrt(max(mCutoffs(iSpecies), this%basis%basis(iSpecies)%stos(ii)%cutoffSq))
         end do
       end do
@@ -786,7 +787,7 @@ contains
     !! Total number of species in the system
     integer :: nSpecies
     !! Auxiliary variable
-    integer :: ii
+    integer :: ii, atomicNumber
 
     nSpecies = size(speciesNames)
 
@@ -803,15 +804,15 @@ contains
       speciesName = speciesNames(ii)
       call getChild(node, speciesName, speciesNode)
       call readSpeciesBasis(speciesNode, this%basis%basisResolution, this%basis%basis(ii), &
-        & this%basis%referenceOccupations(:, ii))
-      this%aNr%atomicNumbers(ii) = this%basis%basis(ii)%atomicNumber
+        & this%basis%referenceOccupations(:, ii), atomicNumber)
+      this%aNr%atomicNumbers(ii) = atomicNumber
     end do
 
   end subroutine readBasis
 
 
   !> Read in basis function for a species.
-  subroutine readSpeciesBasis(node, basisResolution, spBasis, atomicOcc)
+  subroutine readSpeciesBasis(node, basisResolution, spBasis, atomicOcc, atomicNumber)
 
     !> Node containing the basis definition for a species
     type(fnode), pointer :: node
@@ -824,6 +825,9 @@ contains
 
     !> Atomic occupations for the species
     real(dp), intent(out) :: atomicOcc(maxExpectedAngMom + 1)
+
+    !> Atomic number of the species
+    integer, intent(out) :: atomicNumber
 
     !! Input node instances, containing the information
     type(fnode), pointer :: tmpNode, child
@@ -841,17 +845,16 @@ contains
     integer :: ii
     real(dp) :: cutoff
 
-    call getChildValue(node, "AtomicNumber", spBasis%atomicNumber)
+    call getChildValue(node, "AtomicNumber", atomicNumber)
     call getChildren(node, "Orbital", children)
-    spBasis%nOrb = getLength(children)
 
-    if (spBasis%nOrb < 1) then
+    if (getLength(children) < 1) then
       call detailedError(node, "Missing orbital definitions")
     end if
 
-    allocate(spBasis%stos(spBasis%nOrb))
+    allocate(TSlaterOrbital :: spBasis%stos(getLength(children)))
 
-    do ii = 1, spBasis%nOrb
+    do ii = 1, size(spBasis%stos)
       call getItem1(children, ii, tmpNode)
       call getChildValue(tmpNode, "AngularMomentum", spBasis%stos(ii)%angMom)
       @:ASSERT(spBasis%stos(ii)%angMom == ii - 1)
@@ -879,8 +882,8 @@ contains
       allocate(coeffs(len(bufferCoeffs)))
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
-      call spBasis%stos(ii)%init(reshape(coeffs, [size(coeffs) / size(exps),&
-          & size(exps)]), exps, ii - 1, basisResolution, cutoff, useRadialLut=.true.)
+      call TSlaterOrbital_init(spBasis%stos(ii), reshape(coeffs, [size(coeffs) / size(exps),&
+          & size(exps)]), exps, ii - 1, cutoff)
       deallocate(exps, coeffs)
     end do
 

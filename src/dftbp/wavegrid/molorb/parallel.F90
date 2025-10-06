@@ -39,7 +39,7 @@ contains
     complex(dp), intent(in) :: phases(:,:)
 
     !> Basis set data in AoS format
-    type(TOrbital), intent(in) :: stos(:)
+    class(TOrbital), intent(in) :: stos(:)
 
     !> Calculation control flags
     type(TCalculationContext), intent(in) :: ctx
@@ -95,7 +95,7 @@ contains
     !> System
     type(TSystemParams), intent(in) :: system
     !> Basis set
-    type(TOrbital), intent(in) :: stos(:)
+    class(TOrbital), intent(in) :: stos(:)
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in) :: periodic
     integer, intent(in) :: kIndexes(:)

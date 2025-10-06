@@ -13,7 +13,7 @@
 module dftbp_wavegrid_molorb
   use dftbp_wavegrid_molorb_parallel, only : evaluateParallel
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_radial, only : TSlaterOrbital
+  use dftbp_wavegrid_basis, only : TOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
@@ -32,7 +32,7 @@ module dftbp_wavegrid_molorb
     !> Periodic boundary conditions
     type(TPeriodicParams) :: periodic
     !> Basis set in AoS format
-    type(TSlaterOrbital), allocatable :: stos(:)
+    class(TOrbital), allocatable :: stos(:)
     !> Boundary conditions handler for coordinate recalculation
     type(TBoundaryConds) :: boundaryCond
 
@@ -47,17 +47,10 @@ module dftbp_wavegrid_molorb
     procedure :: initPeriodic
   end type TMolecularOrbital
 
-  !> Data type containing information about the basis for a species.
+  !> Basis set for one species
   type TSpeciesBasis
-    !> Atomic number of the species. Todo: Check if there are plans for this, else remove.
-    integer :: atomicNumber
-
-    !> Nr. of orbitals
-    !! Todo: check usage elsewhere, refactor to use size(stos)
-    integer :: nOrb
-
     !> Array of orbitals for this species
-    type(TOrbital), allocatable :: stos(:)
+    class(TOrbital), allocatable :: stos(:)
   end type TSpeciesBasis
 
   !> Returns the value of one or more molecular orbitals on a grid
@@ -133,7 +126,7 @@ contains
     ind = 1
     do iSpec = 1, this%system%nSpecies
       this%system%iStos(iSpec) = ind
-      ind = ind + basis(iSpec)%nOrb
+      ind = ind + size(basis(iSpec)%stos)
     end do
     this%system%iStos(this%system%nSpecies + 1) = ind
 
@@ -141,7 +134,7 @@ contains
     nOrbTotal = 0
     do iAtom = 1, this%system%nAtom
       iSpec = this%system%species(iAtom)
-      do iOrb = 1, basis(iSpec)%nOrb
+      do iOrb = 1, size(basis(iSpec)%stos)
         angMom = basis(iSpec)%stos(iOrb)%angMom
         nOrbTotal = nOrbTotal + 1 + 2 * angMom
       end do
@@ -156,15 +149,24 @@ contains
   subroutine flattenBasis(this, basisInput)
     class(TMolecularOrbital), intent(inout) :: this
     type(TSpeciesBasis), intent(in) :: basisInput(:)
-    integer :: iSpec, ind, nStos
-    nStos = sum(basisInput(:)%nOrb)
+    integer :: iSpec, iOrb, ind, nStos
+    
+    ! Count total number of STOs
+    nStos = 0
+    do iSpec = 1, this%system%nSpecies
+      nStos = nStos + size(basisInput(iSpec)%stos)
+    end do
 
-    ! Flatten the basis array
-    allocate(this%stos(nStos))
+    ! Allocate flat array
+    allocate(this%stos(nStos), mold=basisInput(1)%stos(1))
+
+    ! Copy all STOs into array
     ind = 1
     do iSpec = 1, this%system%nSpecies
-      this%stos(ind:ind+basisInput(iSpec)%nOrb-1) = basisInput(iSpec)%stos(:)
-      ind = ind + basisInput(iSpec)%nOrb
+      do iOrb = 1, size(basisInput(iSpec)%stos)
+        this%stos(ind) = basisInput(iSpec)%stos(iOrb)
+        ind = ind + 1
+      end do
     end do
   end subroutine flattenBasis
 
@@ -460,7 +462,7 @@ contains
 
 
   function maxCutoff(stos) result(maxCut)
-    type(TSlaterOrbital), intent(in) :: stos(:)
+    class(TOrbital), intent(in) :: stos(:)
     real(dp) :: maxCut
     real(dp) :: maxCutSq
     integer :: iSto

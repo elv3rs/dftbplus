@@ -1,7 +1,7 @@
 set(curdir ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-set(sources-fpp wavegrid.F90)
+set(sources-fpp ${curdir}/wavegrid.F90)
 
 add_subdirectory(basis)
 add_subdirectory(molorb)

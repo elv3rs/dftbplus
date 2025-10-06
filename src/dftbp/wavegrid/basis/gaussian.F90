@@ -8,34 +8,35 @@
 
 #:include 'common.fypp'
 #:set pure = "" if defined('WITH_ASSERT') else "pure"
-!> Holds TSlaterOrbital, a concrete implementation of TOrbital.
+!> Holds TGaussianOrbital, a concrete implementation of TOrbital.
 module dftbp_wavegrid_basis_gaussian
   use dftbp_common_accuracy, only : dp
+  use dftbp_io_message, only : error
   use dftbp_wavegrid_basis_orbital, only : TOrbital
   implicit none
 
   private
 
-  public :: TSlaterOrbital
+  public :: TGaussianOrbital
   
-  !> Concrete class for a contracted Gaussian-Type Orbital (GTO).
+  !> Represents a contracted Gaussian-Type Orbital (GTO):
   !> R(r) = r^l * Sum_p [ coeff_p * exp(-alpha_p * r^2) ]
   type, extends(TOrbital) :: TGaussianOrbital
-    integer :: nprim = 0
     !> Exponents of primitive Gaussians
     real(dp), allocatable :: alpha(:) 
-    !> Contraction coefficients
+    !> Summation coefficients
     real(dp), allocatable :: coeff(:) 
   contains
     procedure :: getRadial => TGaussianOrbital_getRadial
     procedure :: init => TGaussianOrbital_init
+    procedure, pass(lhs) :: assign => TGaussianOrbital_assign
   end type TGaussianOrbital
 
 
 
 contains
 
-  !> Initializes a TGaussianOrbital with its analytical parameters.
+  !> Store the parameters for the TGaussianOrbital.
   subroutine TGaussianOrbital_init(this, angMom, coeff, alpha)
     class(TGaussianOrbital), intent(out) :: this
     integer, intent(in) :: angMom
@@ -43,11 +44,9 @@ contains
     real(dp), intent(in) :: alpha(:)
 
     this%angMom = angMom
-    this%nprim = size(coeff)
-    ! ASSERT(this%nprim == size(alpha))
 
-    allocate(this%coeff(this%nprim), source=coeff)
-    allocate(this%alpha(this%nprim), source=alpha)
+    allocate(this%coeff, source=coeff)
+    allocate(this%alpha, source=alpha)
   end subroutine TGaussianOrbital_init
 
 
@@ -58,27 +57,41 @@ contains
     real(dp) :: val
 
     integer :: iPrim
-    real(dp) :: rToTheL, sumOfPrims
-    real(dp), parameter :: zeroTol = 1.0e-12_dp
+    real(dp) :: weighedSum
 
-    ! Sum of primitive Gaussians: Sum_p[coeff_p * exp(-alpha_p * r^2)]
-    sumOfPrims = 0.0_dp
-    do iPrim = 1, this%nprim
-      sumOfPrims = sumOfPrims + this%coeff(iPrim) * exp(-this%alpha(iPrim) * r**2)
+    ! Sum and weigh all primitive Gaussians
+    weighedSum = 0.0_dp
+    do iPrim = 1, size(this%coeff)
+      weighedSum = weighedSum + this%coeff(iPrim) * exp(-this%alpha(iPrim) * r**2)
     end do
 
-    ! The full radial part is R(r) = r^l * Sum_p[...]
-    ! Handle r=0 case carefully to avoid 0**0.
+    ! Multiply with r^l (Avoid 0**0 on pre 2008 compilers)
     if (r < epsilon(1.0_dp)) then
-      rToTheL = 1.0_dp
-      if (this%angMom > 0) rToTheL = 0.0_dp
+      val = weighedSum
+      if (this%angMom > 0) val = 0.0_dp
     else
-      val = r**this%angMom * sumOfPrims
+      val = r**this%angMom * weighedSum
     end if
 
   end function TGaussianOrbital_getRadial
 
+  !> Assignment operator
+  subroutine TGaussianOrbital_assign(lhs, rhs)
+    class(TGaussianOrbital), intent(out) :: lhs
+    class(TOrbital), intent(in) :: rhs
+    select type (rhs)
+      type is (TGaussianOrbital)
+        lhs%angMom = rhs%angMom
+        lhs%cutoffSq = rhs%cutoffSq
 
+        if (allocated(lhs%alpha)) deallocate(lhs%alpha)
+        if (allocated(lhs%coeff)) deallocate(lhs%coeff)
 
+        allocate(lhs%alpha, source=rhs%alpha)
+        allocate(lhs%coeff, source=rhs%coeff)
+      class default
+        call error("Cannot assign non-Gaussian orbital to Gaussian orbital.")
+    end select
 
+  end subroutine TGaussianOrbital_assign
 end module dftbp_wavegrid_basis_gaussian

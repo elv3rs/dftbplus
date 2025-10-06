@@ -72,8 +72,6 @@ contains
     logical, intent(in), optional :: useRadialLut
 
     ! Hydrogen
-    speciesBasis(1)%atomicNumber = 1
-    speciesBasis(1)%nOrb = 1
     allocate(speciesBasis(1)%stos(1))
     call initOrbitalHydrogenS(speciesBasis(1)%stos(1), useRadialLut=useRadialLut)
 
@@ -84,15 +82,11 @@ contains
     logical, intent(in), optional :: useRadialLut
   
     ! Oxygen
-    speciesBasis(1)%atomicNumber = 8
-    speciesBasis(1)%nOrb = 2
     allocate(speciesBasis(1)%stos(2))
     call initOrbitalOxygenS(speciesBasis(1)%stos(1), useRadialLut=useRadialLut)
     call initOrbitalOxygenP(speciesBasis(1)%stos(2), useRadialLut=useRadialLut)
     
     ! Hydrogen 
-    speciesBasis(2)%atomicNumber = 1
-    speciesBasis(2)%nOrb = 1
     allocate(speciesBasis(2)%stos(1))
     call initOrbitalHydrogenS(speciesBasis(2)%stos(1), useRadialLut=useRadialLut)
 

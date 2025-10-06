@@ -10,40 +10,40 @@
 !> Holds TSlaterOrbital, a concrete implementation of TOrbital.
 module dftbp_wavegrid_basis_slater
   use dftbp_common_accuracy, only : dp
+  use dftbp_io_message, only : error
   use dftbp_wavegrid_basis_orbital, only : TOrbital
   implicit none
 
   private
 
-  public :: TSlaterOrbital
+  public :: TSlaterOrbital, TSlaterOrbital_init
   
-  !> Concrete class for a Slater-Type Orbital (STO).
+  !> Represents a Slater-Type Orbital (STO):
+  !! R(r) = r^l * Sum_i Sum_j [ aa(i,j) * r^(i-1) * exp(-alpha(j) * r) ]
   type, extends(TOrbital) :: TSlaterOrbital
     !> Maximum power of the radial distance
     integer :: nPow
 
-    !> Number of exponential coefficients
-    integer :: nAlpha
-
     !> Summation coefficients. Shape: [nPow, nAlpha]
     real(dp), allocatable :: aa(:,:)
 
-    !> Exponential coefficients (stored negated)
+    !> Exponential coefficients
     real(dp), allocatable :: alpha(:)
   contains
     procedure :: getRadial => TSlaterOrbital_getRadial
     procedure :: init => TSlaterOrbital_init
+    procedure, pass(lhs) :: assign => TSlaterOrbital_assign
   end type TSlaterOrbital
 
 contains
 
   !> Initialises using STO parameters.
-  subroutine TSlaterOrbital_init(this, aa, alpha, ll, resolution, cutoff)
+  subroutine TSlaterOrbital_init(this, aa, alpha, ll, cutoff)
 
     !> TSlaterOrbital instance to initialise
     class(TSlaterOrbital), intent(out) :: this
 
-    !> Summation coefficients (nCoeffPerAlpha, nAlpha)
+    !> Summation coefficients. Shape: [nCoeffPerAlpha, nAlpha]
     real(dp), intent(in) :: aa(:,:)
 
     !> Exponential coefficients
@@ -52,30 +52,19 @@ contains
     !> Angular momentum of the orbital
     integer, intent(in) :: ll
 
-    !> Grid distance for the orbital
-    real(dp), intent(in) :: resolution
-
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
-
-    integer :: iGrid
-    real(dp) :: r
 
     @:ASSERT(cutoff > 0.0_dp)
 
     this%angMom = ll
     this%cutoffSq = cutoff ** 2
 
-    this%nAlpha = size(alpha)
-    @:ASSERT(size(aa, dim=2) == this%nAlpha)
+    @:ASSERT(size(aa, dim=2) == size(alpha))
     this%nPow = size(aa, dim=1)
 
-    allocate(this%aa(this%nPow, this%nAlpha), source=aa)
-
-    ! The STO formula uses exp(-alpha * r).
-    ! Directly store -alpha to avoid repeated negation when calculating.
-    allocate(this%alpha(this%nAlpha))
-    this%alpha(:) = -1.0_dp * alpha(:)
+    allocate(this%aa, source=aa)
+    allocate(this%alpha, source=alpha)
 
   end subroutine TSlaterOrbital_init
 
@@ -108,15 +97,36 @@ contains
       rTmp = rTmp * r
     end do
     sto = 0.0_dp
-    do ii = 1, this%nAlpha
+    do ii = 1, size(this%alpha)
       rTmp = 0.0_dp
       do jj = 1, this%nPow
         rTmp = rTmp + this%aa(jj, ii) * pows(jj)
       end do
-      sto = sto + rTmp * exp(this%alpha(ii) * r)
+      sto = sto + rTmp * exp(-this%alpha(ii) * r)
     end do
 
   end function TSlaterOrbital_getRadial
+  
+  !> Assignment operator
+  subroutine TSlaterOrbital_assign(lhs, rhs)
+    class(TSlaterOrbital), intent(out) :: lhs
+    class(TOrbital), intent(in) :: rhs
 
+
+    select type (rhs)
+      type is (TSlaterOrbital)
+        lhs%angMom = rhs%angMom
+        lhs%cutoffSq = rhs%cutoffSq
+        lhs%nPow = rhs%nPow
+
+        if (allocated(lhs%alpha)) deallocate(lhs%alpha)
+        if (allocated(lhs%aa)) deallocate(lhs%aa)
+
+        allocate(lhs%alpha, source=rhs%alpha)
+        allocate(lhs%aa, source=rhs%aa)
+      class default
+        call error("Cannot assign non-Slater orbital to Slater orbital.")
+    end select
+  end subroutine TSlaterOrbital_assign
 
 end module dftbp_wavegrid_basis_slater
