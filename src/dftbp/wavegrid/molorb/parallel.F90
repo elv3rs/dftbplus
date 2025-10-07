@@ -25,7 +25,7 @@ contains
 
   !> Returns the values of several molecular orbitals on grids.
   !> This dispatches to either the CPU or GPU implementation, and handles total charge calculation using occupationVec if present.
-  subroutine evaluateParallel(system, periodic, kIndexes, phases, stos, &
+  subroutine evaluateParallel(system, periodic, kIndexes, phases, orbitals, &
       & ctx, eigVecsReal, eigVecsCmpl,  valueReal, valueCmpl, occupationVec)
 
     !> System geometry and composition
@@ -39,7 +39,7 @@ contains
     complex(dp), intent(in) :: phases(:,:)
 
     !> Basis set data in AoS format
-    class(TOrbital), intent(in) :: stos(:)
+    class(TOrbital), intent(in) :: orbitals(:)
 
     !> Calculation control flags
     type(TCalculationContext), intent(in) :: ctx
@@ -71,7 +71,7 @@ contains
     if (ctx%runOnGPU) then
       #:if WITH_CUDA
         print *, "Wavegrid: running on GPU using CUDA"
-        call evaluateCuda(system, stos, periodic, kIndexes, phases, ctx, &
+        call evaluateCuda(system, orbitals, periodic, kIndexes, phases, ctx, &
             & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
       #:else
         call error("Wavegrid: GPU offloaded molorb requested, but compiled without CUDA support.")
@@ -82,20 +82,20 @@ contains
       #:else
       print *, "Wavegrid: missing OMP, running serially on CPU"
       #:endif
-      call evaluateOMP(system, stos, periodic, kIndexes, phases, ctx, &
+      call evaluateOMP(system, orbitals, periodic, kIndexes, phases, ctx, &
             & coeffVecsReal, coeffVecsCmpl, valueReal, valueCmpl)
     end if
 
   end subroutine evaluateParallel
 
 
-  subroutine evaluateOMP(system, stos, periodic, kIndexes, phases, ctx, &
+  subroutine evaluateOMP(system, orbitals, periodic, kIndexes, phases, ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
     !> System
     type(TSystemParams), intent(in) :: system
     !> Basis set
-    class(TOrbital), intent(in) :: stos(:)
+    class(TOrbital), intent(in) :: orbitals(:)
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in) :: periodic
     integer, intent(in) :: kIndexes(:)
@@ -173,15 +173,15 @@ contains
                 rSq = dot_product(diff, diff)
 
                 lpOrb: do iOrb = system%iStos(iSpecies), system%iStos(iSpecies + 1) - 1
-                  iL = stos(iOrb)%angMom
+                  iL = orbitals(iOrb)%angMom
                   ! Calculate wave function only if atom is inside the cutoff
-                  if (rSq > stos(iOrb)%cutoffSq) then
+                  if (rSq > orbitals(iOrb)%cutoffSq) then
                     ind = ind + 2*iL + 1
                     cycle lpOrb
                   end if
                   r = sqrt(rSq)
 
-                  radialVal = stos(iOrb)%getRadial(r)
+                  radialVal = orbitals(iOrb)%getRadial(r)
                   
                   ! Only calculate inverse once
                   invR = 0.0_dp

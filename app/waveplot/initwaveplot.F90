@@ -692,8 +692,8 @@ contains
       allocate(mcutoffs(this%input%geo%nSpecies))
       do iSpecies = 1 , this%input%geo%nSpecies
         mCutoffs(iSpecies) = -1
-        do ii = 1, size(this%basis%basis(iSpecies)%stos)
-          mCutoffs(iSpecies) = sqrt(max(mCutoffs(iSpecies), this%basis%basis(iSpecies)%stos(ii)%cutoffSq))
+        do ii = 1, size(this%basis%basis(iSpecies)%orbitals)
+          mCutoffs(iSpecies) = sqrt(max(mCutoffs(iSpecies), this%basis%basis(iSpecies)%orbitals(ii)%cutoffSq))
         end do
       end do
       minvals = this%input%geo%coords(:,1)
@@ -842,7 +842,7 @@ contains
     real(dp), allocatable :: coeffs(:), exps(:)
 
     !! Auxiliary variables
-    integer :: ii, nStos
+    integer :: ii, nOrbitals
     real(dp) :: cutoff
     type(TSlaterOrbital) :: sto
     type(TRadialTableOrbital) :: lut
@@ -852,22 +852,22 @@ contains
 
     call getChildValue(node, "AtomicNumber", atomicNumber)
     call getChildren(node, "Orbital", children)
-    nStos = getLength(children)
+    nOrbitals = getLength(children)
 
-    if (nStos < 1) then
+    if (nOrbitals < 1) then
       call detailedError(node, "Missing orbital definitions")
     end if
 
     if (useTabulatedRadial) then
-      allocate(TRadialTableOrbital :: spBasis%stos(nStos))
+      allocate(TRadialTableOrbital :: spBasis%orbitals(nOrbitals))
     else
-      allocate(TSlaterOrbital :: spBasis%stos(nStos))
+      allocate(TSlaterOrbital :: spBasis%orbitals(nOrbitals))
     end if
 
-    do ii = 1, size(spBasis%stos)
+    do ii = 1, size(spBasis%orbitals)
       call getItem1(children, ii, tmpNode)
-      call getChildValue(tmpNode, "AngularMomentum", spBasis%stos(ii)%angMom)
-      @:ASSERT(spBasis%stos(ii)%angMom == ii - 1)
+      call getChildValue(tmpNode, "AngularMomentum", spBasis%orbitals(ii)%angMom)
+      @:ASSERT(spBasis%orbitals(ii)%angMom == ii - 1)
 
       call getChildValue(tmpNode, "Occupation", atomicOcc(ii), child=child)
       call getChildValue(tmpNode, "Cutoff", cutoff)
@@ -896,9 +896,9 @@ contains
 
       if (useTabulatedRadial) then
         call lut%initFromOrbital(sto, basisResolution)
-        spBasis%stos(ii) = lut
+        spBasis%orbitals(ii) = lut
       else
-        spBasis%stos(ii) = sto
+        spBasis%orbitals(ii) = sto
       end if
       deallocate(exps, coeffs)
     end do

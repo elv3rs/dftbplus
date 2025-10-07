@@ -25,7 +25,7 @@ module test_wavegrid_radial
 contains
   !> Check if initialisation from LUT and subsequent 
   !! Access works as expected.
-  $:TEST("radial_fromLut")
+  $:TEST("TRadialTableOrbital_initFromArray")
     type(TRadialTableOrbital) :: sto
     real(dp) :: r, val, expected
     integer :: i

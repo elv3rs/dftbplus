@@ -108,11 +108,11 @@ contains
 
     ! Hydrogen
     if (useRadialLut) then
-      allocate(TRadialTableOrbital :: speciesBasis(1)%stos(1))
+      allocate(TRadialTableOrbital :: speciesBasis(1)%orbitals(1))
     else
-      allocate(TSlaterOrbital :: speciesBasis(1)%stos(1))
+      allocate(TSlaterOrbital :: speciesBasis(1)%orbitals(1))
     end if
-    call initOrbitalHydrogenS(speciesBasis(1)%stos(1), useRadialLut)
+    call initOrbitalHydrogenS(speciesBasis(1)%orbitals(1), useRadialLut)
 
   end subroutine initSpeciesBasisH
 
@@ -122,20 +122,20 @@ contains
   
     ! Oxygen
     if (useRadialLut) then
-      allocate(TRadialTableOrbital :: speciesBasis(1)%stos(2))
+      allocate(TRadialTableOrbital :: speciesBasis(1)%orbitals(2))
     else
-      allocate(TSlaterOrbital :: speciesBasis(1)%stos(2))
+      allocate(TSlaterOrbital :: speciesBasis(1)%orbitals(2))
     end if
-    call initOrbitalOxygenS(speciesBasis(1)%stos(1), useRadialLut)
-    call initOrbitalOxygenP(speciesBasis(1)%stos(2), useRadialLut)
+    call initOrbitalOxygenS(speciesBasis(1)%orbitals(1), useRadialLut)
+    call initOrbitalOxygenP(speciesBasis(1)%orbitals(2), useRadialLut)
     
     ! Hydrogen 
     if (useRadialLut) then
-      allocate(TRadialTableOrbital :: speciesBasis(2)%stos(1))
+      allocate(TRadialTableOrbital :: speciesBasis(2)%orbitals(1))
     else
-      allocate(TSlaterOrbital :: speciesBasis(2)%stos(1))
+      allocate(TSlaterOrbital :: speciesBasis(2)%orbitals(1))
     end if
-    call initOrbitalHydrogenS(speciesBasis(2)%stos(1), useRadialLut)
+    call initOrbitalHydrogenS(speciesBasis(2)%orbitals(1), useRadialLut)
 
   end subroutine initSpeciesBasisH2O
 

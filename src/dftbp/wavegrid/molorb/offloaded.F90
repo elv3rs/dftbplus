@@ -25,7 +25,7 @@ module dftbp_wavegrid_molorb_offloaded
 
   !> Data for the basis set in SoA format
   type TBasisParams
-    integer :: nStos
+    integer :: nOrbitals
     
     integer :: nLutPoints
     real(dp) :: invLutStep
@@ -53,7 +53,7 @@ module dftbp_wavegrid_molorb_offloaded
   end type
 
   type, bind(c) :: TOrbitalC
-    integer(c_int) :: nStos, nLutPoints
+    integer(c_int) :: nOrbitals, nLutPoints
     real(c_double) :: inverseLutStep
     type(c_ptr) :: lutGridValues
     type(c_ptr) :: angMoms, cutoffsSq
@@ -69,13 +69,13 @@ module dftbp_wavegrid_molorb_offloaded
 
 contains
 #:if WITH_CUDA
-  subroutine evaluateCuda(system, stos, periodic, kIndexes, phases, ctx, &
+  subroutine evaluateCuda(system, orbitals, periodic, kIndexes, phases, ctx, &
       & eigVecsReal, eigVecsCmpl, valueReal, valueCmpl)
 
     !> System
     type(TSystemParams), intent(in), target :: system
     !> Basis set
-    class(TOrbital), intent(in), target :: stos(:)
+    class(TOrbital), intent(in), target :: orbitals(:)
     !> Periodic boundary conditions
     type(TPeriodicParams), intent(in), target :: periodic
     integer, intent(in), target :: kIndexes(:)
@@ -108,7 +108,7 @@ contains
     type(TOrbitalC) :: basis_p
     type(TCalculationParamsC) :: calc_p
 
-    call prepareBasisSet(basis, stos)
+    call prepareBasisSet(basis, orbitals)
 
     ! Output grid description
     if (ctx%isRealOutput) then
@@ -140,7 +140,7 @@ contains
     periodic_p%phases = c_loc(phases)
     
     ! Basis set
-    basis_p%nStos = basis%nStos
+    basis_p%nOrbitals = basis%nOrbitals
     basis_p%angMoms = c_loc(basis%angMoms)
     basis_p%cutoffsSq = c_loc(basis%cutoffsSq)
     ! LUT data
@@ -179,19 +179,19 @@ contains
   !> Convert the basis Set to LUTs (TRadialTable).
   !> Resamples to identical resolution (highest) and cutoff (largest).
   !> Merges all Luts into a single 2D array.
-  subroutine prepareBasisSet(this, stos)
+  subroutine prepareBasisSet(this, orbitals)
     type(TBasisParams), intent(out) :: this
-    class(TOrbital), intent(in) :: stos(:)
+    class(TOrbital), intent(in) :: orbitals(:)
     integer :: iOrb
     real(dp) :: cutoff, resolution
     type(TRadialTableOrbital) :: lut
 
-    cutoff = maxCutoff(stos)
+    cutoff = maxCutoff(orbitals)
 
     ! Determine finest resolution
     resolution = defaultLutStep
-    do iOrb = 1, size(stos)
-      associate (orb=>stos(iOrb))
+    do iOrb = 1, size(orbitals)
+      associate (orb=>orbitals(iOrb))
       select type(orb)
         type is (TRadialTableOrbital)
           resolution = min(resolution, orb%gridDist)
@@ -201,19 +201,19 @@ contains
       end associate
     end do
 
-    this%nStos = size(stos)
+    this%nOrbitals = size(orbitals)
     this%nLutPoints = floor(cutoff / resolution) + 2
     this%invLutStep = 1.0_dp / resolution
 
-    allocate(this%angMoms(this%nStos))
-    allocate(this%cutoffsSq(this%nStos))
-    allocate(this%lutGridValues(this%nLutPoints, this%nStos))
+    allocate(this%angMoms(this%nOrbitals))
+    allocate(this%cutoffsSq(this%nOrbitals))
+    allocate(this%lutGridValues(this%nLutPoints, this%nOrbitals))
 
 
-    do iOrb = 1, this%nStos
-      this%angMoms(iOrb) = stos(iOrb)%angMom
-      this%cutoffsSq(iOrb) = stos(iOrb)%cutoffSq
-      call lut%initFromOrbital(stos(iOrb), resolution, cutoff)
+    do iOrb = 1, this%nOrbitals
+      this%angMoms(iOrb) = orbitals(iOrb)%angMom
+      this%cutoffsSq(iOrb) = orbitals(iOrb)%cutoffSq
+      call lut%initFromOrbital(orbitals(iOrb), resolution, cutoff)
 
       @:ASSERT(this%nLutPoints == size(lut%gridValue))
       @:ASSERT(abs(lut%invLutStep - this%invLutStep) < 1.0e-12_dp)

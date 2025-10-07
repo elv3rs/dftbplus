@@ -102,7 +102,7 @@ contains
     !> RadialTable instance
     class(TRadialTableOrbital), intent(in) :: this
 
-    !> Distance, where STO should be calculated
+    !> Distance, where value should be calculated
     real(dp), intent(in) :: r
 
     !> Contains the value of the function on return

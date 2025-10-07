@@ -113,21 +113,21 @@ class DeviceBuffer {
 /*
  * We implement the LUT as a 2D texture with a single float channel.
  * The radial Functions are stored row-wise.
- * We assume identical radial grids for all STOs.
+ * We assume identical radial grids for all Orbitals.
  * GPUs have dedicated hardware for texture access & interpolation.
  */
 class GpuLutTexture {
    public:
-    GpuLutTexture(const double* lutData, int nPoints, int nStos) {
+    GpuLutTexture(const double* lutData, int nPoints, int nOrbitals) {
         // Convert the Fortran passed doubles to floats
-        size_t             totalValues = (size_t)nStos * nPoints;
+        size_t             totalValues = (size_t)nOrbitals * nPoints;
         std::vector<float> lutFloats(totalValues);
         for (size_t i = 0; i < totalValues; ++i)
             lutFloats[i] = static_cast<float>(lutData[i]);
 
         // Allocate memory on device
         cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-        CHECK_CUDA(cudaMallocArray(&_lutArray, &channelDesc, nPoints, nStos, 0));
+        CHECK_CUDA(cudaMallocArray(&_lutArray, &channelDesc, nPoints, nOrbitals, 0));
 
         // Copy data to array
         CHECK_CUDA(cudaMemcpy2DToArray(_lutArray,  // dst array
@@ -136,7 +136,7 @@ class GpuLutTexture {
             lutFloats.data(),         // src pointer
             nPoints * sizeof(float),  // src pitch (for alignment, bytes to next row)
             nPoints * sizeof(float),  // width in bytes
-            nStos,                    // height (number of cached stos)
+            nOrbitals,                    // height (number of cached orbitals)
             cudaMemcpyHostToDevice));
 
         // Prepare texture object properties
@@ -192,7 +192,7 @@ struct DeviceData {
     DeviceBuffer<int>      kIndexes;
     DeviceBuffer<complexd> phases;
 
-    // STO Basis
+    // Basis
     DeviceBuffer<int>    orb_angMoms;
     DeviceBuffer<double> orb_cutoffsSq;
     // Texture for radial LUT
@@ -214,11 +214,11 @@ struct DeviceData {
           coords(system->coords, (size_t)3 * system->nAtom * system->nCell),
           species(system->species, system->nAtom),
           iStos(system->iStos, system->nSpecies + 1),
-          orb_angMoms(basis->angMoms, basis->nStos),
-          orb_cutoffsSq(basis->cutoffsSq, basis->nStos) {
-        if (DEBUG) printf("Using radial LUT with %d points for %d orbitals\n", basis->nLutPoints, basis->nStos);
+          orb_angMoms(basis->angMoms, basis->nOrbitals),
+          orb_cutoffsSq(basis->cutoffsSq, basis->nOrbitals) {
+        if (DEBUG) printf("Using radial LUT with %d points for %d orbitals\n", basis->nLutPoints, basis->nOrbitals);
         orb_lut = std::unique_ptr<GpuLutTexture>(
-            new GpuLutTexture(basis->lutGridValues, basis->nLutPoints, basis->nStos));
+            new GpuLutTexture(basis->lutGridValues, basis->nLutPoints, basis->nOrbitals));
 
         if (calc->isRealInput) {
             eigVecsReal.assign(calc->eigVecsReal, (size_t)system->nOrb * calc->nEigIn);
@@ -260,18 +260,13 @@ struct DeviceKernelParams {
     const int*      kIndexes;
     const complexd* phases;
 
-    // STO Basis
-    int nStos, maxNPows, maxNAlphas;
+    // Basis
+    int nOrbitals, maxNPows, maxNAlphas;
     // Texture LUTs
     cudaTextureObject_t lutTex;
     double              inverseLutStep;
-    // STO parameters
-    const int*    orb_angMoms;
-    const int*    orb_nPows;
-    const int*    orb_nAlphas;
-    const double* orb_cutoffsSq;
-    const double* orb_coeffs;
-    const double* orb_alphas;
+    const int*          orb_angMoms;
+    const double*       orb_cutoffsSq;
 
     // Eigenvectors
     int             nEig, nEig_per_pass;
@@ -302,8 +297,8 @@ struct DeviceKernelParams {
         species = data.species.get();
         iStos   = data.iStos.get();
 
-        // STO Basis
-        nStos          = basis->nStos;
+        // Basis
+        nOrbitals      = basis->nOrbitals;
         orb_angMoms    = data.orb_angMoms.get();
         orb_cutoffsSq  = data.orb_cutoffsSq.get();
         lutTex         = data.orb_lut->get();
