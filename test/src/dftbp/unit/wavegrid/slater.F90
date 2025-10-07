@@ -9,7 +9,7 @@
 
 module test_wavegrid_radial
   use fortuno_serial, only : is_close, suite => serial_suite_item, test_list
-  use dftbp_wavegrid, only : TSlaterOrbital
+  use dftbp_wavegrid_basis, only : TRadialTableOrbital
   use dftbp_common_accuracy, only : dp
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
@@ -26,7 +26,7 @@ contains
   !> Check if initialisation from LUT and subsequent 
   !! Access works as expected.
   $:TEST("radial_fromLut")
-    type(TSlaterOrbital) :: sto
+    type(TRadialTableOrbital) :: sto
     real(dp) :: r, val, expected
     integer :: i
     integer, parameter :: angMom = 0 ! Only relevant for realTessY
@@ -45,7 +45,7 @@ contains
       ], [2,7])
 
 
-    call sto%initFromLut(gridValue, gridDist, angMom)
+    call sto%initFromArray(gridValue, gridDist, angMom)
     @:ASSERT(sto%angMom == angMom)
 
     do i = 1, size(checkedPairs, 2)

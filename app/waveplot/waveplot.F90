@@ -253,7 +253,7 @@ contains
       ind = 1
       do iAtom = 1, wp%input%geo%nAtom
         iSpecies = wp%input%geo%species(iAtom)
-        do iOrb = 1, wp%basis%basis(iSpecies)%nOrb
+        do iOrb = 1, size(wp%basis%basis(iSpecies)%stos)
           iL = wp%basis%basis(iSpecies)%stos(iOrb)%angMom
           mAng = 2 * iL + 1
           orbitalOcc(ind:ind + mAng - 1,1) = wp%basis%referenceOccupations(iOrb, iSpecies) &

@@ -844,6 +844,7 @@ contains
     !! Auxiliary variable
     integer :: ii
     real(dp) :: cutoff
+    type(TSlaterOrbital) :: sto
 
     call getChildValue(node, "AtomicNumber", atomicNumber)
     call getChildren(node, "Orbital", children)
@@ -882,8 +883,9 @@ contains
       allocate(coeffs(len(bufferCoeffs)))
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
-      call TSlaterOrbital_init(spBasis%stos(ii), reshape(coeffs, [size(coeffs) / size(exps),&
+      call sto%init(reshape(coeffs, [size(coeffs) / size(exps),&
           & size(exps)]), exps, ii - 1, cutoff)
+      spBasis%stos(ii) = sto
       deallocate(exps, coeffs)
     end do
 
