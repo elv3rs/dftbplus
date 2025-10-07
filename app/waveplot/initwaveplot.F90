@@ -10,7 +10,7 @@
 !> Contains the routines for initialising Waveplot.
 module waveplot_initwaveplot
   use dftbp_wavegrid, only : TMolecularOrbital, TMolecularOrbital_init, TSpeciesBasis
-  use dftbp_wavegrid_basis, only : TSlaterOrbital, TSlaterOrbital_init
+  use dftbp_wavegrid_basis, only : TOrbital, TSlaterOrbital, TGaussianOrbital, TRadialTableOrbital
   use waveplot_gridcache, only : TGridCache
   use dftbp_common_accuracy, only : dp
   use dftbp_common_environment, only : TEnvironment
@@ -817,7 +817,7 @@ contains
     !> Node containing the basis definition for a species
     type(fnode), pointer :: node
 
-    !> Grid distance for discretising the basis functions
+    !> Grid distance for discretising the basis functions (negative to disable)
     real(dp), intent(in) :: basisResolution
 
     !> Contains the basis on return
@@ -841,19 +841,28 @@ contains
     !! Basis coefficients and exponents
     real(dp), allocatable :: coeffs(:), exps(:)
 
-    !! Auxiliary variable
-    integer :: ii
+    !! Auxiliary variables
+    integer :: ii, nStos
     real(dp) :: cutoff
     type(TSlaterOrbital) :: sto
+    type(TRadialTableOrbital) :: lut
+    logical :: useTabulatedRadial
+
+    useTabulatedRadial = basisResolution > 0.0_dp
 
     call getChildValue(node, "AtomicNumber", atomicNumber)
     call getChildren(node, "Orbital", children)
+    nStos = getLength(children)
 
-    if (getLength(children) < 1) then
+    if (nStos < 1) then
       call detailedError(node, "Missing orbital definitions")
     end if
 
-    allocate(TSlaterOrbital :: spBasis%stos(getLength(children)))
+    if (useTabulatedRadial) then
+      allocate(TRadialTableOrbital :: spBasis%stos(nStos))
+    else
+      allocate(TSlaterOrbital :: spBasis%stos(nStos))
+    end if
 
     do ii = 1, size(spBasis%stos)
       call getItem1(children, ii, tmpNode)
@@ -862,7 +871,6 @@ contains
 
       call getChildValue(tmpNode, "Occupation", atomicOcc(ii), child=child)
       call getChildValue(tmpNode, "Cutoff", cutoff)
-      !spBasis%stos(ii)%cutoffSq = cutoff ** 2
       call init(bufferExps)
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)
@@ -885,7 +893,13 @@ contains
       call destruct(bufferCoeffs)
       call sto%init(reshape(coeffs, [size(coeffs) / size(exps),&
           & size(exps)]), exps, ii - 1, cutoff)
-      spBasis%stos(ii) = sto
+
+      if (useTabulatedRadial) then
+        call lut%initFromOrbital(sto, basisResolution)
+        spBasis%stos(ii) = lut
+      else
+        spBasis%stos(ii) = sto
+      end if
       deallocate(exps, coeffs)
     end do
 

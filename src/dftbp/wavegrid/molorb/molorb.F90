@@ -13,7 +13,7 @@
 module dftbp_wavegrid_molorb
   use dftbp_wavegrid_molorb_parallel, only : evaluateParallel
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_basis, only : TOrbital
+  use dftbp_wavegrid_basis, only : TOrbital, maxCutoff
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
@@ -461,19 +461,5 @@ contains
   end subroutine TMolecularOrbital_getValue_cmpl_generic
 
 
-  function maxCutoff(stos) result(maxCut)
-    class(TOrbital), intent(in) :: stos(:)
-    real(dp) :: maxCut
-    real(dp) :: maxCutSq
-    integer :: iSto
-
-    maxCutSq = 0.0_dp
-    do iSto = 1, size(stos)
-      if (stos(iSto)%cutoffSq > maxCutSq) then
-        maxCutSq = stos(iSto)%cutoffSq
-      end if
-    end do
-    maxCut = sqrt(maxCutSq)
-  end function maxCutoff
 
 end module dftbp_wavegrid_molorb

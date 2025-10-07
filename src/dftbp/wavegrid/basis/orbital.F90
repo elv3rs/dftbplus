@@ -18,7 +18,7 @@ module dftbp_wavegrid_basis_orbital
   implicit none
 
 
-  public :: TOrbital
+  public :: TOrbital, maxCutoff
   
   type, abstract :: TOrbital
     !> Angular momentum (l)
@@ -45,6 +45,23 @@ module dftbp_wavegrid_basis_orbital
       class(TOrbital), intent(in) :: rhs
     end subroutine IAssign
   end interface
+
+contains
+  !> Returns the maximum cutoff radius present within a list of orbitals.
+  function maxCutoff(stos) result(maxCut)
+    class(TOrbital), intent(in) :: stos(:)
+    real(dp) :: maxCut
+    real(dp) :: maxCutSq
+    integer :: iSto
+
+    maxCutSq = 0.0_dp
+    do iSto = 1, size(stos)
+      if (stos(iSto)%cutoffSq > maxCutSq) then
+        maxCutSq = stos(iSto)%cutoffSq
+      end if
+    end do
+    maxCut = sqrt(maxCutSq)
+  end function maxCutoff
 
 end module dftbp_wavegrid_basis_orbital
 
