@@ -36,11 +36,13 @@ module dftbp_extlibs_tblite
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_integral, only : TIntegral
+  use dftbp_wavegrid, only: TSpeciesBasis
+  use dftbp_wavegrid_basis, only: TGaussianOrbital
 #:if WITH_TBLITE
   use mctc_env, only : error_type
   use mctc_io, only : new, structure_type
   use mctc_io_symbols, only : symbol_length
-  use tblite_basis_type, only : basis_type, get_cutoff
+  use tblite_basis_type, only : basis_type, cgto_type, get_cutoff
   use tblite_container, only : container_cache
   use tblite_context_type, only : context_type
   use tblite_cutoff, only : get_lattice_points
@@ -217,6 +219,9 @@ module dftbp_extlibs_tblite
 
     !> Get orbital information
     procedure :: getOrbitalInfo
+
+    !> Get Basis Information in wavegrid format
+    procedure :: getWavegridBasis
 
     !> Get information about required multipolar contributions
     procedure :: getMultipoleInfo
@@ -860,6 +865,26 @@ contains
 
   end subroutine getOrbitalInfo
 
+  !> Get Basis Information in wavegrid format
+  subroutine getWavegridBasis(this, species0, basisOut)
+
+    !> Data structure
+    class(TTBLite), intent(in) :: this
+
+    !> Species of each atom, shape: [nAtom]
+    integer, intent(in) :: species0(:)
+
+    !> The resulting wavegrid basis, grouped by species, indexed by dftbs species ID [nSpecies]
+    type(TSpeciesBasis), allocatable, intent(out) :: basisOut(:)
+
+  #:if WITH_TBLITE
+    call setupWavegridBasis(this%calc%bas, this%mol%id, species0, basisOut)
+  #:else
+    call notImplementedError
+  #:endif
+  
+  end subroutine getWavegridBasis
+
 
 #:if WITH_TBLITE
   !> Create orbital information from tight-binding basis set.
@@ -932,6 +957,58 @@ contains
     end do
 
   end subroutine setupOrbitalInfo
+
+  !> Converts tblites basis set to wavegrids TGaussianOrbitals,
+  !> grouped by species and indexed by dftbs species ID. (1...nSpecies)
+  subroutine setupWavegridBasis(basisIn, tblite_species0, dftb_species0, basisOut)
+    !> Tblites input basis set object.
+    type(basis_type), intent(in) :: basisIn
+    !> Tblites species ID for each atom [nAtoms]
+    integer, intent(in) :: tblite_species0(:)
+    !> DFTBs species ID (1...N) for each atom [nAtoms]
+    integer, intent(in) :: dftb_species0(:)
+    !> The resulting wavegrid basis, grouped by species, indexed by dftbs species ID [nSpecies]
+    type(TSpeciesBasis), allocatable, intent(out) :: basisOut(:)
+    ! ====================================================================
+    integer :: nSpecies, nShells, nAtom, iAtom, iSpecies, id, iShell
+    real(dp) :: cutoff
+    integer, allocatable :: tbliteId(:)
+    type(cgto_type) :: cgto
+    type(TGaussianOrbital) :: gto
+
+    nSpecies = maxval(dftb_species0)
+    nAtom = size(dftb_species0)
+    cutoff = get_cutoff(basisIn)
+
+    @:ASSERT(nAtom > 0)
+    @:ASSERT(size(tblite_species0) == size(dftb_species0))
+
+    ! Map dftbs species ID to tblites species ID
+    allocate(tbliteId(nSpecies))
+    do iAtom = 1, nAtom
+      tbliteId(dftb_species0(iAtom)) = tblite_species0(iAtom)
+    end do
+
+    ! Loop through species and convert orbitals
+    allocate(basisOut(nSpecies))
+    do iSpecies = 1, nSpecies
+      id = tbliteId(iSpecies)
+      nShells = basisIn%nsh_id(id)
+
+      allocate(TGaussianOrbital :: basisOut(iSpecies)%orbitals(nShells))
+
+      do iShell = 1, nShells
+        cgto = basisIn%cgto(iShell, id)
+        call gto%init(cgto%ang, cgto%coeff, cgto%alpha, cutoff)
+        basisOut(iSpecies)%orbitals(iShell) = gto
+        deallocate(gto%coeff, gto%alpha)
+      end do
+    end do
+
+    deallocate(tbliteId)
+
+  end subroutine setupWavegridBasis
+
 #:endif
 
 

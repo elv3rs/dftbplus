@@ -37,13 +37,15 @@ module dftbp_wavegrid_basis_gaussian
 contains
 
   !> Store the parameters for the TGaussianOrbital.
-  subroutine TGaussianOrbital_init(this, angMom, coeff, alpha)
+  subroutine TGaussianOrbital_init(this, angMom, coeff, alpha, cutoff)
     class(TGaussianOrbital), intent(out) :: this
     integer, intent(in) :: angMom
     real(dp), intent(in) :: coeff(:)
     real(dp), intent(in) :: alpha(:)
+    real(dp), intent(in) :: cutoff
 
     this%angMom = angMom
+    this%cutoffSq = cutoff**2
 
     allocate(this%coeff, source=coeff)
     allocate(this%alpha, source=alpha)

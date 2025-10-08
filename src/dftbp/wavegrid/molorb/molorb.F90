@@ -385,6 +385,7 @@ contains
 
     @:ASSERT(this%isInitialised)
     @:ASSERT(all(shape(valueOnGrid) > [0, 0, 0, 0]))
+    print *, this%system%nOrb, "orbitals,", size(eigVecsReal, dim=1), "states"
     @:ASSERT(size(eigVecsReal, dim=1) == this%system%nOrb)
     @:ASSERT(.not. (ctx%calcAtomicDensity .and. ctx%calcTotalChrg))
 
