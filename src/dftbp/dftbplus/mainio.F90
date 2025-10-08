@@ -34,6 +34,7 @@ module dftbp_dftbplus_mainio
   use dftbp_dftb_sparse2dense, only : unpackHS, unpackSPauli
   use dftbp_dftb_spin, only : qm2ud
   use dftbp_elecsolvers_elecsolvers, only : TElectronicSolver
+  use dftbp_extlibs_tblite, only : TTBLite
   use dftbp_extlibs_xmlf90, only : xml_ADDXMLDeclaration, xml_Close, xml_EndElement,&
       & xml_NewElement, xml_OpenFile, xmlf_t
   use dftbp_io_charmanip, only : i2c
@@ -57,6 +58,8 @@ module dftbp_dftbplus_mainio
   use dftbp_type_linkedlist, only : elemShape, get, intoArray, len, TListCharLc, TListIntR1
   use dftbp_type_multipole, only : TMultipole
   use dftbp_type_orbitals, only : getShellNames, orbitalNames
+  use dftbp_wavegrid, only: TSpeciesBasis
+  use dftbp_wavegrid_basis, only: TGaussianOrbital
 #:if WITH_MPI
   use dftbp_extlibs_mpifx, only : mpifx_bcast, mpifx_recv, mpifx_send
 #:endif
@@ -2235,7 +2238,7 @@ contains
 
   !> Write XML format of derived results
   subroutine writeDetailedXml(runId, speciesName, species0, coord0Out, tPeriodic, tHelical, latVec,&
-      & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural)
+      & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural, tblite)
 
     !> Identifier for the run
     integer, intent(in) :: runId
@@ -2288,10 +2291,15 @@ contains
     !> Occupation numbers for natural orbitals
     real(dp), allocatable, target, intent(in) :: occNatural(:)
 
+    !> Tblite library interface handler, for wavegrid basis export
+    type(TTBLite), allocatable, intent(in) :: tblite
+
     type(xmlf_t) :: xf
     real(dp), allocatable :: bufferRealR2(:,:)
-    integer :: ii, jj, ll
+    integer :: ii, jj, ll, iSpecies, iOrb
     real(dp), pointer :: pOccNatural(:,:)
+    type(TSpeciesBasis), allocatable :: basis(:)
+    character(*), parameter :: orbitalName = "TGaussianOrbital"
 
 
 
@@ -2343,6 +2351,32 @@ contains
       call xml_EndElement(xf, "spin" // i2c(1))
       call xml_EndElement(xf, "excitedoccupations")
     end if
+#:if WITH_TBLITE
+  if (allocated(tblite)) then
+    call tblite%getWavegridBasis(species0, basis)
+    call xml_NewElement(xf, "basis")
+
+    do iSpecies = 1, size(basis)
+      call xml_NewElement(xf, "species" // i2c(iSpecies))
+      do iOrb = 1, size(basis(iSpecies)%orbitals)
+        call xml_NewElement(xf, "orbital" // i2c(iOrb))
+        select type(gto =>  basis(iSpecies)%orbitals(iOrb))
+          type is (TGaussianOrbital)
+            call writeChildValue(xf, "type", [orbitalName])
+            call writeChildValue(xf, "angmom", gto%angMom)
+            call writeChildValue(xf, "cutoff", sqrt(gto%cutoffSq))
+            call writeChildValue(xf, "coefficients", gto%coeff)
+            call writeChildValue(xf, "exponents", gto%alpha)
+          class default
+            call error("Invalid tblite gto")
+        end select
+        call xml_EndElement(xf, "orbital" // i2c(iOrb))
+      end do
+      call xml_EndElement(xf, "species" // i2c(iSpecies))
+    end do
+    call xml_EndElement(xf, "basis")
+  end if
+#:endif
     call xml_EndElement(xf, "detailedout")
     call xml_Close(xf)
   end subroutine writeDetailedXml
