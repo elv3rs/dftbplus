@@ -38,7 +38,7 @@ module dftbp_wavegrid_basis_slater
 contains
 
   !> Initialises using STO parameters.
-  subroutine TSlaterOrbital_init(this, aa, alpha, ll, cutoff)
+  subroutine TSlaterOrbital_init(this, aa, alpha, angMom, cutoff)
 
     !> TSlaterOrbital instance to initialise
     class(TSlaterOrbital), intent(out) :: this
@@ -49,15 +49,15 @@ contains
     !> Exponential coefficients
     real(dp), intent(in) :: alpha(:)
 
-    !> Angular momentum of the orbital
-    integer, intent(in) :: ll
+    !> Angular momentum of the orbital (l)
+    integer, intent(in) :: angMom
 
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
     @:ASSERT(cutoff > 0.0_dp)
 
-    this%angMom = ll
+    this%angMom = angMom
     this%cutoffSq = cutoff ** 2
 
     @:ASSERT(size(aa, dim=2) == size(alpha))

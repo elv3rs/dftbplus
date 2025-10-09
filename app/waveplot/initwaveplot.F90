@@ -28,7 +28,7 @@ module waveplot_initwaveplot
   use dftbp_io_hsdparser, only : dumpHSD, parseHSD
   use dftbp_io_hsdutils, only : detailedError, detailedWarning, getChild, getChildren,&
       & getChildValue, getSelectedIndices, setChild, setChildValue
-  use dftbp_io_hsdutils2, only : convertUnitHsd, readHSDAsXML, renameChildren, warnUnprocessedNodes
+  use dftbp_io_hsdutils2, only : convertUnitHsd, readXMLAsHSDTree, renameChildren, warnUnprocessedNodes
   use dftbp_io_message, only : error, warning
   use dftbp_io_xmlutils, only : removeChildNodes
   use dftbp_math_simplealgebra, only : determinant33
@@ -261,7 +261,10 @@ contains
     type(TEnvironment), intent(inout) :: env
 
     !! Pointers to input nodes
-    type(fnode), pointer :: root, tmp, detailed, hsdTree
+    type(fnode), pointer :: root, tmp, detailed, basis, hsdTree
+    
+    !! List of basis nodes
+    type(fnodeList), pointer :: basisList
 
     !! String buffer instance
     type(string) :: strBuffer
@@ -316,18 +319,30 @@ contains
 
     ! Read data from detailed.xml
     call getChildValue(root, "DetailedXML", strBuffer)
-    call readHSDAsXML(unquote(char(strBuffer)), tmp)
+    call readXMLAsHSDTree(unquote(char(strBuffer)), tmp)
     call getChild(tmp, "detailedout", detailed)
     call readDetailed(this, detailed, tGroundState, kPointsWeights)
-    call destroyNode(tmp)
-
     nKPoint = size(kPointsWeights, dim=2)
     nSpin = size(this%input%occupations, dim=3)
     this%eig%nState = size(this%input%occupations, dim=1)
 
+    ! Try to read basis from detailed.xml, if not present, read from Basis block
+    call getChildren(detailed, "Basis", basisList)
+  
+    if (getLength(basisList) > 0) then
+      print *, "Reading basis from detailed.xml"
+      call getItem1(basisList, 1, basis)
+    else
+     print *, "Reading basis from Basis block in input hsd file"
+      call getChild(root, "Basis", basis)
+    end if
+    call readBasis(this, basis, this%input%geo%speciesNames)
+
+    call destroyNode(tmp)
+
+
+
     ! Read basis
-    call getChild(root, "Basis", tmp)
-    call readBasis(this, tmp, this%input%geo%speciesNames)
     call getChildValue(root, "EigenvecBin", strBuffer)
     eigVecBin = unquote(char(strBuffer))
 
@@ -641,8 +656,6 @@ contains
     call destruct(indexBuffer)
 
     call getChildValue(node, "NrOfCachedGrids", nCached, 1, child=field)
-
-    ! SubdivisionFactor
     call getChildValue(node, "useGPU", this%opt%useGPU, .false., child=field)
 
     if (nCached < 1 .and. nCached /= -1) then
@@ -842,11 +855,14 @@ contains
     real(dp), allocatable :: coeffs(:), exps(:)
 
     !! Auxiliary variables
-    integer :: ii, nOrbitals
+    integer :: ii, nOrbitals, angMom
     real(dp) :: cutoff
-    type(TSlaterOrbital) :: sto
-    type(TRadialTableOrbital) :: lut
     logical :: useTabulatedRadial
+    type(string) :: orbitalType
+    ! Orbitals
+    type(TSlaterOrbital) :: sto
+    type(TGaussianOrbital) :: gto
+    type(TRadialTableOrbital) :: lut
 
     useTabulatedRadial = basisResolution > 0.0_dp
 
@@ -858,19 +874,30 @@ contains
       call detailedError(node, "Missing orbital definitions")
     end if
 
-    if (useTabulatedRadial) then
-      allocate(TRadialTableOrbital :: spBasis%orbitals(nOrbitals))
-    else
-      allocate(TSlaterOrbital :: spBasis%orbitals(nOrbitals))
-    end if
-
-    do ii = 1, size(spBasis%orbitals)
+    do ii = 1, nOrbitals
       call getItem1(children, ii, tmpNode)
-      call getChildValue(tmpNode, "AngularMomentum", spBasis%orbitals(ii)%angMom)
-      @:ASSERT(spBasis%orbitals(ii)%angMom == ii - 1)
+      call getChildValue(tmpNode, "Type", orbitalType, "TSlaterOrbital")
+      
+      ! Allocate orbital of the correct type
+      if (.not. allocated(spBasis%orbitals)) then
+        if (useTabulatedRadial) then
+          allocate(TRadialTableOrbital :: spBasis%orbitals(nOrbitals))
+        else
+          select case (unquote(char(orbitalType)))
+          case ("TSlaterOrbital")
+            allocate(TSlaterOrbital :: spBasis%orbitals(nOrbitals))
+          case ("TGaussianOrbital")
+            allocate(TGaussianOrbital :: spBasis%orbitals(nOrbitals))
+          case default
+            call detailedError(tmpNode, "Unknown orbital type")
+          end select
+        end if
+      end if
+
+      call getChildValue(tmpNode, "AngularMomentum", angMom)
+      call getChildValue(tmpNode, "Cutoff", cutoff)
 
       call getChildValue(tmpNode, "Occupation", atomicOcc(ii), child=child)
-      call getChildValue(tmpNode, "Cutoff", cutoff)
       call init(bufferExps)
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)
@@ -891,15 +918,26 @@ contains
       allocate(coeffs(len(bufferCoeffs)))
       call asArray(bufferCoeffs, coeffs)
       call destruct(bufferCoeffs)
-      call sto%init(reshape(coeffs, [size(coeffs) / size(exps),&
-          & size(exps)]), exps, ii - 1, cutoff)
+      
+      select case (unquote(char(orbitalType)))
+      case ("TSlaterOrbital")
+        call sto%init(reshape(coeffs, [size(coeffs)/size(exps), size(exps)]), exps, angMom, cutoff)
+        if (useTabulatedRadial) then
+          call lut%initFromOrbital(sto, basisResolution)
+          spBasis%orbitals(ii) = lut
+        else
+          spBasis%orbitals(ii) = sto
+        end if
+      case ("TGaussianOrbital")
+        call gto%init(coeffs, exps, angMom, cutoff)
+        if (useTabulatedRadial) then
+          call lut%initFromOrbital(gto, basisResolution)
+          spBasis%orbitals(ii) = lut
+        else
+          spBasis%orbitals(ii) = gto
+        end if
+      end select
 
-      if (useTabulatedRadial) then
-        call lut%initFromOrbital(sto, basisResolution)
-        spBasis%orbitals(ii) = lut
-      else
-        spBasis%orbitals(ii) = sto
-      end if
       deallocate(exps, coeffs)
     end do
 

@@ -22,10 +22,10 @@ module dftbp_wavegrid_basis_gaussian
   !> Represents a contracted Gaussian-Type Orbital (GTO):
   !> R(r) = r^l * Sum_p [ coeff_p * exp(-alpha_p * r^2) ]
   type, extends(TOrbital) :: TGaussianOrbital
-    !> Exponents of primitive Gaussians
-    real(dp), allocatable :: alpha(:) 
-    !> Summation coefficients
+    !> Summation coefficients [nPrimitives]
     real(dp), allocatable :: coeff(:) 
+    !> Exponents of primitive Gaussians [nPrimitives]
+    real(dp), allocatable :: alpha(:) 
   contains
     procedure :: getRadial => TGaussianOrbital_getRadial
     procedure :: init => TGaussianOrbital_init
@@ -37,11 +37,18 @@ module dftbp_wavegrid_basis_gaussian
 contains
 
   !> Store the parameters for the TGaussianOrbital.
-  subroutine TGaussianOrbital_init(this, angMom, coeff, alpha, cutoff)
+  subroutine TGaussianOrbital_init(this, coeff, alpha, angMom, cutoff)
     class(TGaussianOrbital), intent(out) :: this
-    integer, intent(in) :: angMom
+    !> Summation coefficients [nPrimitives] 
     real(dp), intent(in) :: coeff(:)
+
+    !> Exponential coefficients [nPrimitives]
     real(dp), intent(in) :: alpha(:)
+
+    !> Angular momentum of the orbital (l)
+    integer, intent(in) :: angMom
+
+    !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
     this%angMom = angMom

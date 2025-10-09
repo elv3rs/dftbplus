@@ -999,7 +999,7 @@ contains
 
       do iShell = 1, nShells
         cgto = basisIn%cgto(iShell, id)
-        call gto%init(cgto%ang, cgto%coeff, cgto%alpha, cutoff)
+        call gto%init(cgto%coeff, cgto%alpha, cgto%ang, cutoff)
         basisOut(iSpecies)%orbitals(iShell) = gto
         deallocate(gto%coeff, gto%alpha)
       end do
