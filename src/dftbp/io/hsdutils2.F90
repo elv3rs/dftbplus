@@ -28,7 +28,7 @@ module dftbp_io_hsdutils2
 
   private
   public :: getUnprocessedNodes, warnUnprocessedNodes
-  public :: readHSDAsXML
+  public :: readXMLAsHSDTree
   public :: getNodeName2, setNodeName, removeModifier, splitModifier
   public :: setUnprocessed, getDescendant, setProcessed
   public :: convertUnitHsd
@@ -166,8 +166,33 @@ contains
   end subroutine warnUnprocessedNodes
 
 
+  !> Convert all tag names to lowercase.
+  recursive subroutine lowercaseNodeNames(node)
+    type(fnode), pointer :: node
+    type(fnode), pointer :: child
+    type(string) :: nodeNameStr
+    character(:), allocatable :: c_nodeName
+
+    if (.not. associated(node)) return
+
+    ! Lowercase the node
+    call getNodeName2(node, nodeNameStr)
+    if (len(nodeNameStr) > 0) then
+      c_nodeName = char(nodeNameStr)
+      call setTagName(node, tolower(c_nodeName))
+    end if
+
+    ! Go through all child nodes
+    child => getFirstChild(node)
+    do while (associated(child))
+      call lowercaseNodeNames(child)
+      child => getNextSibling(child)
+    end do
+  end subroutine lowercaseNodeNames
+
+
   !> Reads a HSD tree from an xml-file
-  subroutine readHSDAsXML(fileName, fp)
+  subroutine readXMLAsHSDTree(fileName, fp)
 
     !> file to read
     character(len=*), intent(in) :: fileName
@@ -178,8 +203,9 @@ contains
     fp => parsefile(fileName)
     call removeSpace(fp)
     call normalize(fp)
+    call lowercaseNodeNames(fp)
 
-  end subroutine readHSDAsXML
+  end subroutine readXMLAsHSDTree
 
 
   !> Returns the name of a node, with empty string for unassociated nodes.

@@ -2354,27 +2354,32 @@ contains
 #:if WITH_TBLITE
   if (allocated(tblite)) then
     call tblite%getWavegridBasis(species0, basis)
-    call xml_NewElement(xf, "basis")
-
+    call xml_NewElement(xf, "Basis")
+    call writeChildValue(xf, "Resolution", -1.0_dp)
     do iSpecies = 1, size(basis)
-      call xml_NewElement(xf, "species" // i2c(iSpecies))
+      call xml_NewElement(xf, speciesName(iSpecies))
+      ! TODO: Look into fetching this from somewhere.
+      ! Or simply map symbol to int.
+      call writeChildValue(xf, "AtomicNumber", 0)
       do iOrb = 1, size(basis(iSpecies)%orbitals)
-        call xml_NewElement(xf, "orbital" // i2c(iOrb))
+        call xml_NewElement(xf, "Orbital")
         select type(gto =>  basis(iSpecies)%orbitals(iOrb))
           type is (TGaussianOrbital)
-            call writeChildValue(xf, "type", [orbitalName])
-            call writeChildValue(xf, "angmom", gto%angMom)
-            call writeChildValue(xf, "cutoff", sqrt(gto%cutoffSq))
-            call writeChildValue(xf, "coefficients", gto%coeff)
-            call writeChildValue(xf, "exponents", gto%alpha)
+            call writeChildValue(xf, "Type", [orbitalName])
+            call writeChildValue(xf, "AngularMomentum", gto%angMom)
+            ! TODO
+            call writeChildValue(xf, "Occupation", 0.0_dp)
+            call writeChildValue(xf, "Cutoff", sqrt(gto%cutoffSq))
+            call writeChildValue(xf, "Exponents", gto%alpha)
+            call writeChildValue(xf, "Coefficients", gto%coeff)
           class default
             call error("Invalid tblite gto")
         end select
-        call xml_EndElement(xf, "orbital" // i2c(iOrb))
+        call xml_EndElement(xf, "Orbital")
       end do
-      call xml_EndElement(xf, "species" // i2c(iSpecies))
+      call xml_EndElement(xf, speciesName(iSpecies))
     end do
-    call xml_EndElement(xf, "basis")
+    call xml_EndElement(xf, "Basis")
   end if
 #:endif
     call xml_EndElement(xf, "detailedout")
