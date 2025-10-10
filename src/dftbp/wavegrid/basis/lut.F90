@@ -29,6 +29,7 @@ module dftbp_wavegrid_basis_lut
     !> Orbital values on the grid
     real(dp), allocatable :: gridValue(:)
   contains
+    procedure :: getNorm => TRadialTableOrbital_getNorm
     procedure :: getRadial => TRadialTableOrbital_getRadial
     procedure :: initFromArray => TRadialTableOrbital_initFromArray
     procedure :: initFromOrbital => TRadialTableOrbital_initFromOrbital
@@ -57,15 +58,17 @@ contains
   end subroutine TRadialTableOrbital_initFromArray
 
   !> Resamples another orbital onto a LUT with given resolution.
-  subroutine TRadialTableOrbital_initFromOrbital(this, other, resolution, newCutoff)
+  subroutine TRadialTableOrbital_initFromOrbital(this, other, resolution, newCutoff, doNormalize)
     class(TRadialTableOrbital), intent(out) :: this
     class(TOrbital), intent(in) :: other
     real(dp), intent(in) :: resolution
     !> New cutoff, required to be larger than original cutoff.
     real(dp), intent(in), optional :: newCutoff
+    !> Whether to normalize the orbital after resampling.
+    logical, intent(in), optional :: doNormalize
 
     integer :: iGrid
-    real(dp) :: r, cutoff
+    real(dp) :: r, cutoff, norm
 
     @:ASSERT(resolution > 0.0_dp)
 
@@ -91,7 +94,39 @@ contains
       this%gridValue(iGrid) = other%getRadial(r)
     end do
 
+    ! Optionally normalize the orbital.
+    if (present(doNormalize)) then
+      if (doNormalize) then
+        norm = this%getNorm()
+        if (norm < epsilon(1.0_dp)) then
+          call error("Radial values too small, unable to normalize orbital.")
+        end if
+
+        this%gridValue = this%gridValue / norm
+      end if
+    end if
+
+
+
   end subroutine TRadialTableOrbital_initFromOrbital
+
+  !> Returns the norm of the orbital (i.e. sqrt(integral of R(r)^2 * r^2 dr))
+  ${pure}$ function TRadialTableOrbital_getNorm(this) result(norm)
+    class(TRadialTableOrbital), intent(in) :: this
+    real(dp) :: norm
+    integer :: iGrid
+    real(dp) :: r, integral
+
+    integral = 0.0_dp
+    do iGrid = 1, size(this%gridValue)-1
+      r = real(iGrid - 1, dp) * this%gridDist
+      ! Trapezoidal segments
+      integral = integral + 0.5_dp * this%gridDist * &
+        & (this%gridValue(iGrid)**2 * r**2 + this%gridValue(iGrid+1)**2 * (r + this%gridDist)**2)
+    end do
+    norm = sqrt(integral)
+
+  end function TRadialTableOrbital_getNorm
 
 
   !> Returns the value of the RadialFunction at a given point.

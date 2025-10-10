@@ -2354,6 +2354,17 @@ contains
 #:if WITH_TBLITE
   if (allocated(tblite)) then
     call tblite%getWavegridBasis(species0, basis)
+    print *, "TBLITE nocc", tblite%wfn%nocc
+    print *, "TBLITE homo", tblite%wfn%homo
+    print *, "TBLITE nel", tblite%wfn%nel
+    print *, "TBLITE n0at", tblite%wfn%n0at
+    print *, "TBLITE n0sh", tblite%wfn%n0sh
+    print *, "TBLITE density", tblite%wfn%density
+    print *, "TBLITE coeff", tblite%wfn%coeff
+    print *, "TBLITE emo", tblite%wfn%emo
+    print *, "TBLITE focc", tblite%wfn%focc
+    print *, "TBLITE qat", tblite%wfn%qat
+    print *, "TBLITE qsh", tblite%wfn%qsh
     call xml_NewElement(xf, "Basis")
     call writeChildValue(xf, "Resolution", -1.0_dp)
     do iSpecies = 1, size(basis)

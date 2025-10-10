@@ -751,7 +751,8 @@ contains
   #:if WITH_TBLITE
     integer :: iAt, iSh, ii
     real(dp), allocatable :: dQAtom(:), dQShell(:, :)
-
+  
+    print *, "Updating charges in tblite"
     call this%pot%reset
     this%escd(:) = 0.0_dp
     this%ees(:) = 0.0_dp
@@ -984,6 +985,7 @@ contains
     @:ASSERT(size(tblite_species0) == size(dftb_species0))
 
     ! Map dftbs species ID to tblites species ID
+    ! TODO: simply pass existing sp2id map
     allocate(tbliteId(nSpecies))
     do iAtom = 1, nAtom
       tbliteId(dftb_species0(iAtom)) = tblite_species0(iAtom)

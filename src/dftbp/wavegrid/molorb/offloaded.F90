@@ -11,7 +11,7 @@
 module dftbp_wavegrid_molorb_offloaded
   use, intrinsic :: iso_c_binding, only : c_bool, c_double, c_int, c_loc, c_ptr
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_basis, only : TOrbital, TRadialTableOrbital, maxCutoff
+  use dftbp_wavegrid_basis, only : TOrbital, TRadialTableOrbital
   use dftbp_common_accuracy, only : dp
   implicit none
   private
@@ -186,7 +186,8 @@ contains
     real(dp) :: cutoff, resolution
     type(TRadialTableOrbital) :: lut
 
-    cutoff = maxCutoff(orbitals)
+    ! Determine largest cutoff
+    cutoff = sqrt(maxval(orbitals%cutoffSq))
 
     ! Determine finest resolution
     resolution = defaultLutStep

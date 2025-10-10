@@ -13,7 +13,7 @@
 module dftbp_wavegrid_molorb
   use dftbp_wavegrid_molorb_parallel, only : evaluateParallel
   use dftbp_wavegrid_molorb_types, only : TCalculationContext, TPeriodicParams, TSystemParams
-  use dftbp_wavegrid_basis, only : TOrbital, maxCutoff
+  use dftbp_wavegrid_basis, only : TOrbital
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : imag
   use dftbp_dftb_boundarycond, only : TBoundaryConds
@@ -97,7 +97,7 @@ contains
     
     call this%initSpeciesMapping(geometry, basisInput)
     call this%flattenBasis(basisInput)
-    call this%initPeriodic(geometry, maxCutoff(this%orbitals))
+    call this%initPeriodic(geometry, sqrt(maxval(this%orbitals%cutoffSq)))
     call this%updateCoords(geometry)
 
     this%isInitialised = .true.

@@ -51,6 +51,8 @@ contains
     !> Cutoff, after which orbital is assumed to be zero
     real(dp), intent(in) :: cutoff
 
+    @:ASSERT(size(coeff) == size(alpha))
+
     this%angMom = angMom
     this%cutoffSq = cutoff**2
 
