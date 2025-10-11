@@ -29,6 +29,7 @@ module dftbp_wavegrid_basis_orbital
     procedure(IGetRadial), deferred :: getRadial
     procedure(IAssign), deferred, pass(lhs) :: assign
     generic, public :: assignment(=) => assign
+    procedure :: getNorm => TOrbital_getNorm
   end type TOrbital
 
   abstract interface
@@ -45,6 +46,28 @@ module dftbp_wavegrid_basis_orbital
       class(TOrbital), intent(in) :: rhs
     end subroutine IAssign
   end interface
+contains
+
+  !> Returns the norm of the orbital (i.e. sqrt(integral of R(r)^2 * r^2 dr))
+  ${pure}$ function TOrbital_getNorm(this) result(norm)
+    class(TOrbital), intent(in) :: this
+    real(dp) :: norm
+    integer :: iGrid
+    real(dp) :: dr, r, integral
+
+    integer, parameter :: segments = 1000
+  
+    dr = sqrt(this%cutoffSq) / real(segments, dp)
+    integral = 0.0_dp
+    do iGrid = 0, segments - 1
+      r = iGrid * dr
+      ! Trapezoidal segments
+      integral = integral + 0.5_dp * dr * &
+        & (this%getRadial(r)**2 * r**2 + this%getRadial(r+dr)**2 * (r + dr)**2)
+    end do
+    norm = sqrt(integral)
+
+  end function TOrbital_getNorm
 
 end module dftbp_wavegrid_basis_orbital
 

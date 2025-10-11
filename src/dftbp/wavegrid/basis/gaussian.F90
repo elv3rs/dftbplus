@@ -86,6 +86,9 @@ contains
 
   end function TGaussianOrbital_getRadial
 
+
+
+
   !> Assignment operator
   subroutine TGaussianOrbital_assign(lhs, rhs)
     class(TGaussianOrbital), intent(out) :: lhs

@@ -961,6 +961,7 @@ contains
 
   !> Converts tblites basis set to wavegrids TGaussianOrbitals,
   !> grouped by species and indexed by dftbs species ID. (1...nSpecies)
+  !> Normalises the basis functions.
   subroutine setupWavegridBasis(basisIn, tblite_species0, dftb_species0, basisOut)
     !> Tblites input basis set object.
     type(basis_type), intent(in) :: basisIn
@@ -1002,6 +1003,7 @@ contains
       do iShell = 1, nShells
         cgto = basisIn%cgto(iShell, id)
         call gto%init(cgto%coeff, cgto%alpha, cgto%ang, cutoff)
+        gto%coeff = gto%coeff / gto%getNorm()
         basisOut(iSpecies)%orbitals(iShell) = gto
         deallocate(gto%coeff, gto%alpha)
       end do
