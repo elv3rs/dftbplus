@@ -111,8 +111,10 @@ contains
   end subroutine TRadialTableOrbital_initFromOrbital
 
   !> Returns the norm of the orbital (i.e. sqrt(integral of R(r)^2 * r^2 dr))
-  ${pure}$ function TRadialTableOrbital_getNorm(this) result(norm)
+  ${pure}$ function TRadialTableOrbital_getNorm(this, nGrid) result(norm)
     class(TRadialTableOrbital), intent(in) :: this
+    !> Number of grid points to use for integration (not used, since fixed by LUT)
+    integer, intent(in), optional :: nGrid
     real(dp) :: norm
     integer :: iGrid
     real(dp) :: r, integral

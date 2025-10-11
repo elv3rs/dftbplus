@@ -2296,10 +2296,12 @@ contains
 
     type(xmlf_t) :: xf
     real(dp), allocatable :: bufferRealR2(:,:)
-    integer :: ii, jj, ll, iSpecies, iOrb
+    integer :: ii, jj, ll, iSpecies, iOrb, maxNOrb
     real(dp), pointer :: pOccNatural(:,:)
+
     type(TSpeciesBasis), allocatable :: basis(:)
     character(*), parameter :: orbitalName = "TGaussianOrbital"
+    real(dp), allocatable :: referenceN0(:,:)
 
 
 
@@ -2353,7 +2355,14 @@ contains
     end if
 #:if WITH_TBLITE
   if (allocated(tblite)) then
-    call tblite%getWavegridBasis(species0, basis)
+    call tblite%getWavegridBasis(basis)
+    maxNOrb = 0
+    do iSpecies = 1, size(basis)
+      maxNOrb = max(maxNOrb, size(basis(iSpecies)%orbitals))
+    end do
+    allocate(referenceN0(maxNOrb, size(basis)))
+    call tblite%getReferenceN0(species0, referenceN0)
+
     call xml_NewElement(xf, "Basis")
     call writeChildValue(xf, "Resolution", 0.1_dp)
     do iSpecies = 1, size(basis)
@@ -2367,8 +2376,7 @@ contains
           type is (TGaussianOrbital)
             call writeChildValue(xf, "Type", [orbitalName])
             call writeChildValue(xf, "AngularMomentum", gto%angMom)
-            ! TODO
-            call writeChildValue(xf, "Occupation", 0.0_dp)
+            call writeChildValue(xf, "Occupation", referenceN0(iOrb,iSpecies))
             call writeChildValue(xf, "Cutoff", sqrt(gto%cutoffSq))
             call writeChildValue(xf, "Exponents", gto%alpha)
             call writeChildValue(xf, "Coefficients", gto%coeff)

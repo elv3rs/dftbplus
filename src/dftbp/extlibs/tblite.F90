@@ -752,7 +752,6 @@ contains
     integer :: iAt, iSh, ii
     real(dp), allocatable :: dQAtom(:), dQShell(:, :)
   
-    print *, "Updating charges in tblite"
     call this%pot%reset
     this%escd(:) = 0.0_dp
     this%ees(:) = 0.0_dp
@@ -867,19 +866,16 @@ contains
   end subroutine getOrbitalInfo
 
   !> Get Basis Information in wavegrid format
-  subroutine getWavegridBasis(this, species0, basisOut)
+  subroutine getWavegridBasis(this, basisOut)
 
     !> Data structure
     class(TTBLite), intent(in) :: this
-
-    !> Species of each atom, shape: [nAtom]
-    integer, intent(in) :: species0(:)
 
     !> The resulting wavegrid basis, grouped by species, indexed by dftbs species ID [nSpecies]
     type(TSpeciesBasis), allocatable, intent(out) :: basisOut(:)
 
   #:if WITH_TBLITE
-    call setupWavegridBasis(this%calc%bas, this%mol%id, species0, basisOut)
+    call setupWavegridBasis(this%calc%bas, this%sp2id, basisOut)
   #:else
     call notImplementedError
   #:endif
@@ -959,57 +955,50 @@ contains
 
   end subroutine setupOrbitalInfo
 
-  !> Converts tblites basis set to wavegrids TGaussianOrbitals,
+  !> Converts tblites basis set to normalised TGaussianOrbitals usable by wavegrid,
   !> grouped by species and indexed by dftbs species ID. (1...nSpecies)
-  !> Normalises the basis functions.
-  subroutine setupWavegridBasis(basisIn, tblite_species0, dftb_species0, basisOut)
+  subroutine setupWavegridBasis(basisIn, sp2id, basisOut)
     !> Tblites input basis set object.
     type(basis_type), intent(in) :: basisIn
-    !> Tblites species ID for each atom [nAtoms]
-    integer, intent(in) :: tblite_species0(:)
-    !> DFTBs species ID (1...N) for each atom [nAtoms]
-    integer, intent(in) :: dftb_species0(:)
+    !> Mapping from DFTB+ species ID to tblite species ID [nSpecies]
+    integer, intent(in) :: sp2id(:)
     !> The resulting wavegrid basis, grouped by species, indexed by dftbs species ID [nSpecies]
     type(TSpeciesBasis), allocatable, intent(out) :: basisOut(:)
     ! ====================================================================
-    integer :: nSpecies, nShells, nAtom, iAtom, iSpecies, id, iShell
+    integer :: nSpecies, nShells, nAtom, iAtom, iSpecies, id, iShell, lastPrim
     real(dp) :: cutoff
-    integer, allocatable :: tbliteId(:)
     type(cgto_type) :: cgto
     type(TGaussianOrbital) :: gto
 
-    nSpecies = maxval(dftb_species0)
-    nAtom = size(dftb_species0)
+    nSpecies = size(sp2id)
     cutoff = get_cutoff(basisIn)
-
-    @:ASSERT(nAtom > 0)
-    @:ASSERT(size(tblite_species0) == size(dftb_species0))
-
-    ! Map dftbs species ID to tblites species ID
-    ! TODO: simply pass existing sp2id map
-    allocate(tbliteId(nSpecies))
-    do iAtom = 1, nAtom
-      tbliteId(dftb_species0(iAtom)) = tblite_species0(iAtom)
-    end do
 
     ! Loop through species and convert orbitals
     allocate(basisOut(nSpecies))
     do iSpecies = 1, nSpecies
-      id = tbliteId(iSpecies)
+      id = sp2id(iSpecies)
       nShells = basisIn%nsh_id(id)
 
       allocate(TGaussianOrbital :: basisOut(iSpecies)%orbitals(nShells))
 
       do iShell = 1, nShells
         cgto = basisIn%cgto(iShell, id)
-        call gto%init(cgto%coeff, cgto%alpha, cgto%ang, cutoff)
+        ! Prune zero padded primitives
+        lastPrim = size(cgto%coeff) - 1
+        do while (lastPrim > 1 .and. abs(cgto%coeff(lastPrim)) < 1.0e-10_dp)
+          lastPrim = lastPrim - 1
+        end do
+
+        call gto%init(cgto%coeff(1:lastPrim), cgto%alpha(1:lastPrim), cgto%ang, cutoff)
+        ! Shrink cutoff
+        gto%cutoffSq = gto%getDensityCutoff() ** 2
+        ! Normalise the basis function
         gto%coeff = gto%coeff / gto%getNorm()
+
         basisOut(iSpecies)%orbitals(iShell) = gto
         deallocate(gto%coeff, gto%alpha)
       end do
     end do
-
-    deallocate(tbliteId)
 
   end subroutine setupWavegridBasis
 
