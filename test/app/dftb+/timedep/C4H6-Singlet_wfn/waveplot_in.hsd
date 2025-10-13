@@ -26,7 +26,7 @@ Options = {
 
 DetailedXML = "detailed.xml"           # File containing the detailed xml output
 # of DFTB+
-EigenvecBin = "excitedOrbs.bin"        # File cointaining the binary eigenvecs
+EigenvecBin = "excitedOrbs.bin"        # File containing the binary eigenvecs
 
 GroundState = No
 
