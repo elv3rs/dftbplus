@@ -318,7 +318,7 @@ contains
     integer :: ind, tmp
     iStartAbs = sf%iGrid ! (1)
     ind = 1
-    print *, "Loading EV for index range", iStartAbs, "to", iStartAbs + iEnd - 1
+    !print *, "Loading EV for index range", iStartAbs, "to", iStartAbs + iEnd - 1
 
     do while (ind <= iEnd)
       if (sf%isReal) then
@@ -340,9 +340,6 @@ contains
         end if
       end if
     end do
-    print *, "Done loading EVs"
-    print *, "Total EVs read:", sf%nReadEigVec
-    print *, "real eigenvector dump:", sf%eigenvecReal
   end subroutine loadEigenvecs
 
 
