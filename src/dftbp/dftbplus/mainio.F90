@@ -2371,16 +2371,16 @@ contains
       call writeChildValue(xf, "AtomicNumber", symbolToNumber(speciesName(iSpecies)))
       do iOrb = 1, size(basis(iSpecies)%orbitals)
         call xml_NewElement(xf, "Orbital")
-        select type(gto =>  basis(iSpecies)%orbitals(iOrb))
-          type is (TGaussianOrbital)
-            call writeChildValue(xf, "Type", [orbitalName])
-            call writeChildValue(xf, "AngularMomentum", gto%angMom)
-            call writeChildValue(xf, "Occupation", referenceN0(iOrb,iSpecies))
-            call writeChildValue(xf, "Cutoff", sqrt(gto%cutoffSq))
-            call writeChildValue(xf, "Exponents", gto%alpha)
-            call writeChildValue(xf, "Coefficients", gto%coeff)
-          class default
-            call error("Invalid tblite cgto")
+        select type(gto => basis(iSpecies)%orbitals(iOrb))
+        type is (TGaussianOrbital)
+          call writeChildValue(xf, "Type", [orbitalName])
+          call writeChildValue(xf, "AngularMomentum", gto%angMom)
+          call writeChildValue(xf, "Occupation", referenceN0(iOrb,iSpecies))
+          call writeChildValue(xf, "Cutoff", sqrt(gto%cutoffSq))
+          call writeChildValue(xf, "Exponents", gto%alpha)
+          call writeChildValue(xf, "Coefficients", gto%coeff)
+        class default
+          call error("Invalid tblite cgto")
         end select
         call xml_EndElement(xf, "Orbital")
       end do
