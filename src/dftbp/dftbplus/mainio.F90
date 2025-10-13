@@ -16,7 +16,7 @@
 module dftbp_dftbplus_mainio
   use dftbp_common_accuracy, only : dp, lc, mc, sc
   use dftbp_common_constants, only : au__Debye, au__pascal, au__V_m, Bohr__AA, Boltzmann, gfac,&
-      & Hartree__eV, quaternionName, spinName
+      & Hartree__eV, quaternionName, spinName, symbolToNumber
   use dftbp_common_environment, only : TEnvironment
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
   use dftbp_common_globalenv, only : abortProgram, destructGlobalEnv, stdOut
@@ -2354,6 +2354,7 @@ contains
       call xml_EndElement(xf, "excitedoccupations")
     end if
 #:if WITH_TBLITE
+  ! Write the Tblite Basis for waveplot
   if (allocated(tblite)) then
     call tblite%getWavegridBasis(basis)
     maxNOrb = 0
@@ -2367,9 +2368,7 @@ contains
     call writeChildValue(xf, "Resolution", 0.1_dp)
     do iSpecies = 1, size(basis)
       call xml_NewElement(xf, speciesName(iSpecies))
-      ! TODO: Look into fetching this from somewhere.
-      ! Or simply map symbol to int.
-      call writeChildValue(xf, "AtomicNumber", 0)
+      call writeChildValue(xf, "AtomicNumber", symbolToNumber(speciesName(iSpecies)))
       do iOrb = 1, size(basis(iSpecies)%orbitals)
         call xml_NewElement(xf, "Orbital")
         select type(gto =>  basis(iSpecies)%orbitals(iOrb))
@@ -2381,7 +2380,7 @@ contains
             call writeChildValue(xf, "Exponents", gto%alpha)
             call writeChildValue(xf, "Coefficients", gto%coeff)
           class default
-            call error("Invalid tblite gto")
+            call error("Invalid tblite cgto")
         end select
         call xml_EndElement(xf, "Orbital")
       end do
