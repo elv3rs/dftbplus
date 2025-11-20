@@ -16,7 +16,7 @@ module dftbp_wavegrid_basis_spharmonics
 
   private
 
-  public :: realTessY
+  public :: realTessY, getNorm
 
   ! Normalisation Constants labeled C_l_m
   ! l = 0
@@ -131,6 +131,59 @@ contains
     end select
 
   end function realTessY
+
+  !> Returns the normalization constant for given (l,m) values.
+  !> The above realTessY functions already include these.
+  function getNorm(l, m) result(norm)
+    integer, intent(in) :: l, m
+    real(dp) :: norm
+
+    @:ASSERT(l >= 0 .and. l <= 4)
+    @:ASSERT(abs(m) <= l)
+
+    norm = 0.0_dp
+
+    select case (l)
+    case (0) ! s
+        norm = C0_0
+    case (1) ! p
+        select case (m)
+            case (-1); norm = C1
+            case ( 0); norm = C1
+            case ( 1); norm = C1
+        end select
+    case (2) ! d
+        select case (m)
+            case (-2); norm = C2_abs1_neg2
+            case (-1); norm = C2_abs1_neg2
+            case ( 0); norm = C2_0
+            case ( 1); norm = C2_abs1_neg2
+            case ( 2); norm = C2_2
+        end select
+    case (3) ! f
+        select case (m)
+            case (-3); norm = C3_abs3
+            case (-2); norm = C3_neg2
+            case (-1); norm = C3_abs1
+            case ( 0); norm = C3_0
+            case ( 1); norm = C3_abs1
+            case ( 2); norm = C3_2
+            case ( 3); norm = C3_abs3
+        end select
+    case (4) ! g
+        select case (m)
+            case (-4); norm = C4_neg4
+            case (-3); norm = C4_abs3
+            case (-2); norm = C4_neg2
+            case (-1); norm = C4_abs1
+            case ( 0); norm = C4_0
+            case ( 1); norm = C4_abs1
+            case ( 2); norm = C4_2
+            case ( 3); norm = C4_abs3
+            case ( 4); norm = C4_4
+        end select
+    end select
+  end function getNorm
 
 
 end module dftbp_wavegrid_basis_spharmonics

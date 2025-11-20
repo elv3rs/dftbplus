@@ -2,6 +2,7 @@
 import random
 import numpy as np
 from pathlib import Path
+from scipy.special import factorial
 import scipy
 
 
@@ -27,6 +28,13 @@ except ImportError:
     def sph_harm_y(l, m, colat, lon):
         return sph_harm(m, l, lon, colat)
 
+def calculate_sph_harm_norm(l, m):
+    """N_{l,m} = sqrt[(2l+1)/(4\pi) ((l-m)!)/((l+m)!)]"""
+    scl = (2 * l + 1) / (4 * np.pi)
+    num = factorial(l - m)
+    den = factorial(l + m)
+    return np.sqrt(scl * (num / den))
+
 
 def real_sph_harm(l, m, theta, phi):
     """theta is colatitude from 0 to pi, phi is longitude from 0 to 2pi"""
@@ -34,8 +42,8 @@ def real_sph_harm(l, m, theta, phi):
         return np.sqrt(2) * (-1) ** m * np.real(sph_harm_y(l, m, theta, phi))
     elif m < 0:
         return np.sqrt(2) * (-1) ** m * np.imag(sph_harm_y(l, abs(m), theta, phi))
-    else:  # m == 0
-        return sph_harm_y(l, 0, theta, phi).real
+    # m == 0
+    return sph_harm_y(l, 0, theta, phi).real
 
 
 def print_point(l, m, theta, phi):
