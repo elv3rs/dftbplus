@@ -958,15 +958,18 @@ contains
   !> Converts tblites basis set to normalised TGaussianOrbitals usable by wavegrid,
   !> grouped by species and indexed by dftbs species ID. (1...nSpecies)
   subroutine setupWavegridBasis(basisIn, sp2id, basisOut)
+
     !> Tblites input basis set object.
     type(basis_type), intent(in) :: basisIn
+
     !> Mapping from DFTB+ species ID to tblite species ID [nSpecies]
     integer, intent(in) :: sp2id(:)
+
     !> The resulting wavegrid basis, grouped by species, indexed by dftbs species ID [nSpecies]
     type(TSpeciesBasis), allocatable, intent(out) :: basisOut(:)
-    ! ====================================================================
+
     integer :: nSpecies, nShells, nAtom, iAtom, iSpecies, id, iShell, lastPrim
-    real(dp) :: cutoff
+    real(dp) :: cutoff, factor
     type(cgto_type) :: cgto
     type(TGaussianOrbital) :: gto
 
@@ -992,8 +995,13 @@ contains
         call gto%init(cgto%coeff(1:lastPrim), cgto%alpha(1:lastPrim), cgto%ang, cutoff)
         ! Shrink cutoff
         gto%cutoffSq = gto%getDensityCutoff() ** 2
+
         ! Normalise the basis function
-        gto%coeff = gto%coeff / gto%getNorm()
+        factor = sqrt((2 * gto%angMom + 1) / (4 * acos(-1.0_dp)))
+        gto%coeff = gto%coeff / factor
+
+        ! Check normalisation
+        @:ASSERT(abs(gto%getNorm() - 1.0_dp) < 0.001_dp)
 
         basisOut(iSpecies)%orbitals(iShell) = gto
         deallocate(gto%coeff, gto%alpha)
