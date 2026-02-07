@@ -63,8 +63,8 @@ module dftbp_dftbplus_parser
       & detailedError, detailedWarning, getChild, getChildren, getChildValue, &
       & getSelectedAtomIndices, setChild, setChildValue, getNodeName, getNodeHSDName, &
       & getNodeName2, getLength, getItem1, destroyNodeList, removeChild, &
-      & convertUnitHsd, hsd_rename_child, setUnprocessed, splitModifier, &
-      & hsd_load
+      & convertUnitHsd, hsd_rename_child, setUnprocessed, splitModifier
+  use dftbp_extlibs_hsddata, only : data_load, data_detect_format, DATA_FMT_AUTO
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3, determinant33, diagonal
   use dftbp_md_tempprofile, only : identifyTempProfile, tempProfileTypes, TTempProfileInput
@@ -124,7 +124,14 @@ module dftbp_dftbplus_parser
 
 contains
 
-  !> Reads the HSD input from a file
+  !> Reads input from a file (HSD, XML, JSON, or TOML format).
+  !>
+  !> The format is auto-detected from the file extension:
+  !>   .hsd → HSD format
+  !>   .xml → XML format
+  !>   .json → JSON format
+  !>   .toml → TOML format
+  !>   other → defaults to HSD format
   subroutine readHsdFile(hsdFile, hsdTree)
 
     !> Name of the input file
@@ -136,9 +143,9 @@ contains
     type(hsd_error_t), allocatable :: hsdError
 
     allocate(hsdTree)
-    call hsd_load(hsdFile, hsdTree, hsdError)
+    call data_load(hsdFile, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
     if (allocated(hsdError)) then
-      call error("Error loading HSD file '" // trim(hsdFile) // "'")
+      call error("Error loading input file '" // trim(hsdFile) // "': " // trim(hsdError%message))
     end if
 
   end subroutine readHsdFile
