@@ -4069,6 +4069,11 @@ contains
 
     call getChildValue(node, "WriteAutotestTag", ctrl%tWriteTagged, .false.)
     call getChildValue(node, "WriteDetailedXML", ctrl%tWriteDetailedXML, .false.)
+    block
+      character(len=:), allocatable :: tmpFmt
+      call getChildValue(node, "DetailedOutputFormat", tmpFmt, "xml")
+      ctrl%detailedOutputFormat = tmpFmt
+    end block
     call getChildValue(node, "WriteResultsTag", ctrl%tWriteResultsTag, .false.)
 
     if (.not.(ctrl%tMD.or.ctrl%isGeoOpt.or.allocated(ctrl%geoOpt))) then

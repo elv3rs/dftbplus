@@ -2231,9 +2231,10 @@ contains
   end subroutine writeResultsTag
 
 
-  !> Write XML format of derived results
+  !> Write detailed results in configurable format (XML, HSD, or JSON)
   subroutine writeDetailedXml(runId, speciesName, species0, coord0Out, tPeriodic, tHelical, latVec,&
-      & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural)
+      & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural,&
+      & outputFormat)
 
     !> Identifier for the run
     integer, intent(in) :: runId
@@ -2286,10 +2287,15 @@ contains
     !> Occupation numbers for natural orbitals
     real(dp), allocatable, target, intent(in) :: occNatural(:)
 
+    !> Output format for the detailed file ("xml", "hsd", "json")
+    character(len=*), intent(in), optional :: outputFormat
+
     type(hsd_table) :: root, geo, occ, spinSec, excOcc
     real(dp), allocatable :: bufferRealR2(:,:)
     integer :: ii, jj, ll
     real(dp), pointer :: pOccNatural(:,:)
+    character(len=4) :: fmt
+    character(len=:), allocatable :: outFileName
 
     call new_table(root, "detailedout")
     call hsd_set(root, "identity", runId)
@@ -2341,7 +2347,13 @@ contains
       call root%add_child(excOcc)
     end if
 
-    call dumpHsd(root, "detailed.xml")
+    if (present(outputFormat)) then
+      fmt = outputFormat
+    else
+      fmt = "xml"
+    end if
+    outFileName = "detailed." // trim(fmt)
+    call dumpHsd(root, outFileName)
   end subroutine writeDetailedXml
 
 

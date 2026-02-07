@@ -840,6 +840,9 @@ module dftbp_dftbplus_initprogram
     !> Produce detailed.xml
     logical :: tWriteDetailedXML
 
+    !> Output format for detailed file ("xml", "hsd", "json")
+    character(len=4) :: detailedOutputFormat
+
     !> Produce detailed.tag
     logical :: tWriteResultsTag
 
@@ -2979,6 +2982,7 @@ contains
     ! Set various options
     this%tWriteAutotest = env%tGlobalLead .and. input%ctrl%tWriteTagged
     this%tWriteDetailedXML = env%tGlobalLead .and. input%ctrl%tWriteDetailedXML
+    this%detailedOutputFormat = input%ctrl%detailedOutputFormat
     this%tWriteResultsTag = env%tGlobalLead .and. input%ctrl%tWriteResultsTag
     this%tWriteCharges = env%tGlobalLead .and. input%ctrl%tWriteCharges
     this%tWriteDetailedOut = env%tGlobalLead .and. input%ctrl%tWriteDetailedOut .and.&
