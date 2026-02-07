@@ -4,6 +4,7 @@ set(sources-fpp
   ${curdir}/charmanip.F90
   ${curdir}/commonformats.F90
   ${curdir}/formatout.F90
+  ${curdir}/hsderror.F90
   ${curdir}/hsdparser.F90
   ${curdir}/hsdutils.F90
   ${curdir}/hsdutils2.F90
@@ -14,6 +15,7 @@ set(sources-fpp
   ${curdir}/message.F90
   ${curdir}/taggedoutput.F90
   ${curdir}/tokenreader.F90
+  ${curdir}/unitbridge.F90
   ${curdir}/xmlutils.F90)
 
 if(WITH_SOCKETS)

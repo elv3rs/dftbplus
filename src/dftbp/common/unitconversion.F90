@@ -24,7 +24,7 @@ module dftbp_common_unitconversion
   public :: lengthUnits, inverseLengthUnits, energyUnits, forceUnits, timeUnits, freqUnits
   public :: volumeUnits, chargeUnits, EFieldUnits, BFieldUnits, pressureUnits, velocityUnits
   public :: dipoleUnits, massUnits, angularUnits, massDensityUnits
-  public :: statusCodes, convertUnit
+  public :: statusCodes, convertUnit, convertUnitValue
 
 
   !> Internal parameter for specifying the maximum unit name length
@@ -344,8 +344,43 @@ contains
 #:endfor
 
 
+  !> Convert a value from the given unit to atomic units (pure function form).
+  !>
+  !> Returns the converted value. If the unit name is not found in the array,
+  !> the value is returned unchanged.
+  pure function convertUnitValue(units, unitName, value) result(converted)
+
+    !> Array of possible units
+    type(TUnit), intent(in) :: units(:)
+
+    !> Name of the unit from which the value should be converted
+    character(*), intent(in) :: unitName
+
+    !> Value to convert
+    real(dp), intent(in) :: value
+
+    !> Converted value (in atomic units)
+    real(dp) :: converted
+
+    integer :: ind
+
+    ind = getUnitIndex_(units, unitName)
+    if (ind == 0) then
+      converted = value
+      return
+    end if
+
+    if (units(ind)%invertValue) then
+      converted = units(ind)%conversionFact / value
+    else
+      converted = units(ind)%conversionFact * value
+    end if
+
+  end function convertUnitValue
+
+
   !> Returns the index of the unit with the given name or zero if not found.
-  function getUnitIndex_(units, unitName) result(ind)
+  pure function getUnitIndex_(units, unitName) result(ind)
     type(TUnit), intent(in) :: units(:)
     character(*), intent(in) :: unitName
     integer :: ind
