@@ -171,6 +171,9 @@ include(GNUInstallDirs)
 
 add_subdirectory(external/xmlf90 EXCLUDE_FROM_ALL)
 
+# Include hsd-fortran library
+add_subdirectory(external/hsd-fortran EXCLUDE_FROM_ALL)
+
 # Include ddCOSMO library
 add_subdirectory(external/ddcosmo EXCLUDE_FROM_ALL)
 
