@@ -27,11 +27,13 @@ module dftbp_io_hsdcompat
   use dftbp_common_status, only : TStatus
   use dftbp_common_unitconversion, only : TUnit, convertUnit, statusCodes
   use dftbp_extlibs_hsddata, only : hsd_table, hsd_value, hsd_node, hsd_node_ptr, hsd_iterator, &
+      & hsd_error_t, &
       & hsd_get, hsd_get_or, hsd_get_or_set, hsd_get_matrix, &
       & hsd_set, hsd_get_child, hsd_get_table, hsd_has_child, hsd_remove_child, &
       & hsd_child_count, hsd_get_keys, hsd_get_attrib, hsd_has_attrib, hsd_set_attrib, &
       & hsd_rename_child, hsd_get_choice, &
       & new_table, new_value, &
+      & hsd_load, hsd_load_string, hsd_dump, hsd_dump_to_string, &
       & HSD_STAT_OK, HSD_STAT_NOT_FOUND, HSD_STAT_TYPE_ERROR
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_indexselection, only : getIndexSelection
@@ -51,7 +53,20 @@ module dftbp_io_hsdcompat
   public :: getChildren, getLength, getItem1, destroyNodeList
   public :: getSelectedAtomIndices, getSelectedIndices
   public :: splitModifier
-  public :: warnUnprocessedNodes, setUnprocessed
+  public :: warnUnprocessedNodes, setUnprocessed, setProcessed
+  public :: getDescendant, setNodeName, removeChildNodes, destroyNode, removeChild
+  public :: checkError
+  public :: getFirstTextChild
+  public :: dumpHsd
+
+  !> Re-export core types from hsd-data for convenience
+  public :: hsd_table, hsd_value, hsd_node, hsd_iterator, new_table, new_value
+  public :: hsd_error_t
+  public :: hsd_set, hsd_get, hsd_get_child, hsd_get_table, hsd_has_child
+  public :: hsd_remove_child, hsd_rename_child, hsd_set_attrib, hsd_get_attrib
+  public :: hsd_child_count, hsd_get_keys, hsd_has_attrib
+  public :: hsd_load, hsd_load_string, hsd_dump, hsd_dump_to_string
+  public :: HSD_STAT_OK, HSD_STAT_NOT_FOUND, HSD_STAT_TYPE_ERROR
 
   !> Constant for text node name (matches xmlf90 textNodeName)
   character(len=*), parameter, public :: textNodeName = "#text"
@@ -102,6 +117,8 @@ module dftbp_io_hsdcompat
     ! Rank-2 arrays without default
     module procedure :: getChVal_realR2
     module procedure :: getChVal_intR2
+    ! Rank-2 arrays with default
+    module procedure :: getChVal_realR2_def
     ! Child table retrieval (for dispatch blocks)
     module procedure :: getChVal_table
     ! Linked list readers (variable-length)
@@ -124,10 +141,12 @@ module dftbp_io_hsdcompat
     module procedure :: setChVal_real
     module procedure :: setChVal_logical
     module procedure :: setChVal_char
+    module procedure :: setChVal_charR1
     module procedure :: setChVal_intR1
     module procedure :: setChVal_realR1
     module procedure :: setChVal_intR2
     module procedure :: setChVal_realR2
+    module procedure :: setChVal_intR2RealR2
   end interface setChildValue
 
   !> Generic interface for unit conversion.
@@ -140,6 +159,12 @@ module dftbp_io_hsdcompat
     module procedure :: convertUnitHsd_R1
     module procedure :: convertUnitHsd_R2
   end interface convertUnitHsd
+
+  !> Generic interface for dumping HSD tree (replaces legacy dumpHSD)
+  interface dumpHsd
+    module procedure :: dumpHsd_file
+    module procedure :: dumpHsd_unit
+  end interface dumpHsd
 
 contains
 
@@ -416,6 +441,39 @@ contains
     if (present(child)) call hsd_get_table(node, name, child)
 
   end subroutine getChVal_intR2
+
+  !> Get real(dp) matrix child value with default.
+  subroutine getChVal_realR2_def(node, name, val, default, nItem, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    real(dp), intent(out) :: val(:,:)
+    real(dp), intent(in) :: default(:,:)
+    integer, intent(out), optional :: nItem
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    real(dp), allocatable :: tmp(:,:)
+    integer :: stat, nrows, ncols
+    integer :: nr, nc
+
+    call hsd_get_matrix(node, name, tmp, nrows, ncols, stat=stat)
+    if (stat /= HSD_STAT_OK) then
+      nr = min(size(default, 1), size(val, 1))
+      nc = min(size(default, 2), size(val, 2))
+      val(:nr, :nc) = default(:nr, :nc)
+      ! Store default as flattened 1D array (hsd_set_matrix not yet available)
+      call hsd_set(node, name, reshape(default, [size(default)]))
+      if (present(nItem)) nItem = size(default)
+    else
+      nr = min(nrows, size(val, 1))
+      nc = min(ncols, size(val, 2))
+      val(:nr, :nc) = tmp(:nr, :nc)
+      if (present(nItem)) nItem = nrows * ncols
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_realR2_def
 
   ! ============================================================
   !  getChildValue — child table retrieval (for dispatch blocks)
@@ -1020,6 +1078,27 @@ contains
 
   end subroutine setChVal_char
 
+  !> Set character array child value
+  subroutine setChVal_charR1(node, name, val, replace, child)
+    type(hsd_table), intent(inout) :: node
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: val(:)
+    logical, intent(in), optional :: replace
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: combined
+    integer :: ii
+
+    combined = ""
+    do ii = 1, size(val)
+      if (ii > 1) combined = combined // " "
+      combined = combined // trim(val(ii))
+    end do
+    call hsd_set(node, name, combined)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine setChVal_charR1
+
   !> Set integer array child value
   subroutine setChVal_intR1(node, name, val, replace, child)
     type(hsd_table), intent(inout) :: node
@@ -1071,6 +1150,43 @@ contains
     if (present(child)) call hsd_get_table(node, name, child)
 
   end subroutine setChVal_realR2
+
+
+  !> Set mixed integer + real rank-2 child value (TypesAndCoordinates pattern)
+  subroutine setChVal_intR2RealR2(node, name, intValue, realValue, replace, child, modifier)
+    type(hsd_table), intent(inout) :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: intValue(:,:)
+    real(dp), intent(in) :: realValue(:,:)
+    logical, intent(in), optional :: replace
+    type(hsd_table), pointer, intent(out), optional :: child
+    character(len=*), intent(in), optional :: modifier
+
+    character(len=100) :: buffer
+    character(len=:), allocatable :: strBuffer
+    integer :: nRow, nCol1, nCol2, ii, jj
+
+    nRow = size(intValue, dim=2)
+    nCol1 = size(intValue, dim=1)
+    nCol2 = size(realValue, dim=1)
+    strBuffer = ""
+    do ii = 1, nRow
+      do jj = 1, nCol1
+        write(buffer, *) intValue(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      do jj = 1, nCol2
+        write(buffer, *) realValue(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      if (ii < nRow) strBuffer = strBuffer // new_line('a')
+    end do
+    call hsd_set(node, name, trim(adjustl(strBuffer)))
+    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(modifier)) call hsd_set_attrib(node, name, modifier)
+
+  end subroutine setChVal_intR2RealR2
+
 
   ! ============================================================
   !  Error reporting
@@ -1304,6 +1420,153 @@ contains
     ! No-op
 
   end subroutine setUnprocessed
+
+  !> Mark a node as processed (no-op in hsd-data).
+  !>
+  !> In the legacy code, this set the "processed" attribute. In hsd-data,
+  !> processing tracking is not used (schema validation replaces it).
+  recursive subroutine setProcessed(node, recursive)
+    type(hsd_table), pointer, intent(in) :: node
+    logical, intent(in), optional :: recursive
+
+    ! No-op
+
+  end subroutine setProcessed
+
+  !> Check tokenization error flag and report detailed error if needed.
+  !>
+  !> Replaces the legacy checkError from hsdutils.
+  subroutine checkError(node, iErr, msg)
+    type(hsd_table), intent(in) :: node
+    integer, intent(in) :: iErr
+    character(len=*), intent(in) :: msg
+
+    if (iErr == TOKEN_ERROR) then
+      call detailedError(node, msg)
+    else if (iErr == TOKEN_EOS) then
+      call detailedError(node, "Unexpected end of data")
+    end if
+
+  end subroutine checkError
+
+  ! ============================================================
+  !  getDescendant — path-based child lookup (oldcompat support)
+  ! ============================================================
+
+  !> Navigate to a descendant node along a "/" separated path.
+  !>
+  !> Replaces the legacy getDescendant(root, path, child, requested, processed, parent).
+  subroutine getDescendant(root, path, child, requested, processed, parent)
+    type(hsd_table), intent(inout), target :: root
+    character(len=*), intent(in) :: path
+    type(hsd_table), pointer, intent(out) :: child
+    logical, intent(in), optional :: requested
+    logical, intent(in), optional :: processed
+    type(hsd_table), pointer, intent(out), optional :: parent
+
+    integer :: stat, iSlash
+    logical :: isRequired
+    type(hsd_table), pointer :: cur
+    character(len=:), allocatable :: remaining, segment
+
+    isRequired = .false.
+    if (present(requested)) isRequired = requested
+
+    ! Walk down the path "/" by "/"
+    cur => root
+    remaining = path
+    child => null()
+
+    do while (len_trim(remaining) > 0)
+      iSlash = index(remaining, "/")
+      if (iSlash > 0) then
+        segment = remaining(:iSlash - 1)
+        remaining = remaining(iSlash + 1:)
+      else
+        segment = remaining
+        remaining = ""
+      end if
+
+      if (present(parent)) parent => cur
+
+      call hsd_get_table(cur, segment, child, stat)
+      if (stat /= HSD_STAT_OK) then
+        child => null()
+        if (isRequired) then
+          call error(formatErrMsg_(root, "Required path not found: '" // path // "'"))
+        end if
+        return
+      end if
+      cur => child
+    end do
+
+  end subroutine getDescendant
+
+  ! ============================================================
+  !  setNodeName — rename a node directly
+  ! ============================================================
+
+  !> Rename a node (replaces legacy setNodeName from hsdutils2).
+  !>
+  !> Directly modifies the node's name field.
+  subroutine setNodeName(node, name, updateHsdName)
+    type(hsd_table), intent(inout) :: node
+    character(len=*), intent(in) :: name
+    logical, intent(in), optional :: updateHsdName
+
+    node%name = tolower(name)
+
+  end subroutine setNodeName
+
+  ! ============================================================
+  !  removeChildNodes — remove all children from a node
+  ! ============================================================
+
+  !> Remove all children from a node.
+  !>
+  !> Replaces the legacy removeChildNodes from xmlutils.
+  subroutine removeChildNodes(node)
+    type(hsd_table), intent(inout), target :: node
+
+    ! Reset the children array by reinitializing
+    node%num_children = 0
+    if (allocated(node%children)) deallocate(node%children)
+
+  end subroutine removeChildNodes
+
+  ! ============================================================
+  !  destroyNode — remove a child from its parent
+  ! ============================================================
+
+  !> Remove/destroy a child node. This is a no-op stub — hsd_table nodes
+  !> are managed by their parent. The caller should use hsd_remove_child
+  !> on the parent if actual removal is needed.
+  subroutine destroyNode(node)
+    type(hsd_table), pointer, intent(inout) :: node
+
+    ! In hsd-fortran, nodes are owned by their parent table.
+    ! We just nullify the pointer. The actual memory is managed by the parent.
+    node => null()
+
+  end subroutine destroyNode
+
+  ! ============================================================
+  !  removeChild — remove a specific child from its parent (compat)
+  ! ============================================================
+
+  !> Removes a specific child node from its parent, compatible with legacy
+  !> `dummy => removeChild(parent, child)` pattern.  Returns a null pointer
+  !> (the old xmlf90 returned the removed node, but callers always discard it).
+  function removeChild(parent, child) result(removed)
+    type(hsd_table), pointer, intent(inout) :: parent
+    type(hsd_table), pointer, intent(inout) :: child
+    type(hsd_table), pointer :: removed
+
+    call hsd_remove_child(parent, child%name)
+    child => null()
+    removed => null()
+
+  end function removeChild
 
   ! ============================================================
   !  getChildren / getLength / getItem1 / destroyNodeList
@@ -1571,6 +1834,20 @@ contains
 
   end subroutine getFirstTableChild_
 
+
+  !> Get the text content of a node (public wrapper around getTextContent_).
+  !>
+  !> Replaces the legacy xmlf90 getFirstTextChild + getNodeValue pattern.
+  !> Returns the concatenated text content of all unnamed value children.
+  subroutine getFirstTextChild(node, text)
+    type(hsd_table), intent(inout), target :: node
+    character(len=:), allocatable, intent(out) :: text
+
+    call getTextContent_(node, "", text)
+
+  end subroutine getFirstTextChild
+
+
   !> Get the text content of a named child from an hsd_table.
   !>
   !> This extracts the raw text from either a named child value node or,
@@ -1666,5 +1943,38 @@ contains
     end if
 
   end function formatWarnMsg_
+
+
+  ! ============================================================
+  !  dumpHsd — dump HSD tree (replaces legacy dumpHSD)
+  ! ============================================================
+
+  !> Dump HSD tree to a named file
+  subroutine dumpHsd_file(table, fileName)
+    type(hsd_table), intent(in) :: table
+    character(len=*), intent(in) :: fileName
+
+    type(hsd_error_t), allocatable :: err
+
+    call hsd_dump(table, fileName, err)
+    if (allocated(err)) then
+      call error("Error writing HSD file '" // fileName // "'")
+    end if
+
+  end subroutine dumpHsd_file
+
+
+  !> Dump HSD tree to an open file unit
+  subroutine dumpHsd_unit(table, unit)
+    type(hsd_table), intent(in) :: table
+    integer, intent(in) :: unit
+
+    character(len=:), allocatable :: str
+
+    call hsd_dump_to_string(table, str)
+    write(unit, '(A)') str
+
+  end subroutine dumpHsd_unit
+
 
 end module dftbp_io_hsdcompat

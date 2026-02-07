@@ -27,10 +27,8 @@ module dftbp_mmapi
   use dftbp_dftbplus_parser, only : parseHsdTree, readHsdFile, rootTag, TParserFlags
   use dftbp_dftbplus_qdepextpotgen, only : TQDepExtPotGen, TQDepExtPotGenWrapper
   use dftbp_dftbplus_qdepextpotproxy, only : TQDepExtPotProxy, TQDepExtPotProxy_init
-  use dftbp_extlibs_xmlf90, only : appendChild, createDocumentNode, createElement, destroyNode,&
-      & fnode
   use dftbp_io_charmanip, only : newline
-  use dftbp_io_hsdutils, only : getChild
+  use dftbp_io_hsdcompat, only : hsd_table, new_table, destroyNode, getChild
   use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, get, init, len, TListString
   use dftbp_type_typegeometry, only : TGeometry
@@ -64,7 +62,7 @@ module dftbp_mmapi
   !> Input tree for DFTB+ calculation
   type :: TDftbPlusInput
     !> Tree for HSD format input
-    type(fnode), pointer :: hsdTree => null()
+    type(hsd_table), pointer :: hsdTree => null()
   contains
     !> Obtain the root of the tree of input
     procedure :: getRootNode => TDftbPlusInput_getRootNode
@@ -256,7 +254,7 @@ contains
     class(TDftbPlusInput), intent(in) :: this
 
     !> Pointer to root node
-    type(fnode), pointer, intent(out) :: root
+    type(hsd_table), pointer, intent(out) :: root
 
     if (.not. associated(this%hsdTree)) then
       call error("Input has not been created yet!")
@@ -446,13 +444,15 @@ contains
     !> Instance.
     type(TDftbPlusInput), intent(out) :: input
 
-    type(fnode), pointer :: root, dummy
+    type(hsd_table), pointer :: root
 
     call this%checkInit()
 
-    input%hsdTree => createDocumentNode()
-    root => createElement(rootTag)
-    dummy => appendChild(input%hsdTree, root)
+    allocate(input%hsdTree)
+    call new_table(input%hsdTree, name="document")
+    allocate(root)
+    call new_table(root, name=rootTag)
+    call input%hsdTree%add_child(root)
 
   end subroutine TDftbPlus_getEmptyInput
 

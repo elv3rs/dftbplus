@@ -52,7 +52,9 @@ module dftbp_extlibs_hsddata
       ! Unified multi-format IO (hsd-data)
       & data_load, data_load_string, &
       & data_dump, data_dump_to_string, &
-      & data_detect_format, data_format_available, data_convert
+      & data_detect_format, data_format_available, data_convert, &
+      ! HSD format IO (from hsd-fortran via hsd-data)
+      & hsd_load, hsd_load_string, hsd_dump, hsd_dump_to_string
   implicit none
   public
 

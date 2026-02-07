@@ -31,7 +31,7 @@ program test_setSpeciesAndDependents
   use mpi
 #:endif
   use testhelpers, only : writeAutotestTag
-  use dftbp_hsdapi, only : fnode, setChild, setChildValue
+  use dftbp_hsdapi, only : hsd_table, setChild, setChildValue
   use dftbp_mmapi, only : TDftbPlus, TDftbPlus_destruct, TDftbPlus_init, TDftbPlusInput
   implicit none
 
@@ -231,7 +231,7 @@ contains
     character(100) :: fname
 
     ! Pointers to the parts of the input tree that will be set
-    type(fnode), pointer :: pRoot, pGeo, pAnalysis
+    type(hsd_table), pointer :: pRoot, pGeo, pAnalysis
 
     ! "Does geometry already exist in DTFB+ input?" (== "replace geometry in HSD tree?")
     logical :: replace_geometry

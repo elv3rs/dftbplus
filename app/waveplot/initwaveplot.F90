@@ -22,16 +22,15 @@ module waveplot_initwaveplot
   use dftbp_dftb_boundarycond, only : boundaryCondsEnum, TBoundaryConds,&
       & TBoundaryConds_init
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
-  use dftbp_extlibs_xmlf90, only : char, destroyNode, fnode, fNodeList, getItem1, getLength,&
-      & getNodeName, string
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdparser, only : dumpHSD, parseHSD
-  use dftbp_io_hsdutils, only : detailedError, detailedWarning, getChild, getChildren,&
-      & getChildValue, getSelectedIndices, setChild, setChildValue
-  use dftbp_io_hsdutils2, only : convertUnitHsd, readHSDAsXML, localiseName, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : destroyNode, hsd_table, hsd_child_list,&
+      & getItem1, getLength, getNodeName, hsd_load, hsd_dump, hsd_error_t,&
+      & hsd_rename_child, detailedError, detailedWarning, getChild, getChildren,&
+      & getChildValue, getSelectedIndices, setChild, setChildValue, convertUnitHsd,&
+      & warnUnprocessedNodes, destroyNodeList, removeChildNodes
+  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_XML
   use dftbp_io_message, only : error, warning
-  use dftbp_io_xmlutils, only : removeChildNodes
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1, TListReal
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHSD, readTGeometryVasp,&
@@ -253,10 +252,10 @@ contains
     type(TEnvironment), intent(inout) :: env
 
     !! Pointers to input nodes
-    type(fnode), pointer :: root, tmp, detailed, hsdTree
+    type(hsd_table), pointer :: root, tmp, detailed, hsdTree
 
     !! String buffer instance
-    type(string) :: strBuffer
+    character(len=:), allocatable :: strBuffer
 
     !! Id of input/parser version
     integer :: inputVersion
@@ -288,11 +287,15 @@ contains
     !! Operation status, if an error needs to be returned
     type(TStatus) :: errStatus
 
+    !! HSD parse error
+    type(hsd_error_t), allocatable :: hsdError
+
     ! Write header
     call printDftbHeader('(WAVEPLOT '// version //')', releaseYear)
 
     ! Read in input file as HSD
-    call parseHSD(rootTag, hsdInput, hsdTree)
+    allocate(hsdTree)
+    call hsd_load(hsdInput, hsdTree, hsdError)
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"
@@ -308,7 +311,8 @@ contains
 
     ! Read data from detailed.xml
     call getChildValue(root, "DetailedXML", strBuffer)
-    call readHSDAsXML(unquote(char(strBuffer)), tmp)
+    allocate(tmp)
+    call data_load(unquote(strBuffer), tmp, hsdError, DATA_FMT_XML)
     call getChild(tmp, "detailedout", detailed)
     call readDetailed(this, detailed, tGroundState, kPointsWeights)
     call destroyNode(tmp)
@@ -321,7 +325,7 @@ contains
     call getChild(root, "Basis", tmp)
     call readBasis(this, tmp, this%input%geo%speciesNames)
     call getChildValue(root, "EigenvecBin", strBuffer)
-    eigVecBin = unquote(char(strBuffer))
+    eigVecBin = unquote(strBuffer)
 
     ! Read options
     call getChild(root, "Options", tmp)
@@ -332,7 +336,7 @@ contains
 
     ! Finish parsing, dump parsed and processed input
     if (tIoProc) then
-      call dumpHSD(hsdTree, hsdParsedInput)
+      ! TODO(Phase 4): call hsd_dump(hsdTree, hsdParsedInput)
     end if
     write(stdout, "(A)") "Processed input written as HSD to '" // hsdParsedInput &
         &//"'"
@@ -393,7 +397,7 @@ contains
     type(TProgramVariables), intent(inout) :: this
 
     !> Pointer to the node, containing the information
-    type(fnode), pointer :: detailed
+    type(hsd_table), pointer :: detailed
 
     !> Wether to look for ground state occupations (True) or excited (False)
     logical, intent(in) :: tGroundState
@@ -402,7 +406,7 @@ contains
     real(dp), intent(out), allocatable :: kPointsWeights(:,:)
 
     !! Pointers to input nodes
-    type(fnode), pointer :: tmp, occ, spin
+    type(hsd_table), pointer :: tmp, occ, spin
 
     !! Nr. of K-points
     integer :: nKPoint
@@ -467,18 +471,18 @@ contains
     type(TGeometry), intent(out) :: geo
 
     !> Node containing the geometry
-    type(fnode), pointer :: geonode
+    type(hsd_table), pointer :: geonode
 
     !! Pointers to input nodes
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     !! String buffer instance
-    type(string) :: buffer
+    character(len=:), allocatable :: buffer
 
     call getChildValue(geonode, "", child)
     call getNodeName(child, buffer)
 
-    select case (char(buffer))
+    select case (buffer)
     case ("genformat")
       call readTGeometryGen(child, geo)
       call removeChildNodes(geonode)
@@ -505,7 +509,7 @@ contains
     type(TProgramVariables), intent(inout) :: this
 
     !> Node containing the information
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Nr. of states in the calculation
     integer, intent(in) :: nLevel
@@ -523,10 +527,10 @@ contains
     logical, intent(out) :: tShiftGrid
 
     !! Pointer to the nodes, containing the information
-    type(fnode), pointer :: subnode, field, value
+    type(hsd_table), pointer :: subnode, field, value
 
     !! String buffer instances
-    type(string) :: buffer, modifier
+    character(len=:), allocatable :: buffer, modifier
 
     !! Onedimensional integer-valued index list
     type(TListIntR1) :: indexBuffer
@@ -558,7 +562,7 @@ contains
     call getChildValue(node, "TotalChargeDensity", this%opt%tPlotTotChrg, .false.)
 
     if (nSpin == 2) then
-      call localiseName(node, "TotalSpinPolarization", "TotalSpinPolarisation")
+      call hsd_rename_child(node, "TotalSpinPolarization", "TotalSpinPolarisation")
       call getChildValue(node, "TotalSpinPolarisation", this%opt%tPlotTotSpin, .false.)
     else
       this%opt%tPlotTotSpin = .false.
@@ -583,18 +587,18 @@ contains
     end if
 
     call getChildValue(node, "PlottedLevels", buffer, child=field, multiple=.true.)
-    call getSelectedIndices(node, char(buffer), [1, nLevel], this%opt%plottedLevels)
+    call getSelectedIndices(node, buffer, [1, nLevel], this%opt%plottedLevels)
 
     if (this%input%geo%tPeriodic) then
       call getChildValue(node, "PlottedKPoints", buffer, child=field, multiple=.true.)
-      call getSelectedIndices(node, char(buffer), [1, nKPoint], this%opt%plottedKPoints)
+      call getSelectedIndices(node, buffer, [1, nKPoint], this%opt%plottedKPoints)
     else
       allocate(this%opt%plottedKPoints(1))
       this%opt%plottedKPoints(1) = 1
     end if
 
     call getChildValue(node, "PlottedSpins", buffer, child=field, multiple=.true.)
-    call getSelectedIndices(node, char(buffer), [1, nSpin], this%opt%plottedSpins)
+    call getSelectedIndices(node, buffer, [1, nSpin], this%opt%plottedSpins)
 
     ! Create the list of the levels, which must be calculated explicitely
     call init(indexBuffer)
@@ -637,7 +641,7 @@ contains
     call getChildValue(node, "PlottedRegion", value, child=subnode)
     call getNodeName(value, buffer)
 
-    select case (char(buffer))
+    select case (buffer)
     case ("unitcell")
       !! Unit cell for the periodic case, smallest possible cuboid for cluster
       if (this%input%geo%tPeriodic) then
@@ -695,12 +699,12 @@ contains
     case ("origin","box")
       ! Those nodes are part of an explicit specification -> explitic specif
       call getChildValue(subnode, "Box", this%opt%boxVecs, modifier=modifier, child=field)
-      call convertUnitHsd(char(modifier), lengthUnits, field, this%opt%boxVecs)
+      call convertUnitHsd(modifier, lengthUnits, field, this%opt%boxVecs)
       if (abs(determinant33(this%opt%boxVecs)) < 1e-08_dp) then
         call detailedError(field, "Vectors are linearly dependent")
       end if
       call getChildValue(subnode, "Origin", this%opt%origin, modifier=modifier, child=field)
-      call convertUnitHsd(char(modifier), lengthUnits, field, this%opt%origin)
+      call convertUnitHsd(modifier, lengthUnits, field, this%opt%origin)
 
     case default
       ! Object with unknown name passed
@@ -749,7 +753,7 @@ contains
     type(TProgramVariables), intent(inout) :: this
 
     !> Node containing the basis definition
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Names of the species for which the basis should be read in
     character(len=*), intent(in) :: speciesNames(:)
@@ -758,7 +762,7 @@ contains
     character(len=len(speciesNames)) :: speciesName
 
     !! Input node instance, containing the information
-    type(fnode), pointer :: speciesNode
+    type(hsd_table), pointer :: speciesNode
 
     !! Total number of species in the system
     integer :: nSpecies
@@ -789,7 +793,7 @@ contains
   subroutine readSpeciesBasis(node, basisResolution, spBasis)
 
     !> Node containing the basis definition for a species
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Grid distance for discretising the basis functions
     real(dp), intent(in) :: basisResolution
@@ -798,10 +802,10 @@ contains
     type(TSpeciesBasis), intent(out) :: spBasis
 
     !! Input node instances, containing the information
-    type(fnode), pointer :: tmpNode, child
+    type(hsd_table), pointer :: tmpNode, child
 
     !! Node list instance
-    type(fnodeList), pointer :: children
+    type(hsd_child_list), pointer :: children
 
     !! Real-valued buffer lists
     type(TListReal) :: bufferExps, bufferCoeffs

@@ -19,16 +19,14 @@ module modes_initmodes
 #:endif
   use dftbp_common_release, only : releaseYear
   use dftbp_common_unitconversion, only : massUnits
-  use dftbp_extlibs_xmlf90, only : char, destroyNode, destroyNodeList, fnode, fNodeList, getItem1,&
-      & getLength, getNodeName, string, textNodeName
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdparser, only : dumpHSD, parseHSD
-  use dftbp_io_hsdutils, only : detailedError, detailedWarning, getChild, getChildren,&
-      & getChildValue, getSelectedAtomIndices, getSelectedIndices
-  use dftbp_io_hsdutils2, only : convertUnitHsd, getNodeName2, setUnprocessed, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : destroyNode, destroyNodeList, hsd_table, hsd_child_list,&
+      & getItem1, getLength, getNodeName, textNodeName, hsd_load, hsd_dump, hsd_error_t,&
+      & detailedError, detailedWarning, getChild, getChildren, getChildValue,&
+      & getSelectedAtomIndices, getSelectedIndices, convertUnitHsd, getNodeName2, setUnprocessed,&
+      & warnUnprocessedNodes, removeChildNodes
   use dftbp_io_message, only : error
-  use dftbp_io_xmlutils, only : removeChildNodes
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
       & TListReal, TListRealR1, TListString
   use dftbp_type_oldskdata, only : readFromFile, TOldSkData
@@ -148,11 +146,11 @@ contains
   subroutine initProgramVariables()
 
     type(TOldSKData) :: skData
-    type(fnode), pointer :: root, node, tmp, hsdTree
-    type(fnode), pointer :: value, child, child2
+    type(hsd_table), pointer :: root, node, tmp, hsdTree
+    type(hsd_table), pointer :: value, child, child2
     type(TListRealR1) :: realBufferList
     type(TListReal) :: realBuffer
-    type(string) :: buffer, buffer2
+    character(len=:), allocatable :: buffer, buffer2
     type(TListString) :: lStr
     integer :: inputVersion
     integer :: ii, iSp1, iAt
@@ -165,12 +163,14 @@ contains
     character(len=:), allocatable :: strOut, strJoin, hessianFile
     type(TFileDescr) :: file
     integer :: iErr
+    type(hsd_error_t), allocatable :: hsdError
 
     !! Write header
     call printDftbHeader('(MODES '// version //')', releaseYear)
 
     !! Read in input file as HSD
-    call parseHSD(rootTag, hsdInput, hsdTree)
+    allocate(hsdTree)
+    call hsd_load(hsdInput, hsdTree, hsdError)
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"
@@ -190,7 +190,7 @@ contains
     call getChildValue(root, "RemoveRotation", tRemoveRotate, .false.)
 
     call getChildValue(root, "Atoms", buffer2, "1:-1", child=child, multiple=.true.)
-    call getSelectedAtomIndices(child, char(buffer2), geo%speciesNames, geo%species, iMovedAtoms)
+    call getSelectedAtomIndices(child, buffer2, geo%speciesNames, geo%species, iMovedAtoms)
     nMovedAtom = size(iMovedAtoms)
     nDerivs = 3 * nMovedAtom
 
@@ -201,7 +201,7 @@ contains
     if (associated(node)) then
       tPlotModes = .true.
       call getChildValue(node, "PlotModes", buffer2, "1:-1", child=child, multiple=.true.)
-      call getSelectedIndices(child, char(buffer2), [1, 3 * nMovedAtom], modesToPlot)
+      call getSelectedIndices(child, buffer2, [1, 3 * nMovedAtom], modesToPlot)
       nModesToPlot = size(modesToPlot)
       call getChildValue(node, "Animate", tAnimateModes, .true.)
     end if
@@ -211,7 +211,7 @@ contains
 
     ! Eigensolver
     call getChildValue(root, "EigenSolver", buffer2, "qr")
-    select case(tolower(char(buffer2)))
+    select case(tolower(buffer2))
     case ("qr")
       iSolver = solverTypes%qr
     case ("divideandconquer")
@@ -226,7 +226,7 @@ contains
     #:endif
       iSolver = solverTypes%magmaEvd
     case default
-      call detailedError(root, "Unknown eigensolver "//char(buffer2))
+      call detailedError(root, "Unknown eigensolver "//buffer2)
     end select
 
     ! Slater-Koster files
@@ -246,14 +246,14 @@ contains
         call init(skFiles(iSp1))
       end do
       call getNodeName(value, buffer)
-      select case(char(buffer))
+      select case(buffer)
       case ("type2filenames")
         call getChildValue(value, "Prefix", buffer2, "")
-        prefix = unquote(char(buffer2))
+        prefix = unquote(buffer2)
         call getChildValue(value, "Suffix", buffer2, "")
-        suffix = unquote(char(buffer2))
+        suffix = unquote(buffer2)
         call getChildValue(value, "Separator", buffer2, "")
-        separator = unquote(char(buffer2))
+        separator = unquote(buffer2)
         call getChildValue(value, "LowerCaseTypeName", tLower, .false.)
         do iSp1 = 1, geo%nSpecies
           if (tLower) then
@@ -273,7 +273,7 @@ contains
       case default
         call setUnprocessed(value)
         call getChildValue(child, "Prefix", buffer2, "")
-        prefix = unquote(char(buffer2))
+        prefix = unquote(buffer2)
 
         do iSp1 = 1, geo%nSpecies
           strTmp = trim(geo%speciesNames(iSp1)) // "-" // trim(geo%speciesNames(iSp1))
@@ -324,10 +324,10 @@ contains
 
     call getChildValue(root, "Hessian", value, "", child=child, allowEmptyValue=.true.)
     call getNodeName2(value, buffer)
-    select case (char(buffer))
+    select case (buffer)
     case ("directread")
       call getChildValue(value, "File", buffer2, child=child2)
-      hessianFile = trim(unquote(char(buffer2)))
+      hessianFile = trim(unquote(buffer2))
       call openFile(file, hessianFile, mode="r", iostat=iErr)
       if (iErr /= 0) then
         call detailedError(child2, "Could not open file '" // hessianFile&
@@ -355,7 +355,7 @@ contains
 
     call getChild(root, "BornCharges", child, requested=.false.)
     call getNodeName2(child, buffer)
-    if (char(buffer) /= "") then
+    if (buffer /= "") then
       call init(realBuffer)
       call getChildValue(child, "", realBuffer)
       if (len(realBuffer) /= 3 * nDerivs) then
@@ -370,7 +370,7 @@ contains
 
     call getChild(root, "BornDerivs", child, requested=.false.)
     call getNodeName2(child, buffer)
-    if (char(buffer) /= "") then
+    if (buffer /= "") then
       call init(realBuffer)
       call getChildValue(child, "", realBuffer)
       if (len(realBuffer) /= 9 * nDerivs) then
@@ -392,7 +392,7 @@ contains
 
     !! Finish parsing, dump parsed and processed input
     if (tWriteHSD) then
-      call dumpHSD(hsdTree, hsdParsedInput)
+      ! TODO(Phase 4): call hsd_dump(hsdTree, hsdParsedInput)
       write(stdout, "(A)") "Processed input written as HSD to '" // hsdParsedInput // "'"
     end if
     write(stdout, "(A)") repeat("-", 80)
@@ -406,17 +406,17 @@ contains
   subroutine readGeometry(geonode, geo)
 
     !> Node containing the geometry
-    type(fnode), pointer :: geonode
+    type(hsd_table), pointer :: geonode
 
     !> Contains the geometry information on exit
     type(TGeometry), intent(out) :: geo
 
-    type(fnode), pointer :: child
-    type(string) :: buffer
+    type(hsd_table), pointer :: child
+    character(len=:), allocatable :: buffer
 
     call getChildValue(geonode, "", child)
     call getNodeName(child, buffer)
-    select case (char(buffer))
+    select case (buffer)
     case ("genformat")
       call readTGeometryGen(child, geo)
       call removeChildNodes(geonode)
@@ -440,7 +440,7 @@ contains
   subroutine getInputMasses(node, geo, masses)
 
     !> Relevant node of input data
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry object, which contains atomic species information
     type(TGeometry), intent(in) :: geo
@@ -448,10 +448,10 @@ contains
     !> Masses to be returned
     real(dp), allocatable, intent(out) :: masses(:)
 
-    type(fnode), pointer :: child, child2, child3, val
-    type(fnodeList), pointer :: children
+    type(hsd_table), pointer :: child, child2, child3, val
+    type(hsd_child_list), pointer :: children
     integer, allocatable :: pTmpI1(:)
-    type(string) :: buffer, modifier
+    character(len=:), allocatable :: buffer, modifier
     real(dp) :: rTmp
     integer :: ii, jj, iAt
 
@@ -469,9 +469,9 @@ contains
     do ii = 1, getLength(children)
       call getItem1(children, ii, child2)
       call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
-      call getSelectedAtomIndices(child3, char(buffer), geo%speciesNames, geo%species, pTmpI1)
+      call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
       call getChildValue(child2, "MassPerAtom", rTmp, modifier=modifier, child=child)
-      call convertUnitHsd(char(modifier), massUnits, child, rTmp)
+      call convertUnitHsd(modifier, massUnits, child, rTmp)
       do jj = 1, size(pTmpI1)
         iAt = pTmpI1(jj)
         if (masses(iAt) >= 0.0_dp) then

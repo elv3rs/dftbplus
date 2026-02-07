@@ -8,7 +8,7 @@
 !> example code for adding external charges to a water molecule calculation
 program test_extcharges
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : convertAtomTypesToSpecies, dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild,&
+  use dftbplus, only : convertAtomTypesToSpecies, dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild,&
       & getMaxAngFromSlakoFile, setChild, setChildValue, TDftbPlus, TDftbPlus_init, TDftbPlusInput
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
@@ -72,8 +72,8 @@ contains
     real(dp) :: merminEnergy
     real(dp) :: coords(3, nAtom), gradients(3, nAtom), extChargeGrads(3, nExtChrg)
     real(dp) :: atomCharges(nAtom), cm5Charges(nAtom), atomMasses(nAtom)
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pAnalysis, pCm5
-    type(fnode), pointer :: pParserOpts
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pAnalysis, pCm5
+    type(hsd_table), pointer :: pParserOpts
 
     character(:), allocatable :: DftbVersion
     integer :: major, minor, patch

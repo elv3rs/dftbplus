@@ -7,7 +7,7 @@
 
 program test_extefield
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
       & TDftbPlus, TDftbPlus_init, TDftbPlusInput
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
@@ -45,8 +45,8 @@ contains
     type(TDftbPlusInput) :: input
 
     real(dp) :: merminEnergy, refMerminEnergy, atomCharges(nAtom), refDipole(3), dipole(3)
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pType2Files, pAnalysis
-    type(fnode), pointer :: pEField, pExtField, pParserOpts
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pType2Files, pAnalysis
+    type(hsd_table), pointer :: pEField, pExtField, pParserOpts
 
     call getDftbPlusBuild(DftbVersion)
     write(*,*)'DFTB+ build: ' // "'" // trim(DftbVersion) // "'"

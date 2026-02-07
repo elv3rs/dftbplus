@@ -12,14 +12,12 @@
 module dftbp_dftbplus_oldcompat
   use dftbp_common_accuracy, only : dp, lc
   use dftbp_common_release, only : TVersionMap
-  use dftbp_extlibs_xmlf90, only : char, destroyNode, destroyNodeList, fnode, fnodeList, getItem1,&
-      & getLength, getNodeName, removeChild, string
   use dftbp_io_charmanip, only : i2c, newline, tolower
-  use dftbp_io_hsdutils, only : detailedError, detailedWarning, getChild, getChildren,&
-      & getChildValue, setChild, setChildValue
-  use dftbp_io_hsdutils2, only : getDescendant, setNodeName, setUnprocessed
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, detailedWarning, getChild, getChildren, &
+      & getChildValue, setChild, setChildValue, getLength, getNodeName, removeChild, &
+      & getDescendant, setNodeName, setUnprocessed, destroyNode, removeChildNodes, &
+      & getItem1, destroyNodeList
   use dftbp_io_message, only : error
-  use dftbp_io_xmlutils, only : removeChildNodes
   implicit none
 
   private
@@ -48,7 +46,7 @@ contains
   subroutine convertOldHSD(root, oldVersion, curVersion)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
     !> Version number of the old parser
     integer, intent(in) :: oldVersion
@@ -57,7 +55,7 @@ contains
     integer, intent(in) :: curVersion
 
     integer :: version
-    type(fnode), pointer :: ch1, par
+    type(hsd_table), pointer :: ch1, par
 
     version = oldVersion
     do while (version < curVersion)
@@ -116,9 +114,9 @@ contains
   subroutine convert_1_2(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: child1, child2
+    type(hsd_table), pointer :: child1, child2
 
     call getChild(root, "Geometry", child1, requested=.false.)
     if (associated(child1)) then
@@ -137,9 +135,9 @@ contains
   subroutine convert_2_3(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, par
+    type(hsd_table), pointer :: ch1, ch2, par
     logical :: tValue
 
     call getDescendant(root, &
@@ -210,10 +208,10 @@ contains
   subroutine convert_3_4(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode),pointer :: node, node2, node3
-    type(fnodeList), pointer :: children
+    type(hsd_table),pointer :: node, node2, node3
+    type(hsd_child_list), pointer :: children
     integer :: ii
 
     ! Replace range operator with short start:end syntax
@@ -250,9 +248,9 @@ contains
   subroutine replaceRange(node)
 
     !> node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
-    type(fnode), pointer :: node2
+    type(hsd_table), pointer :: node2
     integer :: bounds(2)
 
     if (associated(node)) then
@@ -274,9 +272,9 @@ contains
   subroutine convert_4_5(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, ch3, par, dummy
+    type(hsd_table), pointer :: ch1, ch2, ch3, par, dummy
     logical :: tVal
 
     call getDescendant(root, "Hamiltonian/DFTB/Eigensolver/Standard", ch1)
@@ -380,9 +378,9 @@ contains
   subroutine convert_5_6(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, ch3, ch4, par, dummy
+    type(hsd_table), pointer :: ch1, ch2, ch3, ch4, par, dummy
     logical :: tVal
     real(dp) :: rTmp
 
@@ -434,9 +432,9 @@ contains
   subroutine convert_6_7(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1
+    type(hsd_table), pointer :: ch1
 
     call getDescendant(root, "Hamiltonian/DFTB/OrbitalResolvedSCC", ch1)
     if (associated(ch1)) then
@@ -458,12 +456,12 @@ contains
   subroutine convert_7_8(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, par
+    type(hsd_table), pointer :: ch1, ch2, par
     logical :: tVal
-    type(fnode), pointer :: pTaskType
-    type(string) :: buffer
+    type(hsd_table), pointer :: pTaskType
+    character(len=:), allocatable :: buffer
 
     call getDescendant(root, "Analysis/EigenvectorsAsTxt", ch1)
     if (associated(ch1)) then
@@ -479,7 +477,7 @@ contains
       else
         call getChildValue(ch1, "Task", pTaskType, child=ch2)
         call getNodeName(pTaskType, buffer)
-        select case (char(buffer))
+        select case (buffer)
         case ("contacthamiltonian")
           call setChildValue(ch1, "writeBinaryContact", .false., child=ch2, replace=.true.)
         case ("uploadcontacts")
@@ -508,9 +506,9 @@ contains
   subroutine convert_8_9(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2
+    type(hsd_table), pointer :: ch1, ch2
     logical :: tVal1, tVal2
 
     ! If this is an electron dynamics restart, then remove keywords for the (un-needed) ground state
@@ -559,9 +557,9 @@ contains
   subroutine convert_9_10(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, ch3, ch4, par, dummy
+    type(hsd_table), pointer :: ch1, ch2, ch3, ch4, par, dummy
     logical :: tVal1, tVal2
 
     call getDescendant(root, "ExcitedState/Casida", ch1)
@@ -737,9 +735,9 @@ contains
   subroutine convert_10_11(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2
+    type(hsd_table), pointer :: ch1, ch2
 
     call getDescendant(root, "Hamiltonian/DFTB/Solvation/GeneralizedBorn", ch1)
     if (associated(ch1)) then
@@ -766,16 +764,16 @@ contains
   subroutine convert_11_12(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2
-    type(string) :: buffer
+    type(hsd_table), pointer :: ch1, ch2
+    character(len=:), allocatable :: buffer
 
     call getDescendant(root, "Transport", ch1)
     if (associated(ch1)) then
       call getChildValue(root, "Transport/Task", ch1, child=ch2, default='uploadcontacts')
       call getNodeName(ch1, buffer)
-      if (char(buffer) /= "contacthamiltonian") then
+      if (buffer /= "contacthamiltonian") then
       #:for LABEL in [("xTB"), ("DFTB")]
         call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1)
         if (associated(ch1)) then
@@ -794,9 +792,9 @@ contains
   subroutine convert_12_13(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, par1
+    type(hsd_table), pointer :: ch1, ch2, par1
     integer :: maxIter
     logical :: isPerturb, isConvRequired
     real(dp) :: sccTol
@@ -855,10 +853,10 @@ contains
   subroutine convert_13_14(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: ch1, ch2, ch3, par, dummy, hybridAlgorithm
-    type(string) :: buffer
+    type(hsd_table), pointer :: ch1, ch2, ch3, par, dummy, hybridAlgorithm
+    character(len=:), allocatable :: buffer
     logical :: isScc, isNoneAlgorithm
     integer :: iOrder
     character(lc) :: strTmp
@@ -943,10 +941,10 @@ contains
   subroutine handleD3Defaults(root)
 
     !> Root node of the HSD-tree
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
-    type(fnode), pointer :: pD3, pDampMethod, pChild
-    type(string) :: buffer
+    type(hsd_table), pointer :: pD3, pDampMethod, pChild
+    character(len=:), allocatable :: buffer
 
     call getDescendant(root, "Hamiltonian/DFTB/Dispersion/DftD3", pD3)
     if (.not. associated(pD3)) then
@@ -961,7 +959,7 @@ contains
     call setUnprocessed(pDampMethod)
     call getNodeName(pDampMethod, buffer)
 
-    select case (char(buffer))
+    select case (buffer)
     case ("beckejohnson")
       call useDftb3Default(pDampMethod, "a1", 0.5719_dp)
       call useDftb3Default(pDampMethod, "a2", 3.6017_dp)
@@ -974,7 +972,7 @@ contains
   subroutine useDftb3Default(root, option, default)
 
     !> Root node of the HSD-tree
-    type(fnode), pointer, intent(in) :: root
+    type(hsd_table), pointer, intent(in) :: root
 
     !> Name of option inside the DftD3 block
     character(*), intent(in) :: option
@@ -982,7 +980,7 @@ contains
     !> Default value to set
     real(dp), intent(in) :: default
 
-    type(fnode), pointer :: pChild
+    type(hsd_table), pointer :: pChild
 
     call getChild(root, option, pChild, requested=.false.)
     if (.not. associated(pChild)) then

@@ -12,10 +12,7 @@ module dftbp_dftbplus_hsdhelpers
   use dftbp_common_globalenv, only : stdOut, tIoProc
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_parser, only : parseHsdTree, readHsdFile, rootTag, TParserFlags
-  use dftbp_extlibs_xmlf90, only : destroyNode, fnode
-  use dftbp_io_hsdparser, only : dumpHSD
-  use dftbp_io_hsdutils, only : getChild
-  use dftbp_io_hsdutils2, only : warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : hsd_table, destroyNode, getChild, warnUnprocessedNodes
   use dftbp_io_message, only : error
   implicit none
 
@@ -37,7 +34,7 @@ contains
     !> Input data parsed from the input file
     type(TInputData), intent(out) :: input
 
-    type(fnode), pointer :: hsdTree
+    type(hsd_table), pointer :: hsdTree
     type(TParserFlags) :: parserFlags
 
     call ensureInputFilePresence()
@@ -67,12 +64,12 @@ contains
   subroutine doPostParseJobs(hsdTree, parserFlags)
 
     !> Tree representation of the HSD input
-    type(fnode), pointer, intent(in) :: hsdTree
+    type(hsd_table), pointer, intent(in) :: hsdTree
 
     !> Parser specific settings in the output
     type(TParserFlags), intent(in) :: parserFlags
 
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
     call getChild(hsdTree, rootTag, root)
 
@@ -80,11 +77,12 @@ contains
     call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed)
 
     ! Dump processed tree in HSD and XML format
-    if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHSD(hsdTree, hsdProcFileName)
-      write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
-          & // "'"
-    end if
+    ! TODO(Phase 4): Re-enable once dumpHSD accepts hsd_table
+    !if (tIoProc .and. parserFlags%tWriteHSD) then
+    !  call dumpHSD(hsdTree, hsdProcFileName)
+    !  write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
+    !      & // "'"
+    !end if
 
     ! Stop, if only parsing is required
     if (parserFlags%tStop) then

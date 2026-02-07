@@ -7,7 +7,7 @@
 
 program test_ehrenfest
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
       & TDftbPlus, TDftbPlus_init, TDftbPlusInput
   use dftbp_common_constants, only : AA__Bohr, eV__Hartree, fs__au, imag, pi, V_m__au
   ! Only needed for the internal test system
@@ -61,8 +61,8 @@ contains
     real(dp) :: forces(3, nAtom), atomMasses(nAtom), accel(3, nAtom), velos(3, nAtom)
     real(dp) :: velos_store(3, nAtom), norm, fielddir(3), angFreq, envelope, field(3), time
     real(dp) :: time0, time1
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pType2Files, pElecDyn
-    type(fnode), pointer :: pPerturb, pLaser, pAnalysis, pParserOpt
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pType2Files, pElecDyn
+    type(hsd_table), pointer :: pPerturb, pLaser, pAnalysis, pParserOpt
 
     character(:), allocatable :: DftbVersion
     integer :: major, minor, patch, istep, ii, idim

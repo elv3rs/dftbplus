@@ -13,7 +13,7 @@
 !>
 program test_extpot2
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild, getMaxAngFromSlakoFile,&
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, getMaxAngFromSlakoFile,&
       & setChild, setChildValue, TDftbPlus, TDftbPlus_init, TDftbPlusInput
   use extchargepot, only : getPointChargeGradients, getPointChargePotential
   ! Only needed for the internal test system
@@ -68,8 +68,8 @@ contains
     real(dp) :: merminEnergy
     real(dp) :: coords(3, nAtom), gradients(3, nAtom), extPot(nAtom), extPotGrad(3, nAtom)
     real(dp) :: atomCharges(nAtom), extChargeGrads(3, nExtChrg)
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pAnalysis
-    type(fnode), pointer :: pParserOpts
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pAnalysis
+    type(hsd_table), pointer :: pParserOpts
 
     !integer :: devNull
 

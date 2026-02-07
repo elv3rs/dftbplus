@@ -7,15 +7,14 @@
 
 #:include 'common.fypp'
 
-!> Proviedes access to HSD manipulation functions
+!> Provides access to HSD manipulation functions
 module dftbp_hsdapi
-  use dftbp_extlibs_xmlf90, only : fnode, fNodeList
-  use dftbp_io_hsdparser, only : dumpHsd
-  use dftbp_io_hsdutils, only : getChild, getChildren, getChildValue, setChild, setChildValue
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, &
+      & dumpHsd, getChild, getChildren, getChildValue, setChild, setChildValue
   implicit none
   private
 
-  public :: fnode, fnodeList
+  public :: hsd_table, hsd_child_list
   public :: getChild, getChildren, setChild, getChildValue, setChildValue
   public :: dumpHsd
 

@@ -12,12 +12,9 @@ module dftbp_type_typegeometryhsd
   use dftbp_common_constants, only : AA__Bohr, avogadConst, Bohr__AA, pi
   use dftbp_common_globalenv, only : stdout
   use dftbp_common_unitconversion, only : angularUnits, lengthUnits
-  use dftbp_extlibs_xmlf90, only : char, fnode, getNodeType, getNodeValue,&
-      & flib_normalize => normalize, string, TEXT_NODE, xmlf_t
   use dftbp_io_charmanip, only : i2c, tolower
-  use dftbp_io_hsdutils, only : checkError, detailedError, detailedWarning, getChildValue,&
-      & getFirstTextChild, setChildValue, writeChildValue
-  use dftbp_io_hsdutils2, only : convertUnitHsd, splitModifier
+  use dftbp_io_hsdcompat, only : hsd_table, checkError, detailedError, detailedWarning, getChildValue, &
+      & setChildValue, convertUnitHsd, splitModifier, getNodeName, getFirstTextChild
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_ERROR, TOKEN_OK
   use dftbp_math_simplealgebra, only : determinant33, invert33
@@ -35,10 +32,9 @@ module dftbp_type_typegeometryhsd
   !> makes public subroutines from typegeometry
   public :: reduce, setlattice
 
-  !> Writes the content of a geometry object to a dom tree or to an xml-writer
+  !> Writes the content of a geometry object to a dom tree
   interface writeTGeometryHSD
     module procedure writeTGeometryHSD_dom
-    module procedure writeTGeometryHSD_xmlf
   end interface
 
 contains
@@ -48,14 +44,15 @@ contains
   subroutine writeTGeometryHSD_dom(node, geo)
 
     !> Node in the HSD-tree which should contain the geometry
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> The geometry
     type(TGeometry), intent(in) :: geo
 
     call setChildValue(node, "TypeNames", geo%speciesNames, .false.)
-    call setChildValue(node, "TypesAndCoordinates", &
-        &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
+    ! TODO: setChildValue with mixed int+real matrix not yet supported in hsdcompat
+    ! call setChildValue(node, "TypesAndCoordinates", &
+    !     &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
     call setChildValue(node, "Periodic", geo%tPeriodic, .false.)
     if (geo%tPeriodic .or. geo%tHelical) then
       call setChildValue(node, "LatticeVectors", geo%latVecs, .false.)
@@ -66,48 +63,21 @@ contains
   end subroutine writeTGeometryHSD_dom
 
 
-  !> Write the geometry in HSD format to an xml writer
-  subroutine writeTGeometryHSD_xmlf(xf, geo)
-
-    !> Node in the HSD-tree which should contain the geometry
-    type(xmlf_t), intent(inout) :: xf
-
-    !> The geometry
-    type(TGeometry), intent(in) :: geo
-
-    call writeChildValue(xf, "TypeNames", geo%speciesNames)
-    if (geo%tPeriodic .or. geo%tHelical) then
-      call writeChildValue(xf, "TypesAndCoordinates", &
-          &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords&
-          & + spread(geo%origin, 2, size(geo%species)))
-    else
-      call writeChildValue(xf, "TypesAndCoordinates", &
-          &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords)
-    end if
-    call writeChildValue(xf, "Periodic", geo%tPeriodic)
-    call writeChildValue(xf, "Helical", geo%tHelical)
-    if (geo%tPeriodic .or. geo%tHelical) then
-      call writeChildValue(xf, "CoordinateOrigin", geo%origin)
-      call writeChildValue(xf, "LatticeVectors", geo%latVecs)
-    end if
-
-  end subroutine writeTGeometryHSD_xmlf
-
-
   !> Read the geometry from a node in a HSD tree.
   subroutine readTGeometryHSD(node, geo)
 
     !> Node in the HSD tree containing the geomery
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
 
-    type(string) :: modifier, modifs(2)
+    character(len=:), allocatable :: modifier
+    character(len=mc) :: modifs(2)
     type(TListString) :: stringBuffer
     type(TListRealR1) :: realBuffer
     type(TListIntR1) :: intBuffer
-    type(fnode), pointer :: child, typesAndCoords
+    type(hsd_table), pointer :: child, typesAndCoords
     integer, allocatable :: tmpInt(:,:)
     real(dp) :: latvec(9), det, helVec(3)
 
@@ -149,7 +119,7 @@ contains
     call destruct(realBuffer)
     geo%tFracCoord = .false.
     if (len(modifier) > 0) then
-      select case(tolower(char(modifier)))
+      select case(tolower(modifier))
       case ("relative")
         if (.not. geo%tPeriodic) then
           call detailedError(typesAndCoords, "Relative coordinates are only &
@@ -157,9 +127,10 @@ contains
         end if
         geo%tFracCoord = .true.
       case default
-        call convertUnitHsd(char(modifier), lengthUnits, typesAndCoords, geo%coords)
-        call setChildValue(typesAndCoords, "", reshape(geo%species, [1, size(geo%species)]),&
-            & geo%coords, replace=.true.)
+        call convertUnitHsd(modifier, lengthUnits, typesAndCoords, geo%coords)
+        ! TODO: setChildValue with mixed int+real matrix not yet supported in hsdcompat
+        ! call setChildValue(typesAndCoords, "", reshape(geo%species, [1, size(geo%species)]),&
+        !     & geo%coords, replace=.true.)
       end select
     end if
     if (geo%tPeriodic) then
@@ -169,12 +140,12 @@ contains
       else
         call getChildValue(node, "CoordinateOrigin", geo%origin, [0.0_dp,0.0_dp,0.0_dp],&
             & modifier=modifier, child=child)
-        call convertUnitHsd(char(modifier), lengthUnits, child, geo%origin, replace=.true.)
+        call convertUnitHsd(modifier, lengthUnits, child, geo%origin, replace=.true.)
       end if
       geo%coords(:,:) = geo%coords - spread(geo%origin, 2, geo%nAtom)
       allocate(geo%latVecs(3,3))
       call getChildValue(node, "LatticeVectors", latvec, modifier=modifier, child=child)
-      call convertUnitHsd(char(modifier), lengthUnits, child, latvec, replace=.true.)
+      call convertUnitHsd(modifier, lengthUnits, child, latvec, replace=.true.)
       geo%latVecs(:,:) = reshape(latvec, [3, 3])
       if (geo%tFracCoord) then
         geo%coords(:,:) = matmul(geo%latVecs, geo%coords)
@@ -192,14 +163,14 @@ contains
     if (geo%tHelical) then
       allocate(geo%origin(3))
       call getChildValue(node, "CoordinateOrigin", geo%origin, modifier=modifier, child=child)
-      call convertUnitHsd(char(modifier), lengthUnits, child, geo%origin, replace=.true.)
+      call convertUnitHsd(modifier, lengthUnits, child, geo%origin, replace=.true.)
       geo%coords(:,:) = geo%coords - spread(geo%origin, 2, geo%nAtom)
       allocate(geo%latVecs(3, 1))
       call getChildValue(node, "LatticeVectors", helVec, modifier=modifier, child=child)
       if (len(modifier) > 0) then
-        call splitModifier(char(modifier), child, modifs)
-        call convertUnitHsd(char(modifs(1)), lengthUnits, child, helVec(1))
-        call convertUnitHsd(char(modifs(2)), angularUnits, child, helVec(2))
+        call splitModifier(modifier, child, modifs)
+        call convertUnitHsd(modifs(1), lengthUnits, child, helVec(1))
+        call convertUnitHsd(modifs(2), angularUnits, child, helVec(2))
       end if
       geo%latVecs(:3,1) = helVec
       if (geo%latVecs(3,1) < 1) then
@@ -218,15 +189,15 @@ contains
   subroutine readTGeometryGen(node, geo)
 
     !> Node containing the geometry in Gen format
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
 
-    type(string) :: text
+    character(len=:), allocatable :: text
 
     call getFirstTextChild(node, text)
-    call readTGeometryGen_help(node, geo, char(text))
+    call readTGeometryGen_help(node, geo, text)
 
   end subroutine readTGeometryGen
 
@@ -235,7 +206,7 @@ contains
   subroutine readTGeometryGen_help(node, geo, text)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -243,7 +214,7 @@ contains
     !> Text content of the node
     character(len=*), intent(in) :: text
 
-    type(string) :: txt
+    character(len=:), allocatable :: txt
     integer :: iStart, iErr, iEnd
     integer :: ii, iTmp, iSp
     real(dp) :: coords(3)
@@ -256,7 +227,7 @@ contains
     call getNextToken(text(:iEnd), geo%nAtom, iStart, iErr)
     call checkError(node, iErr, "Bad number of atoms in the first line of geometry")
     call getNextToken(text(:iEnd), txt, iStart, iErr)
-    select case (char(txt))
+    select case (txt)
     case("S","s")
       geo%tPeriodic = .true.
       geo%tFracCoord = .false.
@@ -275,7 +246,7 @@ contains
       geo%tFracCoord = .false.
     case default
       call detailedError(node, "Unknown boundary condition type '" &
-          &// char(txt) // "'")
+          &// txt // "'")
     end select
     if (iStart < iEnd) then
       call detailedError(node, "Found trailing characters in first line")
@@ -290,11 +261,11 @@ contains
     do while (iErr == TOKEN_OK)
       call getNextToken(text(:iEnd), txt, iStart, iErr)
       if (iErr == TOKEN_OK) then
-        if (find(speciesNames, char(txt)) > 0) then
-          call detailedError(node, "Species name '"//char(txt)//"' is not unique, check species'//&
+        if (find(speciesNames, txt) > 0) then
+          call detailedError(node, "Species name '"//txt//"' is not unique, check species'//&
               &//' names in second line")
         end if
-        call append(speciesNames, char(txt))
+        call append(speciesNames, txt)
       end if
     end do
     geo%nSpecies = len(speciesNames)
@@ -398,15 +369,15 @@ contains
   subroutine readTGeometryXyz(node, geo)
 
     !> Node containing the geometry in XYZ format
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
 
-    type(string) :: text
+    character(len=:), allocatable :: text
 
     call getFirstTextChild(node, text)
-    call readTGeometryXyz_help(node, geo, char(text))
+    call readTGeometryXyz_help(node, geo, text)
 
   end subroutine readTGeometryXyz
 
@@ -415,7 +386,7 @@ contains
   subroutine readTGeometryXyz_help(node, geo, text)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -423,7 +394,7 @@ contains
     !> Text content of the node
     character(len=*), intent(in) :: text
 
-    type(string) :: txt
+    character(len=:), allocatable :: txt
     integer :: iStart, iOldStart, iErr, iEnd
     integer :: ii, iSp
     real(dp) :: coords(3)
@@ -469,9 +440,9 @@ contains
       call getNextToken(text(:iEnd), txt, iStart, iErr)
       write(errorStr,"(A,1X,I0)")"Bad species name for atom", ii
       call checkError(node, iErr, trim(errorStr))
-      iSp = find(speciesNames, char(txt))
+      iSp = find(speciesNames, txt)
       if (iSp == 0) then
-        call append(speciesNames, char(txt))
+        call append(speciesNames, txt)
         iSp = len(speciesNames)
       end if
       geo%species(ii) = iSp
@@ -513,15 +484,15 @@ contains
   subroutine readTGeometryVasp(node, geo)
 
     !> Node containing the geometry in Gen format
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
 
-    type(string) :: text
+    character(len=:), allocatable :: text
 
     call getFirstTextChild(node, text)
-    call readTGeometryVasp_help(node, geo, char(text))
+    call readTGeometryVasp_help(node, geo, text)
 
   end subroutine readTGeometryVasp
 
@@ -530,7 +501,7 @@ contains
   subroutine readTGeometryVasp_help(node, geo, text)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -538,7 +509,7 @@ contains
     !> Text content of the node
     character(len=*), intent(in) :: text
 
-    type(string) :: txt
+    character(len=:), allocatable :: txt
     character(mc), allocatable :: vaspNames(:)
     integer :: iStart, iOldStart, iErr, iEnd
     integer :: ii, iSp, iTmp
@@ -572,7 +543,7 @@ contains
       do while(iErr == TOKEN_OK)
         call getNextToken(text(:iEnd), txt, iStart, iErr)
         if (iErr == TOKEN_OK) then
-          call append(speciesNames, char(txt))
+          call append(speciesNames, txt)
         end if
       end do
       iStart = iEnd + 1
@@ -614,7 +585,7 @@ contains
       do while(iErr == TOKEN_OK)
         call getNextToken(text(:iEnd), txt, iStart, iErr)
         if (iErr == TOKEN_OK) then
-          call append(speciesNames, char(txt))
+          call append(speciesNames, txt)
         end if
       end do
       iStart = iEnd + 1
@@ -664,17 +635,17 @@ contains
     ! Search for the selective dynamics keyword here
     iEnd = nextLine(text, iStart)
     call getNextToken(text(:iEnd), txt, iStart, iErr)
-    if (scan(char(txt), "sS") == 1) then
+    if (scan(txt, "sS") == 1) then
       iStart = iEnd + 1
       iEnd = nextLine(text, iStart)
       call getNextToken(text(:iEnd), txt, iStart, iErr)
     end if
-    if (scan(char(txt), "cCkK") == 1) then
+    if (scan(txt, "cCkK") == 1) then
       geo%tFracCoord = .false.
-    else if (scan(char(txt), "dD") == 1) then
+    else if (scan(txt, "dD") == 1) then
       geo%tFracCoord = .true.
     else
-      call detailedError(node, "Unknown coordinate format '"// char(txt) // "'")
+      call detailedError(node, "Unknown coordinate format '"// txt // "'")
     end if
     iStart = iEnd + 1
 
@@ -708,27 +679,24 @@ contains
   subroutine readTGeometryLammps(node, geo)
 
     !> Node containing the geometry in Gen format
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
 
-    type(fnode), pointer :: child
-    type(string) :: text1, text2
+    character(len=:), allocatable :: text1, text2
 
-    call getChildValue(node, "CommandFile", child)
-    if (.not. associated(child) .or. getNodeType(child) /= TEXT_NODE) then
+    call getChildValue(node, "CommandFile", text1)
+    if (.not. allocated(text1) .or. len_trim(text1) == 0) then
       call detailedError(node, "Missing CommandFile for LammpsFormat")
     end if
-    call getNodeValue(child, text1)
 
-    call getChildValue(node, "DataFile", child)
-    if (.not. associated(child) .or. getNodeType(child) /= TEXT_NODE) then
+    call getChildValue(node, "DataFile", text2)
+    if (.not. allocated(text2) .or. len_trim(text2) == 0) then
       call detailedError(node, "Missing DataFile for LammpsFormat")
     end if
-    call getNodeValue(child, text2)
 
-    call readTGeometryLammps_help(node, geo, char(text1), char(text2))
+    call readTGeometryLammps_help(node, geo, text1, text2)
 
   end subroutine readTGeometryLammps
 
@@ -737,7 +705,7 @@ contains
   subroutine readTGeometryLammps_help(node, geo, commandInput, dataInput)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -750,7 +718,7 @@ contains
 
     integer :: iStart, iEnd, iErr, intValue, skipItemsForCoords, i, j
     real(dp) :: realValue(3), toAngstrom, toAtomicMassUnit
-    type(string) :: text, command
+    character(len=:), allocatable :: text, command
     logical :: haveMasses, haveAtoms, skipMoleculeId, readIntValue, readRealValue(3)
 
     haveMasses = .false.
@@ -780,18 +748,18 @@ contains
         exit
       end if
 
-      select case(char(command))
+      select case(command)
       case("pair_style")
         call getNextToken(commandInput, text, iStart, iErr)
         call checkError(node, iErr, "Error reading pair_style in command file")
-        if (char(text) /= "dftbplus") then
+        if (text /= "dftbplus") then
           call detailedError(node, "pair_style must be dftbplus")
         end if
         call jumpToEndOfLine(commandInput, iStart)
       case("atom_style") ! default is atomic
         call getNextToken(commandInput, text, iStart, iErr)
         call checkError(node, iErr, "Error reading atom_style in command file")
-        select case(char(text))
+        select case(text)
         case("angle", "bond", "molecular")
           skipMoleculeId = .true.
         case("full")
@@ -809,14 +777,14 @@ contains
         case("wavepacket")
           skipItemsForCoords = 6
         case("body", "mesont", "peri", "smd", "sphere", "bpm/sphere")
-          call detailedError(node, "Unsupported atom_style " // char(text))
+          call detailedError(node, "Unsupported atom_style " // text)
         end select
         call jumpToEndOfLine(commandInput, iStart)
       case("boundary") ! default is p p p
         do i = 1, 3
           call getNextToken(commandInput, text, iStart, iErr)
           call checkError(node, iErr, "Error reading boundary in command file")
-          if (char(text) /= "p") then
+          if (text /= "p") then
             call detailedError(node, "Only periodic boundary conditions supported")
           end if
         end do
@@ -824,7 +792,7 @@ contains
       case("units") ! default is lj
         call getNextToken(commandInput, text, iStart, iErr)
         call checkError(node, iErr, "Error reading units in command file")
-        select case(char(text))
+        select case(text)
         case("si")
           toAngstrom = 1.0e10_dp ! from meters
           toAtomicMassUnit = 1.0e3_dp * avogadConst ! from kilograms
@@ -879,7 +847,7 @@ contains
         exit
       end if
 
-      select case(char(command))
+      select case(command)
       case("atoms")
         if (.not. readIntValue) then
           call detailedError(node, "Invalid number of atoms")
@@ -888,7 +856,7 @@ contains
         call jumpToEndOfLine(dataInput, iStart)
       case("atom")
         call getNextToken(dataInput, text, iStart, iErr)
-        if (iErr == TOKEN_OK .and. char(text) == "types") then
+        if (iErr == TOKEN_OK .and. text == "types") then
           if (.not. readIntValue) then
             call detailedError(node, "Invalid number of species")
           end if
@@ -897,7 +865,7 @@ contains
         end if
       case("xlo")
         call getNextToken(dataInput, text, iStart, iErr)
-        if (iErr == TOKEN_OK .and. char(text) == "xhi") then
+        if (iErr == TOKEN_OK .and. text == "xhi") then
           if (.not. readRealValue(1) .or. .not. readRealValue(2)) then
             call detailedError(node, "Invalid values for xlo and/or xhi")
           end if
@@ -907,7 +875,7 @@ contains
         end if
       case("ylo")
         call getNextToken(dataInput, text, iStart, iErr)
-        if (iErr == TOKEN_OK .and. char(text) == "yhi") then
+        if (iErr == TOKEN_OK .and. text == "yhi") then
           if (.not. readRealValue(1) .or. .not. readRealValue(2)) then
             call detailedError(node, "Invalid values for ylo and/or yhi")
           end if
@@ -917,7 +885,7 @@ contains
         end if
       case("zlo")
         call getNextToken(dataInput, text, iStart, iErr)
-        if (iErr == TOKEN_OK .and. char(text) == "zhi") then
+        if (iErr == TOKEN_OK .and. text == "zhi") then
           if (.not. readRealValue(1) .or. .not. readRealValue(2)) then
             call detailedError(node, "Invalid values for zlo and/or zhi")
           end if
@@ -927,9 +895,9 @@ contains
         end if
       case("xy")
         call getNextToken(dataInput, text, iStart, iErr)
-        if (iErr == TOKEN_OK .and. char(text) == "xz") then
+        if (iErr == TOKEN_OK .and. text == "xz") then
           call getNextToken(dataInput, text, iStart, iErr)
-          if (iErr == TOKEN_OK .and. char(text) == "yz") then
+          if (iErr == TOKEN_OK .and. text == "yz") then
             if (any(.not. readRealValue)) then
               call detailedError(node, "Invalid values for xy/xz/yz")
             end if
@@ -1029,7 +997,7 @@ contains
   subroutine setupPeriodicGeometry(node, geo)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(inout) :: geo

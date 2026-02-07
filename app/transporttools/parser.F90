@@ -17,13 +17,13 @@ module transporttools_parser
   use dftbp_common_unitconversion, only : lengthUnits
   use dftbp_dftb_slakoeqgrid, only : skEqGridNew, skEqGridOld
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
-  use dftbp_extlibs_xmlf90, only : assignment(=), char, destroyNode, destroyNodeList, fnode,&
-      & fNodeList, getItem1, getLength, getNodeName, string
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdparser, only : dumpHSD, getNodeHSDName, parseHSD
-  use dftbp_io_hsdutils, only : detailedError, detailedWarning, getChild, getChildren,&
-      & getChildValue, getSelectedAtomIndices
-  use dftbp_io_hsdutils2, only : convertUnitHsd, setUnprocessed, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, &
+      & detailedError, detailedWarning, getChild, getChildren, &
+      & getChildValue, getSelectedAtomIndices, &
+      & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
+      & getNodeName, getNodeHSDName, getItem1, getLength, destroyNodeList, &
+      & dumpHsd, destroyNode, hsd_load
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -89,14 +89,15 @@ contains
     !> Returns initialised input variables on exit
     type(TInputData), intent(out) :: input
 
-    type(fnode), pointer :: hsdTree
-    type(fnode), pointer :: root, tmp, child, dummy
+    type(hsd_table), pointer :: hsdTree
+    type(hsd_table), pointer :: root, tmp, child, dummy
     type(TParserflags) :: parserFlags
 
     write(stdOut, "(/, A, /)") "***  Parsing and initializing"
 
     ! Read in the input
-    call parseHSD(rootTag, hsdInputName, hsdTree)
+    allocate(hsdTree)
+    call hsd_load(hsdInputName, hsdTree)
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, '(A,1X,I0,/)') 'Parser version:', parserVersion
@@ -134,7 +135,7 @@ contains
 
     ! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHSD(hsdTree, hsdProcInputName)
+      call dumpHsd(hsdTree, hsdProcInputName)
       write(stdout, '(/,/,A)') "Processed input in HSD format written to '" &
           &// hsdProcInputName // "'"
     end if
@@ -155,17 +156,17 @@ contains
   subroutine readParserOptions(node, root, flags)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Root of the entire tree (in case it needs to be converted, for example because dftbp_of
     !> compatibility options)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
     !> Contains parser flags on exit.
     type(TParserFlags), intent(out) :: flags
 
     integer :: inputVersion
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     ! Check if input needs compatibility conversion.
     call getChildValue(node, "ParserVersion", inputVersion, parserVersion, &
@@ -206,17 +207,17 @@ contains
   subroutine readGeometry(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Input structure to be filled
     type(TInputData), intent(inout) :: input
 
-    type(fnode), pointer :: value1, child
-    type(string) :: buffer
+    type(hsd_table), pointer :: value1, child
+    character(len=:), allocatable :: buffer
 
     call getChildValue(node, "", value1, child=child)
     call getNodeName(value1, buffer)
-    select case (char(buffer))
+    select case (buffer)
     case ("genformat")
       call readTGeometryGen(value1, input%geom)
     case default
@@ -231,7 +232,7 @@ contains
   subroutine readTransportGeometry(root, geom, transpar)
 
     !> Root node containing the current block
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
 
     !> geometry of the system, which may be modified for some types of calculation
     type(TGeometry), intent(inout) :: geom
@@ -239,9 +240,9 @@ contains
     !> Parameters of the transport calculation
     type(TTransPar), intent(inout) :: transpar
 
-    type(fnode), pointer :: pDevice, pTask, pTaskType
-    type(string) :: buffer
-    type(fnodeList), pointer :: pNodeList
+    type(hsd_table), pointer :: pDevice, pTask, pTaskType
+    character(len=:), allocatable :: buffer
+    type(hsd_child_list), pointer :: pNodeList
     real(dp) :: skCutoff
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     integer, allocatable :: nPLs(:)
@@ -257,7 +258,7 @@ contains
     call getChildValue(root, "Task", pTask, child=pTaskType, default='uploadcontacts')
     call getNodeName(pTask, buffer)
 
-    if (char(buffer).ne."setupgeometry") then
+    if (buffer.ne."setupgeometry") then
       call getChild(root, "Device", pDevice)
       call getChildValue(pDevice, "AtomRange", transpar%idxdevice)
     end if
@@ -269,10 +270,10 @@ contains
     end if
     allocate(transpar%contacts(transpar%ncont))
 
-    select case (char(buffer))
+    select case (buffer)
     case ("setupgeometry")
 
-      call readContacts(pNodeList, transpar%contacts, geom, char(buffer), iAtInRegion, nPLs)
+      call readContacts(pNodeList, transpar%contacts, geom, buffer, iAtInRegion, nPLs)
       call getSKcutoff(pTask, geom, skCutoff)
       write(stdOut,*) 'Maximum SK cutoff:', SKcutoff*Bohr__AA,'(A)'
       call getChildValue(pTask, "printInfo", printDebug, .false.)
@@ -281,7 +282,7 @@ contains
     case default
 
       call getNodeHSDName(pTask, buffer)
-      call detailedError(pTaskType, "Invalid task '" // char(buffer) // "'")
+      call detailedError(pTaskType, "Invalid task '" // buffer // "'")
 
    end select
 
@@ -292,7 +293,7 @@ contains
 
   !> Read bias information, used in Analysis and Green's function eigensolver
   subroutine readContacts(pNodeList, contacts, geom, task, iAtInRegion, nPLs)
-    type(fnodeList), pointer :: pNodeList
+    type(hsd_child_list), pointer :: pNodeList
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
     type(TGeometry), intent(in) :: geom
     character(*), intent(in) :: task
@@ -302,8 +303,8 @@ contains
     real(dp) :: contactLayerTol, vec(3)
     integer :: selectionRange(2)
     integer :: ii, ishift
-    type(fnode), pointer :: field, pNode, pTmp
-    type(string) :: buffer, modif
+    type(hsd_table), pointer :: field, pNode, pTmp
+    character(len=:), allocatable :: buffer, modif
     type(TListReal) :: vecBuffer
 
     allocate(iAtInRegion(size(contacts)+1))
@@ -316,11 +317,11 @@ contains
 
       call getItem1(pNodeList, ii, pNode)
       call getChildValue(pNode, "Id", buffer, child=pTmp)
-      buffer = tolower(trim(unquote(char(buffer))))
+      buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
         call detailedError(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
       end if
-      contacts(ii)%name = char(buffer)
+      contacts(ii)%name = buffer
       if (any(contacts(1:ii-1)%name == contacts(ii)%name)) then
         call detailedError(pTmp, "Contact id '" // trim(contacts(ii)%name) &
             &//  "' already in use")
@@ -328,26 +329,26 @@ contains
 
       call getChildValue(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, modifier=modif,&
           & child=field)
-      call convertUnitHsd(char(modif), lengthUnits, field, contactLayerTol)
+      call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
       if (task .eq. "setupgeometry") then
         call getChildValue(pNode, "PLsDefined", nPLs(ii))
         call getChildValue(pNode, "Atoms", buffer, child=pTmp, modifier=modif, multiple=.true.)
-        if (isZeroBased(char(modif))) then
+        if (isZeroBased(modif)) then
           selectionRange(:) = [0, size(geom%species) - 1]
           ishift = 1
         else
           selectionRange(:) = [1, size(geom%species)]
           ishift = 0
         end if
-        call getSelectedAtomIndices(pTmp, char(buffer), geom%speciesNames, geom%species, &
+        call getSelectedAtomIndices(pTmp, buffer, geom%speciesNames, geom%species, &
             & iAtInRegion(ii)%data, selectionRange=selectionRange)
         iAtInRegion(ii)%data = iAtInRegion(ii)%data + ishift
         call init(vecBuffer)
         call getChildValue(pNode, "ContactVector", vecBuffer, modifier=modif)
         if (len(vecBuffer).eq.3) then
            call asArray(vecBuffer, vec)
-           call convertUnitHsd(char(modif), lengthUnits, pNode, vec)
+           call convertUnitHsd(modif, lengthUnits, pNode, vec)
            ! check vector is along x y or z
            if (count(vec == 0.0_dp) < 2 ) then
              call error("ContactVector must be along either x, y or z")
@@ -385,7 +386,7 @@ contains
 
   subroutine getSKcutoff(node, geo, mSKCutoff)
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
@@ -394,7 +395,7 @@ contains
     real(dp), intent(out) :: mSKCutoff
 
     ! Locals
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
     integer :: skInterMeth
     logical :: oldSKInter
 
@@ -427,7 +428,7 @@ contains
   !> established
   subroutine readSKFiles(node, nSpecies, speciesNames, maxSKcutoff)
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Nr. of species in the system
     integer, intent(in) :: nSpecies
@@ -438,8 +439,8 @@ contains
     !> Maximum SK cutoff distance obtained from SK files
     real(dp), intent(out) :: maxSKcutoff
 
-    type(fnode), pointer :: value1, child, child2
-    type(string) :: buffer, buffer2
+    type(hsd_table), pointer :: value1, child, child2
+    character(len=:), allocatable :: buffer, buffer2
     type(TListString) :: lStr
     type(TListCharLc), allocatable :: skFiles(:,:)
     type(TOldSKData) :: skData
@@ -457,14 +458,14 @@ contains
     end do
     call getChildValue(node, "SlaterKosterFiles", value1, child=child)
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case ("type2filenames")
       call getChildValue(value1, "Prefix", buffer2, "")
-      prefix = unquote(char(buffer2))
+      prefix = unquote(buffer2)
       call getChildValue(value1, "Suffix", buffer2, "")
-      suffix = unquote(char(buffer2))
+      suffix = unquote(buffer2)
       call getChildValue(value1, "Separator", buffer2, "")
-      separator = unquote(char(buffer2))
+      separator = unquote(buffer2)
       call getChildValue(value1, "LowerCaseTypeName", tLower, .false.)
       do iSp1 = 1, nSpecies
         if (tLower) then
@@ -540,7 +541,7 @@ contains
   subroutine SKTruncations(node, truncationCutOff, skInterMeth)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> This is the resulting cutoff distance
     real(dp), intent(out) :: truncationCutOff
@@ -549,12 +550,12 @@ contains
     integer, intent(in) :: skInterMeth
 
     logical :: tHardCutOff
-    type(fnode), pointer :: field
-    type(string) :: modifier
+    type(hsd_table), pointer :: field
+    character(len=:), allocatable :: modifier
 
     ! Artificially truncate the SK table
     call getChildValue(node, "SKMaxDistance", truncationCutOff, modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, truncationCutOff)
+    call convertUnitHsd(modifier, lengthUnits, field, truncationCutOff)
 
     call getChildValue(node, "HardCutOff", tHardCutOff, .true.)
     if (tHardCutOff) then

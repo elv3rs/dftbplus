@@ -12,9 +12,8 @@ module dftbp_solvation_gbsafile
   use dftbp_common_accuracy, only : dp, lc
   use dftbp_common_constants, only : AA__Bohr, amu__au, kcal_mol__Hartree, kg__au, symbolToNumber
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
-  use dftbp_extlibs_xmlf90, only : fnode
   use dftbp_io_charmanip, only : newline, whiteSpaces
-  use dftbp_io_hsdutils, only : detailedError, detailedWarning
+  use dftbp_io_hsdcompat, only : hsd_table, detailedError, detailedWarning
   use dftbp_io_linereader, only : TLineReader
   use dftbp_io_message, only : error, warning
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_OK
@@ -45,7 +44,7 @@ contains
     character(len=*), intent(in) :: speciesNames(:)
 
     !> Node for error handling
-    type(fnode), pointer, optional :: node
+    type(hsd_table), pointer, optional :: node
 
     type(TFileDescr) :: fd
     type(TLineReader) :: lineReader
@@ -207,7 +206,7 @@ contains
     character(len=*), intent(in) :: file
 
     !> Node (needed for generating error messages)
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     integer :: iErr
     character(len=lc) :: errorStr, iomsg

@@ -18,13 +18,13 @@ module phonons_initphonons
   use dftbp_common_unitconversion, only : energyUnits, lengthUnits
   use dftbp_dftb_periodic, only : getCellTranslations, getNrOfNeighboursForAll, getSuperSampling,&
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
-  use dftbp_extlibs_xmlf90, only : assignment(=), char, destroyNodeList, fnode, fnodelist,&
-      & getItem1, getLength, getNodeName, string, textNodeName
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdparser, only : dumpHSD, parseHSD
-  use dftbp_io_hsdutils, only : detailedError, getChild, getChildren, getChildValue,&
-      & getFirstTextChild, getSelectedAtomIndices, getSelectedIndices, setChild, setChildValue
-  use dftbp_io_hsdutils2, only : convertUnitHsd, setUnprocessed, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, &
+      & detailedError, getChild, getChildren, getChildValue, &
+      & getSelectedAtomIndices, getSelectedIndices, setChild, setChildValue, &
+      & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
+      & getNodeName, textNodeName, getItem1, getLength, destroyNodeList, &
+      & dumpHsd, getFirstTextChild, hsd_load
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken
   use dftbp_math_simplealgebra, only : determinant33
@@ -200,9 +200,9 @@ contains
     type(TEnvironment), intent(inout) :: env
 
     ! locals
-    type(fnode), pointer :: hsdTree, root, node, tmp
-    type(fnode), pointer :: child, value
-    type(string) :: buffer, buffer2, modif
+    type(hsd_table), pointer :: hsdTree, root, node, tmp
+    type(hsd_table), pointer :: child, value
+    character(len=:), allocatable :: buffer, buffer2, modif
     integer :: inputVersion
     integer :: ii, iSp1, iAt
     logical :: tHSD, reqMass, tBadKPoints
@@ -224,7 +224,8 @@ contains
     !! Read in input file as HSD or XML.
     write(stdOut, "(A)") "Interpreting input file '" // hsdInput // "'"
     write(stdOut, "(A)") repeat("-", 80)
-    call parseHSD(rootTag, hsdInput, hsdTree)
+    allocate(hsdTree)
+    call hsd_load(hsdInput, hsdTree)
     call getChild(hsdTree, rootTag, root)
 
     !! Check if input version is the one, which we can handle
@@ -246,7 +247,7 @@ contains
     end if
 
     call getChildValue(root, "Atoms", buffer2, "1:-1", child=child)
-    call getSelectedAtomIndices(child, char(buffer2), geo%speciesNames, geo%species, iMovedAtoms)
+    call getSelectedAtomIndices(child, buffer2, geo%speciesNames, geo%species, iMovedAtoms)
     nMovedAtom = size(iMovedAtoms)
 
     tCompModes = .false.
@@ -261,7 +262,7 @@ contains
       if (associated(node)) then
         tPlotModes = .true.
         call getChildValue(node, "PlotModes", buffer2, "1:-1", child=child, multiple=.true.)
-        call getSelectedIndices(child, char(buffer2), [1, 3 * nMovedAtom], modesToPlot)
+        call getSelectedIndices(child, buffer2, [1, 3 * nMovedAtom], modesToPlot)
         nModesToPlot = size(modesToPlot)
         call getChildValue(node, "Animate", tAnimateModes, .true.)
         call getChildValue(node, "XMakeMol", tXmakeMol, .true.)
@@ -285,11 +286,11 @@ contains
       call destruct(li1)
       nAtomUnitCell = geo%nAtom/(nCells(1)*nCells(2)*nCells(3))
       call getChildValue(node, "outputUnits", buffer, "H")
-      select case(trim(char(buffer)))
+      select case(trim(buffer))
       case("H", "eV" , "meV", "THz", "cm")
-        outputUnits=trim(char(buffer))
+        outputUnits=trim(buffer)
       case default
-        call detailedError(node,"Unknown outputUnits "//trim(char(buffer)))
+        call detailedError(node,"Unknown outputUnits "//trim(buffer))
       end select
       call readKPoints(node, geo, tBadKpoints)
     end if
@@ -317,12 +318,12 @@ contains
     call getChild(root, "Hessian", child=node, requested=.true.)
     ! cutoff used to cut out interactions
     call getChildValue(node, "Cutoff", cutoff, 9.45_dp, modifier=modif, child=value)
-    call convertUnitHsd(char(modif), lengthUnits, value, cutoff)
+    call convertUnitHsd(modif, lengthUnits, value, cutoff)
 
     ! Reading the actual Hessian matrix
     call getChildValue(node, "Matrix", value, child=child)
     call getNodeName(value, buffer)
-    select case(trim(char(buffer)))
+    select case(trim(buffer))
     case ("dftb")
       call readDftbHessian(value)
     case ("dynmatrix")
@@ -330,7 +331,7 @@ contains
     case ("cp2k")
       call readCp2kHessian(value)
     case default
-      call detailedError(node,"Unknown Hessian type "//char(buffer))
+      call detailedError(node,"Unknown Hessian type "//buffer)
     end select
 
     ! --------------------------------------------------------------------------------------
@@ -343,11 +344,11 @@ contains
     if (associated(child)) then
       order = 3
       call getChildValue(child, "Matrix", buffer, child=child)
-      select case(trim(char(buffer)))
+      select case(trim(buffer))
       case ("gaussian")
         cubicType = 1
       case default
-        call detailedError(root,"Unknown Cubic forces type "//char(buffer))
+        call detailedError(root,"Unknown Cubic forces type "//buffer)
       end select
     end if
 
@@ -369,7 +370,7 @@ contains
 
     !! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHSD(hsdTree, hsdParsedInput)
+      call dumpHsd(hsdTree, hsdParsedInput)
       write(stdOut, '(/,/,A)') "Processed input in HSD format written to '" &
           &// hsdParsedInput // "'"
     end if
@@ -402,12 +403,12 @@ contains
   !!* @param root Root of the entire tree (in the case it must be converted)
   !!* @param flags Contains parser flags on exit.
   subroutine readOptions(node, root, flags)
-    type(fnode), pointer :: node
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: node
+    type(hsd_table), pointer :: root
     type(TParserFlags), intent(out) :: flags
 
     integer :: inputVersion
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     !! Check if input needs compatibility conversion.
     call getChildValue(node, "ParserVersion", inputVersion, parserVersion, child=child)
@@ -433,17 +434,17 @@ contains
   subroutine readGeometry(geonode, geo)
 
     !> Node containing the geometry
-    type(fnode), pointer :: geonode
+    type(hsd_table), pointer :: geonode
 
     !> Contains the geometry information on exit
     type(TGeometry), intent(out) :: geo
 
-    type(fnode), pointer :: child, value
-    type(string) :: buffer
+    type(hsd_table), pointer :: child, value
+    character(len=:), allocatable :: buffer
 
     call getChildValue(geonode, "", value, child=child)
     call getNodeName(value, buffer)
-    select case (char(buffer))
+    select case (buffer)
     case ("genformat")
       call readTGeometryGen(value, geo)
     case default
@@ -463,15 +464,14 @@ contains
 
   !> Read geometry information for transport calculation
   subroutine readTransportGeometry(root, geom, tp)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
     type(TGeometry), intent(inout) :: geom
     type(TTransPar), intent(inout) :: tp
 
-    type(fnode), pointer :: pGeom, pDevice, pNode, pTask, pTaskType
-    type(string) :: modif
-    type(fnode), pointer :: pTmp, field
-    type(fnodelist), pointer :: pNodeList
-    !type(fnodeList), pointer :: pNodeList
+    type(hsd_table), pointer :: pGeom, pDevice, pNode, pTask, pTaskType
+    character(len=:), allocatable :: modif
+    type(hsd_table), pointer :: pTmp, field
+    type(hsd_child_list), pointer :: pNodeList
     integer :: ii, contact
     real(dp) :: acc, contactRange(2), sep
 
@@ -499,7 +499,7 @@ contains
   !> Reads settings for the first layer atoms in principal layers
   subroutine readFirstLayerAtoms(pnode, pls, npl, idxdevice, check)
 
-    type(fnode), pointer, intent(in) :: pnode
+    type(hsd_table), pointer, intent(in) :: pnode
 
     !> Start atoms in the principal layers
     integer, allocatable, intent(out) :: pls(:)
@@ -545,15 +545,15 @@ contains
 
   !> Read bias information, used in Analysis and Green's function solver
   subroutine readContacts(pNodeList, contacts, geom, upload)
-    type(fnodeList), pointer :: pNodeList
+    type(hsd_child_list), pointer :: pNodeList
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
     type(TGeometry), intent(in) :: geom
     logical, intent(in) :: upload
 
     real(dp) :: contactLayerTol, vec(3)
     integer :: ii, jj
-    type(fnode), pointer :: field, pNode, pTmp, pWide
-    type(string) :: buffer, modif
+    type(hsd_table), pointer :: field, pNode, pTmp, pWide
+    character(len=:), allocatable :: buffer, modif
     type(TListReal) :: fermiBuffer
 
     do ii = 1, size(contacts)
@@ -563,12 +563,12 @@ contains
 
       call getItem1(pNodeList, ii, pNode)
       call getChildValue(pNode, "Id", buffer, child=pTmp)
-      buffer = tolower(trim(unquote(char(buffer))))
+      buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
         call detailedError(pTmp, "Contact id may not be longer than " &
             &// i2c(mc) // " characters.")
       end if
-      contacts(ii)%name = char(buffer)
+      contacts(ii)%name = buffer
       if (any(contacts(1:ii-1)%name == contacts(ii)%name)) then
         call detailedError(pTmp, "Contact id '" // trim(contacts(ii)%name) &
             &//  "' already in use")
@@ -576,7 +576,7 @@ contains
 
       call getChildValue(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, modifier=modif,&
           & child=field)
-      call convertUnitHsd(char(modif), lengthUnits, field, contactLayerTol)
+      call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
       call getChildValue(pNode, "AtomRange", contacts(ii)%idxrange, child=pTmp)
       call getContactVectorII(contacts(ii)%idxrange, geom, ii, pTmp, contactLayerTol, &
@@ -586,7 +586,7 @@ contains
       ! Contact temperatures. Needed
       call getChildValue(pNode, "Temperature", contacts(ii)%kbT,&
                          &0.0_dp, modifier=modif, child=field)
-      call convertUnitHsd(char(modif), energyUnits, field, contacts(ii)%kbT)
+      call convertUnitHsd(modif, energyUnits, field, contacts(ii)%kbT)
 
       if (upload) then
         contacts(ii)%potential = 0.d0
@@ -595,7 +595,7 @@ contains
         if (contacts(ii)%wideBand) then
           call getChildValue(pNode, 'LevelSpacing', contacts(ii)%wideBandDos, &
                              &0.735_dp, modifier=modif, child=field)
-          call convertUnitHsd(char(modif), energyUnits, field,&
+          call convertUnitHsd(modif, energyUnits, field,&
                               &contacts(ii)%wideBandDos)
           !WideBandApproximation is defined as energy spacing between levels
           !In the code the inverse value (Density of states) is used
@@ -603,7 +603,7 @@ contains
           contacts(ii)%wideBandDos = 1.d0 / contacts(ii)%wideBandDos
         end if
         !call getChildValue(pNode, "FermiLevel", contacts(ii)%eFermi,modifier=modif)
-        !call convertUnitHsd(char(modif), energyUnits, pNode, contacts(ii)%eFermi)
+        !call convertUnitHsd(modif, energyUnits, pNode, contacts(ii)%eFermi)
         contacts(ii)%eFermi=0.d0
       end if
 
@@ -617,7 +617,7 @@ contains
     integer, intent(in) :: atomrange(2)
     type(TGeometry), intent(in) :: geom
     integer, intent(in) :: id
-    type(fnode), pointer :: pContact
+    type(hsd_table), pointer :: pContact
     real(dp), intent(in) :: plShiftTol
     real(dp), intent(out) :: contactVec(3)
     integer, intent(out) :: contactDir
@@ -668,14 +668,14 @@ contains
 
   !> Used to read atomic masses from SK files
   subroutine readSKfiles(child, geo, speciesMass)
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
     type(TGeometry), intent(in) :: geo
     real(dp), dimension(:) :: speciesMass
 
     type(TOldSKData) :: skData
     type(TListCharLc), allocatable :: skFiles(:)
-    type(fnode), pointer :: value, child2
-    type(string) :: buffer, buffer2
+    type(hsd_table), pointer :: value, child2
+    character(len=:), allocatable :: buffer, buffer2
     character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp, filename
     type(TListString) :: lStr
     integer :: ii, iSp1
@@ -691,14 +691,14 @@ contains
     call getChildValue(child, "", value)
     call getNodeName(value, buffer)
 
-    select case(char(buffer))
+    select case(buffer)
     case ("type2filenames")
       call getChildValue(value, "Prefix", buffer2, "")
-      prefix = unquote(char(buffer2))
+      prefix = unquote(buffer2)
       call getChildValue(value, "Suffix", buffer2, "")
-      suffix = unquote(char(buffer2))
+      suffix = unquote(buffer2)
       call getChildValue(value, "Separator", buffer2, "")
-      separator = unquote(char(buffer2))
+      separator = unquote(buffer2)
       call getChildValue(value, "LowerCaseTypeName", tLower, .false.)
       do iSp1 = 1, geo%nSpecies
         if (tLower) then
@@ -757,12 +757,12 @@ contains
 
 
   subroutine readMasses(value, geo, speciesMass)
-    type(fnode), pointer :: value
+    type(hsd_table), pointer :: value
     type(TGeometry), intent(in) :: geo
     real(dp), dimension(:) :: speciesMass
 
-    type(fnode), pointer :: child, child2
-    type(string) :: modif
+    type(hsd_table), pointer :: child, child2
+    character(len=:), allocatable :: modif
     integer :: iSp
     real(dp) :: mass, defmass
 
@@ -784,7 +784,7 @@ contains
   subroutine readKPoints(node, geo, tBadIntegratingKPoints)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
@@ -792,8 +792,8 @@ contains
     !> Error check
     logical, intent(out) :: tBadIntegratingKPoints
 
-    type(fnode), pointer :: value1, child
-    type(string) :: buffer, modifier
+    type(hsd_table), pointer :: value1, child
+    character(len=:), allocatable :: buffer, modifier
     integer :: ind, ii, jj, kk
     real(dp) :: coeffsAndShifts(3, 4)
     real(dp) :: rTmp3(3)
@@ -811,7 +811,7 @@ contains
       call getChildValue(node, "KPointsAndWeights", value1, child=child, &
           &modifier=modifier)
       call getNodeName(value1, buffer)
-      select case(char(buffer))
+      select case(buffer)
 
       case ("supercellfolding")
         tBadIntegratingKPoints = .false.
@@ -878,13 +878,13 @@ contains
         end do
         kWeight(:) = 1.0_dp
         if (len(modifier) > 0) then
-          select case (tolower(char(modifier)))
+          select case (tolower(modifier))
           case ("relative")
           case ("absolute")
             kPoint(:,:) =  matmul(transpose(geo%latVecs), kPoint)
             kpts(:,:) = matmul(transpose(geo%latVecs), kpts)
           case default
-            call detailedError(child, "Invalid modifier: '" // char(modifier) &
+            call detailedError(child, "Invalid modifier: '" // modifier &
                 &// "'")
           end select
         end if
@@ -906,13 +906,13 @@ contains
         call asArray(lr1, kpts)
         call destruct(lr1)
         if (len(modifier) > 0) then
-          select case (tolower(char(modifier)))
+          select case (tolower(modifier))
           case ("relative")
             continue
           case ("absolute")
             kpts(1:3,:) =  matmul(transpose(geo%latVecs), kpts(1:3,:))
           case default
-            call detailedError(child, "Invalid modifier: '" // char(modifier) &
+            call detailedError(child, "Invalid modifier: '" // modifier &
                 &// "'")
           end select
         end if
@@ -930,17 +930,17 @@ contains
 
 
   subroutine  readKPointsFile(child)
-    type(fnode),  pointer ::  child
-    type(string) :: text
+    type(hsd_table),  pointer ::  child
+    character(len=:), allocatable :: text
 
     call getFirstTextChild(child, text)
-    call readKPointsFile_help(child, char(text))
+    call readKPointsFile_help(child, text)
 
   end subroutine  readKPointsFile
 
 
   subroutine readKPointsFile_help(child,text)
-    type(fnode),  pointer ::  child
+    type(hsd_table),  pointer ::  child
     character(len=*), intent(in) :: text
     integer :: iStart, iErr=0, ii, iOldStart
     real(dp), dimension(:), allocatable :: tmparray
@@ -980,7 +980,7 @@ contains
   !!  dx_1 dx_1    dy_1 dx_1   dz_1 dx_1   dx_2 dx_1    dy_2 dx_1
   !!
   subroutine readDftbHessian(child)
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
@@ -988,26 +988,26 @@ contains
 
     type(TFileDescr) :: fd
     integer ::  n, j1, j2
-    type(fnode), pointer :: child2
-    type(string) :: filename
+    type(hsd_table), pointer :: child2
+    character(len=:), allocatable :: filename
     logical :: texist
     character(lc) :: strTmp
 
     call getChildValue(child, "Filename", filename, "hessian.out")
 
     ! workaround for NAG7.1 Build 7148 in Debug build
-    strTmp = char(filename)
+    strTmp = filename
     inquire(file=strTmp, exist=texist )
     if (texist) then
-      write(stdOut, "(/, A)") "read dftb hessian '"//trim(char(filename))//"'..."
+      write(stdOut, "(/, A)") "read dftb hessian '"//trim(filename)//"'..."
     else
-      call detailedError(child,"Hessian file "//trim(char(filename))//" does not exist")
+      call detailedError(child,"Hessian file "//trim(filename)//" does not exist")
     end if
 
     nDerivs = 3 * nMovedAtom
     allocate(dynMatrix(nDerivs,nDerivs))
 
-    call openFile(fd, trim(char(filename)))
+    call openFile(fd, trim(filename))
     do ii = 1,  nDerivs
         read(fd%unit,'(4f16.10)') dynMatrix(1:nDerivs,ii)
     end do
@@ -1036,7 +1036,7 @@ contains
 
 
   subroutine readDynMatrix(child)
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
@@ -1068,7 +1068,7 @@ contains
 
 
   subroutine readCp2kHessian(child)
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
@@ -1077,7 +1077,7 @@ contains
     type(TFileDescr) :: fd
     real, dimension(:,:), allocatable :: HessCp2k
     integer ::  n, j1, j2,  p,  q
-    type(string) :: filename
+    character(len=:), allocatable :: filename
     logical :: texist
     character(lc) :: strTmp
 
@@ -1086,12 +1086,12 @@ contains
 
     call getChildValue(child, "Filename", filename, "hessian.cp2k")
     ! workaround for NAG7.1 Build 7148 in Debug build
-    strTmp = char(filename)
+    strTmp = filename
     inquire(file=strTmp, exist=texist )
     if (texist) then
-      write(stdOut, "(/, A)") "read cp2k hessian '"//trim(char(filename))//"'..."
+      write(stdOut, "(/, A)") "read cp2k hessian '"//trim(filename)//"'..."
     else
-      call detailedError(child,"Hessian file "//trim(char(filename))//" does not exist")
+      call detailedError(child,"Hessian file "//trim(filename)//" does not exist")
     end if
 
     !! The derivatives matrix must be stored as the following order:
@@ -1104,7 +1104,7 @@ contains
     nBlocks = nDerivs/5.0
     allocate(HessCp2k(nDerivs*nBlocks,5))
 
-    call openFile(fd, trim(char(filename)))
+    call openFile(fd, trim(filename))
     do  ii  = 1,  nDerivs*nBlocks
       read(fd%unit, *) HessCp2k(ii,1:5)
     end do
@@ -1184,16 +1184,16 @@ contains
 
   !> Reads the Analysis block.
   subroutine readAnalysis(node, geo, pdos, tundos, transpar, atTemperature)
-    type(fnode), pointer :: node, pnode
+    type(hsd_table), pointer :: node, pnode
     type(TGeometry), intent(in) :: geo
     type(TPdos), intent(inout) :: pdos
     type(TNEGFTunDos), intent(inout) :: tundos
     type(TTransPar), intent(inout) :: transpar
     real(dp) :: atTemperature, TempRange(2)
 
-    type(fnode), pointer :: val, child, field
-    type(string) :: modif
-    type(fnodeList), pointer :: children
+    type(hsd_table), pointer :: val, child, field
+    character(len=:), allocatable :: modif
+    type(hsd_child_list), pointer :: children
     logical :: tBadKpoints
 
     call getChild(node, "TunnelingAndDOS", child, requested=.false.)
@@ -1212,11 +1212,11 @@ contains
       end if
       call getChildValue(child, "TempRange", TempRange, modifier=modif,&
       & child=field)
-      call convertUnitHsd(char(modif), energyUnits, field, TempRange)
+      call convertUnitHsd(modif, energyUnits, field, TempRange)
 
       call getChildValue(child, "TempStep", TempStep, modifier=modif,&
       & child=field)
-      call convertUnitHsd(char(modif), energyUnits, field, TempStep)
+      call convertUnitHsd(modif, energyUnits, field, TempStep)
 
        TempMin = TempRange(1)
        TempMax = TempRange(2)
@@ -1230,15 +1230,15 @@ contains
 
 
   subroutine readPDOSRegions(children, geo, iAtInregion, regionLabels)
-    type(fnodeList), pointer :: children
+    type(hsd_child_list), pointer :: children
     type(TGeometry), intent(in) :: geo
     type(TWrappedInt1), allocatable, intent(out) :: iAtInRegion(:)
     character(lc), allocatable, intent(out) :: regionLabels(:)
 
     integer :: nReg, iReg
     integer, allocatable :: tmpI1(:)
-    type(fnode), pointer :: child, child2
-    type(string) :: buffer
+    type(hsd_table), pointer :: child, child2
+    character(len=:), allocatable :: buffer
     character(lc) :: strTmp
 
     nReg = getLength(children)
@@ -1248,11 +1248,11 @@ contains
       call getItem1(children, iReg, child)
       call getChildValue(child, "Atoms", buffer, child=child2, &
           & multiple=.true.)
-      call getSelectedAtomIndices(child2, char(buffer), geo%speciesNames, geo%species, tmpI1)
+      call getSelectedAtomIndices(child2, buffer, geo%speciesNames, geo%species, tmpI1)
       iAtInRegion(iReg)%data = tmpI1
       write(strTmp, "('region',I0)") iReg
       call getChildValue(child, "Label", buffer, trim(strTmp))
-      regionLabels(iReg) = unquote(char(buffer))
+      regionLabels(iReg) = unquote(buffer)
     end do
 
   end subroutine readPDOSRegions
@@ -1260,7 +1260,7 @@ contains
 
   !> Read Tunneling and Dos options from analysis block
   subroutine readTunAndDos(root, geo, tundos, transpar, temperature)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
     type(TGeometry), intent(in) :: geo
 
     !> The container to be filled
@@ -1268,11 +1268,11 @@ contains
     type(TTransPar), intent(inout) :: transpar
     real(dp), intent(in) :: temperature
 
-    type(fnode), pointer :: pNode, pTmp, field
-    type(fnodeList), pointer :: pNodeList
+    type(hsd_table), pointer :: pNode, pTmp, field
+    type(hsd_child_list), pointer :: pNodeList
     integer :: ii, jj, ind, ncont, nKT
     real(dp) :: eRange(2), eRangeDefault(2)
-    type(string) :: buffer, modif
+    character(len=:), allocatable :: buffer, modif
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     logical, allocatable :: tDirectionResInRegion(:)
     character(lc), allocatable :: regionLabelPrefixes(:)
@@ -1294,7 +1294,7 @@ contains
 
     call getChildValue(root, "FreqRange", eRange, eRangeDefault, &
          & modifier=modif, child=field)
-    call convertUnitHsd(char(modif), energyUnits, field, eRange)
+    call convertUnitHsd(modif, energyUnits, field, eRange)
     tundos%emin = eRange(1)
     tundos%emax = eRange(2)
 
@@ -1308,7 +1308,7 @@ contains
     call getChildValue(root, "FreqStep", tundos%estep, 1.0e-5_dp,  &
        & modifier=modif, child=field)
 
-    call convertUnitHsd(char(modif), energyUnits, field, tundos%estep)
+    call convertUnitHsd(modif, energyUnits, field, tundos%estep)
 
     ! Terminal currents
     call getChild(root, "TerminalCurrents", pTmp, requested=.false.)
@@ -1344,7 +1344,7 @@ contains
 
     call getChildValue(root, "BroadeningDelta", tundos%broadeningDelta, &
         &0.0_dp, modifier=modif, child=field)
-    call convertUnitHsd(char(modif), energyUnits, field, &
+    call convertUnitHsd(modif, energyUnits, field, &
         &tundos%broadeningDelta)
 
     call getChildren(root, "Region", pNodeList)
@@ -1394,7 +1394,7 @@ contains
 
   !> Get contacts for terminal currents by name
   subroutine getEmitterCollectorByName(pNode, emitter, collector, contactNames)
-    type(fnode), pointer :: pNode
+    type(hsd_table), pointer :: pNode
     integer, intent(out) :: emitter, collector
     character(len=*), intent(in) :: contactNames(:)
 
@@ -1421,7 +1421,7 @@ contains
   function getContactByName(contactNames, contName, pNode) result(contact)
     character(len=*), intent(in) :: contactNames(:)
     character(len=*), intent(in) :: contName
-    type(fnode), pointer :: pNode
+    type(hsd_table), pointer :: pNode
     integer :: contact
 
     logical :: tFound
@@ -1443,25 +1443,25 @@ contains
 
   !> Set model for w-dependent delta in G.F.
   subroutine readDeltaModel(root, tundos)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
     type(TNEGFTunDos), intent(inout) :: tundos
 
-    type(fnode), pointer :: pValue, pChild, field
-    type(string) :: buffer, modif
+    type(hsd_table), pointer :: pValue, pChild, field
+    character(len=:), allocatable :: buffer, modif
 
     call getChildValue(root, "", pValue, child=pChild)
     call getNodeName(pValue, buffer)
     ! Delta is repeated to allow different defaults if needed
-    select case (trim(char(buffer)))
+    select case (trim(buffer))
     case("deltasquared")
       call getChildValue(pValue, "Delta", tundos%delta, &
           &0.0001_dp, modifier=modif, child=field)
-      call convertUnitHsd(char(modif), energyUnits, field, tundos%delta)
+      call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=0
     case("deltaomega")
       call getChildValue(pValue, "Delta", tundos%delta, &
           &0.0001_dp, modifier=modif, child=field)
-      call convertUnitHsd(char(modif), energyUnits, field, tundos%delta)
+      call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=1
     case("mingo")
       ! As in Numerical Heat transfer, Part B, 51:333, 2007, Taylor&Francis.
@@ -1470,14 +1470,14 @@ contains
       ! We set a cutoff frequency of 2000 cm^-1.
       call getChildValue(pValue, "Wmax", tundos%wmax, &
           &0.009_dp, modifier=modif, child=field)
-      call convertUnitHsd(char(modif), energyUnits, field, tundos%delta)
+      call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=2
       ! If Emax >> Wmax delta becomes negative
       if (tundos%Emax > tundos%Wmax) then
         call detailedError(pValue,"In Mingo model check Wmax <= Emax")
       end if
     case default
-      call detailedError(pValue,"Unknown deltaModel "//trim(char(buffer)))
+      call detailedError(pValue,"Unknown deltaModel "//trim(buffer))
     end select
   end subroutine ReadDeltaModel
 
@@ -1597,14 +1597,14 @@ contains
 
   !> Select family of modes to analyze and restrict transmission
   subroutine setTypeOfModes(root, transpar)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
     type(TTransPar), intent(inout) :: transpar
 
-    type(string) :: buffer
+    character(len=:), allocatable :: buffer
 
     !selecting the type of modes you want to analyze
     call getchildValue(root, "ModeType", buffer, "all")
-    select case(trim(char(buffer)))
+    select case(trim(buffer))
     case("all")
       selTypeModes = modeEnum%ALLMODES
     case("along-x")
@@ -1637,7 +1637,7 @@ contains
   !> Check that the geometry orientation is consistent with selTypeModes
   !! Currently only checks that transport direction is along z
   subroutine checkTypeOfModes(root, tp)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
     type(TTransPar), intent(inout) :: tp
 
     select case (selTypeModes)
@@ -1653,7 +1653,7 @@ contains
 
   !> Check that transport direction is along z
   subroutine checkAlongZ(root, tp)
-    type(fnode), pointer :: root
+    type(hsd_table), pointer :: root
     type(TTransPar), intent(inout) :: tp
 
     real(dp) :: contactVec(3)
