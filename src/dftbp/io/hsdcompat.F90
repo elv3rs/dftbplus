@@ -24,6 +24,7 @@
 !> to direct hsd-fortran API calls (Phase 7).
 module dftbp_io_hsdcompat
   use dftbp_common_accuracy, only : dp, lc, mc
+  use dftbp_common_status, only : TStatus
   use dftbp_common_unitconversion, only : TUnit, convertUnit, statusCodes
   use dftbp_extlibs_hsddata, only : hsd_table, hsd_value, hsd_node, hsd_node_ptr, hsd_iterator, &
       & hsd_get, hsd_get_or, hsd_get_or_set, hsd_get_matrix, &
@@ -32,20 +33,45 @@ module dftbp_io_hsdcompat
       & hsd_rename_child, hsd_get_choice, &
       & new_table, new_value, &
       & HSD_STAT_OK, HSD_STAT_NOT_FOUND, HSD_STAT_TYPE_ERROR
+  use dftbp_io_charmanip, only : i2c, tolower
+  use dftbp_io_indexselection, only : getIndexSelection
   use dftbp_io_message, only : error, warning
   implicit none
 
   private
 
   !> Public compatibility API — generic interfaces matching legacy calling patterns
-  public :: getChildValue, getChild, setChildValue
+  public :: getChildValue, getChild, setChildValue, setChild
   public :: detailedError, detailedWarning
   public :: convertUnitHsd
-  public :: getNodeName2
-  public :: warnUnprocessedNodes
+  public :: getNodeName, getNodeName2, getNodeHSDName
+  public :: getChildren, getLength, getItem1, destroyNodeList
+  public :: getSelectedAtomIndices, getSelectedIndices
+  public :: splitModifier
+  public :: warnUnprocessedNodes, setUnprocessed
+
+  !> Constant for text node name (matches xmlf90 textNodeName)
+  character(len=*), parameter, public :: textNodeName = "#text"
 
   !> Error message prefix for invalid modifiers (matches legacy MSG_INVALID_MODIFIER)
   character(len=*), parameter :: MSG_INVALID_MODIFIER = "Unknown modifier '"
+
+  !> Separator character for splitting modifiers
+  character, parameter :: sepModifier = ","
+
+  !> Wrapper for a pointer to hsd_table (for arrays of pointers).
+  type :: hsd_table_ptr
+    type(hsd_table), pointer :: ptr => null()
+  end type hsd_table_ptr
+
+  !> List of child tables (replaces fnodeList).
+  !>
+  !> Created by getChildren(), indexed by getItem1(), sized by getLength(),
+  !> freed by destroyNodeList().
+  type, public :: hsd_child_list
+    integer :: count = 0
+    type(hsd_table_ptr), allocatable :: items(:)
+  end type hsd_child_list
 
   !> Generic interface for reading child values.
   !>
@@ -166,13 +192,14 @@ contains
   !> If default is provided and the child is not found, the default value is used
   !> and written back to the tree (for dftb_pin.hsd generation).
   !> If default is not provided, the child is required and an error is raised if absent.
-  subroutine getChVal_string(node, name, val, default, modifier, child)
+  subroutine getChVal_string(node, name, val, default, modifier, child, multiple)
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     character(len=:), allocatable, intent(out) :: val
     character(len=*), intent(in), optional :: default
     character(len=:), allocatable, intent(out), optional :: modifier
     type(hsd_table), pointer, intent(out), optional :: child
+    logical, intent(in), optional :: multiple
 
     integer :: stat
 
@@ -378,57 +405,84 @@ contains
   !> Get a child table for dispatch or block reading.
   !>
   !> This maps the legacy pattern:
-  !>   call getChildValue(node, "", child)
-  !>   call getNodeName(child, buffer)
-  !>   select case (char(buffer))
+  !>   call getChildValue(node, "Name", value1, "", child=child)
+  !>   call getNodeName(value1, buffer)
+  !>   select case (buffer)
   !>
-  !> To:
-  !>   call getChildValue(table, "", child, requested=.true.)
-  !>   ! then use child%name for dispatch
-  subroutine getChVal_table(node, name, child, requested, modifier, allowEmptyValue, dummyValue)
+  !> The variableValue (child) output is a pointer to the first table child of the named block.
+  !> If the first child is a value node (inline data), variableValue is set to null,
+  !> and getNodeName will return "#text" for it.
+  !>
+  !> When called with 3 positional args and child= keyword:
+  !>   call getChildValue(node, "Name", value1, child=child)
+  !> variableValue = first table child, child = named container
+  !>
+  !> When called with 4 positional args (with default ""):
+  !>   call getChildValue(node, "Name", value1, "", child=child, ...)
+  !> Same, but creates block if missing.
+  subroutine getChVal_table(node, name, variableValue, default, modifier, child, &
+      & list, allowEmptyValue, dummyValue, multiple, requested)
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
-    type(hsd_table), pointer, intent(out) :: child
-    logical, intent(in), optional :: requested
+    type(hsd_table), pointer, intent(out) :: variableValue
+    character(len=*), intent(in), optional :: default
     character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+    logical, intent(in), optional :: list
     logical, intent(in), optional :: allowEmptyValue
     logical, intent(in), optional :: dummyValue
+    logical, intent(in), optional :: multiple
+    logical, intent(in), optional :: requested
 
+    type(hsd_table), pointer :: container
     integer :: stat
     logical :: isRequired
 
+    variableValue => null()
+
     isRequired = .true.
     if (present(requested)) isRequired = requested
+    if (present(default)) isRequired = .false.
 
     if (len_trim(name) == 0) then
-      ! Empty name means "get the first table child" (dispatch pattern)
-      call getFirstTableChild_(node, child, stat)
+      ! Empty name means "get the first child" (dispatch pattern from root)
+      container => node
     else
-      call hsd_get_table(node, name, child, stat)
-    end if
-
-    if (stat /= HSD_STAT_OK) then
-      child => null()
-      if (isRequired) then
-        if (len_trim(name) == 0) then
-          call error(formatErrMsg_(node, "Missing required child block"))
-        else
+      ! Find the named child table
+      call hsd_get_table(node, name, container, stat)
+      if (stat /= HSD_STAT_OK) then
+        if (present(default)) then
+          ! Create the child with default
+          allocate(container)
+          call new_table(container, name=tolower(name))
+          call node%add_child(container)
+        else if (isRequired) then
           call error(formatErrMsg_(node, "Missing required block: '" // name // "'"))
+          return
+        else
+          container => null()
+          if (present(child)) child => null()
+          if (present(modifier)) modifier = ""
+          return
         end if
       end if
-      return
     end if
 
-    if (present(modifier) .and. associated(child)) then
-      if (len_trim(name) == 0) then
-        ! For dispatch blocks, the modifier is on the child itself
-        if (allocated(child%attrib)) then
-          modifier = child%attrib
-        else
-          modifier = ""
-        end if
+    ! Get the first table child of the container for dispatch
+    if (associated(container)) then
+      call getFirstTableChild_(container, variableValue, stat)
+    end if
+    ! If no table child found, variableValue stays null (= "#text" / inline data)
+
+    if (present(child)) then
+      child => container
+    end if
+
+    if (present(modifier)) then
+      if (associated(container) .and. allocated(container%attrib)) then
+        modifier = container%attrib
       else
-        call getModifier_(node, name, modifier)
+        modifier = ""
       end if
     end if
 
@@ -724,6 +778,319 @@ contains
     ! once schemas are defined for each parser section.
 
   end subroutine warnUnprocessedNodes
+
+  ! ============================================================
+  !  getNodeName — get raw node name (legacy getNodeName from xmlf90)
+  ! ============================================================
+
+  !> Get the raw name of a node.
+  !>
+  !> For hsd_table nodes, returns the node name. For the dispatch pattern where
+  !> the table pointer is null (indicating inline value data), returns "#text".
+  !> This matches the legacy xmlf90 getNodeName behavior.
+  subroutine getNodeName(node, nodeName)
+    type(hsd_table), pointer, intent(in) :: node
+    character(len=:), allocatable, intent(out) :: nodeName
+
+    if (.not. associated(node)) then
+      nodeName = textNodeName
+    else if (allocated(node%name)) then
+      nodeName = node%name
+    else
+      nodeName = ""
+    end if
+
+  end subroutine getNodeName
+
+  ! ============================================================
+  !  getNodeHSDName — get pretty HSD node name (for error messages)
+  ! ============================================================
+
+  !> Get the HSD-style name of a node (for error messages).
+  !>
+  !> Returns the node name in its original case. In the legacy code, this would
+  !> look up the attrName attribute. In hsd-fortran, we just return the name.
+  subroutine getNodeHSDName(node, nodeName)
+    type(hsd_table), intent(in), target :: node
+    character(len=:), allocatable, intent(out) :: nodeName
+
+    if (allocated(node%name)) then
+      nodeName = node%name
+    else
+      nodeName = ""
+    end if
+
+  end subroutine getNodeHSDName
+
+  ! ============================================================
+  !  setChild — create a new child block
+  ! ============================================================
+
+  !> Create a new named child block under a parent.
+  !>
+  !> This replaces the legacy setChild(node, name, child, replace, list, modifier)
+  !> pattern that creates a new element node and appends it.
+  subroutine setChild(node, name, child, replace, list, modifier)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(hsd_table), pointer, intent(out) :: child
+    logical, intent(in), optional :: replace
+    logical, intent(in), optional :: list
+    character(len=*), intent(in), optional :: modifier
+
+    type(hsd_table), pointer :: newChild
+
+    ! Create and add a new table child
+    allocate(newChild)
+    call new_table(newChild, name=name)
+    call node%add_child(newChild)
+    child => newChild
+
+    if (present(modifier)) then
+      if (len_trim(modifier) > 0) then
+        call hsd_set_attrib(node, name, modifier)
+      end if
+    end if
+
+  end subroutine setChild
+
+  ! ============================================================
+  !  setUnprocessed — no-op stub
+  ! ============================================================
+
+  !> Mark a node as unprocessed (no-op in hsd-data).
+  !>
+  !> In the legacy code, this removed the "processed" attribute.
+  !> In hsd-data, processing tracking is not used.
+  subroutine setUnprocessed(node)
+    type(hsd_table), intent(in) :: node
+
+    ! No-op
+
+  end subroutine setUnprocessed
+
+  ! ============================================================
+  !  getChildren / getLength / getItem1 / destroyNodeList
+  !  — fnodeList compatibility layer
+  ! ============================================================
+
+  !> Get all child tables matching a given name.
+  !>
+  !> This replaces the legacy getChildren(node, name, children) pattern.
+  !> Returns an hsd_child_list containing pointers to matching children.
+  subroutine getChildren(node, name, children)
+    type(hsd_table), intent(in), target :: node
+    character(len=*), intent(in) :: name
+    type(hsd_child_list), pointer, intent(out) :: children
+
+    type(hsd_iterator) :: iter
+    class(hsd_node), pointer :: cur
+    integer :: cnt, idx
+    character(len=:), allocatable :: childName
+
+    ! First pass: count matches
+    cnt = 0
+    call iter%init(node)
+    do while (iter%next(cur))
+      select type (t => cur)
+      type is (hsd_table)
+        if (allocated(t%name)) then
+          childName = tolower(t%name)
+          if (childName == tolower(name)) cnt = cnt + 1
+        end if
+      end select
+    end do
+
+    ! Allocate the list
+    allocate(children)
+    children%count = cnt
+    if (cnt > 0) then
+      allocate(children%items(cnt))
+    end if
+
+    ! Second pass: fill pointers
+    idx = 0
+    call iter%init(node)
+    do while (iter%next(cur))
+      select type (t => cur)
+      type is (hsd_table)
+        if (allocated(t%name)) then
+          childName = tolower(t%name)
+          if (childName == tolower(name)) then
+            idx = idx + 1
+            children%items(idx)%ptr => t
+          end if
+        end if
+      end select
+    end do
+
+  end subroutine getChildren
+
+  !> Get the number of items in a child list.
+  pure function getLength(children) result(length)
+    type(hsd_child_list), pointer, intent(in) :: children
+    integer :: length
+
+    if (associated(children)) then
+      length = children%count
+    else
+      length = 0
+    end if
+
+  end function getLength
+
+  !> Get the ii-th item from a child list (1-based indexing).
+  subroutine getItem1(children, ii, child)
+    type(hsd_child_list), pointer, intent(in) :: children
+    integer, intent(in) :: ii
+    type(hsd_table), pointer, intent(out) :: child
+
+    if (.not. associated(children) .or. ii < 1 .or. ii > children%count) then
+      child => null()
+      return
+    end if
+    child => children%items(ii)%ptr
+
+  end subroutine getItem1
+
+  !> Free a child list (replaces legacy destroyNodeList).
+  !>
+  !> Note: This only frees the list container, not the child nodes themselves
+  !> (which are owned by the parent table).
+  subroutine destroyNodeList(children)
+    type(hsd_child_list), pointer, intent(inout) :: children
+
+    if (associated(children)) then
+      if (allocated(children%items)) deallocate(children%items)
+      deallocate(children)
+    end if
+    children => null()
+
+  end subroutine destroyNodeList
+
+  ! ============================================================
+  !  splitModifier — split comma-separated modifier string
+  ! ============================================================
+
+  !> Split a modifier containing comma-separated list of modifiers into components.
+  !>
+  !> Replaces the legacy splitModifier that used type(string) arrays.
+  !> This version uses allocatable character arrays.
+  subroutine splitModifier(modifier, child, modifiers)
+    character(len=*), intent(in) :: modifier
+    type(hsd_table), intent(in) :: child
+    character(len=mc), intent(out) :: modifiers(:)
+
+    integer :: nModif, ii, iStart, iEnd
+
+    nModif = size(modifiers)
+    iStart = 1
+    do ii = 1, nModif - 1
+      iEnd = index(modifier(iStart:), sepModifier)
+      if (iEnd == 0) then
+        call detailedError(child, "Invalid number of specified modifiers (" &
+            & // i2c(ii) // " instead of " // i2c(nModif) // ").")
+      end if
+      iEnd = iStart + iEnd - 1
+      modifiers(ii) = trim(adjustl(modifier(iStart:iEnd-1)))
+      iStart = iEnd + 1
+    end do
+    if (index(modifier(iStart:), sepModifier) /= 0) then
+      call detailedError(child, "Invalid number of specified modifiers (" &
+          & // "more than " // i2c(nModif) // ").")
+    end if
+    modifiers(nModif) = trim(adjustl(modifier(iStart:)))
+
+  end subroutine splitModifier
+
+  ! ============================================================
+  !  getSelectedAtomIndices / getSelectedIndices
+  ! ============================================================
+
+  !> Convert a string containing atom indices, ranges and species names to a list of atom indices.
+  !>
+  !> This is a copy of the legacy hsdutils version but takes hsd_table instead of fnode.
+  subroutine getSelectedAtomIndices(node, selectionExpr, speciesNames, species, selectedIndices,&
+        & selectionRange, indexRange)
+
+    !> Top node for detailed errors.
+    type(hsd_table), intent(in) :: node
+
+    !> String to convert
+    character(len=*), intent(in) :: selectionExpr
+
+    !> Contains the valid species names.
+    character(len=*), intent(in) :: speciesNames(:)
+
+    !> Contains for every atom its species index
+    integer, intent(in) :: species(:)
+
+    !> Integer list of atom indices on return.
+    integer, allocatable, intent(out) :: selectedIndices(:)
+
+    !> The range of indices [from, to] available for selection. Default: [1, size(species)]
+    integer, optional, intent(in) :: selectionRange(:)
+
+    !> The range of indices [from, to] available in general.
+    integer, optional, intent(in) :: indexRange(:)
+
+    type(TStatus) :: errStatus
+    logical, allocatable :: selected(:)
+    integer :: selectionRange_(2)
+    integer :: ii
+
+    if (present(selectionRange)) then
+      selectionRange_(:) = selectionRange
+    else
+      selectionRange_(:) = [1, size(species)]
+    end if
+
+    allocate(selected(selectionRange_(2) - selectionRange_(1) + 1))
+    call getIndexSelection(selectionExpr, selectionRange_, selected, errStatus,&
+        & indexRange=indexRange, speciesNames=speciesNames, species=species)
+    if (errStatus%hasError()) then
+      call detailedError(node, "Invalid atom selection expression '" // trim(selectionExpr) &
+          & // "': " // errStatus%message)
+    end if
+    selectedIndices = pack([(ii, ii = selectionRange_(1), selectionRange_(2))], selected)
+    if (size(selectedIndices) == 0) then
+      call detailedWarning(node, "Atom index selection expression selected no atoms")
+    end if
+
+  end subroutine getSelectedAtomIndices
+
+  !> Convert a string containing indices and ranges to a list of indices.
+  subroutine getSelectedIndices(node, selectionExpr, selectionRange, selectedIndices, indexRange)
+
+    !> Top node for detailed errors.
+    type(hsd_table), intent(in) :: node
+
+    !> String to convert
+    character(len=*), intent(in) :: selectionExpr
+
+    !> Range of indices [from, to] available for selection.
+    integer, intent(in) :: selectionRange(:)
+
+    !> Integer list of selected indices on return.
+    integer, allocatable, intent(out) :: selectedIndices(:)
+
+    !> The range of indices [from, to] available in general.
+    integer, optional, intent(in) :: indexRange(:)
+
+    type(TStatus) :: errStatus
+    logical, allocatable :: selected(:)
+    integer :: ii
+
+    allocate(selected(selectionRange(2) - selectionRange(1) + 1))
+    call getIndexSelection(selectionExpr, selectionRange, selected, errStatus,&
+        & indexRange=indexRange)
+    if (errStatus%hasError()) then
+      call detailedError(node, "Invalid index selection expression '" // trim(selectionExpr) &
+          & // "': " // errStatus%message)
+    end if
+    selectedIndices = pack([(ii, ii = selectionRange(1), selectionRange(2))], selected)
+
+  end subroutine getSelectedIndices
 
   ! ============================================================
   !  Internal helpers

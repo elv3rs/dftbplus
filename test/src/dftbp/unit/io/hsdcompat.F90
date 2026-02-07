@@ -9,13 +9,16 @@
 
 module test_io_hsdcompat
   use fortuno_serial, only : suite => serial_suite_item, test_list
-  use dftbp_common_accuracy, only : dp
+  use dftbp_common_accuracy, only : dp, mc
   use dftbp_common_unitconversion, only : TUnit
   use dftbp_extlibs_hsddata, only : hsd_table, hsd_error_t, hsd_get, hsd_set, new_table, &
       & data_load_string, DATA_FMT_HSD, HSD_STAT_OK, hsd_has_child, hsd_get_attrib, &
       & hsd_set_attrib, hsd_get_table
-  use dftbp_io_hsdcompat, only : getChildValue, getChild, setChildValue, &
-      & detailedWarning, convertUnitHsd, getNodeName2, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : getChildValue, getChild, setChildValue, setChild, &
+      & detailedWarning, convertUnitHsd, getNodeName, getNodeName2, getNodeHSDName, &
+      & warnUnprocessedNodes, setUnprocessed, &
+      & getChildren, getLength, getItem1, destroyNodeList, hsd_child_list, &
+      & splitModifier, textNodeName
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
 
@@ -277,6 +280,130 @@ contains
       call getNodeName2(dispatch, name)
       @:ASSERT(name == "ConjugateGradient")
     end block
+  $:END_TEST()
+
+
+  $:TEST("getNodeName_null_returns_text", label="hsdcompat")
+    !! getNodeName with null pointer returns "#text"
+    type(hsd_table), pointer :: nullPtr
+    character(len=:), allocatable :: name
+
+    nullPtr => null()
+    call getNodeName(nullPtr, name)
+    @:ASSERT(name == textNodeName)
+    @:ASSERT(name == "#text")
+  $:END_TEST()
+
+
+  $:TEST("getNodeName_associated", label="hsdcompat")
+    !! getNodeName with an associated table returns the node name
+    type(hsd_table), target :: tbl
+    type(hsd_table), pointer :: ptr
+    character(len=:), allocatable :: name
+
+    call new_table(tbl, name="MyBlock")
+    ptr => tbl
+    call getNodeName(ptr, name)
+    @:ASSERT(name == "MyBlock")
+  $:END_TEST()
+
+
+  $:TEST("getNodeHSDName_works", label="hsdcompat")
+    !! getNodeHSDName returns the node name
+    type(hsd_table) :: root
+    character(len=:), allocatable :: name
+
+    call new_table(root, name="TestNode")
+    call getNodeHSDName(root, name)
+    @:ASSERT(name == "TestNode")
+  $:END_TEST()
+
+
+  $:TEST("setChild_creates_block", label="hsdcompat")
+    !! setChild creates a new named child table
+    type(hsd_table) :: root
+    type(hsd_table), pointer :: child
+    character(len=:), allocatable :: name
+
+    call new_table(root, name="root")
+    call setChild(root, "NewBlock", child)
+    @:ASSERT(associated(child))
+    call getNodeName2(child, name)
+    @:ASSERT(name == "NewBlock")
+    ! Verify the child is accessible via getChild
+    block
+      type(hsd_table), pointer :: found
+      call getChild(root, "NewBlock", found, requested=.false.)
+      @:ASSERT(associated(found))
+    end block
+  $:END_TEST()
+
+
+  $:TEST("getChildren_getItem1_getLength", label="hsdcompat")
+    !! getChildren/getLength/getItem1/destroyNodeList workflow
+    type(hsd_table) :: root
+    type(hsd_error_t), allocatable :: err
+    type(hsd_child_list), pointer :: children
+    type(hsd_table), pointer :: child
+    integer :: nn
+
+    call data_load_string("Region { Atoms = 1 }" // char(10) // &
+        & "Region { Atoms = 2 }" // char(10) // &
+        & "Region { Atoms = 3 }", root, DATA_FMT_HSD, err)
+    @:ASSERT(.not. allocated(err))
+
+    call getChildren(root, "Region", children)
+    nn = getLength(children)
+    @:ASSERT(nn == 3)
+
+    ! Get first and last
+    call getItem1(children, 1, child)
+    @:ASSERT(associated(child))
+    call getItem1(children, 3, child)
+    @:ASSERT(associated(child))
+
+    ! Out of bounds
+    call getItem1(children, 0, child)
+    @:ASSERT(.not. associated(child))
+    call getItem1(children, 4, child)
+    @:ASSERT(.not. associated(child))
+
+    call destroyNodeList(children)
+    @:ASSERT(.not. associated(children))
+  $:END_TEST()
+
+
+  $:TEST("getChildren_empty", label="hsdcompat")
+    !! getChildren with no matches returns count 0
+    type(hsd_table) :: root
+    type(hsd_child_list), pointer :: children
+
+    call new_table(root, name="root")
+    call getChildren(root, "Missing", children)
+    @:ASSERT(getLength(children) == 0)
+    call destroyNodeList(children)
+  $:END_TEST()
+
+
+  $:TEST("splitModifier_3parts", label="hsdcompat")
+    !! splitModifier splits comma-separated modifier into 3 parts
+    type(hsd_table) :: root
+    character(len=mc) :: mods(3)
+
+    call new_table(root, name="test")
+    call splitModifier("Angstrom, eV, e", root, mods)
+    @:ASSERT(trim(mods(1)) == "Angstrom")
+    @:ASSERT(trim(mods(2)) == "eV")
+    @:ASSERT(trim(mods(3)) == "e")
+  $:END_TEST()
+
+
+  $:TEST("setUnprocessed_noop", label="hsdcompat")
+    !! setUnprocessed is a no-op — just verify it doesn't crash
+    type(hsd_table) :: root
+    call new_table(root, "test")
+    call setUnprocessed(root)
+    @:ASSERT(.true.)
   $:END_TEST()
 
 
