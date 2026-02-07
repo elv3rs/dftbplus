@@ -169,8 +169,6 @@ endif()
 # Follow GNU conventions for installing directories
 include(GNUInstallDirs)
 
-add_subdirectory(external/xmlf90 EXCLUDE_FROM_ALL)
-
 # Include hsd-data library (pulls in hsd-fortran automatically)
 set(HSD_DATA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(HSD_DATA_BUILD_APP OFF CACHE BOOL "" FORCE)

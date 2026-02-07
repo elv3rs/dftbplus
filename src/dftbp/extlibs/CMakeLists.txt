@@ -16,8 +16,7 @@ set(sources-fpp
   ${curdir}/poisson.F90
   ${curdir}/scalapackfx.F90
   ${curdir}/sdftd3.F90
-  ${curdir}/tblite.F90
-  ${curdir}/xmlf90.F90)
+  ${curdir}/tblite.F90)
 
 if(WITH_SOCKETS)
   list(APPEND sources-fpp ${curdir}/fsockets.F90)
