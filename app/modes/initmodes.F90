@@ -161,7 +161,7 @@ contains
     character(lc) :: prefix, suffix, separator, elem1, strTmp, str2Tmp, filename
     logical :: tLower, tDumpPHSD
     logical :: tWriteHSD
-    type(string), allocatable :: searchPath(:)
+    character(len=:), allocatable :: searchPath(:)
     character(len=:), allocatable :: strOut, strJoin, hessianFile
     type(TFileDescr) :: file
     integer :: iErr

@@ -9,7 +9,6 @@
 
 !> File system utilities
 module dftbp_common_filesystem
-  use dftbp_extlibs_xmlf90, only : assignment(=), char, string
   use dftbp_io_charmanip, only : endsWith
   implicit none
   private
@@ -107,7 +106,7 @@ contains
   subroutine findFile(searchPath, inName, outName)
 
     !> Paths to search in, the current working directory is always searched first
-    type(string), intent(in) :: searchPath(:)
+    character(len=*), intent(in) :: searchPath(:)
 
     !> File to search for
     character(len=*), intent(in) :: inName
@@ -125,7 +124,7 @@ contains
     end if
 
     do iPath = 1, size(searchPath)
-      outName = joinPaths(char(searchPath(iPath)), trim(inName))
+      outName = joinPaths(trim(searchPath(iPath)), trim(inName))
       inquire(file=outName, exist=exists)
       if (exists) exit
     end do
@@ -139,18 +138,20 @@ contains
   !! working directory ('.') is pre-pended.
   subroutine getParamSearchPaths(path)
 
-    !> Instance
-    type(string), intent(out), allocatable :: path(:)
+    !> Instance - array of search path strings
+    character(len=:), allocatable, intent(out) :: path(:)
 
     character(len=:), allocatable :: var
+    integer :: pathLen
 
     call getEnvVar(paramEnv, var)
 
     if (allocated(var)) then
-      allocate(path(2))
+      pathLen = max(1, len(var))
+      allocate(character(len=pathLen) :: path(2))
       path(2) = var
     else
-      allocate(path(1))
+      allocate(character(len=1) :: path(1))
     end if
 
     path(1) = "."
@@ -162,7 +163,7 @@ contains
   function joinPathsPrettyErr(path) result(prettyStr)
 
     !> Instance
-    type(string), intent(in), allocatable :: path(:)
+    character(len=*), intent(in) :: path(:)
 
     !! Joined paths for pretty error printing
     character(len=:), allocatable :: prettyStr
@@ -170,16 +171,15 @@ contains
     !! Auxiliary variables
     integer :: iPath
 
-    if (allocated(path)) then
-      if (size(path) > 0) then
-        prettyStr = "'" // char(path(1)) // "'"
-      end if
+    if (size(path) > 0) then
+      prettyStr = "'" // trim(path(1)) // "'"
     else
+      prettyStr = ""
       return
     end if
 
     do iPath = 2, size(path)
-      prettyStr = prettyStr // ", '" // char(path(iPath)) // "'"
+      prettyStr = prettyStr // ", '" // trim(path(iPath)) // "'"
     end do
 
   end function joinPathsPrettyErr

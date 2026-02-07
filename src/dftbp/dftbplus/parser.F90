@@ -1214,7 +1214,7 @@ contains
     integer, allocatable :: iTmpN(:)
     integer :: nShell, skInterMeth
     real(dp) :: rSKCutOff
-    type(string), allocatable :: searchPath(:)
+    character(len=:), allocatable :: searchPath(:)
     character(len=:), allocatable :: strOut, strJoin
     logical :: isHalogenXCorr
 
@@ -1739,7 +1739,7 @@ contains
 
     type(fnode), pointer :: value1, child
     type(string) :: buffer
-    type(string), allocatable :: searchPath(:)
+    character(len=:), allocatable :: searchPath(:)
     integer :: method
     character(len=:), allocatable :: paramFile, paramTmp
     type(TOrbitals) :: orb
@@ -8338,7 +8338,7 @@ contains
 
   #:if WITH_CHIMES
     type(string) :: buffer
-    type(string), allocatable :: searchPath(:)
+    character(len=:), allocatable :: searchPath(:)
     character(len=:), allocatable :: chimesFile
   #:endif
 

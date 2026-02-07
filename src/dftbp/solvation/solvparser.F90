@@ -99,7 +99,7 @@ contains
     type(fnode), pointer :: child, value1, field
     logical :: tHBondCorr, tALPB
     real(dp) :: temperature, shift, alphaALPB
-    type(string), allocatable :: searchPath(:)
+    character(len=:), allocatable :: searchPath(:)
     type(TSolventData) :: solvent
     real(dp), parameter :: alphaDefault = 0.571412_dp
     character(len=:), allocatable :: paramFile, paramTmp

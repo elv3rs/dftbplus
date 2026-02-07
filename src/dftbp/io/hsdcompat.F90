@@ -33,9 +33,12 @@ module dftbp_io_hsdcompat
       & hsd_rename_child, hsd_get_choice, &
       & new_table, new_value, &
       & HSD_STAT_OK, HSD_STAT_NOT_FOUND, HSD_STAT_TYPE_ERROR
-  use dftbp_io_charmanip, only : i2c, tolower
+  use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_indexselection, only : getIndexSelection
   use dftbp_io_message, only : error, warning
+  use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
+  use dftbp_type_linkedlist, only : append, len, TListComplex, TListComplexR1, TListInt, &
+      & TListIntR1, TListReal, TListRealR1, TListString
   implicit none
 
   private
@@ -92,11 +95,25 @@ module dftbp_io_hsdcompat
     module procedure :: getChVal_intR1
     module procedure :: getChVal_realR1
     module procedure :: getChVal_logicalR1
+    ! Rank-1 arrays with default
+    module procedure :: getChVal_intR1_def
+    module procedure :: getChVal_realR1_def
+    module procedure :: getChVal_logicalR1_def
     ! Rank-2 arrays without default
     module procedure :: getChVal_realR2
     module procedure :: getChVal_intR2
     ! Child table retrieval (for dispatch blocks)
     module procedure :: getChVal_table
+    ! Linked list readers (variable-length)
+    module procedure :: getChVal_lString
+    module procedure :: getChVal_lReal
+    module procedure :: getChVal_lRealR1
+    module procedure :: getChVal_lInt
+    module procedure :: getChVal_lIntR1
+    module procedure :: getChVal_lComplex
+    module procedure :: getChVal_lComplexR1
+    module procedure :: getChVal_lIntR1RealR1
+    module procedure :: getChVal_lStringIntR1RealR1
   end interface getChildValue
 
   !> Generic interface for writing child values.
@@ -221,13 +238,14 @@ contains
   ! ============================================================
 
   !> Get integer child value with default (writes default back if absent)
-  subroutine getChVal_int_def(node, name, val, default, modifier, child)
+  subroutine getChVal_int_def(node, name, val, default, modifier, child, isDefaultExported)
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     integer, intent(out) :: val
     integer, intent(in) :: default
     character(len=:), allocatable, intent(out), optional :: modifier
     type(hsd_table), pointer, intent(out), optional :: child
+    logical, intent(in), optional :: isDefaultExported
 
     call hsd_get_or_set(node, name, val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
@@ -236,13 +254,14 @@ contains
   end subroutine getChVal_int_def
 
   !> Get real(dp) child value with default
-  subroutine getChVal_real_def(node, name, val, default, modifier, child)
+  subroutine getChVal_real_def(node, name, val, default, modifier, child, isDefaultExported)
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     real(dp), intent(out) :: val
     real(dp), intent(in) :: default
     character(len=:), allocatable, intent(out), optional :: modifier
     type(hsd_table), pointer, intent(out), optional :: child
+    logical, intent(in), optional :: isDefaultExported
 
     call hsd_get_or_set(node, name, val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
@@ -489,6 +508,413 @@ contains
   end subroutine getChVal_table
 
   ! ============================================================
+  !  getChildValue — rank-1 arrays with default
+  ! ============================================================
+
+  !> Get integer array child value with default.
+  subroutine getChVal_intR1_def(node, name, val, default, nItem, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    integer, intent(out) :: val(:)
+    integer, intent(in) :: default(:)
+    integer, intent(out), optional :: nItem
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    integer, allocatable :: tmp(:)
+    integer :: stat, nn
+
+    call hsd_get(node, name, tmp, stat=stat)
+    if (stat /= HSD_STAT_OK) then
+      nn = min(size(default), size(val))
+      val(:nn) = default(:nn)
+      call hsd_set(node, name, default)
+      if (present(nItem)) nItem = size(default)
+    else
+      nn = min(size(tmp), size(val))
+      val(:nn) = tmp(:nn)
+      if (present(nItem)) nItem = size(tmp)
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_intR1_def
+
+  !> Get real(dp) array child value with default.
+  subroutine getChVal_realR1_def(node, name, val, default, nItem, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    real(dp), intent(out) :: val(:)
+    real(dp), intent(in) :: default(:)
+    integer, intent(out), optional :: nItem
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    real(dp), allocatable :: tmp(:)
+    integer :: stat, nn
+
+    call hsd_get(node, name, tmp, stat=stat)
+    if (stat /= HSD_STAT_OK) then
+      nn = min(size(default), size(val))
+      val(:nn) = default(:nn)
+      call hsd_set(node, name, default)
+      if (present(nItem)) nItem = size(default)
+    else
+      nn = min(size(tmp), size(val))
+      val(:nn) = tmp(:nn)
+      if (present(nItem)) nItem = size(tmp)
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_realR1_def
+
+  !> Get logical array child value with default.
+  subroutine getChVal_logicalR1_def(node, name, val, default, nItem, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    logical, intent(out) :: val(:)
+    logical, intent(in) :: default(:)
+    integer, intent(out), optional :: nItem
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    logical, allocatable :: tmp(:)
+    integer :: stat, nn
+
+    call hsd_get(node, name, tmp, stat=stat)
+    if (stat /= HSD_STAT_OK) then
+      nn = min(size(default), size(val))
+      val(:nn) = default(:nn)
+      ! Write back default as string (Fortran boolean array → hsd)
+      if (present(nItem)) nItem = size(default)
+    else
+      nn = min(size(tmp), size(val))
+      val(:nn) = tmp(:nn)
+      if (present(nItem)) nItem = size(tmp)
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_logicalR1_def
+
+  ! ============================================================
+  !  getChildValue — linked-list readers (variable-length data)
+  ! ============================================================
+
+  !> Get a list of strings from a child's text content.
+  !>
+  !> Reads all whitespace-separated tokens from the named child's text.
+  !> Each token is unquoted and appended to variableValue.
+  subroutine getChVal_lString(node, name, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(TListString), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text, token
+    integer :: iStart, iErr
+
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, token, iStart, iErr)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, trim(unquote(token)))
+      call getNextToken(text, token, iStart, iErr)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid string value in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lString
+
+  !> Get a list of real values from a child's text content.
+  subroutine getChVal_lReal(node, name, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(TListReal), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    real(dp) :: buffer
+    integer :: iStart, iErr
+
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, buffer, iStart, iErr)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, buffer)
+      call getNextToken(text, buffer, iStart, iErr)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid real value in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lReal
+
+  !> Get a list of real arrays (rank-1 of given dimension) from a child's text content.
+  !>
+  !> Reads dim reals at a time as groups, appending each group to the list.
+  subroutine getChVal_lRealR1(node, name, dim, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: dim
+    type(TListRealR1), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    real(dp), allocatable :: buffer(:)
+    integer :: iStart, iErr, nItem
+
+    allocate(buffer(dim))
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, buffer, iStart, iErr, nItem)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, buffer)
+      call getNextToken(text, buffer, iStart, iErr, nItem)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid real value in '" // name // "'"))
+    else if (iErr == TOKEN_EOS .and. nItem /= 0) then
+      call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lRealR1
+
+  !> Get a list of integer values from a child's text content.
+  subroutine getChVal_lInt(node, name, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(TListInt), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    integer :: buffer
+    integer :: iStart, iErr
+
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, buffer, iStart, iErr)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, buffer)
+      call getNextToken(text, buffer, iStart, iErr)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid integer value in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lInt
+
+  !> Get a list of integer arrays (rank-1 of given dimension) from a child's text content.
+  subroutine getChVal_lIntR1(node, name, dim, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: dim
+    type(TListIntR1), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    integer, allocatable :: buffer(:)
+    integer :: iStart, iErr, nItem
+
+    allocate(buffer(dim))
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, buffer, iStart, iErr, nItem)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, buffer)
+      call getNextToken(text, buffer, iStart, iErr, nItem)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid integer value in '" // name // "'"))
+    else if (iErr == TOKEN_EOS .and. nItem /= 0) then
+      call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lIntR1
+
+  !> Get a list of complex values from a child's text content.
+  subroutine getChVal_lComplex(node, name, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(TListComplex), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    complex(dp) :: buffer
+    integer :: iStart, iErr
+
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, buffer, iStart, iErr)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, buffer)
+      call getNextToken(text, buffer, iStart, iErr)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid complex value in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lComplex
+
+  !> Get a list of complex arrays (rank-1 of given dimension) from a child's text content.
+  subroutine getChVal_lComplexR1(node, name, dim, variableValue, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: dim
+    type(TListComplexR1), intent(inout) :: variableValue
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    complex(dp), allocatable :: buffer(:)
+    integer :: iStart, iErr, nItem
+
+    allocate(buffer(dim))
+    call getTextContent_(node, name, text)
+    iStart = 1
+    call getNextToken(text, buffer, iStart, iErr, nItem)
+    do while (iErr == TOKEN_OK)
+      call append(variableValue, buffer)
+      call getNextToken(text, buffer, iStart, iErr, nItem)
+    end do
+    if (iErr == TOKEN_ERROR) then
+      call error(formatErrMsg_(node, "Invalid complex value in '" // name // "'"))
+    else if (iErr == TOKEN_EOS .and. nItem /= 0) then
+      call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lComplexR1
+
+  !> Get paired lists of integer and real arrays from a child's text content.
+  !>
+  !> Reads alternating groups: dimInt integers then dimReal reals per record.
+  subroutine getChVal_lIntR1RealR1(node, name, dimInt, valueInt, dimReal, valueReal, &
+      & modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: dimInt
+    type(TListIntR1), intent(inout) :: valueInt
+    integer, intent(in) :: dimReal
+    type(TListRealR1), intent(inout) :: valueReal
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text
+    integer, allocatable :: bufferInt(:)
+    real(dp), allocatable :: bufferReal(:)
+    integer :: iStart, iErr, nItem
+
+    allocate(bufferInt(dimInt))
+    allocate(bufferReal(dimReal))
+    call getTextContent_(node, name, text)
+    iStart = 1
+    iErr = TOKEN_OK
+    do while (iErr == TOKEN_OK)
+      call getNextToken(text, bufferInt, iStart, iErr, nItem)
+      if (iErr == TOKEN_ERROR) then
+        call error(formatErrMsg_(node, "Invalid integer value in '" // name // "'"))
+      end if
+      if (iErr == TOKEN_EOS .and. nItem /= 0) then
+        call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+      end if
+      if (iErr == TOKEN_OK) then
+        call append(valueInt, bufferInt)
+        call getNextToken(text, bufferReal, iStart, iErr, nItem)
+        if (iErr == TOKEN_ERROR) then
+          call error(formatErrMsg_(node, "Invalid real value in '" // name // "'"))
+        end if
+        if (iErr == TOKEN_EOS .and. nItem /= 0) then
+          call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+        end if
+        if (iErr == TOKEN_OK) then
+          call append(valueReal, bufferReal)
+        end if
+      end if
+    end do
+    if (len(valueInt) /= len(valueReal)) then
+      call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lIntR1RealR1
+
+  !> Get combined string, integer-array and real-array lists from a child's text content.
+  !>
+  !> Reads records consisting of: one string, dimInt integers, dimReal reals.
+  subroutine getChVal_lStringIntR1RealR1(node, name, valueStr, dimInt, valueInt, dimReal, &
+      & valueReal, modifier, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(TListString), intent(inout) :: valueStr
+    integer, intent(in) :: dimInt
+    type(TListIntR1), intent(inout) :: valueInt
+    integer, intent(in) :: dimReal
+    type(TListRealR1), intent(inout) :: valueReal
+    character(len=:), allocatable, intent(out), optional :: modifier
+    type(hsd_table), pointer, intent(out), optional :: child
+
+    character(len=:), allocatable :: text, bufferStr
+    integer, allocatable :: bufferInt(:)
+    real(dp), allocatable :: bufferReal(:)
+    integer :: iStart, iErr, nItem
+
+    allocate(bufferInt(dimInt))
+    allocate(bufferReal(dimReal))
+    call getTextContent_(node, name, text)
+    iStart = 1
+    iErr = TOKEN_OK
+    do while (iErr == TOKEN_OK)
+      call getNextToken(text, bufferStr, iStart, iErr)
+      if (iErr == TOKEN_ERROR) then
+        call error(formatErrMsg_(node, "Invalid string value in '" // name // "'"))
+      end if
+      if (iErr == TOKEN_EOS) exit
+      call append(valueStr, bufferStr)
+
+      call getNextToken(text, bufferInt, iStart, iErr, nItem)
+      if (iErr /= TOKEN_OK) then
+        call error(formatErrMsg_(node, "Invalid integer value in '" // name // "'"))
+      end if
+      call append(valueInt, bufferInt)
+
+      call getNextToken(text, bufferReal, iStart, iErr, nItem)
+      if (iErr /= TOKEN_OK) then
+        call error(formatErrMsg_(node, "Invalid real value in '" // name // "'"))
+      end if
+      call append(valueReal, bufferReal)
+    end do
+    if (len(valueStr) /= len(valueInt) .or. len(valueInt) /= len(valueReal)) then
+      call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
+    end if
+    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(child)) call hsd_get_table(node, name, child)
+
+  end subroutine getChVal_lStringIntR1RealR1
+
+  ! ============================================================
   !  getChild — get a child table by name
   ! ============================================================
 
@@ -499,24 +925,34 @@ contains
   !> @param child       Pointer to the child table on return (null if not found).
   !> @param requested   If .true. (default), error if not found.
   !> @param modifier    Optional: returns the child's attrib (modifier string).
-  subroutine getChild(node, name, child, requested, modifier)
+  !> @param emptyIfMissing  If .true., create an empty child if not found (instead of error).
+  subroutine getChild(node, name, child, requested, modifier, emptyIfMissing)
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     type(hsd_table), pointer, intent(out) :: child
     logical, intent(in), optional :: requested
     character(len=:), allocatable, intent(out), optional :: modifier
+    logical, intent(in), optional :: emptyIfMissing
 
     integer :: stat
     logical :: isRequired
+    logical :: emptyIfMissing_
 
     isRequired = .true.
     if (present(requested)) isRequired = requested
+    emptyIfMissing_ = .false.
+    if (present(emptyIfMissing)) emptyIfMissing_ = emptyIfMissing
 
     call hsd_get_table(node, name, child, stat)
 
     if (stat /= HSD_STAT_OK) then
       child => null()
-      if (isRequired) then
+      if (emptyIfMissing_ .and. .not. isRequired) then
+        ! Create an empty child block
+        allocate(child)
+        call new_table(child, name=tolower(name))
+        call node%add_child(child)
+      else if (isRequired) then
         call error(formatErrMsg_(node, "Missing required block: '" // name // "'"))
       end if
     end if
@@ -1134,6 +1570,64 @@ contains
     end do
 
   end subroutine getFirstTableChild_
+
+  !> Get the text content of a named child from an hsd_table.
+  !>
+  !> This extracts the raw text from either a named child value node or,
+  !> if name is empty, from the first unnamed value child of the table.
+  !> It collects all unnamed value children's text content (for multi-line data).
+  subroutine getTextContent_(node, name, text)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    character(len=:), allocatable, intent(out) :: text
+
+    type(hsd_table), pointer :: container
+    type(hsd_iterator) :: iter
+    class(hsd_node), pointer :: cur
+    character(len=:), allocatable :: piece
+    integer :: stat
+
+    text = ""
+
+    if (len_trim(name) == 0) then
+      container => node
+    else
+      call hsd_get_table(node, name, container, stat)
+      if (stat /= HSD_STAT_OK) then
+        ! Try getting as a simple value
+        call hsd_get(node, name, text, stat=stat)
+        if (stat /= HSD_STAT_OK) then
+          call error(formatErrMsg_(node, "Missing required data: '" // name // "'"))
+        end if
+        return
+      end if
+    end if
+
+    ! Collect all unnamed value children's text
+    call iter%init(container)
+    do while (iter%next(cur))
+      select type (v => cur)
+      type is (hsd_value)
+        if (.not. allocated(v%name) .or. len_trim(v%name) == 0) then
+          call v%get_string(piece, stat)
+          if (stat == HSD_STAT_OK .and. allocated(piece)) then
+            if (len(text) > 0) then
+              text = text // " " // piece
+            else
+              text = piece
+            end if
+          end if
+        end if
+      end select
+    end do
+
+    if (len(text) == 0) then
+      ! Fallback: try hsd_get as string (handles simple named values)
+      call hsd_get(container, "", text, stat=stat)
+      if (stat /= HSD_STAT_OK) text = ""
+    end if
+
+  end subroutine getTextContent_
 
   !> Format an error message with node context.
   function formatErrMsg_(node, msg) result(full_msg)
