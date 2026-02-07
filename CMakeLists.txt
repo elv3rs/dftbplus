@@ -171,8 +171,13 @@ include(GNUInstallDirs)
 
 add_subdirectory(external/xmlf90 EXCLUDE_FROM_ALL)
 
-# Include hsd-fortran library
-add_subdirectory(external/hsd-fortran EXCLUDE_FROM_ALL)
+# Include hsd-data library (pulls in hsd-fortran automatically)
+set(HSD_DATA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(HSD_DATA_BUILD_APP OFF CACHE BOOL "" FORCE)
+set(HSD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(HSD_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(HSD_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+add_subdirectory(external/hsd-data EXCLUDE_FROM_ALL)
 
 # Include ddCOSMO library
 add_subdirectory(external/ddcosmo EXCLUDE_FROM_ALL)
