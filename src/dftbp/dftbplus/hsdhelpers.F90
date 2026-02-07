@@ -12,7 +12,7 @@ module dftbp_dftbplus_hsdhelpers
   use dftbp_common_globalenv, only : stdOut, tIoProc
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_parser, only : parseHsdTree, readHsdFile, rootTag, TParserFlags
-  use dftbp_io_hsdcompat, only : hsd_table, destroyNode, getChild, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : hsd_table, destroyNode, dumpHsd, getChild, warnUnprocessedNodes
   use dftbp_io_message, only : error
   implicit none
 
@@ -76,13 +76,12 @@ contains
     ! Issue warning about unprocessed nodes
     call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed)
 
-    ! Dump processed tree in HSD and XML format
-    ! TODO(Phase 4): Re-enable once dumpHSD accepts hsd_table
-    !if (tIoProc .and. parserFlags%tWriteHSD) then
-    !  call dumpHSD(hsdTree, hsdProcFileName)
-    !  write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
-    !      & // "'"
-    !end if
+    ! Dump processed tree in HSD format
+    if (tIoProc .and. parserFlags%tWriteHSD) then
+      call dumpHsd(hsdTree, hsdProcFileName)
+      write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
+          & // "'"
+    end if
 
     ! Stop, if only parsing is required
     if (parserFlags%tStop) then
