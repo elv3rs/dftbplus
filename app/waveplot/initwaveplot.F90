@@ -29,7 +29,7 @@ module waveplot_initwaveplot
       & hsd_rename_child, detailedError, detailedWarning, getChild, getChildren,&
       & getChildValue, getSelectedIndices, setChild, setChildValue, convertUnitHsd,&
       & warnUnprocessedNodes, destroyNodeList, removeChildNodes
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO, DATA_FMT_XML
+  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1, TListReal
@@ -312,10 +312,14 @@ contains
 
     call getChildValue(root, "GroundState", tGroundState, .true.)
 
-    ! Read data from detailed.xml
+    ! Read data from detailed output (supports .xml, .hsd, .json)
     call getChildValue(root, "DetailedXML", strBuffer)
     allocate(tmp)
-    call data_load(unquote(strBuffer), tmp, hsdError, DATA_FMT_XML)
+    call data_load(unquote(strBuffer), tmp, hsdError, fmt=DATA_FMT_AUTO)
+    if (allocated(hsdError)) then
+      call error("Error loading detailed output file '" // unquote(strBuffer) // "': "&
+          & // trim(hsdError%message))
+    end if
     call getChild(tmp, "detailedout", detailed)
     call readDetailed(this, detailed, tGroundState, kPointsWeights)
     call destroyNode(tmp)
