@@ -25,11 +25,11 @@ module waveplot_initwaveplot
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdcompat, only : destroyNode, hsd_table, hsd_child_list,&
-      & getItem1, getLength, getNodeName, hsd_load, hsd_dump, hsd_error_t,&
+      & getItem1, getLength, getNodeName, hsd_dump, hsd_error_t,&
       & hsd_rename_child, detailedError, detailedWarning, getChild, getChildren,&
       & getChildValue, getSelectedIndices, setChild, setChildValue, convertUnitHsd,&
       & warnUnprocessedNodes, destroyNodeList, removeChildNodes
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_XML
+  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO, DATA_FMT_XML
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1, TListReal
@@ -295,7 +295,10 @@ contains
 
     ! Read in input file as HSD
     allocate(hsdTree)
-    call hsd_load(hsdInput, hsdTree, hsdError)
+    call data_load(hsdInput, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+    if (allocated(hsdError)) then
+      call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
+    end if
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"

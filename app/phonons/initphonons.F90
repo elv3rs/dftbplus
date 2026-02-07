@@ -19,12 +19,13 @@ module phonons_initphonons
   use dftbp_dftb_periodic, only : getCellTranslations, getNrOfNeighboursForAll, getSuperSampling,&
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, &
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, hsd_error_t, &
       & detailedError, getChild, getChildren, getChildValue, &
       & getSelectedAtomIndices, getSelectedIndices, setChild, setChildValue, &
       & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
       & getNodeName, textNodeName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, getFirstTextChild, hsd_load
+      & dumpHsd, getFirstTextChild
+  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken
   use dftbp_math_simplealgebra, only : determinant33
@@ -225,7 +226,13 @@ contains
     write(stdOut, "(A)") "Interpreting input file '" // hsdInput // "'"
     write(stdOut, "(A)") repeat("-", 80)
     allocate(hsdTree)
-    call hsd_load(hsdInput, hsdTree)
+    block
+      type(hsd_error_t), allocatable :: hsdError
+      call data_load(hsdInput, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+      if (allocated(hsdError)) then
+        call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
+      end if
+    end block
     call getChild(hsdTree, rootTag, root)
 
     !! Check if input version is the one, which we can handle

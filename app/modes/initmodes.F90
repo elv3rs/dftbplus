@@ -22,10 +22,11 @@ module modes_initmodes
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdcompat, only : destroyNode, destroyNodeList, hsd_table, hsd_child_list,&
-      & getItem1, getLength, getNodeName, textNodeName, hsd_load, hsd_dump, hsd_error_t,&
+      & getItem1, getLength, getNodeName, textNodeName, hsd_dump, hsd_error_t,&
       & detailedError, detailedWarning, getChild, getChildren, getChildValue,&
       & getSelectedAtomIndices, getSelectedIndices, convertUnitHsd, getNodeName2, setUnprocessed,&
       & warnUnprocessedNodes, removeChildNodes
+  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
       & TListReal, TListRealR1, TListString
@@ -170,7 +171,10 @@ contains
 
     !! Read in input file as HSD
     allocate(hsdTree)
-    call hsd_load(hsdInput, hsdTree, hsdError)
+    call data_load(hsdInput, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+    if (allocated(hsdError)) then
+      call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
+    end if
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"

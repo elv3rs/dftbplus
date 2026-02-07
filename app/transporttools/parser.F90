@@ -18,12 +18,13 @@ module transporttools_parser
   use dftbp_dftb_slakoeqgrid, only : skEqGridNew, skEqGridOld
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, &
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, hsd_error_t, &
       & detailedError, detailedWarning, getChild, getChildren, &
       & getChildValue, getSelectedAtomIndices, &
       & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
       & getNodeName, getNodeHSDName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, destroyNode, hsd_load
+      & dumpHsd, destroyNode
+  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -97,7 +98,14 @@ contains
 
     ! Read in the input
     allocate(hsdTree)
-    call hsd_load(hsdInputName, hsdTree)
+    block
+      type(hsd_error_t), allocatable :: hsdError
+      call data_load(hsdInputName, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+      if (allocated(hsdError)) then
+        call error("Error loading input file '" // trim(hsdInputName) // "': " &
+            & // trim(hsdError%message))
+      end if
+    end block
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, '(A,1X,I0,/)') 'Parser version:', parserVersion
