@@ -30,11 +30,12 @@ module dftbp_extlibs_hsddata
       ! Visitor pattern
       & hsd_visitor_t, hsd_accept, &
       ! Accessors / mutators / query
-      & hsd_get, hsd_get_or, hsd_get_matrix, &
+      & hsd_get, hsd_get_or, hsd_get_or_set, hsd_get_matrix, &
       & hsd_set, &
       & hsd_get_child, hsd_get_table, hsd_has_child, hsd_remove_child, &
       & hsd_get_type, hsd_is_table, hsd_is_value, hsd_is_array, &
       & hsd_child_count, hsd_get_keys, hsd_get_attrib, hsd_has_attrib, &
+      & hsd_set_attrib, hsd_rename_child, hsd_get_choice, &
       & hsd_merge, hsd_clone, hsd_table_equal, &
       ! Validation / schema
       & hsd_require, hsd_validate_range, hsd_validate_one_of, hsd_get_with_unit, &
