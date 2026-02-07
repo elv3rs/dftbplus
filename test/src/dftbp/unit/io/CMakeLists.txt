@@ -4,6 +4,7 @@ set(sources-f90
   testapp.f90)
 
 set(sources-fypp
+  hsdcompat.F90
   hsddata.F90
   indexselection.F90
   tokenreader.F90)

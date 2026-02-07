@@ -3,12 +3,14 @@ program testapp
   use test_io_indexselection, only : indexselection_tests => tests
   use test_io_tokenreader, only : tokenreader_tests => tests
   use test_io_hsddata, only : hsddata_tests => tests
+  use test_io_hsdcompat, only : hsdcompat_tests => tests
   implicit none
 
   call execute_serial_cmd_app(test_list([&
       indexselection_tests(),&
       tokenreader_tests(),&
-      hsddata_tests()&
+      hsddata_tests(),&
+      hsdcompat_tests()&
     ])&
   )
 
