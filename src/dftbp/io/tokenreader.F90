@@ -39,6 +39,7 @@ module dftbp_io_tokenreader
   !> Contains procedures which read the next token from a string
   interface getNextToken
     module procedure getNextToken_string
+    module procedure getNextToken_character
     module procedure getNextToken_integer
     module procedure getNextToken_integerR1
     module procedure getNextToken_real
@@ -199,6 +200,44 @@ contains
     end if
 
   end subroutine getNextToken_string
+
+
+  !> Returns the next token from the provided string as allocatable character.
+  !>
+  !> This is the modern replacement for getNextToken_string (which uses the xmlf90 string type).
+  !> New code should use this overload instead.
+  subroutine getNextToken_character(str, tokenValue, start, iostat)
+
+    !> String to parse
+    character(len=*), intent(in) :: str
+
+    !> Contains the value of the token on return
+    character(len=:), allocatable, intent(out) :: tokenValue
+
+    !> Starting position for the parsing on call, first position after the end of the token on
+    !> return.
+    integer, intent(inout) :: start
+
+    !> Token reader i/o status flag on return
+    integer, intent(out), optional :: iostat
+
+    integer :: iError, tokStart, tokEnd, tokLen
+
+    call getNextToken_local(str, tokStart, tokEnd, tokLen, start, &
+        &ignoreQuotation=.false.)
+    if (tokLen == 0) then
+      iError = TOKEN_EOS
+      tokenValue = ""
+    else
+      iError = TOKEN_OK
+      tokenValue = str(tokStart:tokEnd)
+    end if
+
+    if (present(iostat)) then
+      iostat = iError
+    end if
+
+  end subroutine getNextToken_character
 
 
   !> Returns the next token from the provided string as a real value.
