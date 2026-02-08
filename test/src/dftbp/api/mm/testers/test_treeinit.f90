@@ -91,7 +91,7 @@ contains
         &  0.25_dp,  0.25_dp, 0.25_dp, 1.00_dp,&
         & -0.25_dp,  0.25_dp, 0.25_dp, 1.00_dp,&
         &  0.25_dp, -0.25_dp, 0.25_dp, 1.00_dp,&
-        & -0.25_dp, -0.25_dp, 0.25_dp, 1.00_dp], [4, 4]))
+        & -0.25_dp, -0.25_dp, 0.25_dp, 1.00_dp], [4, 4], order=[2, 1]))
     call setChild(pRoot, "Options", pOptions)
     call setChildValue(pOptions, "CalculateForces", .true.)
     call setChild(pRoot, "ParserOptions", pParserOpts)

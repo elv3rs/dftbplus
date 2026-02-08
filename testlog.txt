@@ -1,100 +1,834 @@
 Internal ctest changing into directory: /workspace/dftbplus/build
 Test project /workspace/dftbplus/build
+        Start 126: app/dftb+/hybrid/periodic/Benzene-gamma-neigh-spin-force
+        Start  62: app/dftb+/timeprop/graphite_dispersion_pulse
+        Start 149: app/dftb+/reks/HBI+H2O_periodic_stress_disp
+        Start 148: app/dftb+/reks/HBI+H2O_periodic_stress
+        Start  53: app/dftb+/timeprop/C60_triplet
+        Start  47: app/dftb+/timeprop/GNR_kpoint_kick
+  1/414 Test  #47: app/dftb+/timeprop/GNR_kpoint_kick ...............................   Passed   50.93 sec
+        Start 397: app/dftb+/md/SiC64-xlbomdfast_kpts
+  2/414 Test  #53: app/dftb+/timeprop/C60_triplet ...................................   Passed   61.01 sec
+        Start 396: app/dftb+/md/SiC64-xlbomdfast-T0_kpts
+  3/414 Test #397: app/dftb+/md/SiC64-xlbomdfast_kpts ...............................   Passed   53.41 sec
+        Start  52: app/dftb+/timeprop/C60_kick
+  4/414 Test #396: app/dftb+/md/SiC64-xlbomdfast-T0_kpts ............................   Passed   49.18 sec
+        Start 137: app/dftb+/hybrid/periodic/GaAs-kpts-neigh-mic
+  5/414 Test #148: app/dftb+/reks/HBI+H2O_periodic_stress ...........................   Passed  115.32 sec
+        Start 394: app/dftb+/md/SiC64-xlbomdfast-T0
+  6/414 Test #149: app/dftb+/reks/HBI+H2O_periodic_stress_disp ......................   Passed  116.15 sec
+        Start 400: app/dftb+/geoopt/Vsi+O_lbfgs
+  7/414 Test  #52: app/dftb+/timeprop/C60_kick ......................................   Passed   28.68 sec
+        Start 395: app/dftb+/md/SiC64-xlbomdfast
+  8/414 Test #137: app/dftb+/hybrid/periodic/GaAs-kpts-neigh-mic ....................   Passed   28.88 sec
+        Start 399: app/dftb+/md/ptcda-xlbomd-ldep
+  9/414 Test #394: app/dftb+/md/SiC64-xlbomdfast-T0 .................................   Passed   25.81 sec
+        Start 131: app/dftb+/hybrid/periodic/GaAs-gamma-restart
+ 10/414 Test #400: app/dftb+/geoopt/Vsi+O_lbfgs .....................................   Passed   28.34 sec
+        Start  70: app/dftb+/helical/1000-0-C_1000
+ 11/414 Test #395: app/dftb+/md/SiC64-xlbomdfast ....................................   Passed   25.45 sec
+        Start  96: app/dftb+/hybrid/cluster/C240_tn
+ 12/414 Test #131: app/dftb+/hybrid/periodic/GaAs-gamma-restart .....................   Passed   22.97 sec
+        Start 130: app/dftb+/hybrid/periodic/GaAs-gamma-neigh
+ 13/414 Test #399: app/dftb+/md/ptcda-xlbomd-ldep ...................................   Passed   26.96 sec
+        Start 401: app/dftb+/geoopt/Vsi+O
+ 14/414 Test  #70: app/dftb+/helical/1000-0-C_1000 ..................................   Passed   23.00 sec
+        Start 281: app/dftb+/solvation/cosmo_i8e
+ 15/414 Test  #96: app/dftb+/hybrid/cluster/C240_tn .................................   Passed   21.00 sec
+        Start  92: app/dftb+/hybrid/cluster/C60-nb-cutoff
+ 16/414 Test #281: app/dftb+/solvation/cosmo_i8e ....................................   Passed   17.14 sec
+        Start 119: app/dftb+/hybrid/periodic/Acene-kpts-neigh-band
+ 17/414 Test #401: app/dftb+/geoopt/Vsi+O ...........................................   Passed   18.72 sec
+        Start  91: app/dftb+/hybrid/cluster/C60-nb
+ 18/414 Test #130: app/dftb+/hybrid/periodic/GaAs-gamma-neigh .......................   Passed   21.03 sec
+        Start  61: app/dftb+/timeprop/GNR_periodic_ions
+ 19/414 Test  #92: app/dftb+/hybrid/cluster/C60-nb-cutoff ...........................   Passed   16.09 sec
+        Start 391: app/dftb+/md/DNA
+ 20/414 Test  #61: app/dftb+/timeprop/GNR_periodic_ions .............................   Passed   12.74 sec
+        Start  37: app/dftb+/deltadftb/indigo
+ 21/414 Test  #91: app/dftb+/hybrid/cluster/C60-nb ..................................   Passed   13.66 sec
+        Start 123: app/dftb+/hybrid/periodic/Benzene-box-spin-matrix-ct-kpts
+ 22/414 Test #119: app/dftb+/hybrid/periodic/Acene-kpts-neigh-band ..................   Passed   14.79 sec
+        Start 398: app/dftb+/non-scc/Si_216
+ 23/414 Test  #37: app/dftb+/deltadftb/indigo .......................................   Passed   13.48 sec
+        Start 392: app/dftb+/md/DNA_Berendsen2
+ 24/414 Test #398: app/dftb+/non-scc/Si_216 .........................................   Passed   12.55 sec
+        Start 122: app/dftb+/hybrid/periodic/Acene-kpts-neigh-restart-ascii
+ 25/414 Test #123: app/dftb+/hybrid/periodic/Benzene-box-spin-matrix-ct-kpts ........   Passed   13.81 sec
+        Start 282: app/dftb+/solvation/cosmo_444
+ 26/414 Test #391: app/dftb+/md/DNA .................................................   Passed   18.64 sec
+        Start 121: app/dftb+/hybrid/periodic/Acene-kpts-neigh-restart
+ 27/414 Test #282: app/dftb+/solvation/cosmo_444 ....................................   Passed   12.33 sec
+        Start 124: app/dftb+/hybrid/periodic/Benzene-box-spin-neigh-ct-kpts
+ 28/414 Test #122: app/dftb+/hybrid/periodic/Acene-kpts-neigh-restart-ascii .........   Passed   13.59 sec
+        Start 393: app/dftb+/md/ptcda-xlbomd
+ 29/414 Test #121: app/dftb+/hybrid/periodic/Acene-kpts-neigh-restart ...............   Passed   13.93 sec
+        Start 120: app/dftb+/hybrid/periodic/Acene-kpts-neigh-force-lc
+ 30/414 Test #392: app/dftb+/md/DNA_Berendsen2 ......................................   Passed   17.03 sec
+        Start  60: app/dftb+/timeprop/benzene_ions_pulse
+ 31/414 Test  #60: app/dftb+/timeprop/benzene_ions_pulse ............................   Passed    8.45 sec
+        Start  65: app/dftb+/timeprop/benzene_rs
+ 32/414 Test #120: app/dftb+/hybrid/periodic/Acene-kpts-neigh-force-lc ..............   Passed    8.75 sec
+        Start 285: app/dftb+/solvation/cosmo_nitralin
+ 33/414 Test #124: app/dftb+/hybrid/periodic/Benzene-box-spin-neigh-ct-kpts .........   Passed   12.95 sec
+        Start 403: app/dftb+/scc/SiC64+V_dynforce
+ 34/414 Test #393: app/dftb+/md/ptcda-xlbomd ........................................   Passed   12.54 sec
+        Start 387: app/dftb+/md/Si_8-tempprofile
+ 35/414 Test  #65: app/dftb+/timeprop/benzene_rs ....................................   Passed    7.15 sec
+        Start  14: api_ehrenfest
+ 36/414 Test #403: app/dftb+/scc/SiC64+V_dynforce ...................................   Passed    9.09 sec
+        Start 380: app/dftb+/md/Si_8
+ 37/414 Test #285: app/dftb+/solvation/cosmo_nitralin ...............................   Passed    9.76 sec
+        Start 386: app/dftb+/md/ptcda-xlbomdfast-ldep
+ 38/414 Test #387: app/dftb+/md/Si_8-tempprofile ....................................   Passed   11.39 sec
+        Start 381: app/dftb+/md/Si_8-thermostat2
+ 39/414 Test  #14: api_ehrenfest ....................................................   Passed    9.07 sec
+        Start 364: app/dftb+/geoopt/Si_2_latconst
+ 40/414 Test #386: app/dftb+/md/ptcda-xlbomdfast-ldep ...............................   Passed    8.11 sec
+        Start 127: app/dftb+/hybrid/periodic/CN-chain_transl-inv-matrix-ct
+ 41/414 Test #380: app/dftb+/md/Si_8 ................................................   Passed    9.12 sec
+        Start  48: app/dftb+/timeprop/GNR_kpoint_restart
+ 42/414 Test #381: app/dftb+/md/Si_8-thermostat2 ....................................   Passed    9.22 sec
+        Start 385: app/dftb+/md/Si_8-thermostat
+ 43/414 Test #364: app/dftb+/geoopt/Si_2_latconst ...................................   Passed    6.54 sec
+        Start 372: app/dftb+/geoopt/diamond_isotropic
+ 44/414 Test  #48: app/dftb+/timeprop/GNR_kpoint_restart ............................   Passed    6.59 sec
+        Start  63: app/dftb+/timeprop/PDI_charged
+ 45/414 Test #127: app/dftb+/hybrid/periodic/CN-chain_transl-inv-matrix-ct ..........   Passed    8.55 sec
+        Start 379: app/dftb+/spinorbit/Si2_dual
+ 46/414 Test #372: app/dftb+/geoopt/diamond_isotropic ...............................   Passed    5.08 sec
+        Start 383: app/dftb+/geoopt/GaAs_8_latconst
+ 47/414 Test  #63: app/dftb+/timeprop/PDI_charged ...................................   Passed    3.93 sec
+        Start 376: app/dftb+/md/ptcda-xlbomdfast
+ 48/414 Test #385: app/dftb+/md/Si_8-thermostat .....................................   Passed    9.25 sec
+        Start 377: app/dftb+/spinorbit/EuN_customU
+ 49/414 Test #379: app/dftb+/spinorbit/Si2_dual .....................................   Passed    5.08 sec
+        Start 382: app/dftb+/geoopt/GaAs_8_latconst_lbfgs
+ 50/414 Test #383: app/dftb+/geoopt/GaAs_8_latconst .................................   Passed    4.54 sec
+        Start 368: app/dftb+/geoopt/Si_2_lattice_rf
+ 51/414 Test #376: app/dftb+/md/ptcda-xlbomdfast ....................................   Passed    6.45 sec
+        Start 324: app/dftb+/analysis/Fe2_antiferromagnetic
+ 52/414 Test #368: app/dftb+/geoopt/Si_2_lattice_rf .................................   Passed    3.68 sec
+        Start  58: app/dftb+/timeprop/CH3_dftbu_singlet
+ 53/414 Test #377: app/dftb+/spinorbit/EuN_customU ..................................   Passed    5.13 sec
+        Start 133: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct-anderson
+ 54/414 Test #382: app/dftb+/geoopt/GaAs_8_latconst_lbfgs ...........................   Passed    5.31 sec
+        Start 373: app/dftb+/spinorbit/EuN
+ 55/414 Test #133: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct-anderson ...........   Passed    4.36 sec
+        Start 302: app/dftb+/spinorbit/Fe2_dual_Fermi
+ 56/414 Test  #58: app/dftb+/timeprop/CH3_dftbu_singlet .............................   Passed    4.91 sec
+        Start 192: app/dftb+/derivatives/10-0Ctube_onsite
+ 57/414 Test #324: app/dftb+/analysis/Fe2_antiferromagnetic .........................   Passed    5.25 sec
+        Start 362: app/dftb+/md/H3
+ 58/414 Test #373: app/dftb+/spinorbit/EuN ..........................................   Passed    4.33 sec
+        Start 389: app/dftb+/geoopt/Vsi+O-nonscc
+ 59/414 Test #362: app/dftb+/md/H3 ..................................................   Passed    4.17 sec
+        Start 197: app/dftb+/derivatives/C60_Polfreq
+ 60/414 Test #389: app/dftb+/geoopt/Vsi+O-nonscc ....................................   Passed    4.25 sec
+        Start 378: app/dftb+/dispersion/DNA
+ 61/414 Test #302: app/dftb+/spinorbit/Fe2_dual_Fermi ...............................   Passed    5.02 sec
+        Start 279: app/dftb+/solvation/cosmo_g1
+ 62/414 Test #192: app/dftb+/derivatives/10-0Ctube_onsite ...........................   Passed    5.03 sec
+        Start 280: app/dftb+/solvation/cosmo_b33
+ 63/414 Test #197: app/dftb+/derivatives/C60_Polfreq ................................   Passed    3.92 sec
+        Start 136: app/dftb+/hybrid/periodic/GaAs-kpts-neigh-ct
+ 64/414 Test #378: app/dftb+/dispersion/DNA .........................................   Passed    5.07 sec
+        Start 369: app/dftb+/md/Si_8_NHC
+ 65/414 Test #279: app/dftb+/solvation/cosmo_g1 .....................................   Passed    4.89 sec
+        Start  76: app/dftb+/elecconstraints/Fe4_noncolinear
+ 66/414 Test #280: app/dftb+/solvation/cosmo_b33 ....................................   Passed    4.94 sec
+        Start 390: app/dftb+/non-scc/Si_384
+ 67/414 Test #136: app/dftb+/hybrid/periodic/GaAs-kpts-neigh-ct .....................   Passed    4.52 sec
+        Start 306: app/dftb+/onsite/Au13pSIC
+ 68/414 Test  #76: app/dftb+/elecconstraints/Fe4_noncolinear ........................   Passed    4.11 sec
+        Start  44: app/dftb+/timeprop/benzene_laser
+ 69/414 Test #390: app/dftb+/non-scc/Si_384 .........................................   Passed    3.86 sec
+        Start 374: app/dftb+/geoopt/Si_6
+ 70/414 Test #369: app/dftb+/md/Si_8_NHC ............................................   Passed    4.86 sec
+        Start  40: app/dftb+/timeprop/C4H6_rs_Singlet
+ 71/414 Test #306: app/dftb+/onsite/Au13pSIC ........................................   Passed    3.49 sec
+        Start  86: app/dftb+/hybrid/cluster/C18H12-nbscreening
+ 72/414 Test  #44: app/dftb+/timeprop/benzene_laser .................................   Passed    3.64 sec
+        Start 283: app/dftb+/solvation/cosmo_inf
+ 73/414 Test #374: app/dftb+/geoopt/Si_6 ............................................   Passed    3.58 sec
+        Start  45: app/dftb+/timeprop/benzene_sin2
+ 74/414 Test  #40: app/dftb+/timeprop/C4H6_rs_Singlet ...............................   Passed    3.03 sec
+        Start 370: app/dftb+/spin/Fe4_Fermi
+ 75/414 Test  #86: app/dftb+/hybrid/cluster/C18H12-nbscreening ......................   Passed    2.33 sec
+        Start 186: app/dftb+/derivatives/C18H12_rangesepPol
+ 76/414 Test #370: app/dftb+/spin/Fe4_Fermi .........................................   Passed    2.82 sec
+        Start 230: app/dftb+/dispersion/GaAs_dftd4_sc
+ 77/414 Test  #45: app/dftb+/timeprop/benzene_sin2 ..................................   Passed    3.21 sec
+        Start 402: app/dftb+/scc/SiC64+V_dynforce_groups
+ 78/414 Test #283: app/dftb+/solvation/cosmo_inf ....................................   Passed    3.34 sec
+        Start 142: app/dftb+/reks/C6H8_extchrg_periodic_nosave
+ 79/414 Test #186: app/dftb+/derivatives/C18H12_rangesepPol .........................   Passed    3.28 sec
+        Start  20: api_resetspecies_NaCl
+ 80/414 Test #230: app/dftb+/dispersion/GaAs_dftd4_sc ...............................   Passed    2.44 sec
+        Start 105: app/dftb+/hybrid/cluster/Benzene-TD-LC-Spinpol-Iter
+ 81/414 Test #142: app/dftb+/reks/C6H8_extchrg_periodic_nosave ......................   Passed    2.91 sec
+        Start 104: app/dftb+/hybrid/cluster/Benzene-TD-LC-Spinpol-Force
+ 82/414 Test #402: app/dftb+/scc/SiC64+V_dynforce_groups ............................   Passed    2.97 sec
+        Start 284: app/dftb+/solvation/cosmo_quinoline
+ 83/414 Test #105: app/dftb+/hybrid/cluster/Benzene-TD-LC-Spinpol-Iter ..............   Passed    2.11 sec
+        Start  57: app/dftb+/timeprop/GNR_periodic_kick
+ 84/414 Test  #20: api_resetspecies_NaCl ............................................   Passed    3.24 sec
+        Start 188: app/dftb+/derivatives/C60+
+ 85/414 Test #104: app/dftb+/hybrid/cluster/Benzene-TD-LC-Spinpol-Force .............   Passed    2.46 sec
+        Start 103: app/dftb+/hybrid/cluster/Benzene-TD-LC-Spinpol
+ 86/414 Test #284: app/dftb+/solvation/cosmo_quinoline ..............................   Passed    2.68 sec
+        Start  59: app/dftb+/timeprop/GNR_periodic_laser
+ 87/414 Test  #57: app/dftb+/timeprop/GNR_periodic_kick .............................   Passed    2.35 sec
+        Start 190: app/dftb+/derivatives/CH4_kpt_ons
+ 88/414 Test #188: app/dftb+/derivatives/C60+ .......................................   Passed    2.14 sec
+        Start  55: app/dftb+/timeprop/NO_onsite
+ 89/414 Test  #59: app/dftb+/timeprop/GNR_periodic_laser ............................   Passed    1.37 sec
+        Start 227: app/dftb+/dispersion/GaAs_dftd4
+ 90/414 Test #103: app/dftb+/hybrid/cluster/Benzene-TD-LC-Spinpol ...................   Passed    2.25 sec
+        Start 199: app/dftb+/derivatives/CH4_kpt_freq
+ 91/414 Test #190: app/dftb+/derivatives/CH4_kpt_ons ................................   Passed    1.39 sec
+        Start  15: api_ehrenfest_ext_ions
+ 92/414 Test  #55: app/dftb+/timeprop/NO_onsite .....................................   Passed    2.11 sec
+        Start 132: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct
+ 93/414 Test #227: app/dftb+/dispersion/GaAs_dftd4 ..................................   Passed    2.49 sec
+        Start 367: app/dftb+/geoopt/Si_2_lattice
+ 94/414 Test #199: app/dftb+/derivatives/CH4_kpt_freq ...............................   Passed    2.28 sec
+        Start 106: app/dftb+/hybrid/cluster/As
+ 95/414 Test #132: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct ....................   Passed    1.46 sec
+        Start  54: app/dftb+/timeprop/NO_pSIC
+ 96/414 Test #367: app/dftb+/geoopt/Si_2_lattice ....................................   Passed    1.39 sec
+        Start  75: app/dftb+/elecconstraints/Si8_spin
+ 97/414 Test #106: app/dftb+/hybrid/cluster/As ......................................   Passed    1.91 sec
+        Start 305: app/dftb+/onsite/Au13
+ 98/414 Test  #54: app/dftb+/timeprop/NO_pSIC .......................................   Passed    1.96 sec
+        Start  97: app/dftb+/hybrid/cluster/Thymine-T1_onsite
+ 99/414 Test  #75: app/dftb+/elecconstraints/Si8_spin ...............................   Passed    1.66 sec
+        Start  39: app/dftb+/timeprop/C4H6_rs
+100/414 Test  #97: app/dftb+/hybrid/cluster/Thymine-T1_onsite .......................   Passed    1.16 sec
+        Start 117: app/dftb+/hybrid/periodic/Acene-kpts-matrix-band
+101/414 Test #305: app/dftb+/onsite/Au13 ............................................   Passed    1.59 sec
+        Start 287: app/dftb+/derivatives/C6H6_Raman
+102/414 Test  #39: app/dftb+/timeprop/C4H6_rs .......................................   Passed    1.68 sec
+        Start 354: app/dftb+/derivatives/C6H6_scc
+103/414 Test #287: app/dftb+/derivatives/C6H6_Raman .................................   Passed    1.27 sec
+        Start  93: app/dftb+/hybrid/cluster/Thymine-T1-force
+104/414 Test #117: app/dftb+/hybrid/periodic/Acene-kpts-matrix-band .................   Passed    1.74 sec
+        Start 191: app/dftb+/derivatives/As4S4_LS_ons
+105/414 Test #354: app/dftb+/derivatives/C6H6_scc ...................................   Passed    1.27 sec
+        Start 375: app/dftb+/geoopt/Si_6_rf
+106/414 Test #191: app/dftb+/derivatives/As4S4_LS_ons ...............................   Passed    1.03 sec
+        Start 160: app/dftb+/reks/Thymine_T1_rangesep
+107/414 Test  #93: app/dftb+/hybrid/cluster/Thymine-T1-force ........................   Passed    1.69 sec
+108/414 Test #375: app/dftb+/geoopt/Si_6_rf .........................................   Passed    0.88 sec
+        Start 295: app/dftb+/geoopt/H2O_fire
+        Start  83: app/dftb+/hybrid/cluster/C18H12-force-lc
+109/414 Test  #15: api_ehrenfest_ext_ions ...........................................   Passed    8.56 sec
+        Start 363: app/dftb+/spinorbit/GaAs_2
+110/414 Test  #83: app/dftb+/hybrid/cluster/C18H12-force-lc .........................   Passed    0.97 sec
+        Start 135: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct-simple
+111/414 Test #363: app/dftb+/spinorbit/GaAs_2 .......................................   Passed    0.89 sec
+        Start 365: app/dftb+/md/SiH-surface
+112/414 Test #160: app/dftb+/reks/Thymine_T1_rangesep ...............................   Passed    1.51 sec
+        Start 108: app/dftb+/hybrid/periodic/Acene-gamma-matrix-restart
+113/414 Test #295: app/dftb+/geoopt/H2O_fire ........................................   Passed    1.23 sec
+        Start 229: app/dftb+/dispersion/diamond_dftd4_sc
+114/414 Test #365: app/dftb+/md/SiH-surface .........................................   Passed    0.99 sec
+        Start 163: app/dftb+/mdftb/32H2O
+115/414 Test #229: app/dftb+/dispersion/diamond_dftd4_sc ............................   Passed    0.95 sec
+        Start 128: app/dftb+/hybrid/periodic/CN-chain_transl-inv-neigh-ct
+116/414 Test #135: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct-simple .............   Passed    1.31 sec
+        Start 116: app/dftb+/hybrid/periodic/Acene-kpts-matrix-restart-ascii
+117/414 Test #108: app/dftb+/hybrid/periodic/Acene-gamma-matrix-restart .............   Passed    1.14 sec
+        Start 109: app/dftb+/hybrid/periodic/Acene-gamma-matrix-restart-ascii
+118/414 Test #163: app/dftb+/mdftb/32H2O ............................................   Passed    1.17 sec
+        Start 159: app/dftb+/reks/Thymine_T1
+119/414 Test #116: app/dftb+/hybrid/periodic/Acene-kpts-matrix-restart-ascii ........   Passed    0.89 sec
+        Start 371: app/dftb+/non-scc/Si41C23N35
+120/414 Test #128: app/dftb+/hybrid/periodic/CN-chain_transl-inv-neigh-ct ...........   Passed    1.14 sec
+        Start  64: app/dftb+/timeprop/benzene_circpol
+121/414 Test #109: app/dftb+/hybrid/periodic/Acene-gamma-matrix-restart-ascii .......   Passed    1.10 sec
+        Start 134: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct-diis
+122/414 Test #159: app/dftb+/reks/Thymine_T1 ........................................   Passed    0.70 sec
+        Start 355: app/dftb+/derivatives/GaAs_2
+123/414 Test  #64: app/dftb+/timeprop/benzene_circpol ...............................   Passed    1.05 sec
+        Start 332: app/dftb+/analysis/10-0Ctube_ESP
+124/414 Test #371: app/dftb+/non-scc/Si41C23N35 .....................................   Passed    1.31 sec
+        Start 194: app/dftb+/derivatives/C6H6_partial
+125/414 Test #134: app/dftb+/hybrid/periodic/GaAs-kpts-matrix-ct-diis ...............   Passed    1.16 sec
+        Start 144: app/dftb+/reks/C6H8_rangesep_extchrg_nosave
+126/414 Test #355: app/dftb+/derivatives/GaAs_2 .....................................   Passed    0.90 sec
+        Start 353: app/dftb+/md/ice_Ic
+127/414 Test #194: app/dftb+/derivatives/C6H6_partial ...............................   Passed    0.83 sec
+        Start  49: app/dftb+/timeprop/H2_singlet
+128/414 Test #332: app/dftb+/analysis/10-0Ctube_ESP .................................   Passed    0.97 sec
+        Start 115: app/dftb+/hybrid/periodic/Acene-kpts-matrix-restart-II
+129/414 Test #144: app/dftb+/reks/C6H8_rangesep_extchrg_nosave ......................   Passed    0.95 sec
+        Start 157: app/dftb+/reks/Thymine_3SSR
+130/414 Test #353: app/dftb+/md/ice_Ic ..............................................   Passed    0.89 sec
+        Start 360: app/dftb+/scc/SiC_64
+131/414 Test #115: app/dftb+/hybrid/periodic/Acene-kpts-matrix-restart-II ...........   Passed    0.65 sec
+        Start 384: app/dftb+/analysis/Ga4As4_ESP
+132/414 Test  #49: app/dftb+/timeprop/H2_singlet ....................................   Passed    0.97 sec
+        Start 114: app/dftb+/hybrid/periodic/Acene-kpts-matrix-restart-I
+133/414 Test #157: app/dftb+/reks/Thymine_3SSR ......................................   Passed    0.82 sec
+        Start 304: app/dftb+/dispersion/DNA_uff
+134/414 Test #360: app/dftb+/scc/SiC_64 .............................................   Passed    0.90 sec
+        Start 309: app/dftb+/timedep/Furan-NACV-LC
+135/414 Test #384: app/dftb+/analysis/Ga4As4_ESP ....................................   Passed    0.77 sec
+        Start 187: app/dftb+/derivatives/C60
+136/414 Test #304: app/dftb+/dispersion/DNA_uff .....................................   Passed    0.57 sec
+        Start 143: app/dftb+/reks/C6H8_rangesep_extchrg_nac
+137/414 Test #114: app/dftb+/hybrid/periodic/Acene-kpts-matrix-restart-I ............   Passed    1.00 sec
+        Start 125: app/dftb+/hybrid/periodic/Benzene-gamma-matrix-spin-force-grp1
+138/414 Test #309: app/dftb+/timedep/Furan-NACV-LC ..................................   Passed    0.77 sec
+        Start  41: app/dftb+/timeprop/benzene_Ehrenfest_restart
+139/414 Test #143: app/dftb+/reks/C6H8_rangesep_extchrg_nac .........................   Passed    0.61 sec
+        Start 358: app/dftb+/scc/C60_Fermi
+140/414 Test #187: app/dftb+/derivatives/C60 ........................................   Passed    0.82 sec
+        Start 356: app/dftb+/dftb+u/GaAs_2
+141/414 Test  #41: app/dftb+/timeprop/benzene_Ehrenfest_restart .....................   Passed    0.65 sec
+        Start 150: app/dftb+/reks/PSB3_2SSR
+142/414 Test #356: app/dftb+/dftb+u/GaAs_2 ..........................................   Passed    0.49 sec
+        Start 252: app/dftb+/md/SiH-surface_restart
+143/414 Test #358: app/dftb+/scc/C60_Fermi ..........................................   Passed    0.54 sec
+        Start  50: app/dftb+/timeprop/H2_triplet
+144/414 Test #125: app/dftb+/hybrid/periodic/Benzene-gamma-matrix-spin-force-grp1 ...   Passed    1.17 sec
+        Start 156: app/dftb+/reks/PSB3_SA
+145/414 Test #150: app/dftb+/reks/PSB3_2SSR .........................................   Passed    0.64 sec
+        Start 366: app/dftb+/geoopt/Si_2_lattice_lbfgs
+146/414 Test #252: app/dftb+/md/SiH-surface_restart .................................   Passed    0.51 sec
+        Start 349: app/dftb+/spin/GaAs_2
+147/414 Test  #50: app/dftb+/timeprop/H2_triplet ....................................   Passed    0.75 sec
+        Start 350: app/dftb+/spin/GaAs-spin-ext
+148/414 Test #156: app/dftb+/reks/PSB3_SA ...........................................   Passed    0.52 sec
+        Start 352: app/dftb+/dispersion/DNA-damped
+149/414 Test #349: app/dftb+/spin/GaAs_2 ............................................   Passed    0.49 sec
+        Start 359: app/dftb+/scc/10-0Ctube-extfield
+150/414 Test #350: app/dftb+/spin/GaAs-spin-ext .....................................   Passed    0.50 sec
+        Start  95: app/dftb+/hybrid/cluster/Thymine-spin-matrix-force-restart
+151/414 Test #366: app/dftb+/geoopt/Si_2_lattice_lbfgs ..............................   Passed    0.79 sec
+        Start 357: app/dftb+/geoopt/diamond_presure
+152/414 Test #352: app/dftb+/dispersion/DNA-damped ..................................   Passed    0.61 sec
+        Start 340: app/dftb+/spin/H2O
+153/414 Test #359: app/dftb+/scc/10-0Ctube-extfield .................................   Passed    0.57 sec
+        Start  89: app/dftb+/hybrid/cluster/CH3-default-compat
+154/414 Test  #95: app/dftb+/hybrid/cluster/Thymine-spin-matrix-force-restart .......   Passed    0.47 sec
+        Start  51: app/dftb+/timeprop/H2_exc_atoms
+155/414 Test #357: app/dftb+/geoopt/diamond_presure .................................   Passed    0.51 sec
+        Start 348: app/dftb+/md/Si_8_restart
+156/414 Test  #89: app/dftb+/hybrid/cluster/CH3-default-compat ......................   Passed    0.53 sec
+        Start  42: app/dftb+/timeprop/benzene_Ehrenfest_restartAscii
+157/414 Test #340: app/dftb+/spin/H2O ...............................................   Passed    0.74 sec
+        Start 361: app/dftb+/scc/SiC_32-extchrg-blur
+158/414 Test  #51: app/dftb+/timeprop/H2_exc_atoms ..................................   Passed    0.58 sec
+        Start  67: app/dftb+/helical/10-0CtubeC_10
+159/414 Test #348: app/dftb+/md/Si_8_restart ........................................   Passed    0.65 sec
+        Start  66: app/dftb+/helical/10-0Ctube
+160/414 Test  #67: app/dftb+/helical/10-0CtubeC_10 ..................................   Passed    0.42 sec
+        Start 118: app/dftb+/hybrid/periodic/Acene-kpts-matrix-force-lc
+161/414 Test #361: app/dftb+/scc/SiC_32-extchrg-blur ................................   Passed    0.51 sec
+        Start 275: app/dftb+/solvation/gbsa_param3
+162/414 Test  #42: app/dftb+/timeprop/benzene_Ehrenfest_restartAscii ................   Passed    0.74 sec
+        Start 111: app/dftb+/hybrid/periodic/Acene-gamma-neigh-force-hyb
+163/414 Test  #66: app/dftb+/helical/10-0Ctube ......................................   Passed    0.48 sec
+        Start 153: app/dftb+/reks/PSB3_2SSR_rangesep_extchrg
+164/414 Test #275: app/dftb+/solvation/gbsa_param3 ..................................   Passed    0.32 sec
+        Start 110: app/dftb+/hybrid/periodic/Acene-gamma-neigh-force-cam
+165/414 Test #118: app/dftb+/hybrid/periodic/Acene-kpts-matrix-force-lc .............   Passed    0.53 sec
+        Start 151: app/dftb+/reks/PSB3_2SSR_extchrg_periodic
+166/414 Test #111: app/dftb+/hybrid/periodic/Acene-gamma-neigh-force-hyb ............   Passed    0.60 sec
+        Start 226: app/dftb+/dispersion/diamond_dftd4
+167/414 Test #153: app/dftb+/reks/PSB3_2SSR_rangesep_extchrg ........................   Passed    0.58 sec
+        Start  46: app/dftb+/timeprop/benzene_gaussian
+168/414 Test #110: app/dftb+/hybrid/periodic/Acene-gamma-neigh-force-cam ............   Passed    0.70 sec
+        Start 152: app/dftb+/reks/PSB3_2SSR_rangesep
+169/414 Test #151: app/dftb+/reks/PSB3_2SSR_extchrg_periodic ........................   Passed    0.62 sec
+        Start 205: app/dftb+/legacy/file_access
+170/414 Test #226: app/dftb+/dispersion/diamond_dftd4 ...............................   Passed    0.45 sec
+        Start 221: app/dftb+/dispersion/GaAs_sdftd3
+171/414 Test  #46: app/dftb+/timeprop/benzene_gaussian ..............................   Passed    0.49 sec
+        Start 327: app/dftb+/non-scc/10-10Ctube_MP
+172/414 Test #221: app/dftb+/dispersion/GaAs_sdftd3 .................................   Passed    0.27 sec
+        Start 257: app/dftb+/scc/GaAs_2_restart
+173/414 Test #205: app/dftb+/legacy/file_access .....................................   Passed    0.34 sec
+        Start 316: app/dftb+/timedep/Furan-CIopt-LC
+174/414 Test  #62: app/dftb+/timeprop/graphite_dispersion_pulse .....................   Passed  327.20 sec
+        Start  68: app/dftb+/helical/10-0CtubeC_10_origin
+175/414 Test #152: app/dftb+/reks/PSB3_2SSR_rangesep ................................   Passed    0.52 sec
+        Start  87: app/dftb+/hybrid/cluster/C18H12-matrix
+176/414 Test #327: app/dftb+/non-scc/10-10Ctube_MP ..................................   Passed    0.33 sec
+        Start 112: app/dftb+/hybrid/periodic/Acene-gamma-neigh-force-lc
+177/414 Test #257: app/dftb+/scc/GaAs_2_restart .....................................   Passed    0.38 sec
+        Start 333: app/dftb+/md/H2O-extfield
+178/414 Test  #87: app/dftb+/hybrid/cluster/C18H12-matrix ...........................   Passed    0.33 sec
+        Start 331: app/dftb+/non-scc/Ctube_Fermi
+179/414 Test #316: app/dftb+/timedep/Furan-CIopt-LC .................................   Passed    0.45 sec
+        Start 158: app/dftb+/reks/Thymine_single
+180/414 Test  #68: app/dftb+/helical/10-0CtubeC_10_origin ...........................   Passed    0.38 sec
+        Start 113: app/dftb+/hybrid/periodic/Acene-kpts-matrix-lc
+181/414 Test #112: app/dftb+/hybrid/periodic/Acene-gamma-neigh-force-lc .............   Passed    0.56 sec
+        Start 154: app/dftb+/reks/PSB3_2SSR_rangesep_extchrg_blur
+182/414 Test #333: app/dftb+/md/H2O-extfield ........................................   Passed    0.37 sec
+        Start  77: app/dftb+/input/caffeine_gen
+183/414 Test  #77: app/dftb+/input/caffeine_gen .....................................   Passed    0.34 sec
+        Start 169: app/dftb+/mdftb/Glycine_RotTran1
+184/414 Test #113: app/dftb+/hybrid/periodic/Acene-kpts-matrix-lc ...................   Passed    0.58 sec
+        Start 274: app/dftb+/solvation/gbsa_param2
+185/414 Test #331: app/dftb+/non-scc/Ctube_Fermi ....................................   Passed    0.65 sec
+        Start 139: app/dftb+/reks/C2H4_direct
+186/414 Test #158: app/dftb+/reks/Thymine_single ....................................   Passed    0.60 sec
+        Start 155: app/dftb+/reks/PSB3_2SSR_rangesep_tuning
+187/414 Test #274: app/dftb+/solvation/gbsa_param2 ..................................   Passed    0.22 sec
+        Start  84: app/dftb+/hybrid/cluster/C18H12-force-cam
+188/414 Test #154: app/dftb+/reks/PSB3_2SSR_rangesep_extchrg_blur ...................   Passed    0.67 sec
+        Start 328: app/dftb+/non-scc/10-10Ctube_MP0
+189/414 Test #169: app/dftb+/mdftb/Glycine_RotTran1 .................................   Passed    0.32 sec
+        Start 140: app/dftb+/reks/C2H4_nosave
+190/414 Test #139: app/dftb+/reks/C2H4_direct .......................................   Passed    0.33 sec
+        Start 329: app/dftb+/non-scc/10-10Ctube_MP2
+191/414 Test #155: app/dftb+/reks/PSB3_2SSR_rangesep_tuning .........................   Passed    0.57 sec
+        Start 320: app/dftb+/geoopt/Cchain_lattice
+192/414 Test  #84: app/dftb+/hybrid/cluster/C18H12-force-cam ........................   Passed    0.62 sec
+        Start 301: app/dftb+/spinorbit/Fe2_dual_field
+193/414 Test #328: app/dftb+/non-scc/10-10Ctube_MP0 .................................   Passed    0.60 sec
+        Start 326: app/dftb+/non-scc/10-10Ctube
+194/414 Test #140: app/dftb+/reks/C2H4_nosave .......................................   Passed    0.61 sec
+        Start 165: app/dftb+/mdftb/Glycine_mDFTBoff1
+195/414 Test #329: app/dftb+/non-scc/10-10Ctube_MP2 .................................   Passed    0.58 sec
+        Start  98: app/dftb+/hybrid/cluster/Thymine-spin-matrix-force-mpi-grp1
+196/414 Test #320: app/dftb+/geoopt/Cchain_lattice ..................................   Passed    0.58 sec
+        Start 200: app/dftb+/derivatives/Au2_LSmetalPolfreq
+197/414 Test #165: app/dftb+/mdftb/Glycine_mDFTBoff1 ................................   Passed    0.27 sec
+        Start 222: app/dftb+/dispersion/2H2O_sdftd3
+198/414 Test #326: app/dftb+/non-scc/10-10Ctube .....................................   Passed    0.29 sec
+        Start  85: app/dftb+/legacy/parser/v4
+199/414 Test #301: app/dftb+/spinorbit/Fe2_dual_field ...............................   Passed    0.43 sec
+        Start 264: app/dftb+/solvation/gb_reference
+200/414 Test  #98: app/dftb+/hybrid/cluster/Thymine-spin-matrix-force-mpi-grp1 ......   Passed    0.37 sec
+        Start 220: app/dftb+/dispersion/2H2O_uff
+201/414 Test #222: app/dftb+/dispersion/2H2O_sdftd3 .................................   Passed    0.16 sec
+        Start 276: app/dftb+/solvation/alpb_cation
+202/414 Test #200: app/dftb+/derivatives/Au2_LSmetalPolfreq .........................   Passed    0.28 sec
+        Start  82: app/dftb+/hybrid/cluster/C18H12-force-hyb
+203/414 Test #220: app/dftb+/dispersion/2H2O_uff ....................................   Passed    0.16 sec
+        Start 330: app/dftb+/non-scc/10-10Ctube_Gauss
+204/414 Test #264: app/dftb+/solvation/gb_reference .................................   Passed    0.27 sec
+        Start 184: app/dftb+/derivatives/CH3_U_noncol
+205/414 Test #276: app/dftb+/solvation/alpb_cation ..................................   Passed    0.20 sec
+        Start 351: app/dftb+/spinorbit/As4S4
+206/414 Test  #85: app/dftb+/legacy/parser/v4 .......................................   Passed    0.49 sec
+        Start 262: app/dftb+/solvation/sasa_i10e
+207/414 Test  #82: app/dftb+/hybrid/cluster/C18H12-force-hyb ........................   Passed    0.27 sec
+        Start 339: app/dftb+/analysis/C60_ESP
+208/414 Test #184: app/dftb+/derivatives/CH3_U_noncol ...............................   Passed    0.19 sec
+        Start  79: app/dftb+/input/ammonia_lammps
+209/414 Test #330: app/dftb+/non-scc/10-10Ctube_Gauss ...............................   Passed    0.34 sec
+        Start 258: app/dftb+/scc/SiH_custom-ref
+210/414 Test #351: app/dftb+/spinorbit/As4S4 ........................................   Passed    0.30 sec
+        Start 164: app/dftb+/mdftb/Glycine
+211/414 Test #262: app/dftb+/solvation/sasa_i10e ....................................   Passed    0.25 sec
+        Start 101: app/dftb+/hybrid/cluster/Benzene-Casida-S5-Force
+212/414 Test #339: app/dftb+/analysis/C60_ESP .......................................   Passed    0.26 sec
+        Start 265: app/dftb+/solvation/gb_mol1bar
+213/414 Test  #79: app/dftb+/input/ammonia_lammps ...................................   Passed    0.26 sec
+        Start 167: app/dftb+/mdftb/Glycine_mDFTBoff3
+214/414 Test #258: app/dftb+/scc/SiH_custom-ref .....................................   Passed    0.30 sec
+        Start 323: app/dftb+/spinorbit/Fe2
+215/414 Test #164: app/dftb+/mdftb/Glycine ..........................................   Passed    0.30 sec
+        Start 272: app/dftb+/solvation/gbsa_p16
+216/414 Test #265: app/dftb+/solvation/gb_mol1bar ...................................   Passed    0.26 sec
+        Start 166: app/dftb+/mdftb/Glycine_mDFTBoff2
+217/414 Test #167: app/dftb+/mdftb/Glycine_mDFTBoff3 ................................   Passed    0.27 sec
+        Start 270: app/dftb+/solvation/gbsa_e35
+218/414 Test #323: app/dftb+/spinorbit/Fe2 ..........................................   Passed    0.24 sec
+        Start 347: app/dftb+/h-bonds/H5_ONS_forces_eq
+219/414 Test #272: app/dftb+/solvation/gbsa_p16 .....................................   Passed    0.22 sec
+        Start  80: app/dftb+/input/ammonia_poscar
+220/414 Test #270: app/dftb+/solvation/gbsa_e35 .....................................   Passed    0.19 sec
+        Start 325: app/dftb+/non-scc/10-0Ctube_Efield
+221/414 Test #101: app/dftb+/hybrid/cluster/Benzene-Casida-S5-Force .................   Passed    0.50 sec
+        Start 273: app/dftb+/solvation/gbsa_param1
+222/414 Test #166: app/dftb+/mdftb/Glycine_mDFTBoff2 ................................   Passed    0.27 sec
+        Start 189: app/dftb+/derivatives/CH4_onsite
+223/414 Test #347: app/dftb+/h-bonds/H5_ONS_forces_eq ...............................   Passed    0.27 sec
+        Start 314: app/dftb+/timedep/NO-Stratmann
+224/414 Test  #80: app/dftb+/input/ammonia_poscar ...................................   Passed    0.28 sec
+        Start 294: app/dftb+/geoopt/H2O
+225/414 Test #189: app/dftb+/derivatives/CH4_onsite .................................   Passed    0.19 sec
+        Start 171: app/dftb+/mdftb/Glycine_RotTran3
+226/414 Test #273: app/dftb+/solvation/gbsa_param1 ..................................   Passed    0.25 sec
+        Start 319: app/dftb+/geoopt/Cchain_lattice_lbfgs
+227/414 Test #325: app/dftb+/non-scc/10-0Ctube_Efield ...............................   Passed    0.26 sec
+        Start 250: app/dftb+/geoopt/H2O-constr
+228/414 Test #314: app/dftb+/timedep/NO-Stratmann ...................................   Passed    0.19 sec
+        Start 277: app/dftb+/solvation/alpb_anion
+229/414 Test #319: app/dftb+/geoopt/Cchain_lattice_lbfgs ............................   Passed    0.24 sec
+        Start  56: app/dftb+/timeprop/benzene_kick_periodic
+230/414 Test #171: app/dftb+/mdftb/Glycine_RotTran3 .................................   Passed    0.29 sec
+        Start 271: app/dftb+/solvation/gbsa_caffeine
+231/414 Test #294: app/dftb+/geoopt/H2O .............................................   Passed    0.32 sec
+        Start 292: app/dftb+/geoopt/H2O_lbfgsLineMin
+232/414 Test #250: app/dftb+/geoopt/H2O-constr ......................................   Passed    0.29 sec
+        Start 219: app/dftb+/dispersion/2H2O
+233/414 Test #277: app/dftb+/solvation/alpb_anion ...................................   Passed    0.34 sec
+        Start 300: app/dftb+/spinorbit/Fe2_dual
+234/414 Test #219: app/dftb+/dispersion/2H2O ........................................   Passed    0.20 sec
+        Start 346: app/dftb+/h-bonds/H5_ONS_forces
+235/414 Test #271: app/dftb+/solvation/gbsa_caffeine ................................   Passed    0.25 sec
+        Start 261: app/dftb+/spin/Fe4_commonFermi
+236/414 Test #292: app/dftb+/geoopt/H2O_lbfgsLineMin ................................   Passed    0.32 sec
+        Start 269: app/dftb+/solvation/gb_inf
+237/414 Test  #56: app/dftb+/timeprop/benzene_kick_periodic .........................   Passed    0.41 sec
+        Start  99: app/dftb+/hybrid/cluster/C4H6-Casida-S1-Force
+238/414 Test #300: app/dftb+/spinorbit/Fe2_dual .....................................   Passed    0.25 sec
+        Start 223: app/dftb+/dispersion/2H2O_dftd4
+239/414 Test #261: app/dftb+/spin/Fe4_commonFermi ...................................   Passed    0.22 sec
+        Start 225: app/dftb+/dispersion/charged_dftd4
+240/414 Test #346: app/dftb+/h-bonds/H5_ONS_forces ..................................   Passed    0.26 sec
+        Start 183: app/dftb+/derivatives/CH3spin3rdOnsPol
+241/414 Test #269: app/dftb+/solvation/gb_inf .......................................   Passed    0.20 sec
+        Start 138: app/dftb+/reks/C2H4_3SSR_rangesep
+242/414 Test #223: app/dftb+/dispersion/2H2O_dftd4 ..................................   Passed    0.16 sec
+        Start  94: app/dftb+/hybrid/cluster/cyclopropene_nb_restart
+243/414 Test #225: app/dftb+/dispersion/charged_dftd4 ...............................   Passed    0.20 sec
+        Start 345: app/dftb+/h-bonds/H5_defaults
+244/414 Test  #99: app/dftb+/hybrid/cluster/C4H6-Casida-S1-Force ....................   Passed    0.30 sec
+        Start 249: app/dftb+/derivatives/Si_2_Richardson
+245/414 Test #183: app/dftb+/derivatives/CH3spin3rdOnsPol ...........................   Passed    0.19 sec
+        Start 253: app/dftb+/scc/C4H8_3rdfull
+246/414 Test #138: app/dftb+/reks/C2H4_3SSR_rangesep ................................   Passed    0.31 sec
+        Start  74: app/dftb+/elecconstraints/H2O_non-converged
+247/414 Test #253: app/dftb+/scc/C4H8_3rdfull .......................................   Passed    0.17 sec
+        Start 218: app/dftb+/dftb+u/CH3
+248/414 Test #249: app/dftb+/derivatives/Si_2_Richardson ............................   Passed    0.19 sec
+        Start 336: app/dftb+/non-scc/HBDI-neutral
+249/414 Test  #94: app/dftb+/hybrid/cluster/cyclopropene_nb_restart .................   Passed    0.29 sec
+        Start 233: app/dftb+/geoopt/H2O_sd_old
+250/414 Test #345: app/dftb+/h-bonds/H5_defaults ....................................   Passed    0.27 sec
+        Start 129: app/dftb+/hybrid/periodic/GaAs-gamma-matrix
+251/414 Test  #74: app/dftb+/elecconstraints/H2O_non-converged ......................   Passed    0.22 sec
+        Start 321: app/dftb+/geoopt/Cchain_lattice_rf
+252/414 Test #218: app/dftb+/dftb+u/CH3 .............................................   Passed    0.22 sec
+        Start 289: app/dftb+/analysis/H2O_mdESP
+253/414 Test #336: app/dftb+/non-scc/HBDI-neutral ...................................   Passed    0.24 sec
+        Start 317: app/dftb+/dftb+u/Fe4
+254/414 Test #233: app/dftb+/geoopt/H2O_sd_old ......................................   Passed    0.32 sec
+        Start 176: app/dftb+/mdftb/NH4+H2O
+255/414 Test #129: app/dftb+/hybrid/periodic/GaAs-gamma-matrix ......................   Passed    0.35 sec
+        Start 313: app/dftb+/timedep/C4H6-Triplet-Stratmann
+256/414 Test #321: app/dftb+/geoopt/Cchain_lattice_rf ...............................   Passed    0.27 sec
+        Start  81: app/dftb+/input/unsorted_contcar
+257/414 Test #317: app/dftb+/dftb+u/Fe4 .............................................   Passed    0.26 sec
+        Start 278: app/dftb+/solvation/alpb_p16
+258/414 Test #289: app/dftb+/analysis/H2O_mdESP .....................................   Passed    0.35 sec
+        Start 263: app/dftb+/solvation/gb_ionpair
+259/414 Test #176: app/dftb+/mdftb/NH4+H2O ..........................................   Passed    0.24 sec
+        Start 337: app/dftb+/non-scc/HBDI-cationic
+260/414 Test #313: app/dftb+/timedep/C4H6-Triplet-Stratmann .........................   Passed    0.20 sec
+        Start 232: app/dftb+/geoopt/H2O_sd
+261/414 Test #278: app/dftb+/solvation/alpb_p16 .....................................   Passed    0.18 sec
+        Start 291: app/dftb+/geoopt/H2O_lbfgsStep
+262/414 Test  #81: app/dftb+/input/unsorted_contcar .................................   Passed    0.24 sec
+        Start 196: app/dftb+/derivatives/Au2_Polfreq
+263/414 Test #337: app/dftb+/non-scc/HBDI-cationic ..................................   Passed    0.23 sec
+        Start 179: app/dftb+/mdftb/NH4+H2O_RotTran3
+264/414 Test #263: app/dftb+/solvation/gb_ionpair ...................................   Passed    0.28 sec
+        Start 254: app/dftb+/scc/C4H8_3rdfull-damp
+265/414 Test #232: app/dftb+/geoopt/H2O_sd ..........................................   Passed    0.27 sec
+        Start 102: app/dftb+/hybrid/cluster/C4H6-TD-LC-Triplet
+266/414 Test #196: app/dftb+/derivatives/Au2_Polfreq ................................   Passed    0.24 sec
+        Start 178: app/dftb+/mdftb/NH4+H2O_RotTran2
+267/414 Test #291: app/dftb+/geoopt/H2O_lbfgsStep ...................................   Passed    0.32 sec
+        Start 185: app/dftb+/derivatives/Au2_LSmetalPol
+268/414 Test #179: app/dftb+/mdftb/NH4+H2O_RotTran3 .................................   Passed    0.24 sec
+        Start 248: app/dftb+/spin/OH_commonFermi
+269/414 Test #254: app/dftb+/scc/C4H8_3rdfull-damp ..................................   Passed    0.23 sec
+        Start 307: app/dftb+/timedep/C4H6-S1-Force_uncache-Stratmann
+270/414 Test #102: app/dftb+/hybrid/cluster/C4H6-TD-LC-Triplet ......................   Passed    0.25 sec
+        Start  69: app/dftb+/helical/10-0CtubeC_10_sampled
+271/414 Test #178: app/dftb+/mdftb/NH4+H2O_RotTran2 .................................   Passed    0.23 sec
+        Start 100: app/dftb+/hybrid/cluster/Benzene-Spinpol-matrix
+272/414 Test #185: app/dftb+/derivatives/Au2_LSmetalPol .............................   Passed    0.20 sec
+        Start 175: app/dftb+/mdftb/OH-H2O_RotTran3
+273/414 Test #248: app/dftb+/spin/OH_commonFermi ....................................   Passed    0.17 sec
+        Start 182: app/dftb+/derivatives/CH3sccPol
+274/414 Test #307: app/dftb+/timedep/C4H6-S1-Force_uncache-Stratmann ................   Passed    0.21 sec
+        Start  78: app/dftb+/input/caffeine_xyz
+275/414 Test  #69: app/dftb+/helical/10-0CtubeC_10_sampled ..........................   Passed    0.19 sec
+        Start 177: app/dftb+/mdftb/NH4+H2O_RotTran1
+276/414 Test #182: app/dftb+/derivatives/CH3sccPol ..................................   Passed    0.15 sec
+        Start  90: app/dftb+/hybrid/cluster/CH3-matrix
+277/414 Test #175: app/dftb+/mdftb/OH-H2O_RotTran3 ..................................   Passed    0.17 sec
+        Start 241: app/dftb+/scc/H2O2-3rdfull-ldep
+278/414 Test #100: app/dftb+/hybrid/cluster/Benzene-Spinpol-matrix ..................   Passed    0.23 sec
+        Start 107: app/dftb+/hybrid/periodic/Acene-gamma-matrix-force-cam
+279/414 Test  #90: app/dftb+/hybrid/cluster/CH3-matrix ..............................   Passed    0.18 sec
+        Start 172: app/dftb+/mdftb/OH-H2O
+280/414 Test #241: app/dftb+/scc/H2O2-3rdfull-ldep ..................................   Passed    0.19 sec
+        Start 315: app/dftb+/timedep/propadiene_OscWindow-Stratmann
+281/414 Test #177: app/dftb+/mdftb/NH4+H2O_RotTran1 .................................   Passed    0.25 sec
+        Start 290: app/dftb+/geoopt/H2O_lbfgs
+282/414 Test  #78: app/dftb+/input/caffeine_xyz .....................................   Passed    0.32 sec
+        Start 242: app/dftb+/scc/H2O-extchrg
+283/414 Test #107: app/dftb+/hybrid/periodic/Acene-gamma-matrix-force-cam ...........   Passed    0.24 sec
+        Start 308: app/dftb+/timedep/NH-Force-spinpol-Stratmann
+284/414 Test #315: app/dftb+/timedep/propadiene_OscWindow-Stratmann .................   Passed    0.19 sec
+        Start 161: app/dftb+/mdftb/2H2O
+285/414 Test #172: app/dftb+/mdftb/OH-H2O ...........................................   Passed    0.22 sec
+        Start 240: app/dftb+/scc/H2O2_3rdfull
+286/414 Test #242: app/dftb+/scc/H2O-extchrg ........................................   Passed    0.19 sec
+        Start 267: app/dftb+/solvation/gb_specieslist
+287/414 Test #308: app/dftb+/timedep/NH-Force-spinpol-Stratmann .....................   Passed    0.18 sec
+        Start 247: app/dftb+/spin/H2O-periodic
+288/414 Test #290: app/dftb+/geoopt/H2O_lbfgs .......................................   Passed    0.25 sec
+        Start 260: app/dftb+/spin/Fe4
+289/414 Test #240: app/dftb+/scc/H2O2_3rdfull .......................................   Passed    0.17 sec
+        Start 216: app/dftb+/analysis/graphene_localise
+290/414 Test #161: app/dftb+/mdftb/2H2O .............................................   Passed    0.20 sec
+        Start 268: app/dftb+/solvation/gb_p16
+291/414 Test #267: app/dftb+/solvation/gb_specieslist ...............................   Passed    0.21 sec
+        Start 174: app/dftb+/mdftb/OH-H2O_RotTran2
+292/414 Test #247: app/dftb+/spin/H2O-periodic ......................................   Passed    0.18 sec
+        Start 168: app/dftb+/mdftb/Glycine_Ordering
+293/414 Test #260: app/dftb+/spin/Fe4 ...............................................   Passed    0.21 sec
+        Start 266: app/dftb+/solvation/gb_cm5
+294/414 Test #216: app/dftb+/analysis/graphene_localise .............................   Passed    0.16 sec
+        Start 244: app/dftb+/scc/H2O-extchrg-direct
+295/414 Test #174: app/dftb+/mdftb/OH-H2O_RotTran2 ..................................   Passed    0.20 sec
+        Start 338: app/dftb+/scc/C60
+296/414 Test #268: app/dftb+/solvation/gb_p16 .......................................   Passed    0.25 sec
+        Start 173: app/dftb+/mdftb/OH-H2O_RotTran1
+297/414 Test #244: app/dftb+/scc/H2O-extchrg-direct .................................   Passed    0.18 sec
+        Start 310: app/dftb+/timedep/C4H6-TransCharges
+298/414 Test #266: app/dftb+/solvation/gb_cm5 .......................................   Passed    0.22 sec
+        Start 255: app/dftb+/scc/CH2_n_3rdfull
+299/414 Test #168: app/dftb+/mdftb/Glycine_Ordering .................................   Passed    0.32 sec
+        Start  72: app/dftb+/elecconstraints/H2O_scc
+300/414 Test #173: app/dftb+/mdftb/OH-H2O_RotTran1 ..................................   Passed    0.19 sec
+        Start 209: app/dftb+/non-scc/Si_2_independentk
+301/414 Test #338: app/dftb+/scc/C60 ................................................   Passed    0.26 sec
+        Start 141: app/dftb+/reks/C2H4_read_mo
+302/414 Test #310: app/dftb+/timedep/C4H6-TransCharges ..............................   Passed    0.20 sec
+        Start 217: app/dftb+/onsite/H2O
+303/414 Test #255: app/dftb+/scc/CH2_n_3rdfull ......................................   Passed    0.22 sec
+        Start 202: app/dftb+/derivatives/C2H4_scc_dx
+304/414 Test #209: app/dftb+/non-scc/Si_2_independentk ..............................   Passed    0.18 sec
+        Start 231: app/dftb+/geoopt/H2O-nonscc
+305/414 Test  #72: app/dftb+/elecconstraints/H2O_scc ................................   Passed    0.28 sec
+        Start  43: app/dftb+/timeprop/benzene_kick_bndpop
+306/414 Test #217: app/dftb+/onsite/H2O .............................................   Passed    0.18 sec
+        Start 243: app/dftb+/scc/H2O-extchrg-blur
+307/414 Test #202: app/dftb+/derivatives/C2H4_scc_dx ................................   Passed    0.19 sec
+        Start 251: app/dftb+/legacy/SiC_polyRep
+308/414 Test #141: app/dftb+/reks/C2H4_read_mo ......................................   Passed    0.25 sec
+        Start 322: app/dftb+/scc/H2O+CH3COOH-3rdorder
+309/414 Test #231: app/dftb+/geoopt/H2O-nonscc ......................................   Passed    0.20 sec
+        Start 210: app/dftb+/scc/H2O2_3rdfull-damp
+310/414 Test #243: app/dftb+/scc/H2O-extchrg-blur ...................................   Passed    0.19 sec
+        Start 224: app/dftb+/dispersion/specieslist_dftd4
+311/414 Test #322: app/dftb+/scc/H2O+CH3COOH-3rdorder ...............................   Passed    0.17 sec
+        Start 312: app/dftb+/timedep/C4H6-Singlet-Stratmann
+312/414 Test #251: app/dftb+/legacy/SiC_polyRep .....................................   Passed    0.19 sec
+        Start 208: app/dftb+/non-scc/Si_2_originF
+313/414 Test  #43: app/dftb+/timeprop/benzene_kick_bndpop ...........................   Passed    0.33 sec
+        Start 198: app/dftb+/derivatives/CH4_freq
+314/414 Test #210: app/dftb+/scc/H2O2_3rdfull-damp ..................................   Passed    0.19 sec
+        Start 204: app/dftb+/legacy/Si2_polyRep
+315/414 Test #224: app/dftb+/dispersion/specieslist_dftd4 ...........................   Passed    0.20 sec
+        Start 215: app/dftb+/analysis/C2H4_localise
+316/414 Test #312: app/dftb+/timedep/C4H6-Singlet-Stratmann .........................   Passed    0.21 sec
+        Start 245: app/dftb+/scc/H2O-extchrg-periodic
+317/414 Test #208: app/dftb+/non-scc/Si_2_originF ...................................   Passed    0.21 sec
+        Start 405: app/dftb+/pp-RPA/benzene_TammDancoff
+318/414 Test #204: app/dftb+/legacy/Si2_polyRep .....................................   Passed    0.19 sec
+        Start 343: app/dftb+/dangerous/C_SkCutoff_soft_old
+319/414 Test #198: app/dftb+/derivatives/CH4_freq ...................................   Passed    0.21 sec
+        Start  73: app/dftb+/elecconstraints/H2O_scc-individual
+320/414 Test #215: app/dftb+/analysis/C2H4_localise .................................   Passed    0.16 sec
+        Start 335: app/dftb+/spin/Fe4_noncolinear
+321/414 Test #245: app/dftb+/scc/H2O-extchrg-periodic ...............................   Passed    0.18 sec
+        Start 297: app/dftb+/non-scc/GaAs_2
+322/414 Test #343: app/dftb+/dangerous/C_SkCutoff_soft_old ..........................   Passed    0.18 sec
+        Start  13: api_timeprop
+323/414 Test #405: app/dftb+/pp-RPA/benzene_TammDancoff .............................   Passed    0.24 sec
+        Start 181: app/dftb+/derivatives/CH3nonsccPol
+324/414 Test  #73: app/dftb+/elecconstraints/H2O_scc-individual .....................   Passed    0.19 sec
+        Start 342: app/dftb+/dangerous/C_SkCutoff_hard_default
+325/414 Test #335: app/dftb+/spin/Fe4_noncolinear ...................................   Passed    0.20 sec
+        Start 311: app/dftb+/timedep/2CH3-Temp-Stratmann
+326/414 Test #297: app/dftb+/non-scc/GaAs_2 .........................................   Passed    0.21 sec
+        Start 228: app/dftb+/dispersion/2H2O_dftd4_sc
+327/414 Test #181: app/dftb+/derivatives/CH3nonsccPol ...............................   Passed    0.17 sec
+        Start 180: app/dftb+/derivatives/Si_2_Delta
+328/414 Test #342: app/dftb+/dangerous/C_SkCutoff_hard_default ......................   Passed    0.17 sec
+        Start 162: app/dftb+/mdftb/2H2O-extfield
+329/414 Test #311: app/dftb+/timedep/2CH3-Temp-Stratmann ............................   Passed    0.19 sec
+        Start 341: app/dftb+/dangerous/C_SkCutoff_soft_default
+330/414 Test  #13: api_timeprop .....................................................   Passed    0.30 sec
+        Start  38: app/dftb+/deltadftb/H2O
+331/414 Test #228: app/dftb+/dispersion/2H2O_dftd4_sc ...............................   Passed    0.17 sec
+        Start 235: app/dftb+/non-scc/decapentaene
+332/414 Test #180: app/dftb+/derivatives/Si_2_Delta .................................   Passed    0.16 sec
+        Start 238: app/dftb+/scc/C2H6_3rdfull
+333/414 Test #162: app/dftb+/mdftb/2H2O-extfield ....................................   Passed    0.17 sec
+        Start 293: app/dftb+/geoopt/H2O_rf
+334/414 Test #341: app/dftb+/dangerous/C_SkCutoff_soft_default ......................   Passed    0.17 sec
+        Start 214: app/dftb+/scc/CH4_nonconverged
+335/414 Test #235: app/dftb+/non-scc/decapentaene ...................................   Passed    0.17 sec
+        Start 206: app/dftb+/non-scc/Si_2
+336/414 Test #238: app/dftb+/scc/C2H6_3rdfull .......................................   Passed    0.19 sec
+        Start 246: app/dftb+/scc/H2O-extfield
+337/414 Test  #38: app/dftb+/deltadftb/H2O ..........................................   Passed    0.26 sec
+        Start 236: app/dftb+/scc/2H2O-3rdorder
+338/414 Test #293: app/dftb+/geoopt/H2O_rf ..........................................   Passed    0.22 sec
+        Start 237: app/dftb+/scc/2H2O-3rdorder_read
+339/414 Test #214: app/dftb+/scc/CH4_nonconverged ...................................   Passed    0.16 sec
+        Start 211: app/dftb+/scc/H3
+340/414 Test #206: app/dftb+/non-scc/Si_2 ...........................................   Passed    0.15 sec
+        Start 239: app/dftb+/scc/C2H6_3rdfull-damp
+341/414 Test #246: app/dftb+/scc/H2O-extfield .......................................   Passed    0.19 sec
+        Start 298: app/dftb+/scc/GaAs_2
+342/414 Test #236: app/dftb+/scc/2H2O-3rdorder ......................................   Passed    0.20 sec
+        Start 288: app/dftb+/analysis/H2O_ESP
+343/414 Test #237: app/dftb+/scc/2H2O-3rdorder_read .................................   Passed    0.18 sec
+        Start  34: app/dftb+/deltadftb/C2H4
+344/414 Test #211: app/dftb+/scc/H3 .................................................   Passed    0.19 sec
+        Start 234: app/dftb+/non-scc/CH4
+345/414 Test #239: app/dftb+/scc/C2H6_3rdfull-damp ..................................   Passed    0.17 sec
+        Start 193: app/dftb+/derivatives/C6H6_onsite
+346/414 Test #288: app/dftb+/analysis/H2O_ESP .......................................   Passed    0.17 sec
+        Start 286: app/dftb+/solvation/H2O_gb_rescale
+347/414 Test #298: app/dftb+/scc/GaAs_2 .............................................   Passed    0.22 sec
+        Start 406: app/dftb+/pp-RPA/furan_OrbConst
+348/414 Test #234: app/dftb+/non-scc/CH4 ............................................   Passed    0.16 sec
+        Start  35: app/dftb+/deltadftb/C2H4_noground
+349/414 Test  #34: app/dftb+/deltadftb/C2H4 .........................................   Passed    0.20 sec
+        Start  88: app/dftb+/hybrid/cluster/CH3
+350/414 Test #193: app/dftb+/derivatives/C6H6_onsite ................................   Passed    0.19 sec
+        Start 414: app/modes/C24O6H8_select
+351/414 Test #286: app/dftb+/solvation/H2O_gb_rescale ...............................   Passed    0.16 sec
+        Start 256: app/dftb+/scc/CH2_n_3rdfull_damp
+352/414 Test  #35: app/dftb+/deltadftb/C2H4_noground ................................   Passed    0.19 sec
+        Start 299: app/dftb+/scc/GaAs_2_customU
+353/414 Test #406: app/dftb+/pp-RPA/furan_OrbConst ..................................   Passed    0.23 sec
+        Start 318: app/dftb+/dftb+u/Fe4_read
+354/414 Test  #88: app/dftb+/hybrid/cluster/CH3 .....................................   Passed    0.22 sec
+        Start 334: app/dftb+/non-scc/10-0Ctube
+355/414 Test #414: app/modes/C24O6H8_select .........................................   Passed    0.18 sec
+        Start 195: app/dftb+/derivatives/CH4_RPA
+356/414 Test #256: app/dftb+/scc/CH2_n_3rdfull_damp .................................   Passed    0.20 sec
+        Start  17: api_fileinitc
+357/414 Test #318: app/dftb+/dftb+u/Fe4_read ........................................   Passed    0.15 sec
+        Start 344: app/dftb+/dangerous/C_SkCutoff_hard_old
+358/414 Test #195: app/dftb+/derivatives/CH4_RPA ....................................   Passed    0.18 sec
+        Start 404: app/dftb+/pp-RPA/ethene
+359/414 Test #299: app/dftb+/scc/GaAs_2_customU .....................................   Passed    0.24 sec
+        Start 207: app/dftb+/non-scc/Si_2_origin
+360/414 Test #334: app/dftb+/non-scc/10-0Ctube ......................................   Passed    0.26 sec
+        Start 203: app/dftb+/legacy/Si2_oldSKinterp
+361/414 Test  #17: api_fileinitc ....................................................   Passed    0.19 sec
+        Start 259: app/dftb+/scc/HH_custom-ref
+362/414 Test #344: app/dftb+/dangerous/C_SkCutoff_hard_old ..........................   Passed    0.17 sec
+        Start 212: app/dftb+/scc/H3_skipcheck
+363/414 Test #404: app/dftb+/pp-RPA/ethene ..........................................   Passed    0.18 sec
+        Start  19: api_qdepextpotc
+364/414 Test #207: app/dftb+/non-scc/Si_2_origin ....................................   Passed    0.17 sec
+        Start 170: app/dftb+/mdftb/Glycine_RotTran2
+365/414 Test #203: app/dftb+/legacy/Si2_oldSKinterp .................................   Passed    0.15 sec
+        Start 407: app/modes/C6H6_eigvec
+366/414 Test #259: app/dftb+/scc/HH_custom-ref ......................................   Passed    0.16 sec
+        Start 303: app/dftb+/spinorbit/Si_2
+367/414 Test #212: app/dftb+/scc/H3_skipcheck .......................................   Passed    0.17 sec
+        Start 412: app/modes/C24O6H8_atoms
+368/414 Test  #19: api_qdepextpotc ..................................................   Passed    0.19 sec
+        Start 201: app/dftb+/derivatives/C2H4_dx
+369/414 Test #407: app/modes/C6H6_eigvec ............................................   Passed    0.18 sec
+        Start 411: app/modes/C24O6H8
+370/414 Test #412: app/modes/C24O6H8_atoms ..........................................   Passed    0.17 sec
+        Start  24: api_imp_ham
+371/414 Test #170: app/dftb+/mdftb/Glycine_RotTran2 .................................   Passed    0.28 sec
+        Start  26: api_neighbour_list_c
+372/414 Test #303: app/dftb+/spinorbit/Si_2 .........................................   Passed    0.21 sec
+        Start  31: app/dftb+/extpot/CH4_net2
+373/414 Test #201: app/dftb+/derivatives/C2H4_dx ....................................   Passed    0.15 sec
+        Start 413: app/modes/C24O6H8_extfile
+374/414 Test #411: app/modes/C24O6H8 ................................................   Passed    0.18 sec
+        Start  18: api_qdepextpot
+375/414 Test  #26: api_neighbour_list_c .............................................   Passed    0.15 sec
+        Start  36: app/dftb+/deltadftb/C2H4_unpurified
+376/414 Test  #24: api_imp_ham ......................................................   Passed    0.16 sec
+        Start 388: app/dftb+/md/Si_8-tempprofile0
+377/414 Test  #31: app/dftb+/extpot/CH4_net2 ........................................   Passed    0.18 sec
+        Start 213: app/dftb+/spin/H2
+378/414 Test #413: app/modes/C24O6H8_extfile ........................................   Passed    0.16 sec
+        Start 296: app/dftb+/md/Si_8_NHC_restart
+379/414 Test  #18: api_qdepextpot ...................................................   Passed    0.21 sec
+        Start 408: app/modes/C6H6_ir
+380/414 Test  #36: app/dftb+/deltadftb/C2H4_unpurified ..............................   Passed    0.19 sec
+        Start  23: api_expdmhs-si2
+381/414 Test #213: app/dftb+/spin/H2 ................................................   Passed    0.18 sec
+        Start 409: app/modes/C6H6
+382/414 Test #388: app/dftb+/md/Si_8-tempprofile0 ...................................   Passed    0.28 sec
+        Start  25: api_neighbour_list
+383/414 Test #296: app/dftb+/md/Si_8_NHC_restart ....................................   Passed    0.26 sec
+        Start 410: app/modes/C6H6_rr
+384/414 Test #408: app/modes/C6H6_ir ................................................   Passed    0.15 sec
+        Start  33: app/dftb+/extpot/CH4_scc_net
+385/414 Test  #23: api_expdmhs-si2 ..................................................   Passed    0.17 sec
+        Start  28: app/dftb+/extpot/CH4_gross
+386/414 Test #409: app/modes/C6H6 ...................................................   Passed    0.16 sec
+        Start  29: app/dftb+/extpot/CH4_net
+387/414 Test  #25: api_neighbour_list ...............................................   Passed    0.16 sec
+        Start  30: app/dftb+/extpot/CH4_gross2
+388/414 Test #410: app/modes/C6H6_rr ................................................   Passed    0.16 sec
+        Start 145: app/dftb+/reks/CNH4+_dftd4
+389/414 Test  #28: app/dftb+/extpot/CH4_gross .......................................   Passed    0.14 sec
+        Start  71: app/dftb+/helical/C6H6_stack
+390/414 Test  #33: app/dftb+/extpot/CH4_scc_net .....................................   Passed    0.17 sec
+        Start  16: api_fileinit
+391/414 Test  #29: app/dftb+/extpot/CH4_net .........................................   Passed    0.18 sec
+        Start 147: app/dftb+/reks/CNH4+_dftd4_sc_rangesep
+392/414 Test  #30: app/dftb+/extpot/CH4_gross2 ......................................   Passed    0.16 sec
+        Start  32: app/dftb+/extpot/CH4_scc_gross
+393/414 Test  #16: api_fileinit .....................................................   Passed    0.16 sec
+        Start 146: app/dftb+/reks/CNH4+_dftd4_sc
+394/414 Test #145: app/dftb+/reks/CNH4+_dftd4 .......................................   Passed    0.20 sec
+        Start  21: api_resetspecies_C2H6
+395/414 Test  #71: app/dftb+/helical/C6H6_stack .....................................   Passed    0.18 sec
+        Start  12: api_extefield
+396/414 Test  #32: app/dftb+/extpot/CH4_scc_gross ...................................   Passed    0.20 sec
+        Start   9: api_extcharges
+397/414 Test #147: app/dftb+/reks/CNH4+_dftd4_sc_rangesep ...........................   Passed    0.25 sec
+        Start  27: api_intcharges
+398/414 Test #146: app/dftb+/reks/CNH4+_dftd4_sc ....................................   Passed    0.20 sec
+        Start  10: api_extpot
+399/414 Test  #21: api_resetspecies_C2H6 ............................................   Passed    0.20 sec
+        Start  11: api_extpot2
+400/414 Test  #12: api_extefield ....................................................   Passed    0.20 sec
+        Start  22: api_treeinit
+401/414 Test   #9: api_extcharges ...................................................   Passed    0.20 sec
         Start   1: unit/common
+402/414 Test   #1: unit/common ......................................................   Passed    0.01 sec
         Start   2: unit/dftb
+403/414 Test   #2: unit/dftb ........................................................   Passed    0.01 sec
         Start   3: unit/dftbplus
+404/414 Test  #11: api_extpot2 ......................................................   Passed    0.16 sec
+        Start   8: unit/type
+405/414 Test   #8: unit/type ........................................................   Passed    0.00 sec
+        Start   6: unit/math
+406/414 Test  #27: api_intcharges ...................................................   Passed    0.23 sec
+407/414 Test  #10: api_extpot .......................................................   Passed    0.17 sec
+408/414 Test   #3: unit/dftbplus ....................................................   Passed    0.01 sec
+        Start   7: unit/mixer
         Start   4: unit/include
         Start   5: unit/io
-        Start   6: unit/math
-  1/414 Test   #1: unit/common ......................................................   Passed    0.01 sec
-  2/414 Test   #2: unit/dftb ........................................................   Passed    0.01 sec
-  3/414 Test   #3: unit/dftbplus ....................................................   Passed    0.01 sec
-  4/414 Test   #4: unit/include .....................................................   Passed    0.01 sec
-        Start   7: unit/mixer
-        Start   8: unit/type
-        Start   9: api_extcharges
-        Start  10: api_extpot
-  5/414 Test   #5: unit/io ..........................................................   Passed    0.01 sec
-  6/414 Test   #6: unit/math ........................................................   Passed    0.01 sec
-  7/414 Test   #7: unit/mixer .......................................................   Passed    0.01 sec
-  8/414 Test   #8: unit/type ........................................................   Passed    0.00 sec
-        Start  11: api_extpot2
-        Start  12: api_extefield
-        Start  13: api_timeprop
-        Start  14: api_ehrenfest
-  9/414 Test   #9: api_extcharges ...................................................***Failed    0.18 sec
-extcharges:	Test script returned non-zero exit code: 1
- deleting file 'autotest.tag'
- TODO.
+409/414 Test   #6: unit/math ........................................................   Passed    0.01 sec
+410/414 Test   #7: unit/mixer .......................................................   Passed    0.01 sec
+411/414 Test   #4: unit/include .....................................................   Passed    0.01 sec
+412/414 Test   #5: unit/io ..........................................................   Passed    0.00 sec
+413/414 Test  #22: api_treeinit .....................................................   Passed    0.19 sec
+414/414 Test #126: app/dftb+/hybrid/periodic/Benzene-gamma-neigh-spin-force .........   Passed  377.59 sec
 
-==============================================================================
-TEST SUMMARY
-------------------------------------------------------------------------------
-Match:
-    None
+100% tests passed, 0 tests failed out of 414
 
-Not run:
-    extcharges
-------------------------------------------------------------------------------
-Status: FAIL
-
- 10/414 Test  #12: api_extefield ....................................................***Failed    0.18 sec
-extefield:	Test script returned non-zero exit code: 1
- deleting file 'autotest.tag'
- TODO.
-
-==============================================================================
-TEST SUMMARY
-------------------------------------------------------------------------------
-Match:
-    None
-
-Not run:
-    extefield
-------------------------------------------------------------------------------
-Status: FAIL
-
- 11/414 Test  #11: api_extpot2 ......................................................***Failed    0.19 sec
-extpot2:	Test script returned non-zero exit code: 1
- deleting file 'autotest.tag'
- TODO.
-
-==============================================================================
-TEST SUMMARY
-------------------------------------------------------------------------------
-Match:
-    None
-
-Not run:
-    extpot2
-------------------------------------------------------------------------------
-Status: FAIL
-
- 12/414 Test  #10: api_extpot .......................................................***Failed    0.21 sec
-extpot:	Test script returned non-zero exit code: 1
- deleting file 'autotest.tag'
- TODO.
-
-==============================================================================
-TEST SUMMARY
-------------------------------------------------------------------------------
-Match:
-    None
-
-Not run:
-    extpot
-------------------------------------------------------------------------------
-Status: FAIL
-
- 13/414 Test  #13: api_timeprop .....................................................   Passed    0.29 sec
- 14/414 Test  #14: api_ehrenfest ....................................................   Passed    6.08 sec
-
-71% tests passed, 4 tests failed out of 14
-
-Total Test time (real) =   6.13 sec
-
-The following tests FAILED:
-	  9 - api_extcharges (Failed)
-	 10 - api_extpot (Failed)
-	 11 - api_extpot2 (Failed)
-	 12 - api_extefield (Failed)
+Total Test time (real) = 377.61 sec
