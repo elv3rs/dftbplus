@@ -24,12 +24,16 @@ module waveplot_initwaveplot
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdcompat, only : destroyNode, hsd_table, hsd_child_list,&
-      & getItem1, getLength, getNodeName, hsd_dump, hsd_error_t,&
-      & hsd_rename_child, detailedError, detailedWarning, getChild, getChildren,&
-      & getChildValue, getSelectedIndices, setChild, setChildValue, convertUnitHsd,&
-      & warnUnprocessedNodes, destroyNodeList, removeChildNodes, new_table
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
+  use dftbp_io_hsdutils, only : hsd_child_list,&
+      & getItem1, getLength, &
+      & getChild, getChildren,&
+      & getChildValue, setChild, setChildValue,&
+      & destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
+      & hsd_dump, hsd_clear_children
+  use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1, TListReal
@@ -329,7 +333,7 @@ contains
     end if
     call getChild(tmp, "detailedout", detailed)
     call readDetailed(this, detailed, tGroundState, kPointsWeights)
-    call destroyNode(tmp)
+    tmp => null()
 
     nKPoint = size(kPointsWeights, dim=2)
     nSpin = size(this%input%occupations, dim=3)
@@ -346,7 +350,16 @@ contains
     call readOptions(this, tmp, this%eig%nState, nKPoint, nSpin, nCached, tShiftGrid)
 
     ! Issue warning about unprocessed nodes
-    call warnUnprocessedNodes(root, .true.)
+    if (.not. .true.) then
+      block
+        character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+        integer :: ii
+        call hsd_warn_unprocessed(root, warnings)
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+      end block
+    end if
 
     ! Finish parsing, dump parsed and processed input
     if (tIoProc) then
@@ -355,7 +368,7 @@ contains
     write(stdout, "(A)") "Processed input written as HSD to '" // hsdParsedInput &
         &//"'"
     write(stdout, "(A,/)") repeat("-", 80)
-    call destroyNode(hsdTree)
+    hsdTree => null()
 
   #:if WITH_MPI
     call env%initMpi(1)
@@ -499,15 +512,15 @@ contains
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(child, geo)
-      call removeChildNodes(geonode)
+      call hsd_clear_children(geonode)
       call writeTGeometryHSD(geonode, geo)
     case ("xyzformat")
       call readTGeometryXyz(child, geo)
-      call removeChildNodes(geonode)
+      call hsd_clear_children(geonode)
       call writeTGeometryHSD(geonode, geo)
     case ("vaspformat")
       call readTGeometryVasp(child, geo)
-      call removeChildNodes(geonode)
+      call hsd_clear_children(geonode)
       call writeTGeometryHSD(geonode, geo)
     case default
       call readTGeometryHSD(geonode, geo)
@@ -596,7 +609,7 @@ contains
     call getChildValue(node, "ImagComponent", this%opt%tPlotImag, .false., child=field)
 
     if (this%opt%tPlotImag .and. this%input%tRealHam) then
-      call detailedWarning(field, "Wave functions are real, no imaginary part will be plotted")
+      call dftbp_warning(field, "Wave functions are real, no imaginary part will be plotted")
       this%opt%tPlotImag = .false.
     end if
 
@@ -643,7 +656,7 @@ contains
     call getChildValue(node, "NrOfCachedGrids", nCached, 1, child=field)
 
     if (nCached < 1 .and. nCached /= -1) then
-      call detailedError(field, "Value must be -1 or greater than zero.")
+      call dftbp_error(field, "Value must be -1 or greater than zero.")
     end if
 
     if (nCached == -1) then
@@ -664,7 +677,7 @@ contains
       else
         call getChildValue(value, "MinEdgeLength", minEdge, child=field, default=1.0_dp)
         if (minEdge < 0.0_dp) then
-          call detailedError(field, "Minimal edge length must be positive")
+          call dftbp_error(field, "Minimal edge length must be positive")
         end if
         this%opt%origin = minval(this%input%geo%coords, dim=2)
         tmpvec = maxval(this%input%geo%coords, dim=2) - this%opt%origin
@@ -684,7 +697,7 @@ contains
       ! Determine optimal cuboid, so that no basis function leaks out
       call getChildValue(value, "MinEdgeLength", minEdge, child=field, default=1.0_dp)
       if (minEdge < 0.0_dp) then
-        call detailedError(field, "Minimal edge length must be positive")
+        call dftbp_error(field, "Minimal edge length must be positive")
       end if
       allocate(mcutoffs(this%input%geo%nSpecies))
       do iSpecies = 1 , this%input%geo%nSpecies
@@ -715,14 +728,14 @@ contains
       call getChildValue(subnode, "Box", this%opt%boxVecs, modifier=modifier, child=field)
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%boxVecs)
       if (abs(determinant33(this%opt%boxVecs)) < 1e-08_dp) then
-        call detailedError(field, "Vectors are linearly dependent")
+        call dftbp_error(field, "Vectors are linearly dependent")
       end if
       call getChildValue(subnode, "Origin", this%opt%origin, modifier=modifier, child=field)
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%origin)
 
     case default
       ! Object with unknown name passed
-      call detailedError(value, "Invalid element name")
+      call dftbp_error(value, "Invalid element name")
     end select
 
     ! Replace existing PlottedRegion definition
@@ -733,7 +746,7 @@ contains
     call getChildValue(node, "NrOfPoints", this%opt%nPoints, child=field)
 
     if (any(this%opt%nPoints <= 0)) then
-      call detailedError(field, "Specified numbers must be greater than zero")
+      call dftbp_error(field, "Specified numbers must be greater than zero")
     end if
 
     call getChildValue(node, "ShiftGrid", tShiftGrid, default=.true.)
@@ -750,7 +763,7 @@ contains
     call getChildValue(node, "RepeatBox", this%opt%repeatBox, default=[1, 1, 1], child=field)
 
     if (.not. all(this%opt%repeatBox > 0)) then
-      call detailedError(field, "Indexes must be greater than zero")
+      call dftbp_error(field, "Indexes must be greater than zero")
     end if
 
     call getChildValue(node, "Verbose", this%opt%tVerbose, default=.false.)
@@ -835,7 +848,7 @@ contains
     spBasis%nOrb = getLength(children)
 
     if (spBasis%nOrb < 1) then
-      call detailedError(node, "Missing orbital definitions")
+      call dftbp_error(node, "Missing orbital definitions")
     end if
 
     allocate(spBasis%angMoms(spBasis%nOrb))
@@ -852,15 +865,15 @@ contains
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)
       if (len(bufferExps) == 0) then
-        call detailedError(child, "Missing exponents")
+        call dftbp_error(child, "Missing exponents")
       end if
       call init(bufferCoeffs)
       call getChildValue(tmpNode, "Coefficients", bufferCoeffs, child=child)
       if (len(bufferCoeffs) == 0) then
-        call detailedError(child, "Missing coefficients")
+        call dftbp_error(child, "Missing coefficients")
       end if
       if (mod(len(bufferCoeffs), len(bufferExps)) /= 0) then
-        call detailedError(child, "Number of coefficients incompatible with number of exponents")
+        call dftbp_error(child, "Number of coefficients incompatible with number of exponents")
       end if
       allocate(exps(len(bufferExps)))
       call asArray(bufferExps, exps)

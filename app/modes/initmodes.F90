@@ -21,13 +21,15 @@ module modes_initmodes
   use dftbp_common_unitconversion, only : massUnits
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdcompat, only : destroyNode, destroyNodeList, hsd_table, hsd_child_list,&
-      & getItem1, getLength, getNodeName, textNodeName, hsd_dump, hsd_error_t,&
-      & detailedError, detailedWarning, getChild, getChildren, getChildValue,&
-      & getSelectedAtomIndices, getSelectedIndices, convertUnitHsd, getNodeName2, setUnprocessed,&
-      & warnUnprocessedNodes, removeChildNodes, new_table
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
-  use dftbp_io_message, only : error
+  use dftbp_io_hsdutils, only : destroyNodeList, hsd_child_list,&
+      & getItem1, getLength, &
+      & getChild, getChildren, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
+      & getSelectedIndices, getNodeName, textNodeName, getNodeName2, setUnprocessed, hasInlineData
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump
+  use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
+  use dftbp_io_message, only : error, warning
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
       & TListReal, TListRealR1, TListString
   use dftbp_type_oldskdata, only : readFromFile, TOldSkData
@@ -237,7 +239,7 @@ contains
     #:endif
       iSolver = solverTypes%magmaEvd
     case default
-      call detailedError(root, "Unknown eigensolver "//buffer2)
+      call dftbp_error(root, "Unknown eigensolver "//buffer2)
     end select
 
     ! Slater-Koster files
@@ -275,7 +277,7 @@ contains
           strTmp = trim(prefix) // trim(elem1) // trim(separator) // trim(elem1) // trim(suffix)
           call findFile(searchPath, strTmp, strOut)
           if (.not. allocated(strOut)) then
-            call detailedError(value, "SK file with generated name '" // trim(strTmp)&
+            call dftbp_error(value, "SK file with generated name '" // trim(strTmp)&
                 & // "' not found." // newline // "   (search path(s): " // strJoin // ").")
           end if
           strTmp = strOut
@@ -292,14 +294,14 @@ contains
           call getChildValue(child, trim(strTmp), lStr, child=child2)
           ! We can't handle selected shells here (also not needed)
           if (len(lStr) /= 1) then
-            call detailedError(child2, "Incorrect number of Slater-Koster files")
+            call dftbp_error(child2, "Incorrect number of Slater-Koster files")
           end if
           do ii = 1, len(lStr)
             call get(lStr, str2Tmp, ii)
             strTmp = trim(prefix) // str2Tmp
             call findFile(searchPath, strTmp, strOut)
             if (.not. allocated(strOut)) then
-              call detailedError(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
+              call dftbp_error(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
                   & // "   (search path(s): " // strJoin // ").")
             end if
             strTmp = strOut
@@ -335,18 +337,19 @@ contains
 
     call getChildValue(root, "Hessian", value, "", child=child, allowEmptyValue=.true.)
     call getNodeName2(value, buffer)
+    if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
     select case (buffer)
     case ("directread")
       call getChildValue(value, "File", buffer2, child=child2)
       hessianFile = trim(unquote(buffer2))
       call openFile(file, hessianFile, mode="r", iostat=iErr)
       if (iErr /= 0) then
-        call detailedError(child2, "Could not open file '" // hessianFile&
+        call dftbp_error(child2, "Could not open file '" // hessianFile&
             & // "' for direct reading." )
       end if
       read(file%unit, *, iostat=iErr) dynMatrix
       if (iErr /= 0) then
-        call detailedError(child2, "Error during direct reading '" // hessianFile // "'.")
+        call dftbp_error(child2, "Error during direct reading '" // hessianFile // "'.")
       end if
       call closeFile(file)
     case (textNodeName)
@@ -354,14 +357,14 @@ contains
       call init(realBufferList)
       call getChildValue(child, "", nDerivs, realBufferList)
       if (len(realBufferList) /= nDerivs) then
-        call detailedError(root,"wrong number of derivatives supplied:"&
+        call dftbp_error(root,"wrong number of derivatives supplied:"&
             & // i2c(len(realBufferList)) // " supplied, " // i2c(nDerivs) // " required.")
       end if
       call asArray(realBufferList, dynMatrix)
       call destruct(realBufferList)
       tDumpPHSD = .false.
     case default
-      call detailedError(child, "Invalid Hessian scheme.")
+      call dftbp_error(child, "Invalid Hessian scheme.")
     end select
 
     call getChild(root, "BornCharges", child, requested=.false.)
@@ -370,7 +373,7 @@ contains
       call init(realBuffer)
       call getChildValue(child, "", realBuffer)
       if (len(realBuffer) /= 3 * nDerivs) then
-        call detailedError(root,"wrong number of Born charges supplied:"&
+        call dftbp_error(root,"wrong number of Born charges supplied:"&
             & // i2c(len(realBuffer)) // " supplied, " // i2c(3*nDerivs) // " required.")
       end if
       allocate(bornMatrix(len(realBuffer)))
@@ -385,7 +388,7 @@ contains
       call init(realBuffer)
       call getChildValue(child, "", realBuffer)
       if (len(realBuffer) /= 9 * nDerivs) then
-        call detailedError(root,"wrong number of Born charge derivatives supplied:"&
+        call dftbp_error(root,"wrong number of Born charge derivatives supplied:"&
             & // i2c(len(realBuffer)) // " supplied, " // i2c(9 * nDerivs) // " required.")
       end if
       allocate(bornDerivsMatrix(len(realBuffer)))
@@ -399,7 +402,16 @@ contains
     tEigenVectors = tPlotModes .or. allocated(bornMatrix) .or. allocated(bornDerivsMatrix)
 
     !! Issue warning about unprocessed nodes
-    call warnUnprocessedNodes(root, .true.)
+    if (.not. .true.) then
+      block
+        character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+        integer :: ii
+        call hsd_warn_unprocessed(root, warnings)
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+      end block
+    end if
 
     !! Finish parsing, dump parsed and processed input
     if (tWriteHSD) then
@@ -408,7 +420,7 @@ contains
     end if
     write(stdout, "(A)") repeat("-", 80)
     write(stdout, *)
-    call destroyNode(hsdTree)
+    hsdTree => null()
 
   end subroutine initProgramVariables
 
@@ -430,15 +442,15 @@ contains
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(child, geo)
-      call removeChildNodes(geonode)
+      call hsd_clear_children(geonode)
       call writeTGeometryHSD(geonode, geo)
     case ("xyzformat")
       call readTGeometryXyz(child, geo)
-      call removeChildNodes(geonode)
+      call hsd_clear_children(geonode)
       call writeTGeometryHSD(geonode, geo)
     case ("vaspformat")
       call readTGeometryVasp(child, geo)
-      call removeChildNodes(geonode)
+      call hsd_clear_children(geonode)
       call writeTGeometryHSD(geonode, geo)
     case default
       call readTGeometryHSD(geonode, geo)
@@ -486,7 +498,7 @@ contains
       do jj = 1, size(pTmpI1)
         iAt = pTmpI1(jj)
         if (masses(iAt) >= 0.0_dp) then
-          call detailedWarning(child3, "Previous setting for the mass  of atom" // i2c(iAt)&
+          call dftbp_warning(child3, "Previous setting for the mass  of atom" // i2c(iAt)&
               & // " overwritten")
         end if
         masses(iAt) = rTmp

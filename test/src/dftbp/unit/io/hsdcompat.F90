@@ -11,13 +11,15 @@ module test_io_hsdcompat
   use fortuno_serial, only : suite => serial_suite_item, test_list
   use dftbp_common_accuracy, only : dp, mc
   use dftbp_common_unitconversion, only : TUnit
-  use dftbp_extlibs_hsddata, only : hsd_table, hsd_error_t, hsd_get, hsd_set, new_table, &
-      & data_load_string, DATA_FMT_HSD, HSD_STAT_OK, hsd_has_child, hsd_get_attrib, &
-      & hsd_set_attrib, hsd_get_table
-  use dftbp_io_hsdcompat, only : getChildValue, getChild, setChildValue, setChild, &
-      & detailedWarning, convertUnitHsd, getNodeName, getNodeName2, getNodeHSDName, &
-      & warnUnprocessedNodes, setUnprocessed, &
-      & getChildren, getLength, getItem1, destroyNodeList, hsd_child_list, &
+  use hsd, only : hsd_table, hsd_node, hsd_error_t, hsd_get, hsd_set, HSD_STAT_OK, &
+      & hsd_has_child, hsd_get_attrib, hsd_set_attrib, hsd_get_table, hsd_get_child
+  use hsd_data, only : new_table, data_load_string, DATA_FMT_HSD
+  use dftbp_io_hsdutils, only : getChildValue, getChild, setChildValue, setChild, &
+      & dftbp_warning, &
+      & getChildren, getLength, getItem1, destroyNodeList, hsd_child_list
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN
+  use dftbp_io_hsdutils, only : getNodeName, getNodeName2, getNodeHSDName, setUnprocessed,&
       & splitModifier, textNodeName
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
@@ -402,21 +404,41 @@ contains
   $:END_TEST()
 
 
-  $:TEST("setUnprocessed_noop", label="hsdcompat")
-    !! setUnprocessed is a no-op — just verify it doesn't crash
-    type(hsd_table) :: root
+  $:TEST("setUnprocessed_clears_flag", label="hsdcompat")
+    !! setUnprocessed clears the processed flag on a node
+    type(hsd_table), target :: root
+    type(hsd_table), pointer :: rootPtr
     call new_table(root, "test")
-    call setUnprocessed(root)
-    @:ASSERT(.true.)
+    root%processed = .true.
+    rootPtr => root
+    call setUnprocessed(rootPtr)
+    @:ASSERT(.not. root%processed)
   $:END_TEST()
 
 
-  $:TEST("warnUnprocessedNodes_noop", label="hsdcompat")
-    !! warnUnprocessedNodes is a no-op stub — just verify it doesn't crash
+  $:TEST("hsd_warn_unprocessed_warns", label="hsdcompat")
+    !! hsd_warn_unprocessed runs without crashing, respects tIgnoreUnprocessed
     type(hsd_table) :: root
     call new_table(root, "root")
-    call warnUnprocessedNodes(root)
-    call warnUnprocessedNodes(root, tIgnoreUnprocessed=.true.)
+    call hsd_set(root, "Known", 1)
+    call hsd_set(root, "Typo", 2)
+    ! Mark "Known" as processed
+    block
+      class(hsd_node), pointer :: ch
+      integer :: stat
+      call hsd_get_child(root, "Known", ch, stat)
+      ch%processed = .true.
+      ! Set a line number on "Typo" so hsd_warn_unprocessed reports it
+      call hsd_get_child(root, "Typo", ch, stat)
+      ch%line = 1
+    end block
+    ! hsd_warn_unprocessed should run without crashing
+    ! (it will emit a warning for "Typo" but that's just to stderr)
+    block
+      character(len=MAX_WARNING_LEN), allocatable :: warnMsgs(:)
+      call hsd_warn_unprocessed(root, warnMsgs)
+      @:ASSERT(size(warnMsgs) > 0)
+    end block
     @:ASSERT(.true.)
   $:END_TEST()
 
@@ -462,8 +484,8 @@ contains
   $:END_TEST()
 
 
-  $:TEST("detailedWarning_runs", label="hsdcompat")
-    !! SPEC §7.4 — Error reporting: detailedWarning doesn't crash
+  $:TEST("dftbp_warning_runs", label="hsdcompat")
+    !! SPEC §7.4 — Error reporting: dftbp_warning doesn't crash
     type(hsd_table), target :: root
     type(hsd_error_t), allocatable :: err
 
@@ -471,7 +493,7 @@ contains
     @:ASSERT(.not. allocated(err))
 
     ! Just verify it doesn't crash — output goes to stderr
-    call detailedWarning(root, "Test warning message")
+    call dftbp_warning(root, "Test warning message")
     @:ASSERT(.true.)
   $:END_TEST()
 

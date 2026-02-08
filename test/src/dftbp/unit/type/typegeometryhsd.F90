@@ -11,7 +11,8 @@ module test_type_typegeometryhsd
   use fortuno_serial, only : suite => serial_suite_item, test_list
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : AA__Bohr
-  use dftbp_io_hsdcompat, only : hsd_table, new_table, hsd_set, destroyNode
+  use hsd, only : hsd_table, hsd_set
+  use hsd_data, only : new_table
   use dftbp_type_typegeometryhsd, only : readTGeometryLammps, TGeometry
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none

@@ -16,11 +16,11 @@ program skderivs
   use dftbp_dftb_slakoeqgrid, only : getNIntegrals, getSKIntegrals, init, skEqGridNew, skEqGridOld,&
       & TSlakoEqGrid
   use dftbp_io_charmanip, only : i2c, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_error_t, &
-      & detailedError, getChild, getChildValue, &
-      & warnUnprocessedNodes, new_table
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
-  use dftbp_io_message, only : error
+  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN
+  use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_error_t, hsd_table, new_table
+  use dftbp_io_message, only : error, warning
   use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListInt, TListIntR1
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
 #:if WITH_MPI
@@ -213,7 +213,7 @@ contains
       end if
     end do
     if (len(angShells(1)) < 1) then
-      call detailedError(child, "Invalid orbital name '" // &
+      call dftbp_error(child, "Invalid orbital name '" // &
           &trim(strTmp) // "'")
     end if
 
@@ -232,7 +232,7 @@ contains
         end if
       end do
       if (len(angShells(2)) < 1) then
-        call detailedError(child, "Invalid orbital name '" // &
+        call dftbp_error(child, "Invalid orbital name '" // &
             &trim(strTmp) // "'")
       end if
     end if
@@ -269,7 +269,7 @@ contains
     if (inp%from - inp%displ < skData12(1, 1)%dist) then
       write(strTmp, "(A, F8.4)") "With given displacement, start point must be larger than ",&
           & skData12(1, 1)%dist + inp%displ
-      call detailedError(child, trim(strTmp))
+      call dftbp_error(child, trim(strTmp))
     end if
     call getChildValue(root, "End", inp%to, child=child)
     call getChildValue(root, "OutputPrefix", buffer)
@@ -281,7 +281,7 @@ contains
     allocate(inp%iHam(len(lIntTmp)))
     call asArray(lIntTmp, inp%iHam)
     if (any(inp%iHam < 1) .or. any(inp%iHam > nInt)) then
-      call detailedError(child, "Integral index must be between 1 and " &
+      call dftbp_error(child, "Integral index must be between 1 and " &
           &// i2c(nInt))
     end if
     deallocate(lIntTmp)
@@ -291,12 +291,19 @@ contains
     allocate(inp%iOver(len(lIntTmp)))
     call asArray(lIntTmp, inp%iOver)
     if (any(inp%iOver < 1) .or. any(inp%iover > nInt)) then
-      call detailedError(child, "Integral index must be between 1 and " &
+      call dftbp_error(child, "Integral index must be between 1 and " &
           &// i2c(nInt))
     end if
 
     !! Issue warning about unprocessed nodes
-    call warnUnprocessedNodes(root)
+    block
+      character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+      integer :: iWarn
+      call hsd_warn_unprocessed(root, warnings)
+      do iWarn = 1, size(warnings)
+        call warning(trim(warnings(iWarn)))
+      end do
+    end block
     write(stdout, "(A)") "Done."
     write(stdout, "(A)") repeat("-", 80)
 

@@ -31,7 +31,8 @@ program test_setSpeciesAndDependents
   use mpi
 #:endif
   use testhelpers, only : writeAutotestTag
-  use dftbp_hsdapi, only : hsd_table, setChild, setChildValue
+  use dftbp_hsdapi, only : hsd_table
+  use dftbp_io_hsdutils, only : setChild, setChildValue
   use dftbp_mmapi, only : TDftbPlus, TDftbPlus_destruct, TDftbPlus_init, TDftbPlusInput
   implicit none
 

@@ -2115,7 +2115,7 @@ contains
       ! need electronic temperature to be read for this solver:
       call readElectronicFilling(node, ctrl, geo)
       if (tp%defined .and. .not.tp%taskUpload) then
-        call detailederror(node, "greensfunction solver cannot be used "// &
+        call dftbp_error(node, "greensfunction solver cannot be used "// &
             &  "when task = contactHamiltonian")
       end if
       call readGreensFunction(value1, greendens, tp, ctrl%tempElec)
@@ -2123,7 +2123,7 @@ contains
       ctrl%tFixEf = .true.
     case ("transportonly")
       if (tp%defined .and. .not.tp%taskUpload) then
-        call detailederror(node, "transportonly cannot be used when task = contactHamiltonian")
+        call dftbp_error(node, "transportonly cannot be used when task = contactHamiltonian")
       end if
       call readGreensFunction(value1, greendens, tp, ctrl%tempElec)
       ctrl%solver%isolver = electronicSolverTypes%OnlyTransport

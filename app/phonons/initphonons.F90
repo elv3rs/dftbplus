@@ -19,14 +19,16 @@ module phonons_initphonons
   use dftbp_dftb_periodic, only : getCellTranslations, getNrOfNeighboursForAll, getSuperSampling,&
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, hsd_error_t, &
-      & detailedError, getChild, getChildren, getChildValue, &
-      & getSelectedAtomIndices, getSelectedIndices, setChild, setChildValue, &
-      & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
-      & getNodeName, textNodeName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, getFirstTextChild, new_table
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
-  use dftbp_io_message, only : error
+  use dftbp_io_hsdutils, only : hsd_child_list, &
+      & getChild, getChildren, getChildValue, &
+      & setChild, setChildValue, &
+      & getItem1, getLength, destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
+      & setUnprocessed, getNodeName, textNodeName, getFirstTextChild
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump
+  use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
+  use dftbp_io_message, only : error, warning
   use dftbp_io_tokenreader, only : getNextToken
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_transport_negfvars, only : ContactInfo, TNEGFtundos, TTransPar
@@ -302,7 +304,7 @@ contains
       case("H", "eV" , "meV", "THz", "cm")
         outputUnits=trim(buffer)
       case default
-        call detailedError(node,"Unknown outputUnits "//trim(buffer))
+        call dftbp_error(node,"Unknown outputUnits "//trim(buffer))
       end select
       call readKPoints(node, geo, tBadKpoints)
     end if
@@ -343,7 +345,7 @@ contains
     case ("cp2k")
       call readCp2kHessian(value)
     case default
-      call detailedError(node,"Unknown Hessian type "//buffer)
+      call dftbp_error(node,"Unknown Hessian type "//buffer)
     end select
 
     ! --------------------------------------------------------------------------------------
@@ -360,7 +362,7 @@ contains
       case ("gaussian")
         cubicType = 1
       case default
-        call detailedError(root,"Unknown Cubic forces type "//buffer)
+        call dftbp_error(root,"Unknown Cubic forces type "//buffer)
       end select
     end if
 
@@ -371,18 +373,33 @@ contains
 
     if (associated(tmp)) then
       if (tPhonDispersion) then
-         call detailedError(root, "Analysis and PhononDispersion cannot coexist")
+         call dftbp_error(root, "Analysis and PhononDispersion cannot coexist")
       end if
       call readAnalysis(child, geo, pdos, tundos, transpar, atTemperature)
     endif
 
     !! Issue warning about unprocessed nodes
     write(stdOut, "(/, A)") "check unprocessed nodes..."
-    call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed )
+    block
+      character(MAX_WARNING_LEN) :: warnBuffer
+      warnBuffer = ""
+      call hsd_warn_unprocessed(root, warnBuffer)
+      if (len_trim(warnBuffer) > 0) then
+        if (parserFlags%tIgnoreUnprocessed) then
+          call warning(warnBuffer)
+        else
+          call error(warnBuffer)
+        end if
+      end if
+    end block
 
     !! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHsd(hsdTree, hsdParsedInput)
+      block
+        type(hsd_error_t), allocatable :: hsdErr
+        call hsd_dump(hsdTree, hsdParsedInput, hsdErr)
+        if (allocated(hsdErr)) call error("Error writing HSD file '" // hsdParsedInput // "'")
+      end block
       write(stdOut, '(/,/,A)') "Processed input in HSD format written to '" &
           &// hsdParsedInput // "'"
     end if
@@ -425,9 +442,9 @@ contains
     !! Check if input needs compatibility conversion.
     call getChildValue(node, "ParserVersion", inputVersion, parserVersion, child=child)
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
-      call detailedError(child, "Invalid parser version (" // i2c(inputVersion) // ")")
+      call dftbp_error(child, "Invalid parser version (" // i2c(inputVersion) // ")")
     elseif (inputVersion < minVersion) then
-      call detailedError(child, "Sorry, no compatibility mode for parser version "&
+      call dftbp_error(child, "Sorry, no compatibility mode for parser version "&
           & // i2c(inputVersion) // " (too old)")
     end if
 
@@ -499,7 +516,7 @@ contains
     call getChildren(root, "Contact", pNodeList)
     tp%ncont = getLength(pNodeList)
     if (tp%ncont < 2) then
-      call detailedError(pGeom, "At least two contacts must be defined")
+      call dftbp_error(pGeom, "At least two contacts must be defined")
     end if
     allocate(tp%contacts(tp%ncont))
     !! Parse contact geometry
@@ -542,7 +559,7 @@ contains
         if (checkidx) then
           if (any(pls < idxdevice(1) .or. &
                   pls > idxdevice(2))) then
-             call detailedError(pnode, "First layer atoms must be between " &
+             call dftbp_error(pnode, "First layer atoms must be between " &
                &// i2c(idxdevice(1)) // " and " // i2c(idxdevice(2)) // ".")
           end if
         end if
@@ -577,12 +594,12 @@ contains
       call getChildValue(pNode, "Id", buffer, child=pTmp)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
-        call detailedError(pTmp, "Contact id may not be longer than " &
+        call dftbp_error(pTmp, "Contact id may not be longer than " &
             &// i2c(mc) // " characters.")
       end if
       contacts(ii)%name = buffer
       if (any(contacts(1:ii-1)%name == contacts(ii)%name)) then
-        call detailedError(pTmp, "Contact id '" // trim(contacts(ii)%name) &
+        call dftbp_error(pTmp, "Contact id '" // trim(contacts(ii)%name) &
             &//  "' already in use")
       end if
 
@@ -642,12 +659,12 @@ contains
     !! Consistency check for the atom ranges
     if (iStart < 1 .or. iEnd < 1 .or. iStart > geom%nAtom &
         &.or. iEnd > geom%nAtom .or. iEnd < iStart) then
-      call detailedError(pContact, "Invalid atom range '" // i2c(iStart) &
+      call dftbp_error(pContact, "Invalid atom range '" // i2c(iStart) &
           &// " " // i2c(iEnd) // "', values should be between " // i2c(1) &
           &// " and " // i2c(geom%nAtom) // ".")
     end if
     if (mod(iEnd - iStart + 1, 2) /= 0) then
-      call detailedError(pContact, "Nr. of atoms in the contact must be even")
+      call dftbp_error(pContact, "Nr. of atoms in the contact must be even")
     end if
 
     ! Determining contact vector
@@ -723,7 +740,7 @@ contains
         call append(skFiles(iSp1), strTmp)
         inquire(file=strTmp, exist=tExist)
         if (.not. tExist) then
-          call detailedError(value, "SK file with generated name '" &
+          call dftbp_error(value, "SK file with generated name '" &
               &// trim(strTmp) // "' does not exist.")
         end if
       end do
@@ -736,14 +753,14 @@ contains
         call getChildValue(child, trim(strTmp), lStr, child=child2)
         ! We can't handle selected shells here (also not needed I guess)
         if (len(lStr) /= 1) then
-          call detailedError(child2, "Incorrect number of Slater-Koster &
+          call dftbp_error(child2, "Incorrect number of Slater-Koster &
               &files")
         end if
         do ii = 1, len(lStr)
           call get(lStr, strTmp, ii)
           inquire(file=strTmp, exist=tExist)
           if (.not. tExist) then
-            call detailedError(child2, "SK file '" // trim(strTmp) &
+            call dftbp_error(child2, "SK file '" // trim(strTmp) &
                 &// "' does not exist'")
           end if
           call append(skFiles(iSp1), strTmp)
@@ -828,17 +845,17 @@ contains
       case ("supercellfolding")
         tBadIntegratingKPoints = .false.
         if (len(modifier) > 0) then
-          call detailedError(child, "No modifier is allowed, if the &
+          call dftbp_error(child, "No modifier is allowed, if the &
               &SupercellFolding scheme is used.")
         end if
         call getChildValue(value1, "", coeffsAndShifts)
         if (abs(determinant33(coeffsAndShifts(:,1:3))) - 1.0_dp < -1e-6_dp) then
-          call detailedError(value1, "Determinant of the supercell matrix must &
+          call dftbp_error(value1, "Determinant of the supercell matrix must &
               &be greater than 1")
         end if
         if (any(abs(modulo(coeffsAndShifts(:,1:3) + 0.5_dp, 1.0_dp) - 0.5_dp) &
             &> 1e-6_dp)) then
-          call detailedError(value1, "The components of the supercell matrix &
+          call dftbp_error(value1, "The components of the supercell matrix &
               &must be integers.")
         end if
         call getSuperSampling(coeffsAndShifts(:,1:3), modulo(coeffsAndShifts(:,4), 1.0_dp),&
@@ -853,7 +870,7 @@ contains
         call init(lr1)
         call getChildValue(value1, "", 1, li1, 3, lr1)
         if (len(li1) < 1) then
-          call detailedError(value1, "At least one line must be specified.")
+          call dftbp_error(value1, "At least one line must be specified.")
         end if
         allocate(tmpI1(len(li1)))
         allocate(kpts(3, 0:len(lr1)))
@@ -863,12 +880,12 @@ contains
         call destruct(li1)
         call destruct(lr1)
         if (any(tmpI1 < 0)) then
-          call detailedError(value1, "Interval steps must be greater equal to &
+          call dftbp_error(value1, "Interval steps must be greater equal to &
               &zero.")
         end if
         nKPoints = sum(tmpI1)
         if (nKPoints < 1) then
-          call detailedError(value1, "Sum of the interval steps must be greater &
+          call dftbp_error(value1, "Sum of the interval steps must be greater &
               &than zero.")
         end if
         ii = 1
@@ -896,7 +913,7 @@ contains
             kPoint(:,:) =  matmul(transpose(geo%latVecs), kPoint)
             kpts(:,:) = matmul(transpose(geo%latVecs), kpts)
           case default
-            call detailedError(child, "Invalid modifier: '" // modifier &
+            call dftbp_error(child, "Invalid modifier: '" // modifier &
                 &// "'")
           end select
         end if
@@ -911,7 +928,7 @@ contains
         call init(lr1)
         call getChildValue(child, "", 4, lr1, modifier=modifier)
         if (len(lr1) < 1) then
-          call detailedError(child, "At least one k-point must be defined.")
+          call dftbp_error(child, "At least one k-point must be defined.")
         end if
         nKPoints = len(lr1)
         allocate(kpts(4, nKPoints))
@@ -924,7 +941,7 @@ contains
           case ("absolute")
             kpts(1:3,:) =  matmul(transpose(geo%latVecs), kpts(1:3,:))
           case default
-            call detailedError(child, "Invalid modifier: '" // modifier &
+            call dftbp_error(child, "Invalid modifier: '" // modifier &
                 &// "'")
           end select
         end if
@@ -934,7 +951,7 @@ contains
         kWeight(:) = kpts(4, :)
         deallocate(kpts)
       case default
-        call detailedError(value1, "Invalid K-point scheme")
+        call dftbp_error(value1, "Invalid K-point scheme")
       end select
     end if
 
@@ -1013,7 +1030,7 @@ contains
     if (texist) then
       write(stdOut, "(/, A)") "read dftb hessian '"//trim(filename)//"'..."
     else
-      call detailedError(child,"Hessian file "//trim(filename)//" does not exist")
+      call dftbp_error(child,"Hessian file "//trim(filename)//" does not exist")
     end if
 
     nDerivs = 3 * nMovedAtom
@@ -1069,7 +1086,7 @@ contains
     call init(realBuffer)
     call getChildValue(child, "", nDerivs, realBuffer)
     if (len(realBuffer)/=nDerivs) then
-      call detailedError(child,"wrong number of derivatives supplied:" &
+      call dftbp_error(child,"wrong number of derivatives supplied:" &
           & // i2c(len(realBuffer)) // " supplied, " &
           & // i2c(nDerivs) // " required.")
     end if
@@ -1103,7 +1120,7 @@ contains
     if (texist) then
       write(stdOut, "(/, A)") "read cp2k hessian '"//trim(filename)//"'..."
     else
-      call detailedError(child,"Hessian file "//trim(filename)//" does not exist")
+      call dftbp_error(child,"Hessian file "//trim(filename)//" does not exist")
     end if
 
     !! The derivatives matrix must be stored as the following order:
@@ -1211,7 +1228,7 @@ contains
     call getChild(node, "TunnelingAndDOS", child, requested=.false.)
     if (associated(child)) then
       if (.not.tTransport) then
-        call detailedError(node, "Tunneling requires Transport block")
+        call dftbp_error(node, "Tunneling requires Transport block")
       end if
       call readTunAndDos(child, geo, tundos, transpar, maxval(transpar%contacts(:)%kbT) )
     endif
@@ -1220,7 +1237,7 @@ contains
     call getChild(node, "Conductance", child, requested=.false.)
     if (associated(child)) then
       if (.not.tTransport) then
-        call detailedError(node, "Conductance requires Transport block")
+        call dftbp_error(node, "Conductance requires Transport block")
       end if
       call getChildValue(child, "TempRange", TempRange, modifier=modif,&
       & child=field)
@@ -1311,10 +1328,10 @@ contains
     tundos%emax = eRange(2)
 
     if (eRange(1).le.0.d0) then
-       call detailedError(root, "FreqRange must be > 0")
+       call dftbp_error(root, "FreqRange must be > 0")
     end if
     if (eRange(2).lt.eRange(1)) then
-       call detailedError(root, "Emax < Emin")
+       call dftbp_error(root, "Emax < Emin")
     end if
 
     call getChildValue(root, "FreqStep", tundos%estep, 1.0e-5_dp,  &
@@ -1418,7 +1435,7 @@ contains
     call init(lString)
     call getChildValue(pNode, "", lString)
     if (len(lString) /= 2) then
-      call detailedError(pNode, "You must provide two contacts")
+      call dftbp_error(pNode, "You must provide two contacts")
     end if
     call get(lString, buffer, 1)
     emitter = getContactByName(contactNames, buffer, pNode)
@@ -1446,7 +1463,7 @@ contains
       end if
     end do
     if (.not. tFound) then
-      call detailedError(pNode, "Invalid collector contact name '" &
+      call dftbp_error(pNode, "Invalid collector contact name '" &
           &// trim(contName) // "'")
     end if
 
@@ -1486,10 +1503,10 @@ contains
       tundos%deltaModel=2
       ! If Emax >> Wmax delta becomes negative
       if (tundos%Emax > tundos%Wmax) then
-        call detailedError(pValue,"In Mingo model check Wmax <= Emax")
+        call dftbp_error(pValue,"In Mingo model check Wmax <= Emax")
       end if
     case default
-      call detailedError(pValue,"Unknown deltaModel "//trim(buffer))
+      call dftbp_error(pValue,"Unknown deltaModel "//trim(buffer))
     end select
   end subroutine ReadDeltaModel
 
@@ -1638,7 +1655,7 @@ contains
       selTypeModes = modeEnum%OUTOFPLANE
       call checkTypeOfModes(root, transpar)
     case default
-      call detailedError(root,"Unknown type of modes")
+      call dftbp_error(root,"Unknown type of modes")
     end select
 
     transpar%typeModes = selTypeModes
@@ -1677,7 +1694,7 @@ contains
       ! Determine to which axis the contact vector is parallel.
       mask = (abs(abs(contactVec) - sqrt(sum(contactVec**2))) < 1.0e-8_dp)
       if (count(mask) /= 1 .or. .not.mask(3)) then
-        call detailedError(root,"Transport direction is not along z")
+        call dftbp_error(root,"Transport direction is not along z")
       end if
     end do
 

@@ -11,8 +11,9 @@
 module test_dftbplus_oldcompat
   use fortuno_serial, only : suite => serial_suite_item, test_list
   use dftbp_common_accuracy, only : dp
-  use dftbp_extlibs_hsddata, only : hsd_table, hsd_error_t, hsd_get, hsd_set, new_table, &
-      & data_load_string, DATA_FMT_HSD, HSD_STAT_OK, hsd_has_child, hsd_get_table
+  use hsd, only : hsd_table, hsd_error_t, hsd_get, hsd_set, HSD_STAT_OK, hsd_has_child, &
+      & hsd_get_table
+  use hsd_data, only : new_table, data_load_string, DATA_FMT_HSD
   use dftbp_dftbplus_oldcompat, only : convertOldHSD
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none

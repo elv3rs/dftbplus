@@ -18,13 +18,15 @@ module transporttools_parser
   use dftbp_dftb_slakoeqgrid, only : skEqGridNew, skEqGridOld
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, hsd_error_t, &
-      & detailedError, detailedWarning, getChild, getChildren, &
-      & getChildValue, getSelectedAtomIndices, &
-      & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
-      & getNodeName, getNodeHSDName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, destroyNode, new_table
-  use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
+  use dftbp_io_hsdutils, only : hsd_child_list, &
+      & getChild, getChildren, &
+      & getChildValue, &
+      & getItem1, getLength, destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
+      & setUnprocessed, getNodeName, getNodeHSDName
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump
+  use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -144,11 +146,24 @@ contains
     input%tInitialized = .true.
 
     ! Issue warning about unprocessed nodes
-    call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed)
+    if (.not. parserFlags%tIgnoreUnprocessed) then
+      block
+        character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+        integer :: ii
+        call hsd_warn_unprocessed(root, warnings)
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+      end block
+    end if
 
     ! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHsd(hsdTree, hsdProcInputName)
+      block
+        type(hsd_error_t), allocatable :: hsdErr
+        call hsd_dump(hsdTree, hsdProcInputName, hsdErr)
+        if (allocated(hsdErr)) call error("Error writing HSD file '" // hsdProcInputName // "'")
+      end block
       write(stdout, '(/,/,A)') "Processed input in HSD format written to '" &
           &// hsdProcInputName // "'"
     end if
@@ -158,7 +173,7 @@ contains
       call error("Keyword 'StopAfterParsing' is set to Yes. Stopping.")
     end if
 
-    call destroyNode(hsdTree)
+    hsdTree => null()
 
     write(stdout,*) 'Geometry processed. Job finished'
 
@@ -185,10 +200,10 @@ contains
     call getChildValue(node, "ParserVersion", inputVersion, parserVersion, &
         &child=child)
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
-      call detailedError(child, "Invalid parser version (" // i2c(inputVersion)&
+      call dftbp_error(child, "Invalid parser version (" // i2c(inputVersion)&
           &// ")")
     elseif (inputVersion < minVersion) then
-      call detailedError(child, &
+      call dftbp_error(child, &
           &"Sorry, no compatibility mode for parser version " &
           &// i2c(inputVersion) // " (too old)")
     elseif (inputVersion /= parserVersion) then
@@ -201,7 +216,7 @@ contains
     call getChildValue(node, "WriteHSDInput", flags%tWriteHSD, .true.)
     call getChildValue(node, "WriteXMLInput", flags%tWriteXML, .false.)
     if (.not. (flags%tWriteHSD .or. flags%tWriteXML)) then
-      call detailedWarning(node, &
+      call dftbp_warning(node, &
           &"WriteHSDInput and WriteXMLInput both turned off. You are not&
           & guaranteed" &
           &// newline // &
@@ -279,7 +294,7 @@ contains
     call getChildren(root, "Contact", pNodeList)
     transpar%ncont = getLength(pNodeList)
     if (transpar%ncont < 2) then
-      call detailedError(root, "At least two contacts must be defined")
+      call dftbp_error(root, "At least two contacts must be defined")
     end if
     allocate(transpar%contacts(transpar%ncont))
 
@@ -295,7 +310,7 @@ contains
     case default
 
       call getNodeHSDName(pTask, buffer)
-      call detailedError(pTaskType, "Invalid task '" // buffer // "'")
+      call dftbp_error(pTaskType, "Invalid task '" // buffer // "'")
 
    end select
 
@@ -332,11 +347,11 @@ contains
       call getChildValue(pNode, "Id", buffer, child=pTmp)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
-        call detailedError(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
+        call dftbp_error(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
       end if
       contacts(ii)%name = buffer
       if (any(contacts(1:ii-1)%name == contacts(ii)%name)) then
-        call detailedError(pTmp, "Contact id '" // trim(contacts(ii)%name) &
+        call dftbp_error(pTmp, "Contact id '" // trim(contacts(ii)%name) &
             &//  "' already in use")
       end if
 
@@ -497,7 +512,7 @@ contains
           call append(skFiles(iSp2, iSp1), strTmp)
           inquire(file=strTmp, exist=tExist)
           if (.not. tExist) then
-            call detailedError(value1, "SK file with generated name '" &
+            call dftbp_error(value1, "SK file with generated name '" &
                 &// trim(strTmp) // "' does not exist.")
           end if
         end do
@@ -518,7 +533,7 @@ contains
             call get(lStr, strTmp, ii)
             inquire(file=strTmp, exist=tExist)
             if (.not. tExist) then
-              call detailedError(child2, "SK file '" // trim(strTmp) &
+              call dftbp_error(child2, "SK file '" // trim(strTmp) &
                   &// "' does not exist'")
             end if
             call append(skFiles(iSp2, iSp1), strTmp)
@@ -581,7 +596,7 @@ contains
       end select
     end if
     if (truncationCutOff < epsilon(0.0_dp)) then
-      call detailedError(field, "Truncation is shorter than the minimum distance over which SK data&
+      call dftbp_error(field, "Truncation is shorter than the minimum distance over which SK data&
           & goes to 0")
     end if
 

@@ -12,8 +12,9 @@ module test_dftbplus_parser
   use fortuno_serial, only : suite => serial_suite_item, test_list
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : Boltzmann
-  use dftbp_extlibs_hsddata, only : hsd_table, hsd_error_t, hsd_get, hsd_set, new_table, &
-      & data_load_string, DATA_FMT_HSD, HSD_STAT_OK, hsd_has_child, hsd_get_table
+  use hsd, only : hsd_table, hsd_error_t, hsd_get, hsd_set, HSD_STAT_OK, hsd_has_child, &
+      & hsd_get_table
+  use hsd_data, only : new_table, data_load_string, DATA_FMT_HSD
   use dftbp_dftbplus_parser_shared_utils, only : readMDInitTemp
   use dftbp_dftbplus_parser_parallel, only : readParallel
   use dftbp_dftbplus_inputdata, only : TInputData, init, destruct

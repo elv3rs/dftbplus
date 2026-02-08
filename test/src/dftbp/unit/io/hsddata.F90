@@ -9,9 +9,9 @@
 
 module test_io_hsddata
   use fortuno_serial, only : suite => serial_suite_item, test_list
-  use dftbp_extlibs_hsddata, only : hsd_table, hsd_error_t, hsd_get, hsd_set, new_table, &
-      & data_load_string, data_dump_to_string, DATA_FMT_HSD, DATA_FMT_JSON, DATA_FMT_XML, &
-      & hsd_has_child, HSD_STAT_OK, dp
+  use hsd, only : hsd_table, hsd_error_t, hsd_get, hsd_set, hsd_has_child, HSD_STAT_OK, dp
+  use hsd_data, only : new_table, data_load_string, data_dump_to_string, DATA_FMT_HSD, &
+      & DATA_FMT_JSON, DATA_FMT_XML
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
 

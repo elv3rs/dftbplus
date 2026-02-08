@@ -3,9 +3,9 @@
 ## Main directive
 Work through the `TODO.md` step by step. Do not stop before finishing all tasks, defer outputting a summary of changes until the todo is complete.
 
-Take your time in order to do things properly. Use git -- Whenever an atomic task is complete, remove it from the README and commit it. If a task changed anything important with regard to the project, update `AGENTS.md` correspondingly. 
-The project is currently under development / undergoing major refactoring, thus breaking changes are allowed with no further consideration required, as long as the new behaviour is documented accordingly.
-If during a task it becomes apparent that some hsd-fortran behaviour is suboptimal, instead of working around it prefer to either fix it on the spot or tack it onto the `TODO.md` to resolve it later on.
+Take your time in order to do things properly. Use git — whenever an atomic task is complete, remove it from the TODO and commit it. If a task changed anything important with regard to the project, update `AGENTS.md` correspondingly.
+
+The HSD IO migration from xmlf90 to hsd-fortran/hsd-data is **complete**. All legacy code (xmlf90, hsdcompat, re-export wrappers) has been removed. The codebase now uses hsd-fortran and hsd-data directly.
 
 ## Project Overview
 
@@ -26,11 +26,8 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug \
 # Build
 cmake --build build -j$(nproc) 2>&1 | tail -5
 
-# Unit tests
-ctest --test-dir build -R "unit" 2>&1 | tail -5
-
-# Application tests
-ctest --test-dir build -R "app/dftb+" -j6 --stop-on-failure --output-on-failure | tee testlog.txt | tail -5
+# Unit tests (-R "unit"), Application tests (-R "app/dftb+"):
+ctest --test-dir build -j6 --stop-on-failure --output-on-failure | tee testlog.txt | tail -5
 ```
 
 Application tests take a very long time to run.
@@ -70,7 +67,7 @@ Dependencies use a **hybrid resolution** system via `dftbp_config_hybrid_depende
 
 The method order is set by `HYBRID_CONFIG_METHODS` (default: `"Submodule;Find;Fetch"`).
 
-**Always bundled:** `xmlf90`, `ddcosmo`, `fypp`
+**Always bundled:** `hsd-data` (brings hsd-fortran), `ddcosmo`, `fypp`
 **Optional hybrid:** `mpifx`, `scalapackfx`, `mbd`, `libnegf`, `s-dftd3`, `dftd4`, `tblite`, `fortuno`, `chimes`, etc.
 **System required:** BLAS, LAPACK
 
@@ -82,94 +79,87 @@ All library source lives in `src/dftbp/`. Module naming convention: `dftbp_<subd
 |-----------|---------|
 | `common/` | Accuracy, assertions, atomic data, environment, file I/O, timers, unit conversion |
 | `type/` | Core data types: geometry, orbitals, Slater-Koster data, neighbor lists |
-| `io/` | **HSD parser**, HSD utilities, XML utilities, line/token readers, logging |
+| `io/` | HSD utilities (wrappers around hsd-fortran/hsd-data), unit conversion, tagged output, line/token readers, logging |
 | `math/` | Mathematical routines |
 | `dftb/` | Core physics: charges, Coulomb, dispersion, DFT+U, Hamiltonian, SCC |
 | `dftbplus/` | High-level: input parsing, initialization, main driver, output |
 | `dftbplus/input/` | Input processing sub-modules |
-| `extlibs/` | Wrapper modules for external libs (xmlf90, LAPACK, ARPACK, etc.) |
+| `extlibs/` | Wrapper modules for external libs (LAPACK, ARPACK, etc.) |
 | `api/mm/` | Public API (C/Fortran bindings) |
 | `include/` | Fypp include files (`common.fypp`, `error.fypp`) |
 | Other: `derivs/`, `elecsolvers/`, `geoopt/`, `md/`, `mixer/`, `reks/`, `timedep/`, `solvation/`, `transport/`, `poisson/`, `geometry/` | Domain-specific physics modules |
 
-## HSD Parsing Architecture
+## HSD Parsing Architecture (post-migration)
 
-HSD (Human-friendly Structured Data) is the input format for DFTB+. The parsing system is a three-layer architecture:
+HSD (Human-friendly Structured Data) is the input format for DFTB+. The IO
+stack has been fully migrated from the legacy xmlf90 DOM to **hsd-fortran** /
+**hsd-data**.
 
-### Layer 1: XML DOM (external/xmlf90)
+### Layer 1: hsd-fortran + hsd-data (external libraries)
 
-`xmlf90` provides the in-memory tree representation. Key types:
-- `fnode` — universal DOM node (element, text, document)
-- `fnodeList` — linked list of nodes
-- `fnamedNodeMap` — node attributes (name→value)
+- **hsd-fortran** provides the in-memory tree (`hsd_table`, `hsd_value`),
+  parser (`hsd_load`), serializer (`hsd_dump`), and typed accessors (`hsd_get`,
+  `hsd_set`, `hsd_get_matrix`, etc.).
+- **hsd-data** adds multi-format IO (`data_load`, `data_dump`) for XML, JSON,
+  TOML, HDF5 on top of hsd-fortran.
 
-Wrapper: `src/dftbp/extlibs/xmlf90.F90` re-exports needed symbols.
+Integration: `add_subdirectory(external/hsd-data)` →
+`target_link_libraries(dftbplus PUBLIC hsd-data)`.
 
-### Layer 2: HSD Parser (src/dftbp/io/)
+### Layer 2: DFTB+ IO Wrappers (src/dftbp/io/)
 
 | Module | File | Purpose |
 |--------|------|---------|
-| `dftbp_io_hsdparser` | `hsdparser.F90` | Core parser: HSD text → xmlf90 DOM tree; `parseHSD()`, `dumpHSD()` |
-| `dftbp_io_hsdutils` | `hsdutils.F90` | Typed value extraction: `getChildValue()` (21 variants), `setChildValue()`, `getChild()`, `detailedError()` |
-| `dftbp_io_hsdutils2` | `hsdutils2.F90` | Unit conversion (`convertUnitHsd`), unprocessed node tracking, node renaming |
-| `dftbp_io_xmlutils` | `xmlutils.F90` | DOM tree navigation: `getFirstChildByName()`, `getChildrenByName()`, etc. |
+| `dftbp_io_hsdutils` | `hsdutils.F90` | DFTB+-specific convenience wrappers: `getChildValue` (22 overloads), `getChild`, `setChildValue`, `dftbp_error`/`dftbp_warning`, child-list iteration, atom/index selection, processed-flag management |
+| `dftbp_io_hsderror` | `hsderror.F90` | Error bridge: `hsd_fatal_error`, `hsd_warning`, `hsd_error_from_stat` |
+| `dftbp_io_unitconv` | `unitconv.F90` | Unit conversion: `convertUnitHsd` maps HSD modifier strings → DFTB+ `TUnit` system |
+| `dftbp_io_unitconvfuncs` | `unitconvfuncs.F90` | Per-category converter callbacks for `hsd_get_with_unit` |
+| `dftbp_io_taggedoutput` | `taggedoutput.F90` | Multi-format result output (tag/HSD/JSON/XML) from `hsd_table` trees |
 
 ### Layer 3: Application (src/dftbp/dftbplus/)
 
 | Module | File | Purpose |
 |--------|------|---------|
-| `dftbp_dftbplus_hsdhelpers` | `hsdhelpers.F90` | Orchestrates input parsing: reads file → builds DOM → extracts data → dumps processed |
-| `dftbp_dftbplus_parser` | `parser.F90` | Maps DOM tree → `TInputData` (8500+ lines, reads all DFTB+ keywords) |
+| `dftbp_dftbplus_hsdhelpers` | `hsdhelpers.F90` | Orchestrates input parsing: `data_load` → tree → `hsd_dump` processed |
+| `dftbp_dftbplus_parser` | `parser.F90` | Maps `hsd_table` tree → `TInputData` (~3000 lines) |
 | `dftbp_dftbplus_oldcompat` | `oldcompat.F90` | Backward compatibility: converts old parser versions (1–13) to current (14) |
 
 ### HSD Parsing Flow
 
 ```
 dftb_in.hsd (HSD text)
-    ↓  hsdparser.parseHSD() — hand-written recursive descent parser
-fnode* (xmlf90 DOM tree in memory)
+    ↓  data_load() — hsd-data dispatches to hsd-fortran parser
+hsd_table (hsd-fortran tree in memory)
     ↓  parser.parseHsdTree() → hsdutils.getChildValue/getChild
 TInputData (Fortran data structures)
-    ↓  hsdparser.dumpHSD()
+    ↓  hsd_dump()
 dftb_pin.hsd (processed output)
 ```
-
-### HSD Node Attributes
-
-When an HSD node is parsed into the DOM tree, metadata is stored as XML attributes:
-- `"name"` — original HSD name (preserves capitalization)
-- `"m"` — modifier (e.g., `"Angstrom"` from `[Angstrom]`)
-- `"l"` — list flag
-- `"start"` / `"end"` — source line numbers
-- `"file"` — source file name
-- `"proc"` — processed flag (set after parsing to detect unrecognized keywords)
 
 ### Module Dependency Graph
 
 ```
-xmlf90 (external library)
-  └── dftbp_extlibs_xmlf90          ← re-export wrapper
-        ├── dftbp_io_xmlutils        ← XML tree utilities
-        ├── dftbp_io_hsdparser       ← core HSD parser
-        │     └── dftbp_io_hsdutils  ← typed value get/set
-        │           └── dftbp_io_hsdutils2  ← unit conversion, tracking
-        │                 ├── dftbp_dftbplus_parser      ← input parser
-        │                 ├── dftbp_dftbplus_oldcompat    ← version compat
-        │                 └── dftbp_dftbplus_hsdhelpers   ← orchestration
-        └── dftbp_hsdapi             ← public API façade
+hsd-data (external/hsd-data)
+  └── hsd-fortran (transitive dependency)
+        │
+dftbp_io_hsdutils  ← uses hsd + hsd_data types directly
+├── dftbp_io_hsderror       ← error formatting via hsd_format_error
+├── dftbp_io_unitconv       ← unit conversion via TUnit + hsd_set
+├── dftbp_io_taggedoutput   ← result serialization
+│
+├── dftbp_dftbplus_parser      ← input parser
+├── dftbp_dftbplus_oldcompat   ← version compat
+└── dftbp_dftbplus_hsdhelpers  ← orchestration
 ```
 
-### Key Integration Points for hsd-fortran
+### What Was Removed
 
-To replace the legacy HSD parser with hsd-fortran, the integration points are:
-
-1. **`dftbp_io_hsdparser`** — Replace `parseHSD()` with hsd-fortran's `hsd_load()`
-2. **`dftbp_io_hsdutils`** — Replace `getChildValue()` / `setChildValue()` with hsd-fortran's `hsd_get()` / `hsd_set()`
-3. **`dftbp_io_xmlutils`** — Replace DOM navigation with hsd-fortran's `hsd_has_child()`, iteration, etc.
-4. **`dftbp_io_hsdutils2`** — Replace unprocessed node tracking, unit conversion helpers
-5. **`dftbp_extlibs_xmlf90`** — Can be removed once xmlf90 is fully replaced
-6. **`dftbp_dftbplus_parser`** — Must be updated to use hsd-fortran API (largest change, 8500+ lines)
-7. **`dftbp_dftbplus_hsdhelpers`** — Simplify orchestration to use hsd-fortran directly
+- `external/xmlf90/` — legacy XML DOM library (deleted)
+- `dftbp_extlibs_xmlf90` — re-export wrapper (deleted)
+- `dftbp_extlibs_hsddata` — re-export wrapper (deleted)
+- `hsdcompat.F90` — transitional compat shim (deleted)
+- `hsdutils2.F90` / `hsdparser.F90` / `xmlutils.F90` — replaced by hsd-fortran API
+- All `detailedError` / `detailedWarning` calls → `dftbp_error` / `dftbp_warning`
 
 ## Application Entry Point
 
@@ -191,7 +181,7 @@ program dftbplus
 ### Unit Tests (test/src/dftbp/unit/)
 - Enabled with `WITH_UNIT_TESTS=TRUE` (serial builds only)
 - Uses **Fortuno** framework
-- 7 test suites: `common`, `dftb`, `include`, `io`, `math`, `mixer`, `type`
+- 7 test suites: `common`, `dftb`, `include`, `io`, `math`, `mixer`, `type` (+ 1 integration test suite)
 - Run: `ctest --test-dir build -R "unit"`
 
 ### Application Tests (test/app/dftb+/)
