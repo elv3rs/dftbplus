@@ -12,9 +12,13 @@ module dftbp_dftbplus_input_geoopt
   use dftbp_geoopt_package, only : TFilterInput, TFireInput, TLbfgsInput, TOptimizerInput,&
       & TOptTolerance, TRationalFuncInput, TSteepdescInput
   use dftbp_io_charmanip, only : unquote
-  use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, getSelectedAtomIndices, &
-      & setChild, getNodeName, textNodeName, setChildValue, convertUnitHsd, hsd_rename_child
+  use hsd, only : hsd_rename_child
+  use dftbp_io_hsdutils, only : getChild, getChildValue, getSelectedAtomIndices, &
+      & setChild, setChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
+  use hsd_data, only : hsd_table
   implicit none
 
   private
@@ -101,7 +105,7 @@ contains
     call getNodeName(node, buffer)
     select case (buffer)
     case default
-      call detailedError(node, "Invalid optimiser name.")
+      call dftbp_error(node, "Invalid optimiser name.")
     case("steepestdescent")
         allocate(steepDescInput)
         call readSteepDescInput(node, steepDescInput)
@@ -147,7 +151,7 @@ contains
       call getChildValue(node, "FixAngles", input%fixAngles, .false.)
       call getChildValue(node, "FixLengths", input%fixLength, [.false., .false., .false.])
       if (input%fixAngles .and. all(input%fixLength)) then
-        call detailedError(node, "LatticeOpt with all lattice vectors fixed is not possible")
+        call dftbp_error(node, "LatticeOpt with all lattice vectors fixed is not possible")
       end if
       call getChildValue(node, "Isotropic", input%isotropic, .false.)
     end if

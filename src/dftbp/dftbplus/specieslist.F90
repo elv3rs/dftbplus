@@ -11,8 +11,10 @@
 module dftbp_dftbplus_specieslist
   use dftbp_common_accuracy, only : dp
   use dftbp_common_unitconversion, only : TUnit
-  use dftbp_io_hsdcompat, only : hsd_table, getChildValue
-  use dftbp_io_hsdcompat, only : convertUnitHsd, setProcessed
+  use dftbp_io_hsdutils, only : getChildValue
+  use dftbp_io_hsdutils, only : setProcessed
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd_data, only : hsd_table
   implicit none
 
   private

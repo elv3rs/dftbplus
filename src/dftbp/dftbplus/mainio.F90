@@ -38,9 +38,12 @@ module dftbp_dftbplus_mainio
   use dftbp_io_commonformats, only : format1U, format1U1e, format1Ue, format2U, format2Ue,&
       & formatBorn, formatdBorn, formatGeoOut, formatHessian
   use dftbp_io_formatout, only : writeGenFormat, writeSparse, writeSparseAsSquare, writeXYZFormat
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_set, new_table, dumpHsd, setChildValue
+  use dftbp_io_hsdutils, only : setChildValue
+  use hsd_data, only : data_dump, hsd_table, hsd_set, new_table, hsd_value, hsd_node, &
+      & VALUE_TYPE_REAL, VALUE_TYPE_INTEGER, VALUE_TYPE_LOGICAL, VALUE_TYPE_COMPLEX, &
+      & hsd_set_attrib
   use dftbp_io_message, only : error, warning
-  use dftbp_io_taggedoutput, only : tagLabels, TTaggedWriter
+  use dftbp_io_taggedoutput, only : tagLabels, TTaggedWriter, writeTreeAsTag
   use dftbp_math_blasroutines, only : hemv
   use dftbp_math_eigensolver, only : heev
   use dftbp_md_mdcommon, only : TMDOutput
@@ -77,7 +80,7 @@ module dftbp_dftbplus_mainio
   public :: writeCplxEigvecsBinSerial, writeCplxEigvecsTxtSerial
 #:endif
   public :: writeProjectedEigenvectors
-  public :: writeAutotestTag, writeResultsTag, writeDetailedXml, writeBandOut
+  public :: writeAutotestTag, writeResultsTag, writeDetailedOut, writeBandOut
   public :: writeDerivBandOut, writeHessianOut, writeBornChargesOut, writeBornDerivs
   public :: openOutputFile
   public :: writeDetailedOut1, writeDetailedOut2, writeDetailedOut2Dets, writeDetailedOut3
@@ -2036,7 +2039,7 @@ contains
   !> Writes out machine readable data
   subroutine writeResultsTag(fileName, energy, derivs, chrgForces, nEl, Ef, eigen, filling,&
       & electronicSolver, tStress, totalStress, pDynMatrix, pBornMatrix, tPeriodic, cellVol,&
-      & tMulliken, qOutput, q0, taggedWriter, cm5Cont, polarisability, dEidE, dqOut, neFermi,&
+      & tMulliken, qOutput, q0, outputFormat, cm5Cont, polarisability, dEidE, dqOut, neFermi,&
       & dEfdE, dipoleMoment, multipole, eFieldScaling, reks)
 
     !> Name of output file
@@ -2093,8 +2096,8 @@ contains
     !> Reference atomic charges
     real(dp), intent(in) :: q0(:,:,:)
 
-    !> Tagged writer object
-    type(TTaggedWriter), intent(inout) :: taggedWriter
+    !> Output format ("tag", "hsd", "json", "xml")
+    character(len=*), intent(in) :: outputFormat
 
     !> Charge model 5 to correct atomic gross charges
     type(TChargeModel5), allocatable, intent(in) :: cm5Cont
@@ -2127,112 +2130,128 @@ contains
     type(TReksCalc), allocatable, intent(inout) :: reks
 
     real(dp), allocatable :: qOutputUpDown(:,:,:), qDiff(:,:,:)
-    type(TFileDescr) :: fd
+    type(hsd_table) :: root
+    character(len=:), allocatable :: outFileName
 
-    call openFile(fd, fileName, mode="a")
+    call new_table(root, "results")
 
     if (allocated(reks)) then
-      call taggedWriter%write(fd%unit, tagLabels%egyAvg, energy%Eavg)
+      call setTreeR0(root, tagLabels%egyAvg, energy%Eavg)
     end if
     if (electronicSolver%elecChemPotAvailable) then
-      call taggedWriter%write(fd%unit, tagLabels%fermiLvl, Ef)
+      call setTreeR1(root, tagLabels%fermiLvl, Ef)
     end if
-    call taggedWriter%write(fd%unit, tagLabels%nElec, nEl)
+    call setTreeR1(root, tagLabels%nElec, nEl)
 
     if (electronicSolver%providesFreeEnergy) then
-      call taggedWriter%write(fd%unit, tagLabels%freeEgy, energy%EForceRelated)
+      call setTreeR0(root, tagLabels%freeEgy, energy%EForceRelated)
     elseif (electronicSolver%providesElectronEntropy) then
-      call taggedWriter%write(fd%unit, tagLabels%freeEgy, energy%EMermin)
+      call setTreeR0(root, tagLabels%freeEgy, energy%EMermin)
     else
-      call taggedWriter%write(fd%unit, tagLabels%egyTotal, energy%ETotal)
+      call setTreeR0(root, tagLabels%egyTotal, energy%ETotal)
     end if
 
     if (electronicSolver%providesFreeEnergy .or. electronicSolver%providesElectronEntropy) then
       ! extrapolated zero temperature energy (the chemical potential and electron number are assumed
       ! to be temperature independent, as just extrapolates the Mermin energy)
-      call taggedWriter%write(fd%unit, tagLabels%egy0Total, energy%Ezero)
+      call setTreeR0(root, tagLabels%egy0Total, energy%Ezero)
     end if
 
     if (electronicSolver%providesEigenvals) then
-      call taggedWriter%write(fd%unit, tagLabels%eigvals, eigen)
-      call taggedWriter%write(fd%unit, tagLabels%eigFill, filling)
+      call setTreeR3(root, tagLabels%eigvals, eigen)
+      call setTreeR3(root, tagLabels%eigFill, filling)
     end if
 
     if (electronicSolver%providesFreeEnergy) then
       ! energy connected to the evaluated force/stress (differs for various free energies)
-      call taggedWriter%write(fd%unit, tagLabels%egyForceRelated, energy%EForceRelated)
+      call setTreeR0(root, tagLabels%egyForceRelated, energy%EForceRelated)
     end if
 
     if (allocated(derivs)) then
-      call taggedWriter%write(fd%unit, tagLabels%forceTot, -derivs)
+      call setTreeR2(root, tagLabels%forceTot, -derivs)
     end if
     if (allocated(chrgForces)) then
-      call taggedWriter%write(fd%unit, tagLabels%chrgForces, -chrgForces)
+      call setTreeR2(root, tagLabels%chrgForces, -chrgForces)
     end if
     if (tStress) then
-      call taggedWriter%write(fd%unit, tagLabels%stressTot, totalStress)
+      call setTreeR2(root, tagLabels%stressTot, totalStress)
     end if
     if (associated(pDynMatrix)) then
-      call taggedWriter%write(fd%unit, tagLabels%HessianNum, pDynMatrix)
+      call setTreeR2(root, tagLabels%HessianNum, pDynMatrix)
     end if
     if (associated(pBornMatrix)) then
-      call taggedWriter%write(fd%unit, tagLabels%BorndDipNum,&
+      call setTreeR2(root, tagLabels%BorndDipNum,&
           & eFieldScaling%scaledSoluteDipole(pBornMatrix))
     end if
     if (tPeriodic) then
-      call taggedWriter%write(fd%unit, tagLabels%volume, cellVol)
+      call setTreeR0(root, tagLabels%volume, cellVol)
     end if
 
     if (tMulliken) then
       qOutputUpDown = qOutput
       call qm2ud(qOutputUpDown)
       qDiff = qOutput - q0
-      call taggedWriter%write(fd%unit, tagLabels%qOutput, qOutputUpDown)
-      call taggedWriter%write(fd%unit, tagLabels%qOutAtGross, -sum(qDiff(:,:,1), dim=1))
+      call setTreeR3(root, tagLabels%qOutput, qOutputUpDown)
+      call setTreeR1(root, tagLabels%qOutAtGross, -sum(qDiff(:,:,1), dim=1))
       if (size(qDiff, dim=3) > 1) then
-        call taggedWriter%write(fd%unit, tagLabels%spinOutAtGross, sum(qDiff(:, :, 2:), dim=1))
+        call setTreeR2(root, tagLabels%spinOutAtGross, sum(qDiff(:, :, 2:), dim=1))
       end if
       if (allocated(cm5Cont)) then
-        call taggedWriter%write(fd%unit, tagLabels%qOutAtCM5, cm5Cont%cm5 - sum(qDiff(:,:,1),dim=1))
+        call setTreeR1(root, tagLabels%qOutAtCM5, cm5Cont%cm5 - sum(qDiff(:,:,1),dim=1))
       end if
     end if
 
     if (allocated(dipoleMoment)) then
-      call taggedWriter%write(fd%unit, tagLabels%dipoleMoment, dipoleMoment)
-      call taggedWriter%write(fd%unit, tagLabels%scaledDipole,&
+      call setTreeR2(root, tagLabels%dipoleMoment, dipoleMoment)
+      call setTreeR2(root, tagLabels%scaledDipole,&
           & eFieldScaling%scaledSoluteDipole(dipoleMoment))
     end if
 
     if (allocated(multipole%dipoleAtom)) then
-      call taggedWriter%write(fd%unit, tagLabels%dipoleAtom,&
+      call setTreeR3(root, tagLabels%dipoleAtom,&
           & eFieldScaling%scaledSoluteDipole(multipole%dipoleAtom))
     end if
 
     if (allocated(polarisability)) then
-      call taggedWriter%write(fd%unit, tagLabels%dmudEPerturb, polarisability)
+      call setTreeR3(root, tagLabels%dmudEPerturb, polarisability)
     end if
     if (allocated(dEidE)) then
-      call taggedWriter%write(fd%unit, tagLabels%dEigenDE, dEidE)
+      call setTreeR4(root, tagLabels%dEigenDE, dEidE)
     end if
     if (allocated(dqOut)) then
-      call taggedWriter%write(fd%unit, tagLabels%dqdEPerturb, sum(dqOut, dim = 1))
+      call setTreeR3(root, tagLabels%dqdEPerturb, sum(dqOut, dim = 1))
     end if
 
     if (allocated(neFermi)) then
-      call taggedWriter%write(fd%unit, tagLabels%neFermi, neFermi)
+      call setTreeR1(root, tagLabels%neFermi, neFermi)
     end if
 
     if (allocated(dEfdE)) then
-      call taggedWriter%write(fd%unit, tagLabels%dEfdE, dEfdE)
+      call setTreeR2(root, tagLabels%dEfdE, dEfdE)
     end if
 
-    call closeFile(fd)
+    ! Serialise in the requested format
+    select case (trim(outputFormat))
+    case ("tag")
+      call writeTreeAsTag(fileName, root)
+    case ("hsd")
+      outFileName = "results.hsd"
+      call data_dump(root, outFileName)
+    case ("json")
+      outFileName = "results.json"
+      call data_dump(root, outFileName)
+    case ("xml")
+      outFileName = "results.xml"
+      call data_dump(root, outFileName)
+    case default
+      call writeTreeAsTag(fileName, root)
+    end select
 
   end subroutine writeResultsTag
 
 
   !> Write detailed results in configurable format (XML, HSD, or JSON)
-  subroutine writeDetailedXml(runId, speciesName, species0, coord0Out, tPeriodic, tHelical, latVec,&
+  subroutine writeDetailedOut(runId, speciesName, species0, coord0Out, tPeriodic, tHelical, latVec,&
       & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural,&
       & outputFormat)
 
@@ -2353,8 +2372,8 @@ contains
       fmt = "xml"
     end if
     outFileName = "detailed." // trim(fmt)
-    call dumpHsd(root, outFileName)
-  end subroutine writeDetailedXml
+    call data_dump(root, outFileName)
+  end subroutine writeDetailedOut
 
 
   !> Write the band structure data out
@@ -6123,6 +6142,111 @@ contains
         & energy%EMdftb * Hartree__eV, 'eV'
 
   end subroutine writeMdftbEnergies
+
+
+  !> Set a real scalar in the results tree (preserves type info for tag serialisation).
+  subroutine setTreeR0(root, name, val)
+    type(hsd_table), intent(inout) :: root
+    character(len=*), intent(in) :: name
+    real(dp), intent(in) :: val
+
+    ! hsd_set for scalar reals calls child%set_real which correctly sets
+    ! value_type=VALUE_TYPE_REAL and real_value=val
+    call hsd_set(root, name, val)
+
+  end subroutine setTreeR0
+
+
+  !> Set a rank-1 real array in the results tree.
+  subroutine setTreeR1(root, name, val)
+    type(hsd_table), intent(inout) :: root
+    character(len=*), intent(in) :: name
+    real(dp), intent(in) :: val(:)
+    class(hsd_node), pointer :: child
+
+    call hsd_set(root, name, val)
+    call root%get_child_by_name(trim(name), child)
+    if (associated(child)) then
+      select type (child)
+      type is (hsd_value)
+        child%value_type = VALUE_TYPE_REAL
+        child%real_array = val
+      end select
+    end if
+
+  end subroutine setTreeR1
+
+
+  !> Set a rank-2 real array in the results tree.
+  subroutine setTreeR2(root, name, val)
+    type(hsd_table), intent(inout) :: root
+    character(len=*), intent(in) :: name
+    real(dp), intent(in) :: val(:,:)
+    class(hsd_node), pointer :: child
+
+    call hsd_set(root, name, val)
+    call root%get_child_by_name(trim(name), child)
+    if (associated(child)) then
+      select type (child)
+      type is (hsd_value)
+        child%value_type = VALUE_TYPE_REAL
+        child%real_matrix = val
+        child%nrows = size(val, 1)
+        child%ncols = size(val, 2)
+      end select
+    end if
+
+  end subroutine setTreeR2
+
+
+  !> Set a rank-3 real array in the results tree.
+  !! Data is flattened to 1D; original shape is stored in the attrib field
+  !! as "rank:dim1,dim2,dim3" for writeTreeAsTag to reconstruct.
+  subroutine setTreeR3(root, name, val)
+    type(hsd_table), intent(inout) :: root
+    character(len=*), intent(in) :: name
+    real(dp), intent(in) :: val(:,:,:)
+    class(hsd_node), pointer :: child
+    character(len=80) :: shapeBuf
+
+    call hsd_set(root, name, reshape(val, [size(val)]))
+    call root%get_child_by_name(trim(name), child)
+    if (associated(child)) then
+      select type (child)
+      type is (hsd_value)
+        child%value_type = VALUE_TYPE_REAL
+        child%real_array = reshape(val, [size(val)])
+        write(shapeBuf, '(I0,":",I0,",",I0,",",I0)') 3, size(val,1), size(val,2), size(val,3)
+        child%attrib = trim(shapeBuf)
+      end select
+    end if
+
+  end subroutine setTreeR3
+
+
+  !> Set a rank-4 real array in the results tree.
+  !! Data is flattened to 1D; original shape is stored in the attrib field.
+  subroutine setTreeR4(root, name, val)
+    type(hsd_table), intent(inout) :: root
+    character(len=*), intent(in) :: name
+    real(dp), intent(in) :: val(:,:,:,:)
+    class(hsd_node), pointer :: child
+    character(len=80) :: shapeBuf
+
+    call hsd_set(root, name, reshape(val, [size(val)]))
+    call root%get_child_by_name(trim(name), child)
+    if (associated(child)) then
+      select type (child)
+      type is (hsd_value)
+        child%value_type = VALUE_TYPE_REAL
+        child%real_array = reshape(val, [size(val)])
+        write(shapeBuf, '(I0,":",I0,",",I0,",",I0,",",I0)') 4, size(val,1), size(val,2),&
+            & size(val,3), size(val,4)
+        child%attrib = trim(shapeBuf)
+      end select
+    end if
+
+  end subroutine setTreeR4
 
 
 end module dftbp_dftbplus_mainio

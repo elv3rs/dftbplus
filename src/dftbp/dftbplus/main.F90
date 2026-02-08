@@ -75,7 +75,7 @@ module dftbp_dftbplus_main
       & writeCurrentGeometry, writeExtendedGeometry, writeDerivBandOut, writeDetailedOut1,&
       & writeDetailedOut10, writeDetailedOut2, writeDetailedOut2dets, writeDetailedOut3,&
       & writeDetailedOut4, writeDetailedOut5, writeDetailedOut6, writeDetailedOut7,&
-      & writeDetailedOut8, writeDetailedOut9, writeDetailedXml, writeEigenVectors, writeEsp,&
+      & writeDetailedOut8, writeDetailedOut9, writeDetailedOut, writeEigenVectors, writeEsp,&
       & writeFinalDriverstatus, writeHessianout, writehsandstop, writeMdOut1, writeMdOut2,&
       & writeProjectedEigenvectors, writeRealEigvecs, writeReksDetailedOut1, writeResultsTag
   use dftbp_dftbplus_outputfiles, only : autotestTag, bandOut, bornChargesOut, bornDerivativesOut,&
@@ -599,8 +599,8 @@ contains
       call writeResultsTag(resultsTag, this%dftbEnergy(this%deltaDftb%iFinal), this%derivs,&
           & this%chrgForces, this%nEl, this%Ef, this%eigen, this%filling, this%electronicSolver,&
           & this%tStress, this%totalStress, pDynMatrix, pDipDerivMatrix, this%tPeriodic,&
-          & this%cellVol, this%tMulliken, this%qOutput, this%q0, this%taggedWriter, this%cm5Cont,&
-          & this%polarisability, this%dEidE, this%dqOut, this%neFermi, this%dEfdE,&
+          & this%cellVol, this%tMulliken, this%qOutput, this%q0, this%resultsOutputFormat,&
+          & this%cm5Cont, this%polarisability, this%dEidE, this%dqOut, this%neFermi, this%dEfdE,&
           & this%dipoleMoment, this%multipoleOut, this%eFieldScaling, this%reks)
     end if
     if (this%tWriteCosmoFile .and. allocated(this%solvation)) then
@@ -608,7 +608,7 @@ contains
           & this%dftbEnergy(this%deltaDftb%iFinal)%EMermin)
     end if
     if (this%tWriteDetailedXML) then
-      call writeDetailedXml(this%runId, this%speciesName, this%species0, this%pCoord0Out,&
+      call writeDetailedOut(this%runId, this%speciesName, this%species0, this%pCoord0Out,&
           & this%tPeriodic, this%tHelical, this%latVec, this%origin, this%tRealHS, this%nKPoint,&
           & this%nSpin, size(this%eigen, dim=1), this%nOrb, this%kPoint, this%kWeight,&
           & this%filling, this%occNatural, this%detailedOutputFormat)

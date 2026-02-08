@@ -14,10 +14,13 @@ module dftbp_dftbplus_parser_transport
   use dftbp_poisson_boundaryconditions, only : poissonBCsEnum, bcPoissonNames
 #:endif
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, detailedWarning, &
-      & getChild, getChildren, getChildValue, getSelectedAtomIndices, setChild, setChildValue, &
-      & getNodeName, getNodeHSDName, getNodeName2, getLength, getItem1, destroyNodeList, &
-      & convertUnitHsd, splitModifier, hasInlineData
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : hsd_child_list, &
+      & getChild, getChildren, getChildValue, setChild, setChildValue, &
+      & getLength, getItem1, destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
+      & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3
   use dftbp_type_commontypes, only : TOrbitals
@@ -99,14 +102,14 @@ contains
             & findloc(atomInRegion(transpar%contacts(ii)%idxrange(1):&
             & transpar%contacts(ii)%idxrange(2)), .true.) + transpar%contacts(ii)%idxrange(1)
         call getItem1(pNodeList, ii, pTmp)
-        call detailedError(pTmp, strTmp)
+        call dftbp_error(pTmp, strTmp)
       end if
       atomInRegion(transpar%contacts(ii)%idxrange(1):transpar%contacts(ii)%idxrange(2)) = .true.
     end do
     if (any(.not.atomInRegion)) then
       write(strTmp, "(A,I0,A)")"Atom ", findloc(atomInRegion, .false.),&
           & " is not in the device region or any contact"
-      call detailedError(root, strTmp)
+      call dftbp_error(root, strTmp)
     end if
 
     call destroyNodeList(pNodeList)
@@ -142,7 +145,7 @@ contains
     case default
 
       call getNodeHSDName(pTaskType, buffer)
-      call detailedError(pTask, "Invalid task '" // buffer // "'")
+      call dftbp_error(pTask, "Invalid task '" // buffer // "'")
 
    end select
 
@@ -246,7 +249,7 @@ contains
         if (checkidx) then
           if (any(pls < idxdevice(1) .or. &
                   pls > idxdevice(2))) then
-             call detailedError(pnode, "First layer atoms must be between " &
+             call dftbp_error(pnode, "First layer atoms must be between " &
                &// i2c(idxdevice(1)) // " and " // i2c(idxdevice(2)) // ".")
           end if
         end if
@@ -296,7 +299,7 @@ contains
       else if ( len(fermiBuffer) .eq. 2) then
         call asArray(fermiBuffer, greendens%oneFermi)
       else
-        call detailedError(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
+        call dftbp_error(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
       end if
       call destruct(fermiBuffer)
       call convertUnitHsd(modifier, energyUnits, pNode, greendens%oneFermi)
@@ -367,7 +370,7 @@ contains
 
       ! Both Points and Step cannot be specified
       if  (associated (child1) .and. associated(child2)) then
-        call detailedError(child1, "RealAxisPoints and RealAxisStep " &
+        call dftbp_error(child1, "RealAxisPoints and RealAxisStep " &
                             &// " cannot be specified together.")
       ! If only one is specified, take it as valid value
       else if (associated(child1)) then
@@ -479,18 +482,18 @@ contains
     call getChild(pNode, "AtomDensityCutoff", pTmp, requested=.false., modifier=modifier)
     call getChild(pNode, "AtomDensityTolerance", pTmp2, requested=.false.)
     if (associated(pTmp) .and. associated(pTmp2)) then
-      call detailedError(pNode, "Only one of the tags AtomDensityCutoff or AtomDensityTolerance&
+      call dftbp_error(pNode, "Only one of the tags AtomDensityCutoff or AtomDensityTolerance&
           & can be specified.")
     else if (associated(pTmp)) then
       call getChildValue(pTmp, "", poisson%maxRadAtomDens, default=14.0_dp, modifier=modifier)
       call convertUnitHsd(modifier, lengthUnits, pTmp, poisson%maxRadAtomDens)
       if (poisson%maxRadAtomDens <= 0.0_dp) then
-        call detailedError(pTmp2, "Atom density cutoff must be > 0")
+        call dftbp_error(pTmp2, "Atom density cutoff must be > 0")
       end if
     else
       call getChildValue(pNode, "AtomDensityTolerance", denstol, 1e-6_dp, child=pTmp2)
       if (denstol <= 0.0_dp) then
-        call detailedError(pTmp2, "Atom density tolerance must be > 0")
+        call dftbp_error(pTmp2, "Atom density tolerance must be > 0")
       end if
       ! Negative value to signal automatic determination
       poisson%maxRadAtomDens = -denstol
@@ -537,14 +540,14 @@ contains
       call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferLocBC)
     case default
       call getNodeHSDName(pTmp, buffer)
-      call detailedError(pTmp, "Invalid boundary region type '" // buffer // "'")
+      call dftbp_error(pTmp, "Invalid boundary region type '" // buffer // "'")
     end select
 
     call getChildValue(pNode, "BoxExtension", poisson%bufferBox, 0.0_dp, modifier=modifier,&
         & child=field)
     call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferBox)
     if (poisson%bufferBox.lt.0.0_dp) then
-      call detailedError(pNode, "BoxExtension must be a positive number")
+      call dftbp_error(pNode, "BoxExtension must be a positive number")
     endif
 
     ! PARSE GATE OPTIONS
@@ -598,7 +601,7 @@ contains
 
     case default
       call getNodeHSDName(pTmp2, buffer)
-      call detailedError(pTmp2, "Invalid gate type '" // buffer // "'")
+      call dftbp_error(pTmp2, "Invalid gate type '" // buffer // "'")
 
     end select
 
@@ -638,7 +641,7 @@ contains
         call init(lStr)
         call getChildValue(pNode2, "boundaries", lStr, child=pChild)
         if (len(lStr).gt.6) then
-          call detailedError(pChild,"A maximum of 6 boundaries (or fewer) can be set")
+          call dftbp_error(pChild,"A maximum of 6 boundaries (or fewer) can be set")
         end if
         do ii = 1, len(lStr)
           call get(lStr, strTmp, ii)
@@ -675,7 +678,7 @@ contains
       faceBC = overrideBC(2 * ii)
       oppositeBC = overrideBC(2 * ii - 1)
       if (faceBC == poissonBCsEnum%periodic .neqv. oppositeBC == poissonBCsEnum%periodic) then
-        call detailedError(pChild, "Periodic override must be set both min max along "//sDirs(ii))
+        call dftbp_error(pChild, "Periodic override must be set both min max along "//sDirs(ii))
       end if
     end do
 
@@ -721,17 +724,17 @@ contains
     iStart = atomrange(1)
     iEnd = atomrange(2)
     if (iStart < 1 .or. iEnd < 1 .or. iStart > geom%nAtom .or. iEnd > geom%nAtom) then
-      call detailedError(pContact, "Invalid atom range '" // i2c(iStart) &
+      call dftbp_error(pContact, "Invalid atom range '" // i2c(iStart) &
           &// " " // i2c(iEnd) // "', values should be between " // i2c(1) &
           &// " and " // i2c(geom%nAtom) // ".")
     end if
     if (iEnd < iStart) then
-      call detailedError(pContact, "Invalid atom order in contact '" // i2c(iStart) // " " //&
+      call dftbp_error(pContact, "Invalid atom order in contact '" // i2c(iStart) // " " //&
           & i2c(iEnd) // "', should be asscending order.")
     end if
 
     if (mod(iEnd - iStart + 1, 2) /= 0) then
-      call detailedError(pContact, "Nr. of atoms in the contact must be even")
+      call dftbp_error(pContact, "Nr. of atoms in the contact must be even")
     end if
 
     ! Determining intra-contact layer vector
@@ -854,7 +857,7 @@ contains
     !     this because initDephasing was moved into initprogram
     call getChildValue(node, "semiLocal", semilocal_model, default=.false.)
     if (semilocal_model) then
-      call detailedError(node, "semilocal dephasing causes crash and has been "//&
+      call dftbp_error(node, "semilocal dephasing causes crash and has been "//&
            & "temporarily disabled")
       elph%model = 3
     endif
@@ -886,7 +889,7 @@ contains
     character(len=:), allocatable :: model
     type(hsd_table), pointer :: dephModel
 
-    call detailedError(node,"Buettiker probes are still under development")
+    call dftbp_error(node,"Buettiker probes are still under development")
 
     elph%defined = .true.
     call getChildValue(node, "", dephModel)
@@ -899,10 +902,10 @@ contains
       tp%tZeroCurrent=.true.
       !! Only local bp model is defined (elastic for now)
     case("voltageprobes")
-      call detailedError(dephModel,"voltageProbes have been not implemented yet")
+      call dftbp_error(dephModel,"voltageProbes have been not implemented yet")
       tp%tZeroCurrent=.false.
     case default
-      call detailedError(dephModel,"unknown model")
+      call dftbp_error(dephModel,"unknown model")
     end select
 
     elph%model = 1
@@ -918,7 +921,7 @@ contains
     !     this because initDephasing occurs in initprogram
     call getChildValue(dephModel, "semiLocal", semilocal_model, default=.false.)
     if (semilocal_model) then
-      call detailedError(dephModel, "semilocal dephasing is not working yet")
+      call dftbp_error(dephModel, "semilocal dephasing is not working yet")
       elph%model = 3
     endif
 
@@ -1010,7 +1013,7 @@ contains
         do jj=1, size(tmpI1)
           iAt = tmpI1(jj)
           if (atmCoupling(iAt) /= 0.0_dp) then
-            call detailedWarning(child3, "Previous setting of coupling &
+            call dftbp_warning(child3, "Previous setting of coupling &
                 &for atom" // i2c(iAt) // " has been overwritten")
           end if
           atmCoupling(iAt) = rTmp
@@ -1032,7 +1035,7 @@ contains
       elph%coupling = rTmp
 
     case default
-      call detailedError(node, "Coupling definition unknown")
+      call dftbp_error(node, "Coupling definition unknown")
     end select
 
   end subroutine readCoupling
@@ -1075,7 +1078,7 @@ contains
       call init(temperature)
       call getChildValue(pTmp, "", temperature)
       if (len(temperature) .ne. ncont) then
-        call detailedError(root, "ContactTemperature does not match the number of contacts")
+        call dftbp_error(root, "ContactTemperature does not match the number of contacts")
       end if
       call asArray(temperature, tundos%kbT)
       call destruct(temperature)
@@ -1211,11 +1214,11 @@ contains
       call getChildValue(pNode, "Id", buffer, child=pTmp)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
-        call detailedError(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
+        call dftbp_error(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
       end if
       contacts(ii)%name = buffer
       if (any(contacts(1:ii-1)%name == contacts(ii)%name)) then
-        call detailedError(pTmp, "Contact id '" // trim(contacts(ii)%name) //  "' already in use")
+        call dftbp_error(pTmp, "Contact id '" // trim(contacts(ii)%name) //  "' already in use")
       end if
 
       call getChildValue(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, modifier=modifier,&
@@ -1267,7 +1270,7 @@ contains
         ! else if ( len(fermiBuffer) .eq. 2) then
         !   call asArray(fermiBuffer, contacts(ii)%eFermi)
         ! else
-        !   call detailedError(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
+        !   call dftbp_error(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
         ! end if
         ! call destruct(fermiBuffer)
 
@@ -1277,7 +1280,7 @@ contains
         call getNodeName2(child1, buffer)
         if (buffer == "" .and. .not. hasInlineData(child2)) then
           contacts(ii)%tFermiSet = .false.
-          call detailedWarning(pNode, "Missing Fermi level - required to be set in solver block or&
+          call dftbp_warning(pNode, "Missing Fermi level - required to be set in solver block or&
               & read from a contact shift file")
         else
           call init(fermiBuffer)
@@ -1289,7 +1292,7 @@ contains
           case (2)
             call asArray(fermiBuffer, contacts(ii)%eFermi(:2))
           case default
-            call detailedError(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
+            call dftbp_error(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
           end select
           call destruct(fermiBuffer)
           call convertUnitHsd(modifier, energyUnits, child2, contacts(ii)%eFermi)
@@ -1366,7 +1369,7 @@ contains
     call init(lString)
     call getChildValue(pNode, "", lString)
     if (len(lString) /= 2) then
-      call detailedError(pNode, "You must provide two contacts")
+      call dftbp_error(pNode, "You must provide two contacts")
     end if
     call get(lString, buffer, 1)
     emitter = getContactByName(contactNames, buffer, pNode)
@@ -1402,7 +1405,7 @@ contains
       end if
     end do
     if (.not. tFound) then
-      call detailedError(pNode, "Invalid collector contact name '" // trim(contName) // "'")
+      call dftbp_error(pNode, "Invalid collector contact name '" // trim(contName) // "'")
     end if
 
   end function getContactByName
@@ -1468,7 +1471,7 @@ contains
       call getChildValue(child, "ShellResolved", tShellResInRegion(iReg), .false., child=child2)
       if (tShellResInRegion(iReg)) then
         if (.not. all(geo%species(tmpI1) == geo%species(tmpI1(1)))) then
-          call detailedError(child2, "Shell resolved PDOS can only summed up over atoms of the same&
+          call dftbp_error(child2, "Shell resolved PDOS can only summed up over atoms of the same&
               & type")
         end if
       end if

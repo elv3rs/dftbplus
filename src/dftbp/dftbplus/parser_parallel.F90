@@ -10,9 +10,11 @@
 
 !> Reads the parallel/BLACS block from the HSD input.
 module dftbp_dftbplus_parser_parallel
+  use hsd_data, only : hsd_table
   use dftbp_common_globalenv, only : withMpi, withScalapack
   use dftbp_dftbplus_inputdata, only : TBlacsOpts, TInputData
-  use dftbp_io_hsdcompat, only : hsd_table, detailedWarning, getChild, getChildValue
+  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_warning
   implicit none
 
   private
@@ -35,7 +37,7 @@ contains
     call getChild(root, "Parallel", child=node, requested=.false., emptyIfMissing=withMpi)
     if (associated(node)) then
       if (.not. withMpi) then
-        call detailedWarning(node, "Settings will be read but ignored (compiled without MPI&
+        call dftbp_warning(node, "Settings will be read but ignored (compiled without MPI&
             & support)")
       end if
       allocate(input%ctrl%parallelOpts)
@@ -61,7 +63,7 @@ contains
     call getChild(root, "Blacs", child=node, requested=.false., emptyIfMissing=withScalapack)
     if (associated(node)) then
       if (.not. withScalapack) then
-        call detailedWarning(node, "Settings will be read but ignored (compiled without SCALAPACK&
+        call dftbp_warning(node, "Settings will be read but ignored (compiled without SCALAPACK&
             & support)")
       end if
       call getChildValue(node, "BlockSize", blacsOpts%blockSize, 32)

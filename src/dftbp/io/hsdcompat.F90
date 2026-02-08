@@ -8,25 +8,29 @@
 #:include "common.fypp"
 
 !> Compatibility shim mapping legacy HSD API patterns to hsd-fortran/hsd-data.
+!> HSD compatibility and utility module for DFTB+ input parsing.
 !>
-!> This module provides call signatures similar to the legacy hsdutils/hsdutils2 modules
-!> but operating on hsd_table (from hsd-fortran) instead of fnode (from xmlf90). It enables
-!> incremental conversion of parser.F90 from fnode to hsd_table without a big-bang rewrite.
+!> This module provides DFTB+-specific convenience wrappers around hsd-fortran's
+!> low-level tree API, along with application-specific utilities that have no
+!> hsd-fortran equivalent:
 !>
-!> Key differences from legacy API:
-!>   - type(fnode), pointer  → type(hsd_table), intent(inout)/pointer
-!>   - type(string)          → character(len=:), allocatable
-!>   - getChildValue(node,name,val,default) → getChildValue(table,name,val,default)
-!>   - getChild(node,name,child,requested)  → getChild(table,name,child,requested)
-!>   - convertUnitHsd(mod,units,child,val)  → convertUnitHsd(mod,units,child,val)
+!>   - getChildValue / getChild / setChildValue / setChild — high-level accessors
+!>     with error reporting, modifier extraction, and default write-back
+!>   - convertUnitHsd — unit conversion bridging HSD modifiers to DFTB+'s TUnit system
+!>   - warnUnprocessedNodes / setProcessed / setUnprocessed — input validation
+!>   - detailedError / detailedWarning — formatted error/warning with node context
+!>   - Linked-list tokenizer readers (8 overloads)
+!>   - Atom/index selection helpers
+!>   - dumpHsd — convenience wrapper for HSD output
 !>
-!> This is a TRANSITIONAL module — it will be removed once all call sites are converted
-!> to direct hsd-fortran API calls.
+!> This module is a permanent part of the DFTB+ IO layer. While the underlying
+!> data structures come from hsd-fortran, the wrappers here provide genuine
+!> value for the DFTB+ parser's specific patterns (dispatch, defaults, units).
 module dftbp_io_hsdcompat
   use dftbp_common_accuracy, only : dp, lc, mc
   use dftbp_common_status, only : TStatus
   use dftbp_common_unitconversion, only : TUnit, convertUnit, statusCodes
-  use dftbp_extlibs_hsddata, only : hsd_table, hsd_value, hsd_node, hsd_node_ptr, hsd_iterator, &
+  use hsd_data, only : hsd_table, hsd_value, hsd_node, hsd_node_ptr, hsd_iterator, &
       & hsd_error_t, &
       & hsd_get, hsd_get_or, hsd_get_or_set, hsd_get_matrix, &
       & hsd_set, hsd_get_child, hsd_get_table, hsd_has_child, hsd_remove_child, &
@@ -46,29 +50,7 @@ module dftbp_io_hsdcompat
   private
 
   !> Public compatibility API — generic interfaces matching legacy calling patterns
-  public :: getChildValue, getChild, setChildValue, setChild
-  public :: detailedError, detailedWarning
-  public :: convertUnitHsd
-  public :: getNodeName, getNodeName2, getNodeHSDName
-  public :: getChildren, getLength, getItem1, destroyNodeList
-  public :: getSelectedAtomIndices, getSelectedIndices
-  public :: splitModifier
-  public :: warnUnprocessedNodes, setUnprocessed, setProcessed
-  public :: hasInlineData
-  public :: getDescendant, setNodeName, removeChildNodes, destroyNode, removeChild
-  public :: renameDescendant
-  public :: checkError
-  public :: getFirstTextChild
-  public :: dumpHsd
-
-  !> Re-export core types from hsd-data for convenience
-  public :: hsd_table, hsd_value, hsd_node, hsd_iterator, new_table, new_value
-  public :: hsd_error_t
-  public :: hsd_set, hsd_get, hsd_get_child, hsd_get_table, hsd_has_child
-  public :: hsd_remove_child, hsd_rename_child, hsd_set_attrib, hsd_get_attrib
-  public :: hsd_child_count, hsd_get_keys, hsd_has_attrib
-  public :: hsd_load, hsd_load_string, hsd_dump, hsd_dump_to_string
-  public :: HSD_STAT_OK, HSD_STAT_NOT_FOUND, HSD_STAT_TYPE_ERROR
+  
 
   !> Constant for text node name (matches xmlf90 textNodeName)
   character(len=*), parameter, public :: textNodeName = "#text"
@@ -241,6 +223,26 @@ contains
   end subroutine replaceOrAddTable_
 
 
+  !> Mark a named child of a parent table as processed.
+  !>
+  !> Finds the child by name (case-insensitive) and sets its processed flag.
+  !> This is called by all getChildValue and getChild accessors to track which
+  !> input keywords have been consumed by the parser.
+  subroutine markChildProcessed_(node, name)
+    type(hsd_table), intent(in) :: node
+    character(len=*), intent(in) :: name
+
+    class(hsd_node), pointer :: childNode
+    integer :: stat
+
+    call hsd_get_child(node, name, childNode, stat)
+    if (stat == HSD_STAT_OK .and. associated(childNode)) then
+      childNode%processed = .true.
+    end if
+
+  end subroutine markChildProcessed_
+
+
   ! ============================================================
   !  getChildValue — scalar required (no default)
   ! ============================================================
@@ -264,6 +266,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_int
 
@@ -286,6 +289,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_real
 
@@ -308,6 +312,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_logical
 
@@ -340,6 +345,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_string
 
@@ -363,6 +369,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_int_def
 
@@ -382,6 +389,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_real_def
 
@@ -400,6 +408,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_logical_def
 
@@ -432,6 +441,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_intR1
 
@@ -459,6 +469,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_realR1
 
@@ -486,6 +497,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_logicalR1
 
@@ -521,6 +533,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_realR2
 
@@ -548,6 +561,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_intR2
 
@@ -582,6 +596,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_realR2_def
 
@@ -721,6 +736,16 @@ contains
         modifier = ""
       end if
     end if
+    call markChildProcessed_(node, name)
+
+    ! Also mark the dispatch target (variableValue) as processed.
+    ! In the dispatch pattern (e.g., Filling = Fermi { ... }), "Fermi" is a
+    ! child of "Filling" returned as variableValue. Without marking it,
+    ! warnUnprocessedNodes would flag it as unprocessed when recursing into
+    ! "Filling".
+    if (associated(variableValue)) then
+      variableValue%processed = .true.
+    end if
 
   end subroutine getChVal_table
 
@@ -757,6 +782,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_intR1_def
 
@@ -789,6 +815,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_realR1_def
 
@@ -821,6 +848,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_logicalR1_def
 
@@ -857,6 +885,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lString
 
@@ -887,6 +916,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lReal
 
@@ -923,6 +953,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lRealR1
 
@@ -953,6 +984,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lInt
 
@@ -987,6 +1019,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lIntR1
 
@@ -1017,6 +1050,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lComplex
 
@@ -1051,6 +1085,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lComplexR1
 
@@ -1108,6 +1143,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lIntR1RealR1
 
@@ -1164,6 +1200,7 @@ contains
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
     end if
+    call markChildProcessed_(node, name)
 
   end subroutine getChVal_lStringIntR1RealR1
 
@@ -1254,6 +1291,7 @@ contains
     if (present(modifier) .and. associated(child)) then
       call getModifier_(node, name, modifier)
     end if
+    if (associated(child)) call markChildProcessed_(node, name)
 
   end subroutine getChild
 
@@ -1723,16 +1761,53 @@ contains
   !  warnUnprocessedNodes — stub for transition
   ! ============================================================
 
-  !> Warn about unprocessed nodes (stub during transition).
+  !> Warn about unprocessed nodes in the input tree.
   !>
-  !> In the new architecture, unprocessed node detection is handled by
-  !> schema_validate_strict. This is a no-op stub during transition.
-  subroutine warnUnprocessedNodes(node, tIgnoreUnprocessed)
+  !> Walks the children of the given node. Any child that has not been marked
+  !> as processed (via getChildValue, getChild, or explicit setProcessed calls)
+  !> is reported as a warning — it typically indicates a misspelled keyword.
+  !> Table children are recursed into so that deeply nested typos are caught.
+  recursive subroutine warnUnprocessedNodes(node, tIgnoreUnprocessed)
     type(hsd_table), intent(in) :: node
     logical, intent(in), optional :: tIgnoreUnprocessed
 
-    ! No-op: schema_validate_strict will replace this
-    ! once schemas are defined for each parser section.
+    logical :: tIgnore
+    integer :: ii
+    class(hsd_node), pointer :: childNode
+    character(len=:), allocatable :: childName
+
+    tIgnore = .false.
+    if (present(tIgnoreUnprocessed)) tIgnore = tIgnoreUnprocessed
+    if (tIgnore) return
+
+    do ii = 1, node%num_children
+      call node%get_child(ii, childNode)
+      if (.not. associated(childNode)) cycle
+
+      ! Skip anonymous #text value nodes — they are inline data, not keywords
+      if (allocated(childNode%name)) then
+        if (childNode%name == "#text") cycle
+        childName = childNode%name
+      else
+        cycle
+      end if
+
+      if (.not. childNode%processed) then
+        ! Only warn about children that came from the parsed input file
+        ! (line > 0). Children created programmatically by the parser
+        ! (defaults, restructured nodes) have line = 0 and should not
+        ! trigger warnings.
+        if (childNode%line > 0) then
+          call warning("Unprocessed input: '" // childName // "' (possible misspelling)")
+        end if
+      end if
+
+      ! Recurse into table children
+      select type (t => childNode)
+      type is (hsd_table)
+        if (t%processed) call warnUnprocessedNodes(t)
+      end select
+    end do
 
   end subroutine warnUnprocessedNodes
 
@@ -1829,26 +1904,51 @@ contains
   !  setUnprocessed — no-op stub
   ! ============================================================
 
-  !> Mark a node as unprocessed (no-op in hsd-data).
+  !> Mark a node as unprocessed.
   !>
-  !> In the legacy code, this removed the "processed" attribute.
-  !> In hsd-data, processing tracking is not used.
+  !> Used after oldcompat transformations that create or restructure nodes —
+  !> the newly created nodes need to be re-processed by the parser.
+  !> Accepts a pointer; does nothing if the pointer is null.
   subroutine setUnprocessed(node)
-    type(hsd_table), intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
-    ! No-op
+    if (.not. associated(node)) return
+    node%processed = .false.
 
   end subroutine setUnprocessed
 
-  !> Mark a node as processed (no-op in hsd-data).
+  !> Mark a node (and optionally all descendants) as processed.
   !>
-  !> In the legacy code, this set the "processed" attribute. In hsd-data,
-  !> processing tracking is not used (schema validation replaces it).
+  !> Used when a parser section has fully consumed a sub-tree and wants
+  !> to suppress "unprocessed" warnings for all children.
   recursive subroutine setProcessed(node, recursive)
     type(hsd_table), pointer, intent(in) :: node
     logical, intent(in), optional :: recursive
 
-    ! No-op
+    logical :: doRecurse
+    integer :: ii
+    class(hsd_node), pointer :: childNode
+
+    if (.not. associated(node)) return
+    node%processed = .true.
+
+    doRecurse = .false.
+    if (present(recursive)) doRecurse = recursive
+    if (.not. doRecurse) return
+
+    do ii = 1, node%num_children
+      call node%get_child(ii, childNode)
+      if (.not. associated(childNode)) cycle
+      childNode%processed = .true.
+      select type (t => childNode)
+      type is (hsd_table)
+        block
+          type(hsd_table), pointer :: tPtr
+          tPtr => t
+          call setProcessed(tPtr, .true.)
+        end block
+      end select
+    end do
 
   end subroutine setProcessed
 
@@ -1978,7 +2078,9 @@ contains
 
     ! Reset the children array by reinitializing
     node%num_children = 0
+    node%capacity = 0
     if (allocated(node%children)) deallocate(node%children)
+    call node%invalidate_index()
 
   end subroutine removeChildNodes
 

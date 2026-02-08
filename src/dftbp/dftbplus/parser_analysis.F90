@@ -9,11 +9,15 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_dftbplus_parser_kpoints, only : maxSelfConsIterations
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, &
-      & getChild, getChildren, getChildValue, getSelectedAtomIndices, setChildValue, &
-      & getNodeName, getNodeName2, getLength, getItem1, destroyNodeList, &
-      & convertUnitHsd, hsd_rename_child, hasInlineData
+  use hsd, only : hsd_rename_child
+  use dftbp_io_hsdutils, only : hsd_child_list, &
+      & getChild, getChildren, getChildValue, setChildValue, &
+      & getLength, getItem1, destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getNodeName, getNodeName2,&
+      & hasInlineData
   use dftbp_io_message, only : error
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd_data, only : hsd_table
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_solvation_solvparser, only : readCM5
   use dftbp_type_commontypes, only : TOrbitals
@@ -96,7 +100,7 @@ contains
               & child=child3)
           if (ctrl%tShellResInRegion(iReg)) then
             if (.not. all(geo%species(pTmpI1) == geo%species(pTmpI1(1)))) then
-              call detailedError(child3, "Shell resolved PDOS only allowed for &
+              call dftbp_error(child3, "Shell resolved PDOS only allowed for &
                   &regions where all atoms belong to the same species")
             end if
           end if
@@ -104,7 +108,7 @@ contains
               & ctrl%tOrbResInRegion(iReg), .false., child=child3)
           if (ctrl%tOrbResInRegion(iReg)) then
             if (.not. all(geo%species(pTmpI1) == geo%species(pTmpI1(1)))) then
-              call detailedError(child3, "Orbital resolved PDOS only allowed for &
+              call dftbp_error(child3, "Orbital resolved PDOS only allowed for &
                   &regions where all atoms belong to the same species")
             end if
           end if
@@ -134,7 +138,7 @@ contains
                 if (associated(child3)) then
                   call getChildValue(child3, "", 1, lr1)
                   if (len(lr1) < 1) then
-                    call detailedError(child2, "Missing values of tolerances.")
+                    call dftbp_error(child2, "Missing values of tolerances.")
                   end if
                   allocate(inp%sparseTols(len(lr1)))
                   call asVector(lr1, inp%sparseTols)
@@ -151,7 +155,7 @@ contains
             end if
           end associate
         else
-          call detailedError(val, "No localisation method chosen")
+          call dftbp_error(val, "No localisation method chosen")
         end if
       end if
 
@@ -192,7 +196,7 @@ contains
       if (associated(child)) then
         if (.not.allocated(ctrl%perturbInp)) allocate(ctrl%perturbInp)
       #:if WITH_MPI
-        call detailedError(node, "CoordDerivatives not currently available for MPI enabled code")
+        call dftbp_error(node, "CoordDerivatives not currently available for MPI enabled code")
         ctrl%perturbInp%isAtomCoordPerturb = .false.
       #:else
         ctrl%perturbInp%isAtomCoordPerturb = .true.
@@ -204,7 +208,7 @@ contains
             & modifier=modifier, child=child)
         call convertUnitHsd(modifier, energyUnits, child, ctrl%perturbInp%tolDegenDFTBPT)
         if (ctrl%perturbInp%tolDegenDFTBPT < epsilon(0.0_dp)) then
-          call detailedError(child, "Perturbation degeneracy tolerance must be above machine&
+          call dftbp_error(child, "Perturbation degeneracy tolerance must be above machine&
               & epsilon")
         end if
         isEtaNeeded = .false.
@@ -222,7 +226,7 @@ contains
           allocate(ctrl%perturbInp%etaFreq)
           call getChildValue(node, "PerturbEta", ctrl%perturbInp%etaFreq, 1.0E-8_dp, child=child)
           if (ctrl%perturbInp%etaFreq < epsilon(0.0_dp)) then
-            call detailedError(child, "Imaginary constant for finite frequency perturbation too&
+            call dftbp_error(child, "Imaginary constant for finite frequency perturbation too&
                 & small")
           end if
         end if
@@ -264,7 +268,7 @@ contains
         call getChildValue(node, "writeCosmoFile", ctrl%tWriteCosmoFile, &
             & allocated(ctrl%solvInp%cosmoInp), child=child)
         if (ctrl%tWriteCosmoFile .and. .not.allocated(ctrl%solvInp%cosmoInp)) then
-          call detailedError(child, "Cosmo file can only be written for Cosmo calculations")
+          call dftbp_error(child, "Cosmo file can only be written for Cosmo calculations")
         end if
       end if
 
@@ -295,7 +299,7 @@ contains
       call readTunAndDos(child, orb, geo, tundos, transpar, ctrl%tempElec)
     else
       if (ctrl%solver%isolver == electronicSolverTypes%OnlyTransport) then
-        call detailedError(node, "The TransportOnly solver requires a TunnelingAndDos block to be&
+        call dftbp_error(node, "The TransportOnly solver requires a TunnelingAndDos block to be&
             & present.")
       end if
     endif
@@ -344,7 +348,7 @@ contains
       end if
       call destruct(lr)
       if (any(frequencies < 0.0_dp)) then
-        call detailedError(child2, "Negative driving frequency requested")
+        call dftbp_error(child2, "Negative driving frequency requested")
       end if
     end if
 
@@ -356,10 +360,10 @@ contains
         call asArray(lr, tmp3R)
         call convertUnitHsd(modifier, freqUnits, child, tmp3R)
         if (any(tmp3R(:2) < 0.0_dp)) then
-          call detailedError(child, "Negative values in dynamic frequency range.")
+          call dftbp_error(child, "Negative values in dynamic frequency range.")
         end if
         if (abs(tmp3R(3)) <= epsilon(0.0_dp)) then
-          call detailedError(child, "Increase step size in dynamic frequency range.")
+          call dftbp_error(child, "Increase step size in dynamic frequency range.")
         end if
         ! how many frequencies in the specified range?
         nFreq = max(int((tmp3R(2)-tmp3R(1))/tmp3R(3))+1,0)
@@ -373,11 +377,11 @@ contains
           frequencies(iFreq+jFreq) = tmp3R(1) + (jFreq-1) * tmp3R(3)
         end do
       else
-        call detailedError(child,"Malformed frequency range.")
+        call dftbp_error(child,"Malformed frequency range.")
       end if
       call destruct(lr)
       if (any(frequencies < 0.0_dp)) then
-        call detailedError(child2, "Negative driving frequency requested")
+        call dftbp_error(child2, "Negative driving frequency requested")
       end if
     end if
 
@@ -501,7 +505,7 @@ contains
       end if
     end if
     if (.not.allocated(ctrl%elStatPotentialsInp%espGrid)) then
-      call detailedError(child,"Either a grid or set of points must be specified")
+      call dftbp_error(child,"Either a grid or set of points must be specified")
     end if
     call getChildValue(child, "Softening", ctrl%elStatPotentialsInp%softenESP, 1.0E-6_dp,&
         & modifier=modifier, child=child2)
@@ -543,7 +547,7 @@ contains
     tPeriodic = present(latvecs)
 
     if (.not.tPeriodic .and. (modifier == "F" .or. modifier == "f")) then
-      call detailedError(node, "Fractional grid specification only available for periodic&
+      call dftbp_error(node, "Fractional grid specification only available for periodic&
           & geometries")
     end if
 
@@ -551,10 +555,10 @@ contains
     call getChildValue(node, "Origin", r3Tmpb, child=child)
     call getChildValue(node, "GridPoints", i3Tmp, child=child)
     if (any(i3Tmp < 1)) then
-      call detailedError(child,"Grid must be at least 1x1x1")
+      call dftbp_error(child,"Grid must be at least 1x1x1")
     end if
     if (any(abs(r3Tmp) < epsilon(1.0_dp) .and. i3Tmp > 1)) then
-      call detailedError(child,"Grid spacings must be non-zero")
+      call dftbp_error(child,"Grid spacings must be non-zero")
     end if
     allocate(points(3,product(i3Tmp)))
     if (present(nPoints)) then
@@ -585,7 +589,7 @@ contains
       r33Tmp = reshape([1,0,0,0,1,0,0,0,1],[3,3])
       call getChildValue(node, "Directions", axes_, r33Tmp, child=child)
       if (abs(determinant33(axes_)) < epsilon(1.0_dp)) then
-        call detailedError(child, "Dependent axis directions")
+        call dftbp_error(child, "Dependent axis directions")
       end if
       do ii = 1, 3
         axes_(:,ii) = axes_(:,ii) / sqrt(sum(axes_(:,ii)**2))

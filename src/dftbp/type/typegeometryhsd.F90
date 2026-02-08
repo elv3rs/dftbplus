@@ -13,8 +13,11 @@ module dftbp_type_typegeometryhsd
   use dftbp_common_globalenv, only : stdout
   use dftbp_common_unitconversion, only : angularUnits, lengthUnits
   use dftbp_io_charmanip, only : i2c, tolower
-  use dftbp_io_hsdcompat, only : hsd_table, checkError, detailedError, detailedWarning, getChildValue, &
-      & setChildValue, convertUnitHsd, splitModifier, getNodeName, getFirstTextChild
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : getChildValue, setChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, checkError, splitModifier,&
+      & getNodeName, getFirstTextChild
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_ERROR, TOKEN_OK
   use dftbp_math_simplealgebra, only : determinant33, invert33
@@ -50,7 +53,7 @@ contains
     type(TGeometry), intent(in) :: geo
 
     call setChildValue(node, "TypeNames", geo%speciesNames, .false.)
-    ! TODO: setChildValue with mixed int+real matrix not yet supported in hsdcompat
+    ! TODO: setChildValue with mixed int+real matrix not yet supported
     ! call setChildValue(node, "TypesAndCoordinates", &
     !     &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
     call setChildValue(node, "Periodic", geo%tPeriodic, .false.)
@@ -90,7 +93,7 @@ contains
     call getChildValue(node, "TypeNames", stringBuffer)
     geo%nSpecies = len(stringBuffer)
     if (geo%nSpecies == 0) then
-      call detailedError(node, "Missing species names.")
+      call dftbp_error(node, "Missing species names.")
     end if
     allocate(geo%speciesNames(geo%nSpecies))
     call asArray(stringBuffer, geo%speciesNames)
@@ -101,7 +104,7 @@ contains
         &realBuffer, modifier=modifier, child=typesAndCoords)
     geo%nAtom = len(intBuffer)
     if (geo%nAtom == 0) then
-      call detailedError(typesAndCoords, "Missing coordinates")
+      call dftbp_error(typesAndCoords, "Missing coordinates")
     end if
     allocate(geo%species(geo%nAtom))
     allocate(geo%coords(3, geo%nAtom))
@@ -112,7 +115,7 @@ contains
     deallocate(tmpInt)
     !! Check validity of species
     if (any(geo%species < 1 .or. geo%species > geo%nSpecies)) then
-      call detailedError(typesAndCoords, "Type index must be between 1 and " &
+      call dftbp_error(typesAndCoords, "Type index must be between 1 and " &
           &// i2c(geo%nSpecies) // ".")
     end if
     call asArray(realBuffer, geo%coords)
@@ -122,13 +125,13 @@ contains
       select case(tolower(modifier))
       case ("relative")
         if (.not. geo%tPeriodic) then
-          call detailedError(typesAndCoords, "Relative coordinates are only &
+          call dftbp_error(typesAndCoords, "Relative coordinates are only &
               &allowed for periodic systems")
         end if
         geo%tFracCoord = .true.
       case default
         call convertUnitHsd(modifier, lengthUnits, typesAndCoords, geo%coords)
-        ! TODO: setChildValue with mixed int+real matrix not yet supported in hsdcompat
+        ! TODO: setChildValue with mixed int+real matrix not yet supported
         ! call setChildValue(typesAndCoords, "", reshape(geo%species, [1, size(geo%species)]),&
         !     & geo%coords, replace=.true.)
       end select
@@ -154,7 +157,7 @@ contains
       allocate(geo%recVecs2p(3, 3))
       det = determinant33(geo%latVecs)
       if (abs(det) < 1e-12_dp) then
-        call detailedError(child, "Dependent lattice vectors")
+        call dftbp_error(child, "Dependent lattice vectors")
       end if
       call invert33(geo%recVecs2p, geo%latVecs, det)
       geo%recVecs2p(:,:) = reshape(geo%recVecs2p, (/3, 3/), order=(/2, 1/))
@@ -245,11 +248,11 @@ contains
       geo%tPeriodic = .false.
       geo%tFracCoord = .false.
     case default
-      call detailedError(node, "Unknown boundary condition type '" &
+      call dftbp_error(node, "Unknown boundary condition type '" &
           &// txt // "'")
     end select
     if (iStart < iEnd .and. len_trim(text(iStart:iEnd - 1)) > 0) then
-      call detailedError(node, "Found trailing characters in first line")
+      call dftbp_error(node, "Found trailing characters in first line")
     end if
     iStart = iEnd + 1
 
@@ -262,7 +265,7 @@ contains
       call getNextToken(text(:iEnd), txt, iStart, iErr)
       if (iErr == TOKEN_OK) then
         if (find(speciesNames, txt) > 0) then
-          call detailedError(node, "Species name '"//txt//"' is not unique, check species'//&
+          call dftbp_error(node, "Species name '"//txt//"' is not unique, check species'//&
               &//' names in second line")
         end if
         call append(speciesNames, txt)
@@ -270,7 +273,7 @@ contains
     end do
     geo%nSpecies = len(speciesNames)
     if (geo%nSpecies == 0) then
-      call detailedError(node, "No species are given in second line of geometry.")
+      call dftbp_error(node, "No species are given in second line of geometry.")
     end if
     allocate(geo%speciesNames(geo%nSpecies))
     call asArray(speciesNames, geo%speciesNames)
@@ -292,12 +295,12 @@ contains
       call checkError(node, iErr, "Bad coordinates for atom "//trim(errorStr))
       geo%coords(:, ii) = coords(:)
       if (iStart < iEnd .and. len_trim(text(iStart:iEnd - 1)) > 0) then
-        call detailedError(node, "Found trailing characters for atom "//trim(errorStr))
+        call dftbp_error(node, "Found trailing characters for atom "//trim(errorStr))
       end if
       iStart = iEnd + 1
     end do
     if (geo%nSpecies /= maxval(geo%species) .or. minval(geo%species) /= 1) then
-      call detailedError(node, &
+      call dftbp_error(node, &
           &"Nr. of species and nr. of specified elements do not match.")
     end if
 
@@ -339,7 +342,7 @@ contains
 
     ! Check if any data remains in the geometry - should be nothing left now
     if (iStart <= len(text) .and. len_trim(text(iStart:)) > 0) then
-      call detailedError(node, "Superfluous data found. Check if specified number of atoms matches&
+      call dftbp_error(node, "Superfluous data found. Check if specified number of atoms matches&
           & the number of actually entered positions.")
     end if
 
@@ -459,11 +462,11 @@ contains
     call destruct(speciesNames)
 
     if (geo%nSpecies /= maxval(geo%species) .or. minval(geo%species) /= 1) then
-      call detailedError(node, "Nr. of species and nr. of specified elements do not match.")
+      call dftbp_error(node, "Nr. of species and nr. of specified elements do not match.")
     end if
 
     if (iStart <= len(text) .and. len_trim(text(iStart:)) > 0) then
-      call detailedError(node, "Superfluous data found. Check if specified number of atoms matches&
+      call dftbp_error(node, "Superfluous data found. Check if specified number of atoms matches&
           & the number of actually entered positions.")
     end if
 
@@ -556,7 +559,7 @@ contains
     end if
 
     if (rScale <= 0.0_dp) then
-      call detailedError(node, "Scaling factor for VASP geometry must be positive and non-zero")
+      call dftbp_error(node, "Scaling factor for VASP geometry must be positive and non-zero")
     end if
 
     ! we expect the lattice information now
@@ -612,7 +615,7 @@ contains
 
     geo%nSpecies = len(speciesNames)
     if (geo%nSpecies == 0) then
-      call detailedError(node, "Number of species in the VASP geometry equals zero.")
+      call dftbp_error(node, "Number of species in the VASP geometry equals zero.")
     end if
     allocate(geo%speciesNames(geo%nSpecies))
     call asArray(speciesNames, geo%speciesNames)
@@ -645,7 +648,7 @@ contains
     else if (scan(txt, "dD") == 1) then
       geo%tFracCoord = .true.
     else
-      call detailedError(node, "Unknown coordinate format '"// txt // "'")
+      call dftbp_error(node, "Unknown coordinate format '"// txt // "'")
     end if
     iStart = iEnd + 1
 
@@ -688,12 +691,12 @@ contains
 
     call getChildValue(node, "CommandFile", text1)
     if (.not. allocated(text1) .or. len_trim(text1) == 0) then
-      call detailedError(node, "Missing CommandFile for LammpsFormat")
+      call dftbp_error(node, "Missing CommandFile for LammpsFormat")
     end if
 
     call getChildValue(node, "DataFile", text2)
     if (.not. allocated(text2) .or. len_trim(text2) == 0) then
-      call detailedError(node, "Missing DataFile for LammpsFormat")
+      call dftbp_error(node, "Missing DataFile for LammpsFormat")
     end if
 
     call readTGeometryLammps_help(node, geo, text1, text2)
@@ -753,7 +756,7 @@ contains
         call getNextToken(commandInput, text, iStart, iErr)
         call checkError(node, iErr, "Error reading pair_style in command file")
         if (text /= "dftbplus") then
-          call detailedError(node, "pair_style must be dftbplus")
+          call dftbp_error(node, "pair_style must be dftbplus")
         end if
         call jumpToEndOfLine(commandInput, iStart)
       case("atom_style") ! default is atomic
@@ -777,7 +780,7 @@ contains
         case("wavepacket")
           skipItemsForCoords = 6
         case("body", "mesont", "peri", "smd", "sphere", "bpm/sphere")
-          call detailedError(node, "Unsupported atom_style " // text)
+          call dftbp_error(node, "Unsupported atom_style " // text)
         end select
         call jumpToEndOfLine(commandInput, iStart)
       case("boundary") ! default is p p p
@@ -785,7 +788,7 @@ contains
           call getNextToken(commandInput, text, iStart, iErr)
           call checkError(node, iErr, "Error reading boundary in command file")
           if (text /= "p") then
-            call detailedError(node, "Only periodic boundary conditions supported")
+            call dftbp_error(node, "Only periodic boundary conditions supported")
           end if
         end do
         call jumpToEndOfLine(commandInput, iStart)
@@ -809,7 +812,7 @@ contains
           toAngstrom = 10.0_dp ! from nanometers
           toAtomicMassUnit = 1.0e-18_dp * avogadConst ! from attograms
         case("lj")
-          call detailedError(node, "Unit system lj is not supported")
+          call dftbp_error(node, "Unit system lj is not supported")
         case default
           toAngstrom = 1.0_dp
           toAtomicMassUnit = 1.0_dp
@@ -850,7 +853,7 @@ contains
       select case(command)
       case("atoms")
         if (.not. readIntValue) then
-          call detailedError(node, "Invalid number of atoms")
+          call dftbp_error(node, "Invalid number of atoms")
         end if
         geo%nAtom = intValue
         call jumpToEndOfLine(dataInput, iStart)
@@ -858,7 +861,7 @@ contains
         call getNextToken(dataInput, text, iStart, iErr)
         if (iErr == TOKEN_OK .and. text == "types") then
           if (.not. readIntValue) then
-            call detailedError(node, "Invalid number of species")
+            call dftbp_error(node, "Invalid number of species")
           end if
           geo%nSpecies = intValue
           call jumpToEndOfLine(dataInput, iStart)
@@ -867,7 +870,7 @@ contains
         call getNextToken(dataInput, text, iStart, iErr)
         if (iErr == TOKEN_OK .and. text == "xhi") then
           if (.not. readRealValue(1) .or. .not. readRealValue(2)) then
-            call detailedError(node, "Invalid values for xlo and/or xhi")
+            call dftbp_error(node, "Invalid values for xlo and/or xhi")
           end if
           geo%origin(1) = realValue(1)
           geo%latVecs(1,1) = realValue(2) - realValue(1)
@@ -877,7 +880,7 @@ contains
         call getNextToken(dataInput, text, iStart, iErr)
         if (iErr == TOKEN_OK .and. text == "yhi") then
           if (.not. readRealValue(1) .or. .not. readRealValue(2)) then
-            call detailedError(node, "Invalid values for ylo and/or yhi")
+            call dftbp_error(node, "Invalid values for ylo and/or yhi")
           end if
           geo%origin(2) = realValue(1)
           geo%latVecs(2,2) = realValue(2) - realValue(1)
@@ -887,7 +890,7 @@ contains
         call getNextToken(dataInput, text, iStart, iErr)
         if (iErr == TOKEN_OK .and. text == "zhi") then
           if (.not. readRealValue(1) .or. .not. readRealValue(2)) then
-            call detailedError(node, "Invalid values for zlo and/or zhi")
+            call dftbp_error(node, "Invalid values for zlo and/or zhi")
           end if
           geo%origin(3) = realValue(1)
           geo%latVecs(3,3) = realValue(2) - realValue(1)
@@ -899,7 +902,7 @@ contains
           call getNextToken(dataInput, text, iStart, iErr)
           if (iErr == TOKEN_OK .and. text == "yz") then
             if (any(.not. readRealValue)) then
-              call detailedError(node, "Invalid values for xy/xz/yz")
+              call dftbp_error(node, "Invalid values for xy/xz/yz")
             end if
             geo%latVecs(1,2) = realValue(1) ! xy
             geo%latVecs(1,3) = realValue(2) ! xz
@@ -908,7 +911,7 @@ contains
         end if
       case("Masses")
         if (geo%nSpecies == 0) then
-          call detailedError(node, "Missing number of species (atom types) in data file header")
+          call dftbp_error(node, "Missing number of species (atom types) in data file header")
         end if
         allocate(geo%speciesNames(geo%nSpecies))
         call jumpToEndOfLine(dataInput, iStart)
@@ -917,7 +920,7 @@ contains
           call getNextToken(dataInput, intValue, iStart, iErr)
           call checkError(node, iErr, "Invalid value for species index")
           if (intValue /= i) then
-            call detailedError(node, "Unexpected species index")
+            call dftbp_error(node, "Unexpected species index")
           end if
           call getNextToken(dataInput, realValue(1), iStart, iErr)
           call checkError(node, iErr, "Invalid value for species mass")
@@ -927,7 +930,7 @@ contains
         haveMasses = .true.
       case("Atoms")
         if (geo%nAtom == 0) then
-          call detailedError(node, "Missing number of atoms in data file header")
+          call dftbp_error(node, "Missing number of atoms in data file header")
         end if
         allocate(geo%species(geo%nAtom))
         allocate(geo%coords(3, geo%nAtom))
@@ -937,7 +940,7 @@ contains
           call getNextToken(dataInput, intValue, iStart, iErr)
           call checkError(node, iErr, "Invalid value for atom index")
           if (intValue /= i) then
-            call detailedError(node, "Unexpected atom index")
+            call dftbp_error(node, "Unexpected atom index")
           end if
           if (skipMoleculeId) then
             call getNextToken(dataInput, text, iStart, iErr)
@@ -946,7 +949,7 @@ contains
           call checkError(node, iErr, "Invalid value for atom species")
           geo%species(i) = intValue
           if (geo%species(i) > geo%nSpecies) then
-            call detailedError(node, "Unexpected species index")
+            call dftbp_error(node, "Unexpected species index")
           end if
           iEnd = nextLine(dataInput, iStart)
           do j = 1, skipItemsForCoords
@@ -965,13 +968,13 @@ contains
     end do
 
     if (.not. haveMasses) then
-      call detailedError(node, "Missing Masses section in data file")
+      call dftbp_error(node, "Missing Masses section in data file")
     end if
     if (.not. haveAtoms) then
-      call detailedError(node, "Missing Atoms section in data file")
+      call dftbp_error(node, "Missing Atoms section in data file")
     end if
     if (toAngstrom == 0.0_dp) then
-      call detailedError(node, "Require explicit units definition in command file")
+      call dftbp_error(node, "Require explicit units definition in command file")
     end if
 
     geo%origin(:) = toAngstrom * geo%origin(:)
@@ -1008,13 +1011,13 @@ contains
     geo%latVecs = geo%latVecs * AA__Bohr
     if (geo%tFracCoord) then
       if (any(abs(geo%coords) > 1.0_dp)) then
-        call detailedWarning(node, "Fractional coordinates with absolute value greater than one.")
+        call dftbp_warning(node, "Fractional coordinates with absolute value greater than one.")
       end if
     end if
     allocate(geo%recVecs2p(3, 3))
     det = determinant33(geo%latVecs)
     if (abs(det) < 1e-12_dp) then
-      call detailedError(node, "Dependent lattice vectors")
+      call dftbp_error(node, "Dependent lattice vectors")
     end if
     call invert33(geo%recVecs2p, geo%latVecs, det)
 

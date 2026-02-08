@@ -15,10 +15,13 @@ module dftbp_dftbplus_parser_driver
   use dftbp_extlibs_plumed, only : withPlumed
   use dftbp_geoopt_geoopt, only : geoOptTypes
   use dftbp_io_charmanip, only : i2c, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, textNodeName, &
-      & detailedError, detailedWarning, getChild, getChildren, getChildValue, &
-      & getSelectedAtomIndices, getNodeName, getNodeHSDName, getNodeName2, &
-      & convertUnitHsd, hsd_rename_child, hasInlineData
+  use hsd, only : hsd_rename_child
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : hsd_child_list, &
+      & getChild, getChildren, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
+      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use dftbp_md_tempprofile, only : identifyTempProfile, tempProfileTypes, TTempProfileInput
   use dftbp_md_thermostats, only : thermostatTypes, TThermostatInput
@@ -106,7 +109,7 @@ contains
       modeName = "geometry optimisation"
 
       if (geom%tHelical) then
-        call detailedError(node, "GeometryOptimisation driver currently does not support helical&
+        call dftbp_error(node, "GeometryOptimisation driver currently does not support helical&
             & geometries")
       end if
 
@@ -124,7 +127,7 @@ contains
     case ("steepestdescent")
 
       modeName = "geometry relaxation"
-      call detailedWarning(node, "This driver is deprecated and will be removed in future&
+      call dftbp_warning(node, "This driver is deprecated and will be removed in future&
           & versions."//new_line('a')//&
           & "Please use the GeometryOptimisation driver instead.")
 
@@ -135,7 +138,7 @@ contains
     case ("conjugategradient")
 
       modeName = "geometry relaxation"
-      call detailedWarning(node, "This driver is deprecated and will be removed in future&
+      call dftbp_warning(node, "This driver is deprecated and will be removed in future&
           & versions."//new_line('a')// "Please use the GeometryOptimisation driver instead.")
 
       ! Conjugate gradient location optimisation
@@ -145,7 +148,7 @@ contains
     case("gdiis")
 
       modeName = "geometry relaxation"
-      call detailedWarning(node, "This driver is deprecated and will be removed in future&
+      call dftbp_warning(node, "This driver is deprecated and will be removed in future&
           & versions."//new_line('a')//&
           & "Please use the GeometryOptimisation driver instead.")
 
@@ -158,7 +161,7 @@ contains
     case ("lbfgs")
 
       modeName = "geometry relaxation"
-      call detailedWarning(node, "This driver is deprecated and will be removed in future&
+      call dftbp_warning(node, "This driver is deprecated and will be removed in future&
           & versions."//new_line('a')//&
           & "Please use the GeometryOptimisation driver instead.")
 
@@ -182,7 +185,7 @@ contains
     case ("fire")
 
       modeName = "geometry relaxation"
-      call detailedWarning(node, "This driver is deprecated and will be removed in future&
+      call dftbp_warning(node, "This driver is deprecated and will be removed in future&
           & versions."//new_line('a')//&
           & "Please use the GeometryOptimisation driver instead.")
 
@@ -210,18 +213,18 @@ contains
       call getChild(node, "MovedAtoms", child, requested=.false.)
       if (associated(child)) then
         if (.not. isContiguousRange(ctrl%indDerivAtom)) then
-          call detailedError(child,&
+          call dftbp_error(child,&
             & "Atoms for calculation of partial Hessian must be a contiguous range.")
         end if
         call getChildValue(child, "", buffer2, child=child2, multiple=.true.)
         call getSelectedAtomIndices(child2, buffer2, geom%speciesNames, geom%species, &
            & ctrl%indMovedAtom)
         if (.not. isContiguousRange(ctrl%indMovedAtom)) then
-          call detailedError(child2, "MovedAtoms for calculation of partial Hessian must be a &
+          call dftbp_error(child2, "MovedAtoms for calculation of partial Hessian must be a &
               & contiguous range.")
         end if
         if (.not. containsAll(ctrl%indDerivAtom, ctrl%indMovedAtom)) then
-          call detailedError(child2, "MovedAtoms has indices not contained in Atoms.")
+          call dftbp_error(child2, "MovedAtoms has indices not contained in Atoms.")
         end if
       else
         ctrl%indMovedAtom = ctrl%indDerivAtom
@@ -273,7 +276,7 @@ contains
 
       call getChildValue(node, "Plumed", ctrl%tPlumed, default=.false., child=child)
       if (ctrl%tPlumed .and. .not. withPlumed) then
-        call detailedError(child, "Metadynamics can not be used since code has been compiled&
+        call dftbp_error(child, "Metadynamics can not be used since code has been compiled&
             & without PLUMED support")
       end if
 
@@ -285,7 +288,7 @@ contains
         call getChild(node, "Barostat", child, requested=.false.)
         if (associated(child)) then
           if (allocated(ctrl%hybridXcInp)) then
-            call detailedError(node, "Barostating not currently implemented for hybrid functionals")
+            call dftbp_error(node, "Barostating not currently implemented for hybrid functionals")
           end if
           if (ctrl%nrMoved /= geom%nAtom) then
             call error("Dynamics for a subset of atoms is not currently&
@@ -353,7 +356,7 @@ contains
         ctrl%socketInput%host = unquote(buffer2)
         call getChildValue(node, "Port", ctrl%socketInput%port, child=field)
         if (ctrl%socketInput%port <= 0) then
-          call detailedError(field, "Invalid port number")
+          call dftbp_error(field, "Invalid port number")
         end if
       end if
 
@@ -370,25 +373,25 @@ contains
         end if
 
       case default
-        call detailedError(child, "Invalid protocol '" // buffer // "'")
+        call dftbp_error(child, "Invalid protocol '" // buffer // "'")
       end select
       call getChildValue(node, "Verbosity", ctrl%socketInput%verbosity, 0)
       call getChildValue(node, "MaxSteps", ctrl%maxRun, 200)
 
     #:else
-      call detailedError(node, "Program had been compiled without socket support")
+      call dftbp_error(node, "Program had been compiled without socket support")
     #:endif
 
     case default
 
       call getNodeHSDName(node, buffer)
-      call detailedError(parent, "Invalid driver '" // buffer // "'")
+      call dftbp_error(parent, "Invalid driver '" // buffer // "'")
 
     end select driver
 
   #:if WITH_TRANSPORT
     if (ctrl%solver%isolver == electronicSolverTypes%OnlyTransport .and. trim(modeName) /= "") then
-      call detailederror(node, "transportOnly solver cannot be used with "//trim(modeName))
+      call dftbp_error(node, "transportOnly solver cannot be used with "//trim(modeName))
     end if
   #:endif
 
@@ -466,7 +469,7 @@ contains
     call getChildValue(node, "LatticeOpt", ctrl%tLatOpt, .false.)
     if (ctrl%tLatOpt) then
       if (allocated(ctrl%hybridXcInp)) then
-        call detailedError(node, "Lattice optimisation not currently implemented for hybrid&
+        call dftbp_error(node, "Lattice optimisation not currently implemented for hybrid&
             & functionals")
       end if
       call getChildValue(node, "Pressure", ctrl%pressure, 0.0_dp, modifier=modifier, child=child)
@@ -533,7 +536,7 @@ contains
       return
     end if
     if (associated(pXlbomd) .and. associated(pXlbomdFast)) then
-      call detailedError(pXlbomdFast, "Blocks 'Xlbomd' and 'XlbomdFast' are&
+      call dftbp_error(pXlbomdFast, "Blocks 'Xlbomd' and 'XlbomdFast' are&
           & mutually exclusive")
     end if
     if (associated(pXlbomdFast)) then
@@ -546,7 +549,7 @@ contains
     allocate(input)
     call getChildValue(pRoot, 'IntegrationSteps', input%nKappa, 5, child=pChild)
     if (all([5, 6, 7] /= input%nKappa)) then
-      call detailedError(pChild, 'Invalid number of integration steps (must be&
+      call dftbp_error(pChild, 'Invalid number of integration steps (must be&
           & 5, 6 or 7)')
     end if
     call getChildValue(pRoot, 'PreSteps', input%nPreSteps, 0)
@@ -563,7 +566,7 @@ contains
       input%sccTol = 1e-5_dp
       call getChildValue(pRoot, 'Scale', input%scale, 1.0_dp, child=pChild)
       if (input%scale <= 0.0_dp .or. input%scale > 1.0_dp) then
-        call detailedError(pChild, 'Scaling value must be in the interval&
+        call dftbp_error(pChild, 'Scaling value must be in the interval&
             & (0.0, 1.0]')
       end if
 
@@ -572,7 +575,7 @@ contains
       call getChildValue(pRoot, 'MinSccIterations', input%minSCCIter, 1)
       call getChildValue(pRoot, 'MaxSccIterations', input%maxSCCIter, 200)
       if (input%maxSCCIter <= 0) then
-        call detailedError(pRoot,"MaxSccIterations must be >= 1");
+        call dftbp_error(pRoot,"MaxSccIterations must be >= 1");
       end if
       call getChildValue(pRoot, 'SccTolerance', input%sccTol, 1e-5_dp)
       input%scale = 1.0_dp
@@ -611,7 +614,7 @@ contains
       allocate(ctrl%conVec(3, ctrl%nrConstr))
       call asVector(intBuffer, ctrl%conAtom)
       if (.not.all(ctrl%conAtom<=nAtom)) then
-        call detailedError(node,"Non-existent atom specified in constraint")
+        call dftbp_error(node,"Non-existent atom specified in constraint")
       end if
       call asArray(realBuffer, ctrl%conVec)
       call destruct(intBuffer)
@@ -649,7 +652,7 @@ contains
       call getChildValue(child, "", 3, realBuffer, modifier=modifier)
       nVelocities = len(realBuffer)
       if (nVelocities /= nAtom) then
-        call detailedError(node, "Incorrect number of specified velocities: " &
+        call dftbp_error(node, "Incorrect number of specified velocities: " &
             & // i2c(3*nVelocities) // " supplied, " &
             & // i2c(3*nAtom) // " required.")
       end if
@@ -681,7 +684,7 @@ contains
 
     call getChildValue(node, "", temp, modifier=modifier)
     call convertUnitHsd(modifier, energyUnits, node, temp)
-    if (temp < 0.0_dp) call detailedError(node, "Negative temperature.")
+    if (temp < 0.0_dp) call dftbp_error(node, "Negative temperature.")
     temp = max(minTemp, temp)
     tempProfInp%tempInts = [huge(1)]
     tempProfInp%tempValues = [temp]
@@ -714,7 +717,7 @@ contains
     call init(lr1)
     call getChildValue(node, "", ls, 1, li1, 1, lr1)
     if (len(ls) < 1) then
-      call detailedError(node, "At least one annealing step must be specified.")
+      call dftbp_error(node, "At least one annealing step must be specified.")
     end if
     allocate(tmpC1(len(ls)))
     allocate(tempProfInp%tempInts(len(li1)))
@@ -731,19 +734,19 @@ contains
       if (success) then
         cycle
       end if
-      call detailedError(node, "Invalid annealing method name '" // trim(tmpC1(ii)) // "'.")
+      call dftbp_error(node, "Invalid annealing method name '" // trim(tmpC1(ii)) // "'.")
     end do
 
     if (any(tempProfInp%tempInts < 0)) then
-      call detailedError(node, "Step values must not be negative.")
+      call dftbp_error(node, "Step values must not be negative.")
     end if
 
     if (sum(tempProfInp%tempInts) == 0) then
-      call detailedError(node, "Sum of steps in the profile must be greater than zero.")
+      call dftbp_error(node, "Sum of steps in the profile must be greater than zero.")
     end if
 
     if (any(tempProfInp%tempValues < 0.0_dp)) then
-      call detailedError(node, "Negative temperature.")
+      call dftbp_error(node, "Negative temperature.")
     end if
 
     call convertUnitHsd(modifier, energyUnits, node, tempProfInp%tempValues)
@@ -806,14 +809,14 @@ contains
           & .or. (input%tdPprange(1) < defPpRange(1))&
           & .or. (input%tdPpRange(2) > defPpRange(2))
       if (ppRangeInvalid) then
-        call detailederror(child, "Wrong definition of PumpProbeRange, either incorrect order&
+        call dftbp_error(child, "Wrong definition of PumpProbeRange, either incorrect order&
             & or outside of simulation time range")
       end if
     end if
 
     call getChildValue(node, "Probe", input%tProbe, .false.)
     if (input%tPump .and. input%tProbe) then
-      call detailedError(child, "Pump and probe cannot be simultaneously true.")
+      call dftbp_error(child, "Pump and probe cannot be simultaneously true.")
     end if
 
     call getChildValue(node, "EulerFrequency", input%eulerFreq, 0)
@@ -821,7 +824,7 @@ contains
     call getChildValue(node, "VerboseDynamics", input%tVerboseDyn, .true.)
 
     if ((input%eulerFreq < 50) .and. (input%eulerFreq > 0)) then
-      call detailedError(child, "Wrong number of Euler steps, should be above 50")
+      call dftbp_error(child, "Wrong number of Euler steps, should be above 50")
     end if
     if (input%eulerFreq >= 50) then
       input%tEulers = .true.
@@ -852,7 +855,7 @@ contains
       case ("triplet", "Triplet")
         input%spType = tdSpinTypes%triplet
       case default
-        call detailedError(value1, "Unknown spectrum spin type " // buffer2)
+        call dftbp_error(value1, "Unknown spectrum spin type " // buffer2)
       end select
 
       defaultWrite = .false.
@@ -911,7 +914,7 @@ contains
       defaultWrite = .true.
 
     case default
-      call detailedError(child, "Unknown perturbation type " // buffer)
+      call dftbp_error(child, "Unknown perturbation type " // buffer)
     end select
 
     if (tNeedFieldStrength) then
@@ -951,7 +954,7 @@ contains
       call convertUnitHsd(modifier, timeUnits, child, input%Time0)
 
     case default
-      call detailedError(value1, "Unknown envelope shape " // buffer)
+      call dftbp_error(value1, "Unknown envelope shape " // buffer)
     end select
 
     !! Non-adiabatic molecular dynamics
@@ -1001,7 +1004,7 @@ contains
     case ("all", "All", "ALL")
       iX = 4
     case default
-      call detailedError(node, "Wrongly specified polarisation direction " // trim(direction)&
+      call dftbp_error(node, "Wrongly specified polarisation direction " // trim(direction)&
           & // ". Must be x, y, z or all.")
     end select
 
@@ -1036,7 +1039,7 @@ contains
        call getChildValue(child, "", 3, realBuffer, modifier=modifier)
        nVelocities = len(realBuffer)
        if (nVelocities /= nAtom) then
-          call detailedError(node, "Incorrect number of specified velocities: " &
+          call dftbp_error(node, "Incorrect number of specified velocities: " &
                & // i2c(3*nVelocities) // " supplied, " &
                & // i2c(3*nAtom) // " required.")
        end if
@@ -1121,7 +1124,7 @@ contains
         call getChildValue(thermNode, "ChainLength", inp%chainLength, 3)
         call getChildValue(thermNode, "Order", inp%expOrder, 3, child=child2)
         if (.not. any(inp%expOrder == [3, 5])) then
-          call detailedError(child2, "Order of Nose-Hoover thermostat must be either 3 or 5")
+          call dftbp_error(child2, "Order of Nose-Hoover thermostat must be either 3 or 5")
         end if
         call getChildValue(thermNode, "IntegratorSteps", inp%nExpSteps, 1)
         call getChild(thermNode, "Restart",  child=child2, requested=.false.)
@@ -1143,7 +1146,7 @@ contains
         call readTempOrTempProfile_(thermNode, maxRun, tempProfileInp)
         call getChildValue(thermNode, "ReselectProbability", inp%rescaleProb, child=child2)
         if (inp%rescaleProb <= 0.0_dp .or. inp%rescaleProb > 1.0_dp) then
-          call detailedError(child2, "ReselectProbability must be in the range (0,1]!")
+          call dftbp_error(child2, "ReselectProbability must be in the range (0,1]!")
         end if
         call getChildValue(thermNode, "ReselectIndividually", inp%rescaleIndiv)
       end associate
@@ -1164,7 +1167,7 @@ contains
 
     case default
       call getNodeHSDName(thermNode, thermName)
-      call detailedError(child, "Invalid thermostat '" // thermName // "'")
+      call dftbp_error(child, "Invalid thermostat '" // thermName // "'")
 
     end select
 
@@ -1188,7 +1191,7 @@ contains
         call readTemperatureProfile(value, modifier, tempProfileInp)
         maxRun = sum(tempProfileInp%tempInts) - 1
       case default
-        call detailedError(value, "Invalid method name.")
+        call dftbp_error(value, "Invalid method name.")
       end select
 
     end subroutine readTempOrTempProfile_

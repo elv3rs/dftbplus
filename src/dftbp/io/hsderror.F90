@@ -11,7 +11,7 @@
 !> information from xmlf90 DOM attributes. This module constructs error messages using hsd_node
 !> metadata (name, line) and delegates to dftbp_io_message for output.
 module dftbp_io_hsderror
-  use dftbp_extlibs_hsddata, only : hsd_node, hsd_table, hsd_value, hsd_error_t
+  use hsd_data, only : hsd_node, hsd_table, hsd_value, hsd_error_t
   use dftbp_io_message, only : error, warning
   implicit none
 

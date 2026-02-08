@@ -13,11 +13,14 @@ module dftbp_dftbplus_oldcompat
   use dftbp_common_accuracy, only : dp, lc
   use dftbp_common_release, only : TVersionMap
   use dftbp_io_charmanip, only : i2c, newline, tolower
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, detailedWarning, getChild, getChildren, &
-      & getChildValue, setChild, setChildValue, getLength, getNodeName, removeChild, &
-      & getDescendant, setNodeName, setUnprocessed, destroyNode, removeChildNodes, &
-      & getItem1, destroyNodeList, renameDescendant, &
-      & hsd_get, hsd_has_child, hsd_remove_child, hsd_get_table, HSD_STAT_OK
+  use hsd_data, only : hsd_table
+  use hsd, only : hsd_get, hsd_has_child, hsd_remove_child, hsd_get_table, HSD_STAT_OK,&
+      & hsd_clear_children
+  use dftbp_io_hsdutils, only : hsd_child_list, getChild, getChildren, &
+      & getChildValue, setChild, setChildValue, getLength, removeChild, &
+      & getDescendant, setNodeName, &
+      & getItem1, destroyNodeList, renameDescendant
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, setUnprocessed
   use dftbp_io_message, only : error
   implicit none
 
@@ -156,11 +159,11 @@ contains
       call getChildValue(ch1, "", tValue)
       call setUnprocessed(ch1)
       if (.not. tValue) then
-        call detailedError(ch1, "Sorry, non-variational energy calculation &
+        call dftbp_error(ch1, "Sorry, non-variational energy calculation &
             &is not supported any more!")
       else
-        call detailedWarning(ch1, "Energy calculation is made only variational, option removed.")
-        call destroyNode(ch1)
+        call dftbp_warning(ch1, "Energy calculation is made only variational, option removed.")
+        ch1 => null()
       end if
     end if
 
@@ -171,7 +174,7 @@ contains
       if (tValue) then
         call setChildValue(par, "OrbitalResolvedSCC", .true., child=ch2)
         call setUnprocessed(ch2)
-        call detailedWarning(ch2, "Calculations are not orbital resolved &
+        call dftbp_warning(ch2, "Calculations are not orbital resolved &
             &per default any more. Keyword 'OrbitalResolvedSCC' added.")
       end if
     end if
@@ -239,10 +242,10 @@ contains
       call getChild(node, "Range", node2, requested=.false.)
       if (associated(node2)) then
         call getChildValue(node2, "", bounds)
-        call removeChildNodes(node)
+        call hsd_clear_children(node)
         call setChildValue(node, "", &
             &i2c(bounds(1)) // ":" // i2c(bounds(2)), replace=.true.)
-        call detailedWarning(node, "Specification 'Range { start end }' &
+        call dftbp_warning(node, "Specification 'Range { start end }' &
             &not supported any more, using 'start:end' instead")
       end if
     end if
@@ -265,9 +268,9 @@ contains
     call getDescendant(root, "Options/MullikenAnalysis", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tVal)
-      call detailedWarning(ch1, "Keyword moved to Analysis block.")
+      call dftbp_warning(ch1, "Keyword moved to Analysis block.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getChildValue(root, "Analysis", dummy, "", child=ch1, list=.true., &
           & allowEmptyValue=.true., dummyValue=.true.)
       if (.not.associated(ch1)) then
@@ -280,9 +283,9 @@ contains
     call getDescendant(root, "Options/AtomResolvedEnergies", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "AtomResolvedEnergies", tVal)
-      call detailedWarning(ch1, "Keyword moved to Analysis block.")
+      call dftbp_warning(ch1, "Keyword moved to Analysis block.")
       dummy => removeChild(par,ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getChildValue(root, "Analysis", dummy, "", child=ch1, list=.true., &
           &allowEmptyValue=.true., dummyValue=.true.)
       if (.not.associated(ch1)) then
@@ -295,9 +298,9 @@ contains
     call getDescendant(root, "Options/WriteEigenvectors", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "WriteEigenvectors", tVal)
-      call detailedWarning(ch1, "Keyword moved to Analysis block.")
+      call dftbp_warning(ch1, "Keyword moved to Analysis block.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getChildValue(root, "Analysis", dummy, "", child=ch1, list=.true., &
           &allowEmptyValue=.true., dummyValue=.true.)
       if (.not.associated(ch1)) then
@@ -310,9 +313,9 @@ contains
     call getDescendant(root, "Options/WriteBandOut", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "WriteBandOut", tVal)
-      call detailedWarning(ch1, "Keyword moved to Analysis block.")
+      call dftbp_warning(ch1, "Keyword moved to Analysis block.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getChildValue(root, "Analysis", dummy, "", child=ch1, list=.true., &
           & allowEmptyValue=.true., dummyValue=.true.)
       if (.not.associated(ch1)) then
@@ -325,9 +328,9 @@ contains
     call getDescendant(root, "Options/CalculateForces", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "CalculateForces", tVal)
-      call detailedWarning(ch1, "Keyword moved to Analysis block.")
+      call dftbp_warning(ch1, "Keyword moved to Analysis block.")
       dummy => removeChild(par,ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getChildValue(root, "Analysis", dummy, "", child=ch1, list=.true., &
           &allowEmptyValue=.true., dummyValue=.true.)
       if (.not.associated(ch1)) then
@@ -342,7 +345,7 @@ contains
       call setChild(ch1, "Differentiation", ch2)
       call setChild(ch2, "FiniteDiff", ch3)
       call setChildValue(ch3, "Delta", 1.0e-2_dp)
-      call detailedWarning(ch2, "Adding legacy step size for finite difference&
+      call dftbp_warning(ch2, "Adding legacy step size for finite difference&
           & differentiation")
     end if
 
@@ -379,23 +382,23 @@ contains
       if (associated(ch2)) then
         call getChildValue(par, "DampXHExponent", rTmp)
       end if
-      call detailedWarning(ch1, "Keyword DampXH moved to HCorrection block")
+      call dftbp_warning(ch1, "Keyword DampXH moved to HCorrection block")
       dummy => removeChild(par,ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       dummy => removeChild(par,ch2)
-      call destroyNode(ch2)
+      ch2 => null()
 
       ! clean out any HCorrection entry
       call getDescendant(root, "Hamiltonian/DFTB/HCorrection", ch2, parent=par)
       if (associated(ch2)) then
-        call detailedError(ch2, "HCorrection already present.")
+        call dftbp_error(ch2, "HCorrection already present.")
       end if
 
       call getDescendant(root, "Hamiltonian/DFTB", ch2, parent=par)
       call setChild(ch2, "HCorrection", ch3)
       call setChild(ch3, "Damping", ch4)
       call setChildValue(ch4, "Exponent", rTmp)
-      call detailedWarning(ch3, "Adding Damping to HCorrection")
+      call dftbp_warning(ch3, "Adding Damping to HCorrection")
     end if
 
   end subroutine convert_5_6
@@ -455,10 +458,10 @@ contains
     if (associated(ch1) .and. hsd_has_child(ch1, "WriteXMLInput", .true.)) then
       call hsd_get(ch1, "WriteXMLInput", tVal, stat=stat)
       if (stat == HSD_STAT_OK .and. tVal) then
-        call detailedWarning(ch1, "Sorry, XML export of the dftb_in.hsd is not supported any more&
+        call dftbp_warning(ch1, "Sorry, XML export of the dftb_in.hsd is not supported any more&
             & so is removed")
       else
-        call detailedWarning(ch1, "XML export option is removed.")
+        call dftbp_warning(ch1, "XML export option is removed.")
       end if
       call hsd_remove_child(ch1, "WriteXMLInput", stat, case_insensitive=.true.)
     end if
@@ -492,14 +495,14 @@ contains
       if (tVal1 .and. .not.tVal2) then
         call getDescendant(root, "Hamiltonian/DFTB/Filling", ch1)
         if (associated(ch1)) then
-          call detailedWarning(ch1, "Restarted electronDynamics does not require Filling{}&
+          call dftbp_warning(ch1, "Restarted electronDynamics does not require Filling{}&
               & settings unless projected onto ground state")
-          call destroyNode(ch1)
+          ch1 => null()
         end if
         call getDescendant(root, "Analysis", ch1)
         if (associated(ch1)) then
-          call detailedWarning(ch1, "Restarted electronDynamics does not use the Analysis{} block")
-          call destroyNode(ch1)
+          call dftbp_warning(ch1, "Restarted electronDynamics does not use the Analysis{} block")
+          ch1 => null()
         end if
       end if
     end if
@@ -508,10 +511,10 @@ contains
     if (associated(ch1)) then
       call setChildValue(ch1, "LineSearch", .true., child=ch2)
       call setUnprocessed(ch2)
-      call detailedWarning(ch2, "Set 'LineSearch = Yes'")
+      call dftbp_warning(ch2, "Set 'LineSearch = Yes'")
       call setChildValue(ch1, "oldLineSearch", .true., child=ch2)
       call setUnprocessed(ch2)
-      call detailedWarning(ch2, "Set 'oldLineSearch = Yes'")
+      call dftbp_warning(ch2, "Set 'oldLineSearch = Yes'")
     end if
 
   end subroutine convert_8_9
@@ -532,7 +535,7 @@ contains
       dummy => removeChild(ch1, ch2)
       call getChildValue(ch1, "TestArnoldi", tVal2, default=.false., child=ch2)
       dummy => removeChild(ch1, ch2)
-      call detailedWarning(ch1, "Keyword moved to Diagonaliser block.")
+      call dftbp_warning(ch1, "Keyword moved to Diagonaliser block.")
       call setUnprocessed(ch1)
       call setChild(ch1, "Diagonaliser", ch2)
       call setUnprocessed(ch2)
@@ -549,9 +552,9 @@ contains
     call getDescendant(root, "Hamiltonian/Dispersion/Ts/ConvergentSCCOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentSCCOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       call setUnprocessed(ch2)
@@ -560,12 +563,12 @@ contains
     call getDescendant(root, "Hamiltonian/Dispersion/Mbd/ConvergentSCCOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentSCCOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -575,12 +578,12 @@ contains
     call getDescendant(root, "Driver/ConjugateGradient/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -590,12 +593,12 @@ contains
     call getDescendant(root, "Driver/VelocityVerlet/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -605,12 +608,12 @@ contains
     call getDescendant(root, "Driver/SteepestDescent/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -620,12 +623,12 @@ contains
     call getDescendant(root, "Driver/gDiis/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -635,12 +638,12 @@ contains
     call getDescendant(root, "Driver/LBfgs/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -650,12 +653,12 @@ contains
     call getDescendant(root, "Driver/Fire/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -665,12 +668,12 @@ contains
     call getDescendant(root, "Driver/SecondDerivatives/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -680,12 +683,12 @@ contains
     call getDescendant(root, "Driver/Socket/ConvergentForcesOnly", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(par, "ConvergentForcesOnly", tVal1)
-      call detailedWarning(ch1, "Keyword Moved to Hamiltonian {}.")
+      call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
-        call detailedError(ch3, "ConvergentSCCOnly already present.")
+        call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
@@ -705,19 +708,19 @@ contains
 
     call getDescendant(root, "Hamiltonian/DFTB/Solvation/GeneralizedBorn", ch1)
     if (associated(ch1)) then
-      call detailedWarning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
+      call dftbp_warning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
       call setChildValue(ch1, "RescaleSolvatedFields", .false., child=ch2, replace=.true.)
     end if
 
     call getDescendant(root, "Hamiltonian/DFTB/Solvation/Cosmo", ch1)
     if (associated(ch1)) then
-      call detailedWarning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
+      call dftbp_warning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
       call setChildValue(ch1, "RescaleSolvatedFields", .false., child=ch2, replace=.true.)
     end if
 
     call getDescendant(root, "Hamiltonian/DFTB/Solvation/Sasa", ch1)
     if (associated(ch1)) then
-      call detailedWarning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
+      call dftbp_warning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
       call setChildValue(ch1, "RescaleSolvatedFields", .false., child=ch2, replace=.true.)
     end if
 
@@ -742,8 +745,8 @@ contains
         call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1)
         if (associated(ch1)) then
           call setUnprocessed(ch1)
-          call detailedWarning(ch1, "Device region charge cannot be set if contacts are present.")
-          call destroyNode(ch1)
+          call dftbp_warning(ch1, "Device region charge cannot be set if contacts are present.")
+          ch1 => null()
         end if
       #:endfor
       end if
@@ -837,25 +840,25 @@ contains
         if (iOrder > 1) then
           write(strtmp,"(A,I0,A,I0,A)")"Older Methfessel-Paxton requested order of ", iOrder,&
               & " is now equivalent to ", (iOrder -1), " from parser version 14."
-          call detailedWarning(ch2, strTmp)
+          call dftbp_warning(ch2, strTmp)
         elseif (iOrder == 1) then
           write(strtmp,"(A)")"Older Methfessel-Paxton requested order of 1 is now&
               & equivalent to Gaussian smearing (order 0) from parser version 14." // newline //&
               & "   Please test your calculation carefully, due to a (corrected) error for array&
               & bounds in this case. "
-          call detailedWarning(ch2, strTmp)
+          call dftbp_warning(ch2, strTmp)
         else
           write(strtmp,"(A,I0,A,I0,A)")"Older Methfessel-Paxton requested order of ", iOrder,&
               & " is now equivalent to a negative order of ", (iOrder -1), " from parser version 14&
               & and is incorrect."
-          call detailedError(ch2, strTmp)
+          call dftbp_error(ch2, strTmp)
         end if
         dummy => removeChild(par, ch2)
-        call destroyNode(ch2)
+        ch2 => null()
         iOrder = iOrder - 1
         call setChildValue(ch1, "Order", iOrder, child=ch2)
       else
-        call detailedWarning(ch1, "The default (i.e. unspecified) Methfessel-Paxton order in old&
+        call dftbp_warning(ch1, "The default (i.e. unspecified) Methfessel-Paxton order in old&
             & code versions was equivalent to Order=1." // newline //&
             & "   This order is now the current default order from parser version 14.")
       end if
@@ -877,12 +880,12 @@ contains
     if (associated(ch1)) then
       call getChildValue(par, "PertubDegenTol", rTol)
       if (rTol < 1.0_dp) then
-        call detailedError(ch1, "Perturbation degeneracy tolerance must be above 1x")
+        call dftbp_error(ch1, "Perturbation degeneracy tolerance must be above 1x")
       end if
       dummy => removeChild(par,ch1)
-      call destroyNode(ch1)
+      ch1 => null()
       call setChildValue(par, "PerturbDegenTol", rTol * epsilon(0.0_dp), child=ch1)
-      call detailedWarning(par, "Keyword renamed to 'PerturbDegenTol'.")
+      call dftbp_warning(par, "Keyword renamed to 'PerturbDegenTol'.")
     end if
 
   end subroutine convert_13_14
@@ -936,7 +939,7 @@ contains
     call getChild(root, option, pChild, requested=.false.)
     if (.not. associated(pChild)) then
       call setChildValue(root, option, default, child=pChild)
-      call detailedWarning(pChild, "Using DFTB3 optimised default value for parameter " // option)
+      call dftbp_warning(pChild, "Using DFTB3 optimised default value for parameter " // option)
     end if
     call setUnprocessed(pChild)
 

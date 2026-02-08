@@ -10,7 +10,8 @@
 !> DFTB+ library
 module dftbplus
   use dftbp_capi  ! does not export anything but needed for bind(C) routines
-  use dftbp_hsdapi, only : dumpHsd, hsd_table, setChild, setChildValue
+  use dftbp_hsdapi, only : dumpHsd, hsd_dump, hsd_table
+  use dftbp_io_hsdutils, only : setChild, setChildValue
   use dftbp_mmapi, only : convertAtomTypesToSpecies, getDftbPlusApi, getDftbPlusBuild,&
       & getMaxAngFromSlakoFile, TDftbPlus, TDftbPlus_destruct, TDftbPlus_init, TDftbPlusAtomList,&
       & TDftbPlusInput, TDftbPlusInput_destruct, TQDepExtPotGen

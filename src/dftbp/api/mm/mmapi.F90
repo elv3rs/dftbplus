@@ -28,8 +28,9 @@ module dftbp_mmapi
   use dftbp_dftbplus_qdepextpotgen, only : TQDepExtPotGen, TQDepExtPotGenWrapper
   use dftbp_dftbplus_qdepextpotproxy, only : TQDepExtPotProxy, TQDepExtPotProxy_init
   use dftbp_io_charmanip, only : newline
-  use dftbp_io_hsdcompat, only : hsd_table, new_table, destroyNode, getChild
+  use dftbp_io_hsdutils, only : getChild
   use dftbp_io_message, only : error
+  use hsd_data, only : hsd_table, new_table
   use dftbp_type_linkedlist, only : append, asArray, get, init, len, TListString
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -240,7 +241,6 @@ contains
     type(TDftbPlusInput), intent(inout) :: this
 
     if (associated(this%hsdTree)) then
-      call destroyNode(this%hsdTree)
       this%hsdTree => null()
     end if
 

@@ -16,8 +16,11 @@ module dftbp_dftbplus_parser_excited
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_arpack, only : withArpack
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, &
-      & getNodeName, convertUnitHsd, hsd_rename_child, setChildValue
+  use hsd, only : hsd_rename_child
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_timedep_linresptypes, only : linRespSolverTypes
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -65,7 +68,7 @@ contains
         case ("Both" , "both")
           ctrl%lrespini%sym = 'B'
         case default
-          call detailedError(child2, "Invalid symmetry value '"  // buffer // &
+          call dftbp_error(child2, "Invalid symmetry value '"  // buffer // &
               & "' (must be 'Singlet', 'Triplet' or 'Both').")
         end select
       end if
@@ -80,16 +83,16 @@ contains
         call getChildValue(child2, "", buffer)
         if (tolower(unquote(buffer)) == "brightest") then
           if (ctrl%lrespini%sym /= "S" .or. ctrl%tSpin) then
-            call detailedError(child2, "Brightest mode only allowed for spin unpolarised singlet&
+            call dftbp_error(child2, "Brightest mode only allowed for spin unpolarised singlet&
                 & excitations.")
           end if
           ctrl%lrespini%nstat = -1
         else
           call getChildValue(child2, "", ctrl%lrespini%nstat)
           if (ctrl%lrespini%nstat > ctrl%lrespini%nexc) then
-            call detailedError(child2, "Invalid value, must be within range of NrOfExcitations")
+            call dftbp_error(child2, "Invalid value, must be within range of NrOfExcitations")
           elseif (ctrl%lrespini%sym == "B" .and. ctrl%lrespini%nstat /= 0) then
-            call detailedError(child2, "You cannot specify a particular excited state if symmetry&
+            call dftbp_error(child2, "You cannot specify a particular excited state if symmetry&
                 & is 'B'")
           end if
         end if
@@ -132,7 +135,7 @@ contains
         select case(buffer)
         case ("arpack")
           if (.not. withArpack) then
-            call detailedError(child2, 'This DFTB+ binary has been compiled without support for&
+            call dftbp_error(child2, 'This DFTB+ binary has been compiled without support for&
                 & linear response calculations using the ARPACK/ngARPACK library.')
           end if
           call getChildValue(child2, "WriteStatusArnoldi", ctrl%lrespini%tArnoldi, default=.false.)
@@ -142,10 +145,10 @@ contains
           ctrl%lrespini%iLinRespSolver = linRespSolverTypes%Stratmann
           call getChildValue(child2, "SubSpaceFactor", ctrl%lrespini%subSpaceFactorStratmann, 20)
         case default
-          call detailedError(child2, "Invalid diagonaliser method '" // buffer // "'")
+          call dftbp_error(child2, "Invalid diagonaliser method '" // buffer // "'")
         end select
       else
-        call detailedError(child, "Missing diagonaliser method")
+        call dftbp_error(child, "Missing diagonaliser method")
       end if
 
       call hsd_rename_child(child, "OptimizerCI", "OptimiserCI")
@@ -160,9 +163,9 @@ contains
               & modifier=modifier, default=0.0_dp)
           call convertUnitHsd(modifier, energyUnits, child, ctrl%lrespini%energyShiftCI)
         case ("")
-          call detailedError(child2, "Missing choice of CI optimiser.")
+          call dftbp_error(child2, "Missing choice of CI optimiser.")
         case default
-          call detailedError(child2, "Invalid CI optimiser method '" // buffer // "'")
+          call dftbp_error(child2, "Invalid CI optimiser method '" // buffer // "'")
         end select
       else
         ctrl%lrespini%isCIopt = .false.
@@ -193,7 +196,7 @@ contains
         case ("Both" , "both")
           ctrl%pprpa%sym = 'B'
         case default
-          call detailedError(child2, "Invalid symmetry value '"  // buffer // &
+          call dftbp_error(child2, "Invalid symmetry value '"  // buffer // &
               & "' (must be 'Singlet', 'Triplet' or 'Both').")
         end select
       end if

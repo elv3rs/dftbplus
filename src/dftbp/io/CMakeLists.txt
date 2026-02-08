@@ -5,7 +5,8 @@ set(sources-fpp
   ${curdir}/commonformats.F90
   ${curdir}/formatout.F90
   ${curdir}/hsderror.F90
-  ${curdir}/hsdcompat.F90
+  ${curdir}/hsdutils.F90
+  ${curdir}/unitconv.F90
   ${curdir}/indexselection.F90
   ${curdir}/intrinsicpr.F90
   ${curdir}/linereader.F90

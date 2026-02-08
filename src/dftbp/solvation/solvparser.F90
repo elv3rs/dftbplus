@@ -20,8 +20,12 @@ module dftbp_solvation_solvparser
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_lebedev, only : gridSize
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, detailedError, detailedWarning, getChild, getChildValue, &
-      & setChild, getNodeName, textNodeName, setChildValue, convertUnitHsd, hsd_rename_child
+  use hsd, only : hsd_rename_child
+  use dftbp_io_hsdutils, only : getChild, getChildValue, setChild,&
+      & setChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, textNodeName
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd_data, only : hsd_table
   use dftbp_math_bisect, only : bisection
   use dftbp_solvation_born, only : fgbKernel, TGBInput
   use dftbp_solvation_cm5, only : TCM5Input
@@ -67,7 +71,7 @@ contains
 
     select case (buffer)
     case default
-      call detailedError(node, "Invalid solvation model name.")
+      call dftbp_error(node, "Invalid solvation model name.")
     case ("generalisedborn")
       allocate(input%GBInp)
       call readSolvGB(solvModel, geo, input%GBInp)
@@ -104,7 +108,7 @@ contains
     character(len=:), allocatable :: paramFile, paramTmp
 
     if (geo%tPeriodic .or. geo%tHelical) then
-      call detailedError(node, "Generalised Born model currently not available with the selected&
+      call dftbp_error(node, "Generalised Born model currently not available with the selected&
           & boundary conditions")
     end if
 
@@ -135,7 +139,7 @@ contains
     call getChildValue(node, "Kernel", buffer, "Still", child=child)
     select case(tolower(unquote(buffer)))
     case default
-      call detailedError(child, "Unknown interaction kernel: "//buffer)
+      call dftbp_error(child, "Unknown interaction kernel: "//buffer)
     case("still")
       input%kernel = fgbKernel%still
     case("p16")
@@ -187,11 +191,11 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//&
+      call dftbp_error(child, "Unknown method '"//buffer//&
           & "' to generate descreening parameters")
     case("defaults")
       if (.not.allocated(defaults)) then
-        call detailedError(child, "No defaults available for descreening parameters")
+        call dftbp_error(child, "No defaults available for descreening parameters")
       end if
       call readSpeciesList(value1, geo%speciesNames, input%descreening,&
           & default=defaults%descreening)
@@ -234,15 +238,15 @@ contains
         call getNodeName(value1, buffer)
         select case(buffer)
         case default
-          call detailedError(child, "Unknown method '"//buffer//&
+          call dftbp_error(child, "Unknown method '"//buffer//&
               & "' to generate H-bond parameters")
         case("defaults")
           if (allocated(defaults)) then
             if (.not.allocated(defaults%hBondPar)) then
-              call detailedError(child, "No defaults available for hydrogen bond strengths")
+              call dftbp_error(child, "No defaults available for hydrogen bond strengths")
             end if
           else
-            call detailedError(child, "No defaults available for hydrogen bond strengths")
+            call dftbp_error(child, "No defaults available for hydrogen bond strengths")
           end if
           call readSpeciesList(value1, geo%speciesNames, input%hBondPar, default=defaults%hBondPar)
         case("values")
@@ -273,7 +277,7 @@ contains
     type(TSolventData) :: solvent
 
     if (geo%tPeriodic .or. geo%tHelical) then
-      call detailedError(node, "COSMO solvation currently not available with the selected boundary&
+      call dftbp_error(node, "COSMO solvation currently not available with the selected boundary&
           & conditions")
     end if
 
@@ -310,7 +314,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' to solve COSMO equation")
+      call dftbp_error(child, "Unknown method '"//buffer//"' to solve COSMO equation")
     case("domaindecomposition")
       call readDomainDecomposition(value1, input%ddInput)
     end select
@@ -365,7 +369,7 @@ contains
     type(hsd_table), pointer :: child, value1, field
 
     if (geo%tPeriodic .or. geo%tHelical) then
-      call detailedError(node, "SASA model currently not available with the selected boundary&
+      call dftbp_error(node, "SASA model currently not available with the selected boundary&
           & conditions")
     end if
 
@@ -392,10 +396,10 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' to generate surface tension")
+      call dftbp_error(child, "Unknown method '"//buffer//"' to generate surface tension")
     case("defaults")
       if (.not.present(surfaceTensionDefault)) then
-        call detailedError(child, "No defaults available for surface tension values")
+        call dftbp_error(child, "No defaults available for surface tension values")
       end if
       call readSpeciesList(value1, geo%speciesNames, input%surfaceTension,&
           & default=surfaceTensionDefault)
@@ -435,7 +439,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' to generate radii")
+      call dftbp_error(child, "Unknown method '"//buffer//"' to generate radii")
     case("atomicradii")
       allocate(atomicRadDefault(geo%nSpecies))
       atomicRadDefault(:) = getAtomicRad(geo%speciesNames)
@@ -446,7 +450,7 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%atomicRad, units=lengthUnits)
     end select
     if (any(input%atomicRad <= 0.0_dp)) then
-      call detailedError(value1, "Atomic radii must be positive for all species")
+      call dftbp_error(value1, "Atomic radii must be positive for all species")
     end if
 
     call getChildValue(node, "Cutoff", input%rCutoff, 30.0_dp, modifier=modifier, child=field)
@@ -472,12 +476,12 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Invalid solvent method '" // buffer // "'")
+      call dftbp_error(child, "Invalid solvent method '" // buffer // "'")
     case('fromname')
       call getChildValue(value1, "", buffer)
       call SolventFromName(solvent, unquote(buffer), found)
       if (.not. found) then
-        call detailedError(value1, "Invalid solvent " // buffer)
+        call dftbp_error(value1, "Invalid solvent " // buffer)
       end if
     case('fromconstants')
       call getChildValue(value1, "Epsilon", buffer)
@@ -527,7 +531,7 @@ contains
     call getChildValue(node, "State", state, "gsolv", child=child)
     select case(tolower(unquote(state)))
     case default
-      call detailedError(child, "Unknown reference state: "//state)
+      call dftbp_error(child, "Unknown reference state: "//state)
     case("gsolv") ! just the bare shift
       freeEnergyShift = shift
     case("reference") ! gsolv=reference option in cosmotherm
@@ -564,7 +568,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' to generate radii")
+      call dftbp_error(child, "Unknown method '"//buffer//"' to generate radii")
     case("vanderwaalsradiid3")
       allocate(vdwRadDefault(geo%nSpecies))
       vdwRadDefault(:) = getVanDerWaalsRadiusD3(geo%speciesNames)
@@ -610,13 +614,13 @@ contains
     angGrid = 0
     call bisection(angGrid, gridSize, gridPoints)
     if (angGrid == 0) then
-      call detailedError(child, "Illegal number of grid points for numerical integration")
+      call dftbp_error(child, "Illegal number of grid points for numerical integration")
     end if
     if (gridSize(angGrid) /= gridPoints) then
       write(errorStr, '(a, *(1x, i0, 1x, a))')&
           & "No angular integration grid with", gridPoints, "points available, using",&
           &  gridSize(angGrid), "points instead"
-      call detailedWarning(child, trim(errorStr))
+      call dftbp_warning(child, trim(errorStr))
     end if
 
   end subroutine readAngularGrid

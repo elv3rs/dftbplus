@@ -10,7 +10,9 @@
 module dftbp_dftbplus_input_fileaccess
   use dftbp_common_file, only : fileAccessValues
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, setChildValue
+  use hsd, only : hsd_table
+  use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
+  use dftbp_io_hsdutils, only : dftbp_error
   use dftbp_type_linkedlist, only : asArray, destruct, init, len, TListString
   implicit none
 
@@ -42,7 +44,7 @@ contains
     call init(stringList)
     call getChildValue(child, "", stringList)
     if (len(stringList) < 1 .or. len(stringList) > 2) then
-      call detailedError(child, "BinaryAccessTypes needs one or two arguments")
+      call dftbp_error(child, "BinaryAccessTypes needs one or two arguments")
     end if
     call asArray(stringList, accessTypes(1 : len(stringList)))
     if (len(stringList) == 1) then
@@ -52,7 +54,7 @@ contains
     accessTypes(:) = tolower(unquote(accessTypes))
     do ii = 1, size(accessTypes)
       if (.not. any(accessTypes(ii) == fileAccessValues)) then
-        call detailedError(child, "Invalid file access type '" // trim(accessTypes(ii)) // "'")
+        call dftbp_error(child, "Invalid file access type '" // trim(accessTypes(ii)) // "'")
       end if
     end do
 

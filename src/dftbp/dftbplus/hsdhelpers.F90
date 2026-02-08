@@ -16,8 +16,9 @@ module dftbp_dftbplus_hsdhelpers
   use dftbp_common_globalenv, only : stdOut, tIoProc
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_parser, only : parseHsdTree, readHsdFile, rootTag, TParserFlags
-  use dftbp_io_hsdcompat, only : hsd_table, destroyNode, dumpHsd, getChild, warnUnprocessedNodes
-  use dftbp_io_message, only : error
+  use hsd, only : hsd_table, hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_dump, hsd_error_t
+  use dftbp_io_hsdutils, only : getChild
+  use dftbp_io_message, only : error, warning
   implicit none
 
   private
@@ -58,7 +59,7 @@ contains
     call readHsdFile(inputFile, hsdTree)
     call parseHsdTree(hsdTree, input, parserFlags)
     call doPostParseJobs(hsdTree, parserFlags)
-    call destroyNode(hsdTree)
+    hsdTree => null()
 
   end subroutine parseHsdInput
 
@@ -101,11 +102,24 @@ contains
     call getChild(hsdTree, rootTag, root)
 
     ! Issue warning about unprocessed nodes
-    call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed)
+    if (.not. parserFlags%tIgnoreUnprocessed) then
+      block
+        character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+        integer :: ii
+        call hsd_warn_unprocessed(root, warnings)
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+      end block
+    end if
 
     ! Dump processed tree in HSD format
     if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHsd(hsdTree, hsdProcFileName)
+      block
+        type(hsd_error_t), allocatable :: hsdErr
+        call hsd_dump(hsdTree, hsdProcFileName, hsdErr)
+        if (allocated(hsdErr)) call error("Error writing HSD file '" // hsdProcFileName // "'")
+      end block
       write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
           & // "'"
     end if

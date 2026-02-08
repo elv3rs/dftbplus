@@ -475,6 +475,10 @@ module dftbp_dftbplus_inputdata
     character(len=4) :: detailedOutputFormat = "xml"
 
     logical :: tWriteResultsTag = .false.
+
+    !> Output format for results tag file ("tag", "hsd", "json", "xml")
+    character(len=4) :: resultsOutputFormat = "tag"
+
     logical :: tWriteDetailedOut = .true.
     logical :: tWriteBandDat = .true.
     logical :: oldSKInter = .false.

@@ -14,8 +14,10 @@ module dftbp_dftbplus_parser_reks
   use dftbp_common_globalenv, only : stdOut
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c
-  use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, &
-      & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName, getNodeName2,&
+      & hasInlineData
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_linkedlist, only : asArray, destruct, init, len, TListRealR1, TListString
   use dftbp_type_typegeometry, only : TGeometry
@@ -55,10 +57,10 @@ contains
       call readSSR22(dummy, ctrl, geo)
     case ("ssr44")
       ctrl%reksInp%reksAlg = reksTypes%ssr44
-      call detailedError(node, "SSR(4,4) is not implemented yet.")
+      call dftbp_error(node, "SSR(4,4) is not implemented yet.")
     case default
       call getNodeHSDName(dummy, buffer)
-      call detailedError(node, "Invalid Algorithm '" // buffer // "'")
+      call dftbp_error(node, "Invalid Algorithm '" // buffer // "'")
     end select
 
   end subroutine readReks
@@ -123,7 +125,7 @@ contains
           write(stdOut,'(A)',advance="no") "'" // trim(tmpFunc(ii)) // "' "
         end if
       end do
-      call detailedError(child1, "Invalid Functional")
+      call dftbp_error(child1, "Invalid Functional")
     end if
 
     !> Decide the energy states in SA-REKS
@@ -182,7 +184,7 @@ contains
       ctrl%reksInp%Glevel = 3
     case default
       call getNodeHSDName(value2, buffer2)
-      call detailedError(child2, "Invalid Algorithm '" // buffer2 // "'")
+      call dftbp_error(child2, "Invalid Algorithm '" // buffer2 // "'")
     end select
 
     !> Calculate relaxed density of SSR or SA-REKS state
@@ -229,7 +231,7 @@ contains
       call getChildValue(child, "", 1, realBuffer, modifier=modifier)
       nAtom = len(realBuffer)
       if (nAtom /= nType) then
-        call detailedError(node, "Incorrect number of 'SpinTuning' block: " &
+        call dftbp_error(node, "Incorrect number of 'SpinTuning' block: " &
             & // i2c(nAtom) // " supplied, " &
             & // i2c(nType) // " required.")
       end if

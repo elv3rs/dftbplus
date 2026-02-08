@@ -9,8 +9,9 @@ module dftbp_dftbplus_parser_kpoints
   use dftbp_dftb_periodic, only : getSuperSampling
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower
-  use dftbp_io_hsdcompat, only : hsd_table, textNodeName, detailedError, &
-      & getChild, getChildValue, getNodeName
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
   use dftbp_type_linkedlist, only : asArray, asVector, destruct, get, init, len, &
@@ -179,15 +180,15 @@ contains
     case ("supercellfolding")
       ctrl%poorKSampling = .false.
       if (len(modifier) > 0) then
-        call detailedError(child, "No modifier is allowed, if the SupercellFolding scheme is used.")
+        call dftbp_error(child, "No modifier is allowed, if the SupercellFolding scheme is used.")
       end if
       call getChildValue(value1, "", coeffsAndShifts)
       if (abs(determinant33(coeffsAndShifts(:,1:3))) - 1.0_dp < -1e-06_dp) then
-        call detailedError(value1, "Determinant of the supercell matrix must be greater than 1")
+        call dftbp_error(value1, "Determinant of the supercell matrix must be greater than 1")
       end if
       if (any(abs(modulo(coeffsAndShifts(:,1:3) + 0.5_dp, 1.0_dp) - 0.5_dp)&
           & > 1e-06_dp)) then
-        call detailedError(value1, "The components of the supercell matrix must be integers.")
+        call dftbp_error(value1, "The components of the supercell matrix must be integers.")
       end if
       if (allocated(ctrl%hybridXcInp)) then
         call checkSupercellFoldingMatrix(coeffsAndShifts, errStatus)
@@ -207,7 +208,7 @@ contains
       call init(lr1)
       call getChildValue(value1, "", 1, li1, 3, lr1)
       if (len(li1) < 1) then
-        call detailedError(value1, "At least one line must be specified.")
+        call dftbp_error(value1, "At least one line must be specified.")
       end if
       allocate(tmpI1(len(li1)))
       allocate(kpts(3, 0:len(lr1)))
@@ -217,12 +218,12 @@ contains
       call destruct(li1)
       call destruct(lr1)
       if (any(tmpI1 < 0)) then
-        call detailedError(value1, "Interval steps must be greater equal to &
+        call dftbp_error(value1, "Interval steps must be greater equal to &
             &zero.")
       end if
       ctrl%nKPoint = sum(tmpI1)
       if (ctrl%nKPoint < 1) then
-        call detailedError(value1, "Sum of the interval steps must be greater &
+        call dftbp_error(value1, "Sum of the interval steps must be greater &
             &than zero.")
       end if
       ii = 1
@@ -250,7 +251,7 @@ contains
           ctrl%kPoint(:,:) =  matmul(transpose(geo%latVecs), ctrl%kPoint)
           kpts(:,:) = matmul(transpose(geo%latVecs), kpts)
         case default
-          call detailedError(child, "Invalid modifier: '" // modifier &
+          call dftbp_error(child, "Invalid modifier: '" // modifier &
               &// "'")
         end select
       end if
@@ -265,7 +266,7 @@ contains
       call init(lr1)
       call getChildValue(child, "", 4, lr1, modifier=modifier)
       if (len(lr1) < 1) then
-        call detailedError(child, "At least one k-point must be defined.")
+        call dftbp_error(child, "At least one k-point must be defined.")
       end if
       ctrl%nKPoint = len(lr1)
       allocate(kpts(4, ctrl%nKPoint))
@@ -278,7 +279,7 @@ contains
         case ("absolute")
           kpts(1:3,:) =  matmul(transpose(geo%latVecs), kpts(1:3,:))
         case default
-          call detailedError(child, "Invalid modifier: '" // modifier &
+          call dftbp_error(child, "Invalid modifier: '" // modifier &
               &// "'")
         end select
       end if
@@ -288,7 +289,7 @@ contains
       ctrl%kWeight(:) = kpts(4, :)
       deallocate(kpts)
     case default
-      call detailedError(value1, "Invalid K-point scheme")
+      call dftbp_error(value1, "Invalid K-point scheme")
     end select
 
     ! Catch problematic k-point sampling in case this is a hybrid calculation
@@ -300,7 +301,7 @@ contains
     if (.not. tGammaOnly) then
       if (allocated(ctrl%hybridXcInp) .and. geo%tPeriodic&
           & .and. (buffer /= "supercellfolding") .and. (.not. ctrl%tReadChrg)) then
-        call detailedError(child, "Error while parsing k-point sampling for a hybrid xc-functional&
+        call dftbp_error(child, "Error while parsing k-point sampling for a hybrid xc-functional&
             & run. Currently only" // NEW_LINE('A') // "   the supercell folding technique (or any&
             & format specifying the Gamma-point only)" // NEW_LINE('A') // "   is supported.")
       end if
@@ -349,11 +350,11 @@ contains
     case ("helicaluniform")
       call getChildValue(value1, "", rTmp3(:2))
       if (abs(modulo(rTmp3(1) + 0.5_dp, 1.0_dp) - 0.5_dp) > 1e-6_dp) then
-        call detailedError(value1, "The k-point grid must be integer values.")
+        call dftbp_error(value1, "The k-point grid must be integer values.")
       end if
       iTmp = nint(rTmp3(1))
       if (iTmp < 1) then
-        call detailedError(node, "Number of grid points must be above 0")
+        call dftbp_error(node, "Number of grid points must be above 0")
       end if
       if (.not.ctrl%tSpinOrbit) then
         ctrl%nKPoint = iTmp * nint(geo%latvecs(3,1))
@@ -376,27 +377,27 @@ contains
       call getChildValue(value1, "", rTmp22)
       iTmp2 = nint(rTmp22(:,1))
       if (any(abs(iTmp2-rTmp22(:,1)) > 1e-6_dp)) then
-        call detailedError(value1, "The k-point grid must be integers.")
+        call dftbp_error(value1, "The k-point grid must be integers.")
       end if
       if (any(iTmp2 < 1)) then
-        call detailedError(node, "Number of grid points must be above 0")
+        call dftbp_error(node, "Number of grid points must be above 0")
       end if
       if (iTmp2(2) > nint(geo%latvecs(3,1))) then
         write(errorStr, '("The k-point grid for the helix rotational operation (",I0,&
             & ") is larger than the rotation order (C_",I0,").")') iTmp2(2), nint(geo%latvecs(3,1))
-        call detailedError(node, errorStr)
+        call dftbp_error(node, errorStr)
       end if
       if (mod(nint(geo%latvecs(3,1)),iTmp2(2)) /= 0) then
         write(errorStr, '("The k-point grid for the helix rotational operation (n_k=",I0,&
             & ") is not a divisor of the rotation order (C_",I0,").")') iTmp2(2),&
             & nint(geo%latvecs(3,1))
-        call detailedError(node, errorStr)
+        call dftbp_error(node, errorStr)
       end if
       if (abs(rTmp22(2,2) * nint(geo%latvecs(3,1)) - nint(rTmp22(2,2) * nint(geo%latvecs(3,1))))&
           & > epsilon(1.0_dp)) then
         write(errorStr, '("The shift of the k-points along the rotation is incommensurate, it must&
             & be an integer multiple of 1/",I0)') nint(geo%latvecs(3,1))
-        call detailedError(node, errorStr)
+        call dftbp_error(node, errorStr)
       end if
       if (.not.ctrl%tSpinOrbit) then
         ctrl%nKPoint = product(iTmp2)
@@ -424,7 +425,7 @@ contains
       call init(lr1)
       call getChildValue(child, "", 3, lr1)
       if (len(lr1) < 1) then
-        call detailedError(child, "At least one k-point must be defined.")
+        call dftbp_error(child, "At least one k-point must be defined.")
       end if
       ctrl%nKPoint = len(lr1)
       allocate(kpts(3, ctrl%nKPoint))
@@ -444,7 +445,7 @@ contains
       deallocate(kpts)
 
     case default
-      call detailedError(value1, "Invalid K-point scheme")
+      call dftbp_error(value1, "Invalid K-point scheme")
     end select
 
   end subroutine getHelicalKSampling

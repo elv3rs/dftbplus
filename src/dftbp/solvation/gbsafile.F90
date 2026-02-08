@@ -13,7 +13,8 @@ module dftbp_solvation_gbsafile
   use dftbp_common_constants, only : AA__Bohr, amu__au, kcal_mol__Hartree, kg__au, symbolToNumber
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
   use dftbp_io_charmanip, only : newline, whiteSpaces
-  use dftbp_io_hsdcompat, only : hsd_table, detailedError, detailedWarning
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_linereader, only : TLineReader
   use dftbp_io_message, only : error, warning
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_OK
@@ -59,7 +60,7 @@ contains
     call openFile(fd, file, mode="r", ioStat=iErr, ioMsg=ioMsg)
     if (iErr /= 0) then
       if (present(node)) then
-        call detailedError(node, "Could not open '"//trim(file)//"': "//trim(ioMsg))
+        call dftbp_error(node, "Could not open '"//trim(file)//"': "//trim(ioMsg))
       else
         call error("Could not open '"//trim(file)//"': "//trim(ioMsg))
       end if
@@ -78,7 +79,7 @@ contains
           & trim(file), lineno, "Could not read real", newline, trim(line), &
           & newline, repeat('-', max(iStart-1, 0)), '^'
         if (present(node)) then
-          call detailedError(node, trim(errorStr))
+          call dftbp_error(node, trim(errorStr))
         else
           call error(trim(errorStr))
         end if
@@ -88,7 +89,7 @@ contains
           & trim(file), lineno, "Trailing content", newline, trim(line), newline, &
           & repeat('-', max(iStart-1, 0)), '^'
         if (present(node)) then
-          call detailedWarning(node, trim(errorStr))
+          call dftbp_warning(node, trim(errorStr))
         else
           call warning(trim(errorStr))
         end if
@@ -105,7 +106,7 @@ contains
           & "Could not read surface tension", newline, trim(line), newline, &
           & repeat('-', max(iStart-1, 0)), '^'
         if (present(node)) then
-          call detailedError(node, trim(errorStr))
+          call dftbp_error(node, trim(errorStr))
         else
           call error(trim(errorStr))
         end if
@@ -117,7 +118,7 @@ contains
           & "Could not read descreening", newline, trim(line), newline, &
           & repeat('-', max(iStart-1, 0)), '^'
         if (present(node)) then
-          call detailedError(node, trim(errorStr))
+          call dftbp_error(node, trim(errorStr))
         else
           call error(trim(errorStr))
         end if
@@ -129,7 +130,7 @@ contains
           & "Could not read hydrogen bond strength", newline, trim(line), newline, &
           & repeat('-', max(iStart-1, 0)), '^'
         if (present(node)) then
-          call detailedError(node, trim(errorStr))
+          call dftbp_error(node, trim(errorStr))
         else
           call error(trim(errorStr))
         end if
@@ -139,7 +140,7 @@ contains
           & trim(file), lineno, "Trailing content", newline, trim(line), newline, &
           & repeat('-', max(iStart-1, 0)), '^'
         if (present(node)) then
-          call detailedWarning(node, trim(errorStr))
+          call dftbp_warning(node, trim(errorStr))
         else
           call warning(trim(errorStr))
         end if
@@ -171,7 +172,7 @@ contains
         write(errorStr, '(3a)') trim(file), " contains no parameters for species ", &
             & trim(speciesNames(iSp))
         if (present(node)) then
-          call detailedWarning(node, trim(errorStr))
+          call dftbp_warning(node, trim(errorStr))
         else
           call warning(trim(errorStr))
         end if
@@ -217,7 +218,7 @@ contains
     if (iErr /= 0) then
       write(errorStr, '(3a, i0)') "While reading file ", trim(file),&
           & "an error was encountered on line ", lineno
-      call detailedError(node, trim(errorStr))
+      call dftbp_error(node, trim(errorStr))
     end if
 
   end subroutine nextLine

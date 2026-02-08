@@ -17,9 +17,11 @@ module dftbp_dftbplus_parser_hybrid
   use dftbp_dftb_repulsive_chimesrep, only : TChimesRepInp
   use dftbp_dftbplus_inputdata, only : TControl, THybridXcInp
   use dftbp_io_charmanip, only : newline, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, convertUnitHsd, detailedError, getChild, &
-      & getChildValue, getNodeName, getNodeHSDName
+  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
+  use hsd_data, only : hsd_table
   use dftbp_type_linkedlist, only : get, TListCharLc
   use dftbp_type_oldskdata, only : parseHybridXcTag
   use dftbp_type_typegeometry, only : TGeometry
@@ -111,13 +113,13 @@ contains
       case ("cam")
         hybridXcInputTag = hybridXcFunc%cam
       case default
-        call detailedError(hybridChild, "Unknown hybrid xc-functional type '" // buffer&
+        call dftbp_error(hybridChild, "Unknown hybrid xc-functional type '" // buffer&
             & // "' in input.")
       end select
 
       ! Check if hybrid functional type is in line with SK-files
       if (hybridXcInputTag == hybridXcFunc%lc .and. hybridXcSkType /= hybridXcFunc%lc) then
-        call detailedError(hybridChild, "Requested hybrid functional type conflict with provided&
+        call dftbp_error(hybridChild, "Requested hybrid functional type conflict with provided&
             & SK-file(s).")
       end if
 
@@ -148,15 +150,15 @@ contains
         input%cutoffRed = 0.0_dp
       case default
         call getNodeHSdName(screeningValue, buffer)
-        call detailedError(screeningChild, "Invalid screening method '" // buffer // "'")
+        call dftbp_error(screeningChild, "Invalid screening method '" // buffer // "'")
       end select
 
       if (ctrl%tSpinOrbit) then
-        call detailedError(hybridChild, "Spin-orbit coupling not currently supported for hybrids")
+        call dftbp_error(hybridChild, "Spin-orbit coupling not currently supported for hybrids")
       end if
       if (ctrl%t2Component) then
         if (input%hybridXcAlg /= hybridXcAlgo%matrixBased) then
-          call detailedError(screeningChild, "MatrixBased screening required for noncollinear spin")
+          call dftbp_error(screeningChild, "MatrixBased screening required for noncollinear spin")
         end if
       end if
 
@@ -178,7 +180,7 @@ contains
           input%gammaType = hybridXcGammaTypes%truncatedAndDamped
         case default
           call getNodeHSdName(cmValue, buffer)
-          call detailedError(cmChild, "Invalid Gamma function type '" // strBuffer // "'")
+          call dftbp_error(cmChild, "Invalid Gamma function type '" // strBuffer // "'")
         end select
 
         ! g-Summation cutoff not needed for MIC CAM Hamiltonian
@@ -245,7 +247,7 @@ contains
         call error("Could not find ChIMES parameter file '" // chimesFile // "'")
       end if
     #:else
-      call detailedError(chimes, "ChIMES repulsive correction requested, but code was compiled&
+      call dftbp_error(chimes, "ChIMES repulsive correction requested, but code was compiled&
           & without ChIMES support")
     #:endif
 

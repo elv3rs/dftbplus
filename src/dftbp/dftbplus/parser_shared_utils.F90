@@ -6,9 +6,11 @@ module dftbp_dftbplus_parser_shared_utils
   use dftbp_common_accuracy, only : dp
   use dftbp_common_unitconversion, only : energyUnits, massUnits
   use dftbp_io_charmanip, only : i2c
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, detailedWarning, &
-      & getChild, getChildren, getChildValue, getSelectedAtomIndices, getLength, getItem1, &
-      & destroyNodeList, convertUnitHsd
+  use dftbp_io_hsdutils, only : hsd_child_list, getChildren, getChildValue, getLength, getItem1,&
+      & destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd_data, only : hsd_table
   use dftbp_type_typegeometry, only : TGeometry
 
   implicit none
@@ -58,7 +60,7 @@ contains
       do jj = 1, size(pTmpI1)
         iAt = pTmpI1(jj)
         if (masses(iAt) >= 0.0_dp) then
-          call detailedWarning(child3, "Previous setting for the mass  of atom" // i2c(iAt) //&
+          call dftbp_warning(child3, "Previous setting for the mass  of atom" // i2c(iAt) //&
               & " overwritten")
         end if
         masses(iAt) = rTmp
@@ -86,7 +88,7 @@ contains
 
     call getChildValue(node, "InitialTemperature", tempAtom, modifier=modifier, child=child)
     if (tempAtom < 0.0_dp) then
-      call detailedError(node, "Negative temperature")
+      call dftbp_error(node, "Negative temperature")
     end if
     call convertUnitHsd(modifier, energyUnits, node, tempAtom)
     tempAtom = max(tempAtom, minimumTemp)

@@ -24,9 +24,12 @@ module dftbp_dftbplus_parser_dispersion
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, textNodeName, detailedError, detailedWarning,&
-      & getChild, getChildValue, convertUnitHsd, getNodeName, getNodeHSDName, splitModifier,&
-      & hsd_rename_child, setUnprocessed
+  use hsd, only : hsd_rename_child
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, textNodeName, getNodeName,&
+      & getNodeHSDName, splitModifier, setUnprocessed
+  use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_MBD
@@ -84,17 +87,17 @@ contains
       allocate(input%mbd)
       call readDispTs(dispModel, input%mbd)
   #:else
-      call detailedError(node, "Program must be compiled with the mbd library for TS-dispersion")
+      call dftbp_error(node, "Program must be compiled with the mbd library for TS-dispersion")
   #:endif
     case ("mbd")
   #:if WITH_MBD
       allocate(input%mbd)
       call readDispMbd(dispModel, input%mbd)
   #:else
-      call detailedError(node, "Program must be compiled with the mbd library for MBD-dispersion")
+      call dftbp_error(node, "Program must be compiled with the mbd library for MBD-dispersion")
   #:endif
     case default
-      call detailedError(node, "Invalid dispersion model name.")
+      call dftbp_error(node, "Invalid dispersion model name.")
     end select
 
   end subroutine readDispersion
@@ -147,7 +150,7 @@ contains
 
     case ("hybriddependentpol")
       if (len(modifier) > 0) then
-        call detailedError(child, "PolarRadiusCharge is not allowed to carry &
+        call dftbp_error(child, "PolarRadiusCharge is not allowed to carry &
             &a modifier, if the HybridDependentPol method is used.")
       end if
       allocate(rCutoffs(geo%nSpecies))
@@ -223,7 +226,7 @@ contains
       end do
 
     case default
-      call detailedError(value1, "Invalid method for PolarRadiusCharge.")
+      call dftbp_error(value1, "Invalid method for PolarRadiusCharge.")
     end select
 
     input%polar(:) = tmpR2(1,:)
@@ -260,7 +263,7 @@ contains
         call getUffValues(geo%speciesNames(iSp), input%distances(iSp), &
             &input%energies(iSp), found)
         if (.not. found) then
-          call detailedError(value1, "UFF parameters for species '" // geo&
+          call dftbp_error(value1, "UFF parameters for species '" // geo&
               &%speciesNames(iSp) // "' not found.")
         end if
       end do
@@ -319,7 +322,7 @@ contains
       call getChildValue(childval, "alpha6", input%alpha6, default=14.0_dp)
     case default
       call getNodeHSDName(childval, buffer)
-      call detailedError(child, "Invalid damping method '" // buffer // "'")
+      call dftbp_error(child, "Invalid damping method '" // buffer // "'")
     end select
     call getChildValue(node, "s6", input%s6)
     call getChildValue(node, "s8", input%s8)
@@ -359,7 +362,7 @@ contains
       end if
     end do
     if (unknownSpecies) then
-      call detailedError(node, "DFT-D3 does not support all species present")
+      call dftbp_error(node, "DFT-D3 does not support all species present")
     end if
 
   end subroutine readDFTD3
@@ -446,7 +449,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(value1, "Unknown method '"//buffer//"' for ChargeModel")
+      call dftbp_error(value1, "Unknown method '"//buffer//"' for ChargeModel")
     case ("selfconsistent")
       input%selfConsistent = .true.
     case ("eeq")
@@ -489,7 +492,7 @@ contains
       end if
     end do
     if (unknownSpecies) then
-      call detailedError(node, "DFT-D4 does not support all species present")
+      call dftbp_error(node, "DFT-D4 does not support all species present")
     end if
 
   end subroutine readDispDFTD4
@@ -537,7 +540,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' for chi")
+      call dftbp_error(child, "Unknown method '"//buffer//"' for chi")
     case ("defaults")
       call readSpeciesList(value1, geo%speciesNames, input%chi, default=kChiDefault)
     case ("values")
@@ -548,7 +551,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' for gam")
+      call dftbp_error(child, "Unknown method '"//buffer//"' for gam")
     case ("defaults")
       call readSpeciesList(value1, geo%speciesNames, input%gam, default=kGamDefault)
     case ("values")
@@ -559,7 +562,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' for kcn")
+      call dftbp_error(child, "Unknown method '"//buffer//"' for kcn")
     case ("defaults")
       call readSpeciesList(value1, geo%speciesNames, input%kcn, default=kKcnDefault)
     case ("values")
@@ -570,7 +573,7 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//buffer//"' for rad")
+      call dftbp_error(child, "Unknown method '"//buffer//"' for rad")
     case ("defaults")
       call readSpeciesList(value1, geo%speciesNames, input%rad, default=kRadDefault)
     case ("values")
@@ -616,7 +619,7 @@ contains
 
     select case(buffer)
     case default
-      call detailedError(child, "Invalid coordination number type specified")
+      call dftbp_error(child, "Invalid coordination number type specified")
     case("exp")
       input%cnType = cnType%exp
     case("erf")
@@ -640,7 +643,7 @@ contains
       call getNodeName(value2, buffer)
       select case(buffer)
       case default
-        call detailedError(child2, "Unknown method '" // buffer //&
+        call dftbp_error(child2, "Unknown method '" // buffer //&
             & "' to generate electronegativities")
       case("paulingen")
         allocate(kENDefault(geo%nSpecies))
@@ -651,7 +654,7 @@ contains
         call readSpeciesList(value2, geo%speciesNames, input%en)
       end select
       if (any(input%en <= 0.0_dp)) then
-        call detailedError(value1, "Electronegativities are not defined for all species")
+        call dftbp_error(value1, "Electronegativities are not defined for all species")
       end if
     else
       ! array is not used, but should still be populated with dummies
@@ -663,7 +666,7 @@ contains
     call getNodeName(value2, buffer)
     select case(buffer)
     case default
-      call detailedError(child2, "Unknown method '"//buffer//"' to generate radii")
+      call dftbp_error(child2, "Unknown method '"//buffer//"' to generate radii")
     case("covalentradiid3")
       allocate(kRadDefault(geo%nSpecies))
       kRadDefault(:) = getD3Radius(geo%speciesNames)
@@ -674,7 +677,7 @@ contains
     end select
 
     if (any(input%covRad <= 0.0_dp)) then
-      call detailedError(value1, "Covalent radii are not defined for all species")
+      call dftbp_error(value1, "Covalent radii are not defined for all species")
     end if
 
   end subroutine readCoordinationNumber
@@ -697,12 +700,12 @@ contains
     input%method = 'ts'
     call getChild(node, "EnergyAccuracy", child, requested=.false.)
     if (associated(child)) then
-      call detailedWarning(child, "The energy accuracy setting will be ignored as it is not&
+      call dftbp_warning(child, "The energy accuracy setting will be ignored as it is not&
           & supported/need by libMBD any more")
     end if
     call getChild(node, "ForceAccuracy", child, requested=.false.)
     if (associated(child)) then
-      call detailedWarning(child, "The force accuracy setting will be ignored as it is not&
+      call dftbp_warning(child, "The force accuracy setting will be ignored as it is not&
           & supported/need by libMBD any more")
     end if
     call getChildValue(node, "Damping", input%ts_d, default=(input%ts_d))
@@ -750,7 +753,7 @@ contains
     type(hsd_table), pointer, intent(in) :: node
 
     if (name /= 'ts' .and. name /= 'tssurf') then
-      call detailedError(node, 'Invalid reference set name for TS/MBD-dispersion')
+      call dftbp_error(node, 'Invalid reference set name for TS/MBD-dispersion')
     end if
 
   end subroutine checkManyBodyDispRefName

@@ -50,13 +50,15 @@ module dftbp_dftbplus_parser
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_extlibs_tblite, only : tbliteMethod
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, hsd_error_t, textNodeName, &
-      & detailedError, detailedWarning, getChild, getChildren, getChildValue, &
-      & getSelectedAtomIndices, setChild, setChildValue, getNodeName, getNodeHSDName, &
-      & getNodeName2, getLength, getItem1, destroyNodeList, removeChild, &
-      & convertUnitHsd, hsd_rename_child, setUnprocessed, new_table, hasInlineData, &
-      & hsd_get_table
-  use dftbp_extlibs_hsddata, only : data_load, data_detect_format, DATA_FMT_AUTO
+  use dftbp_io_hsdutils, only : hsd_child_list, &
+      & getChild, getChildren, getChildValue, &
+      & setChild, setChildValue, &
+      & getLength, getItem1, destroyNodeList, removeChild
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
+      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, setUnprocessed, hasInlineData
+  use dftbp_io_unitconv, only : convertUnitHsd
+  use hsd, only : hsd_error_t, hsd_rename_child, hsd_get_table
+  use hsd_data, only : hsd_table, data_load, data_detect_format, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3, determinant33, diagonal
   use dftbp_md_thermostats, only : thermostatTypes
@@ -230,7 +232,7 @@ contains
 
     call getChild(root, "Dephasing", child, requested=.false.)
     if (associated(child)) then
-      call detailedError(child, "Be patient... Dephasing feature will be available soon!")
+      call dftbp_error(child, "Be patient... Dephasing feature will be available soon!")
       !call readDephasing(child, input%slako%orb, input%geom, input%transpar, input%ginfo%tundos)
     end if
 
@@ -242,7 +244,7 @@ contains
   #:else
 
     if (associated(child)) then
-      call detailedError(child, "Program has been compiled without transport enabled")
+      call dftbp_error(child, "Program has been compiled without transport enabled")
     end if
 
     ! electronic Hamiltonian
@@ -339,7 +341,7 @@ contains
       call getChildValue(child, "", versionString)
       implicitParserVersion = parserVersionFromInputVersion(trim(unquote(versionString)))
       if (implicitParserVersion == 0) then
-        call detailedError(child, "Input version '" // trim(unquote(versionString))&
+        call dftbp_error(child, "Input version '" // trim(unquote(versionString))&
             & // "' not recognized")
       end if
     end if
@@ -368,7 +370,7 @@ contains
 
     call getChild(node, "ParserVersion", child, requested=.false.)
     if (.not. associated(child) .and. .not. present(implicitVersion)) then
-      call detailedWarning(root, "Input containing neither InputVersion nor ParserVersion is&
+      call dftbp_warning(root, "Input containing neither InputVersion nor ParserVersion is&
           & DEPRECATED!(!!) Specify the InputVersion keyword in your input to ensure that future&
           & versions of DFTB+ can also parse it.")
       inputVersion = parserVersion
@@ -380,16 +382,16 @@ contains
     else
       call getChildValue(child, "", inputVersion)
       if (inputVersion /= implicitVersion) then
-        call detailedError(child, "Parser version deduced from InputVersion ("&
+        call dftbp_error(child, "Parser version deduced from InputVersion ("&
             & // i2c(implicitVersion) // ") differs from version explicitely set in&
             & ParserVersion (" // i2c(inputVersion) // ")")
       end if
     end if
 
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
-      call detailedError(child, "Invalid parser version (" // i2c(inputVersion) // ")")
+      call dftbp_error(child, "Invalid parser version (" // i2c(inputVersion) // ")")
     else if (inputVersion < minVersion) then
-      call detailedError(child, &
+      call dftbp_error(child, &
           & "Sorry, no compatibility mode for parser version " // i2c(inputVersion)&
           & // " (too old)")
     else if (inputVersion /= parserVersion) then
@@ -401,7 +403,7 @@ contains
 
     call getChildValue(node, "WriteHSDInput", flags%tWriteHSD, .true.)
     if (.not. flags%tWriteHSD) then
-      call detailedWarning(node, "WriteHSDInput turned off. You are not guaranteed" // newline // &
+      call dftbp_warning(node, "WriteHSDInput turned off. You are not guaranteed" // newline // &
           &" to able to obtain the same results with a later version of the code!" // newline // &
           & "(the dftb_pin.hsd file DOES guarantee this)")
     end if
@@ -499,7 +501,7 @@ contains
   #:endif
       @:PROPAGATE_ERROR(errStatus)
     case default
-      call detailedError(node, "Invalid Hamiltonian")
+      call dftbp_error(node, "Invalid Hamiltonian")
     end select
 
   #:if WITH_API
@@ -619,7 +621,7 @@ contains
           strTmp = trim(prefix) // trim(elem1) // trim(separator) // trim(elem2) // trim(suffix)
           call findFile(searchPath, strTmp, strOut)
           if (.not. allocated(strOut)) then
-            call detailedError(value1, "SK file with generated name '" // trim(strTmp)&
+            call dftbp_error(value1, "SK file with generated name '" // trim(strTmp)&
                 & // "' not found." // newline // "   (search path(s): " // strJoin // ").")
           end if
           strTmp = strOut
@@ -632,15 +634,15 @@ contains
       prefix = unquote(buffer2)
       call getChild(child, "Suffix", child2, requested=.false.)
       if (associated(child2)) then
-        call detailedError(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
+        call dftbp_error(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
       end if
       call getChild(child, "Separator", child2, requested=.false.)
       if (associated(child2)) then
-        call detailedError(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
+        call dftbp_error(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
       end if
       call getChild(child, "LowerCaseTypeName", child2, requested=.false.)
       if (associated(child2)) then
-        call detailedError(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
+        call dftbp_error(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
       end if
       do iSp1 = 1, geo%nSpecies
         do iSp2 = 1, geo%nSpecies
@@ -651,14 +653,14 @@ contains
             write(errorStr, "(A,I0,A,I0)") "Incorrect number of Slater-Koster files for " //&
                 & trim(strTmp) // ", expected ", len(angShells(iSp1)) * len(angShells(iSp2)),&
                 & " but received ", len(lStr)
-            call detailedError(child2, errorStr)
+            call dftbp_error(child2, errorStr)
           end if
           do ii = 1, len(lStr)
             call get(lStr, str2Tmp, ii)
             strTmp = trim(prefix) // str2Tmp
             call findFile(searchPath, strTmp, strOut)
             if (.not. allocated(strOut)) then
-              call detailedError(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
+              call dftbp_error(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
                   & // "   (search path(s): " // strJoin // ").")
             end if
             strTmp = strOut
@@ -690,7 +692,7 @@ contains
         end do
       end do
       if (.not. all(repPoly .eqv. transpose(repPoly))) then
-        call detailedError(value1, "Asymmetric definition (both A-B and B-A must&
+        call dftbp_error(value1, "Asymmetric definition (both A-B and B-A must&
             & be defined for using polynomial repulsive)")
       end if
     end select
@@ -704,7 +706,7 @@ contains
 
     if (allocated(ctrl%hybridXcInp)) then
       if (.not.ctrl%tSCC) then
-        call detailedError(node, "Hybrid calculations require SCC = Yes")
+        call dftbp_error(node, "Hybrid calculations require SCC = Yes")
       end if
     end if
 
@@ -837,7 +839,7 @@ contains
         case ("psic")
           ctrl%dftbUInp%iFunctional = plusUFunctionals%pSic
         case default
-          call detailedError(child,"Unknown orbital functional :"// buffer)
+          call dftbp_error(child,"Unknown orbital functional :"// buffer)
         end select
 
         allocate(ctrl%dftbUInp%nUJ(geo%nSpecies))
@@ -872,11 +874,11 @@ contains
             call convertUnitHsd(modifier, energyUnits, child3, rTmp)
             if (rTmp < 0.0_dp) then
               write(errorStr,"(F12.8)")rTmp
-              call detailedError(child2,"Negative value of U-J:"//errorStr)
+              call dftbp_error(child2,"Negative value of U-J:"//errorStr)
             end if
             if (rTmp <= 1.0E-10_dp) then
               write(errorStr,"(F12.8)")rTmp
-              call detailedError(child2,"Invalid value of U-J, too small: " &
+              call dftbp_error(child2,"Invalid value of U-J, too small: " &
                   & //errorStr)
             end if
             call append(lrN(iSp1),rTmp)
@@ -978,7 +980,7 @@ contains
       allocate(ctrl%elecConstraintInp)
       call readElecConstraintInput(child, geo, ctrl%tSpin, ctrl%t2Component, ctrl%elecConstraintInp)
       if (.not. allocated(ctrl%elecConstraintInp%mullikenConstrs)) then
-        call detailedWarning(child, "No electronic constraint specified")
+        call dftbp_warning(child, "No electronic constraint specified")
         deallocate(ctrl%elecConstraintInp)
       end if
     end if
@@ -1006,7 +1008,7 @@ contains
       call getChildValue(node, "ThirdOrder", ctrl%t3rd, .false.)
       call getChildValue(node, "ThirdOrderFull", ctrl%t3rdFull, .false.)
       if (ctrl%t3rd .and. ctrl%t3rdFull) then
-        call detailedError(node, "You must choose either ThirdOrder or&
+        call dftbp_error(node, "You must choose either ThirdOrder or&
             & ThirdOrderFull")
       end if
       if (ctrl%t3rd .and. ctrl%tShellResolved) then
@@ -1110,7 +1112,7 @@ contains
       call getChildValue(child, "", buffer)
       select case(unquote(buffer))
       case default
-        call detailedError(child, "Unknown method "//buffer//" for xTB Hamiltonian")
+        call dftbp_error(child, "Unknown method "//buffer//" for xTB Hamiltonian")
       case("GFN1-xTB")
         method = tbliteMethod%gfn1xtb
       case("GFN2-xTB")
@@ -1132,7 +1134,7 @@ contains
         write(stdOut, '(a)') "Using parameter file '"//paramFile//"' for xTB Hamiltonian"
         call ctrl%tbliteInp%setupCalculator(paramFile)
       else
-        call detailedError(node, "Either a Method or ParameterFile must be specified for xTB")
+        call dftbp_error(node, "Either a Method or ParameterFile must be specified for xTB")
       end if
     end if
 
@@ -1342,7 +1344,7 @@ contains
           call get(lStr, strTmp, ii)
           strTmp = tolower(unquote(trim(strTmp)))
           if (len_trim(strTmp) > 4 .or. len_trim(strTmp) < 1) then
-            call detailedError(value1, "Invalid shell selection '" &
+            call dftbp_error(value1, "Invalid shell selection '" &
                 &// trim(strTmp) &
                 &// "'. Nr. of selected shells must be between 1 and 4.")
           end if
@@ -1354,7 +1356,7 @@ contains
             do kk = 1, size(shellNames)
               if (tmpCh == trim(shellNames(kk))) then
                 if (tShellIncl(kk)) then
-                  call detailedError(value1, "Double selection of the same shell&
+                  call dftbp_error(value1, "Double selection of the same shell&
                       & '" // tmpCh // "' in shell selection block '" &
                       &// trim(strTmp) // "'")
                 end if
@@ -1365,7 +1367,7 @@ contains
               end if
             end do
             if (.not. tFound) then
-              call detailedError(value1, "Invalid shell name '" // tmpCh // "'")
+              call dftbp_error(value1, "Invalid shell name '" // tmpCh // "'")
             end if
           end do
           call append(angShells(iSp1), angShell(1:nShell))
@@ -1381,13 +1383,13 @@ contains
           end if
         end do
         if (len(angShells(iSp1)) < 1) then
-          call detailedError(child2, "Invalid orbital name '" // &
+          call dftbp_error(child2, "Invalid orbital name '" // &
               &trim(strTmp) // "'")
         end if
 
       case default
         call getNodeHSDName(value1, buffer)
-        call detailedError(child2, "Invalid shell specification method '" //&
+        call dftbp_error(child2, "Invalid shell specification method '" //&
             & buffer // "'")
       end select
     end do
@@ -1493,14 +1495,14 @@ contains
     case ("gammafunctional")
     #:if WITH_TRANSPORT
       if (tp%taskUpload .and. ctrl%tSCC) then
-        call detailedError(value1, "GammaFunctional not available, if you upload contacts in an SCC&
+        call dftbp_error(value1, "GammaFunctional not available, if you upload contacts in an SCC&
             & calculation.")
       end if
     #:endif
 
     case ("poisson")
       if (.not. withPoisson) then
-        call detailedError(value1, "Poisson not available as binary was built without the Poisson&
+        call dftbp_error(value1, "Poisson not available as binary was built without the Poisson&
             &-solver")
       end if
       #:block REQUIRES_COMPONENT('Poisson-solver', WITH_POISSON)
@@ -1514,7 +1516,7 @@ contains
 
     case default
       call getNodeHSDName(value1, buffer)
-      call detailedError(child, "Unknown electrostatics '" // buffer // "'")
+      call dftbp_error(child, "Unknown electrostatics '" // buffer // "'")
     end select
 
   end subroutine readElectrostatics
@@ -1633,7 +1635,7 @@ contains
         case("none")
           ctrl%isMdftb = .false.
         case default
-          call detailedError(child,"Unknown functions :"// buffer)
+          call dftbp_error(child,"Unknown functions :"// buffer)
         end select
       end if
     end if
@@ -1668,6 +1670,7 @@ contains
     call hsd_rename_child(node, "SpinPolarization", "SpinPolarisation")
     call getChildValue(node, "SpinPolarisation", value1, "", child=child, allowEmptyValue=.true.)
     call getNodeName2(value1, buffer)
+    if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
     select case(buffer)
     case ("")
       ctrl%tSpin = .false.
@@ -1692,7 +1695,7 @@ contains
 
     case default
       call getNodeHSDName(value1, buffer)
-      call detailedError(child, "Invalid spin polarisation type '" //&
+      call dftbp_error(child, "Invalid spin polarisation type '" //&
           & buffer // "'")
     end select
 
@@ -1736,7 +1739,7 @@ contains
       call convertUnitHsd(modifier, EFieldUnits, child3, ctrl%electricField%EFieldStrength)
       call getChildValue(child2, "Direction", ctrl%electricField%EfieldVector)
       if (sum(ctrl%electricField%EfieldVector**2) < 1e-8_dp) then
-        call detailedError(child2,"Vector too small")
+        call dftbp_error(child2,"Vector too small")
       else
         ctrl%electricField%EfieldVector = ctrl%electricField%EfieldVector&
             & / sqrt(sum(ctrl%electricField%EfieldVector**2))
@@ -1788,25 +1791,25 @@ contains
             allocate(tmpR2(4, ind))
             call openFile(file, unquote(buffer2), mode="r", iostat=iErr)
             if (iErr /= 0) then
-              call detailedError(value1, "Could not open file '"&
+              call dftbp_error(value1, "Could not open file '"&
                   & // trim(unquote(buffer2)) // "' for direct reading" )
             end if
             read(file%unit, *, iostat=iErr) tmpR2
             if (iErr /= 0) then
-              call detailedError(value1, "Error during direct reading '"&
+              call dftbp_error(value1, "Error during direct reading '"&
                   & // trim(unquote(buffer2)) // "'")
             end if
             call closeFile(file)
             ctrl%nExtChrg = ctrl%nExtChrg + ind
           case default
-            call detailedError(value1, "Invalid block name")
+            call dftbp_error(value1, "Invalid block name")
           end select
           call convertUnitHsd(modifier, lengthUnits, child3, tmpR2(1:3,:))
           call append(lCharges, tmpR2)
           call getChildValue(child2, "GaussianBlurWidth", rTmp, 0.0_dp, modifier=modifier,&
               & child=child3)
           if (rTmp < 0.0_dp) then
-            call detailedError(child3, "Gaussian blur width may not be negative")
+            call dftbp_error(child3, "Gaussian blur width may not be negative")
           end if
           call convertUnitHsd(modifier, lengthUnits, child3, rTmp)
           allocate(tmpR1(size(tmpR2, dim=2)))
@@ -1838,7 +1841,7 @@ contains
 
       call getChildren(child, "PointCharges", children)
       if (getLength(children) > 0) then
-        call detailedError(child, "External charges are not currently supported for this model")
+        call dftbp_error(child, "External charges are not currently supported for this model")
       end if
 
     end if
@@ -1856,7 +1859,7 @@ contains
         call getChildValue(child2, "Atoms", li)
         call getChildValue(child2, "Vext", lr, modifier=modifier, child=child3)
         if (len(li) /= len(lr)) then
-          call detailedError(child2, "Mismatch in number of sites and potentials")
+          call dftbp_error(child2, "Mismatch in number of sites and potentials")
         end if
         allocate(ctrl%atomicExtPotential%iAtOnSite(len(li)))
         call asArray(li, ctrl%atomicExtPotential%iAtOnSite)
@@ -1875,7 +1878,7 @@ contains
         call getChildValue(child2, "Atoms", li)
         call getChildValue(child2, "Vext", lr, modifier=modifier, child=child3)
         if (len(li) /= len(lr)) then
-          call detailedError(child2, "Mismatch in number of sites and potentials")
+          call dftbp_error(child2, "Mismatch in number of sites and potentials")
         end if
         allocate(ctrl%atomicExtPotential%iAt(len(li)))
         call asArray(li, ctrl%atomicExtPotential%iAt)
@@ -1888,7 +1891,7 @@ contains
 
       if (.not.allocated(ctrl%atomicExtPotential%iAt)&
           & .and. .not.allocated(ctrl%atomicExtPotential%iAtOnSite)) then
-        call detailedError(child, "No atomic potentials specified")
+        call dftbp_error(child, "No atomic potentials specified")
       end if
 
     end if
@@ -1932,17 +1935,17 @@ contains
         case (0)
           write(errorStr, "(A)")"Methfessel-Paxton filling order 0 is equivalent to gaussian&
               & smearing"
-          call detailedWarning(child, errorStr)
+          call dftbp_warning(child, errorStr)
         case default
           write(errorStr, "(A,A,A,I4)")"Filling order must be above zero '", buffer,"' :",&
               &ctrl%iDistribFn
-          call detailedError(child, errorStr)
+          call dftbp_error(child, errorStr)
         end select
       end if
       ctrl%iDistribFn = ctrl%iDistribFn + fillingTypes%Methfessel
     case default
       call getNodeHSDName(value1, buffer)
-      call detailedError(child, "Invalid filling method '" //buffer// "'")
+      call dftbp_error(child, "Invalid filling method '" //buffer// "'")
     end select
 
     if (.not. ctrl%tSetFillingTemp) then
@@ -2026,7 +2029,7 @@ contains
       ctrl%solver%isolver = electronicSolverTypes%magmaGvd
       call getChildValue(value1, "DensityMatrixGPU", ctrl%isDmOnGpu, .true.)
   #:else
-      call detailedError(node, "DFTB+ must be compiled with MAGMA support in order to enable&
+      call dftbp_error(node, "DFTB+ must be compiled with MAGMA support in order to enable&
           & this solver")
   #:endif
 
@@ -2044,7 +2047,7 @@ contains
       call getChildValue(value1, "Gpu", ctrl%solver%elsi%elpaGpu, .false., child=child)
       #:if not WITH_GPU
         if (ctrl%solver%elsi%elpaGpu) then
-          call detailedError(child, "DFTB+ must be compiled with GPU support in order to enable&
+          call dftbp_error(child, "DFTB+ must be compiled with GPU support in order to enable&
               & the GPU acceleration for the ELPA solver")
         end if
       #:endif
@@ -2076,16 +2079,16 @@ contains
       end select
       call getChildValue(value1, "Poles", ctrl%solver%elsi%pexsiNPole, iTmp)
       if (ctrl%solver%elsi%pexsiNPole < 10) then
-        call detailedError(value1, "Too few PEXSI poles")
+        call dftbp_error(value1, "Too few PEXSI poles")
       end if
       select case(ctrl%solver%elsi%pexsiMethod)
       case(1)
         if (mod(ctrl%solver%elsi%pexsiNPole,10) /= 0 .or. ctrl%solver%elsi%pexsiNPole > 120) then
-          call detailedError(value1, "Unsupported number of PEXSI poles for method 1")
+          call dftbp_error(value1, "Unsupported number of PEXSI poles for method 1")
         end if
       case(2,3)
         if (mod(ctrl%solver%elsi%pexsiNPole,5) /= 0 .or. ctrl%solver%elsi%pexsiNPole > 40) then
-          call detailedError(value1, "Unsupported number of PEXSI poles for this method")
+          call dftbp_error(value1, "Unsupported number of PEXSI poles for this method")
         end if
       end select
       call getChildValue(value1, "ProcsPerPole", ctrl%solver%elsi%pexsiNpPerPole, 1)
@@ -2100,7 +2103,7 @@ contains
       allocate(ctrl%solver%elsi)
       ctrl%solver%elsi%iSolver = ctrl%solver%isolver
       if (ctrl%tSpin) then
-        call detailedError(value1, "Solver does not currently support spin polarisation")
+        call dftbp_error(value1, "Solver does not currently support spin polarisation")
       end if
       call getChildValue(value1, "PurificationMethod", ctrl%solver%elsi%ntpolyMethod, 2)
       call getChildValue(value1, "Tolerance", ctrl%solver%elsi%ntpolyTolerance, 1.0E-5_dp)
@@ -2128,14 +2131,14 @@ contains
   #:endif
 
     case default
-      call detailedError(value1, "Unknown electronic solver")
+      call dftbp_error(value1, "Unknown electronic solver")
 
     end select
 
     if ((ctrl%solver%isolver == electronicSolverTypes%omm .or.&
         & ctrl%solver%isolver == electronicSolverTypes%pexsi ) .and. .not.ctrl%tSpinSharedEf&
         & .and. ctrl%tSpin .and. .not. ctrl%t2Component) then
-      call detailedError(value1, "This solver currently requires spin values to be relaxed")
+      call dftbp_error(value1, "This solver currently requires spin values to be relaxed")
     end if
     if (ctrl%solver%isolver == electronicSolverTypes%pexsi .and. .not.withPEXSI) then
       call error("Not compiled with PEXSI support via ELSI")
@@ -2161,7 +2164,7 @@ contains
   #:if WITH_TRANSPORT
     if (all(ctrl%solver%isolver /= [electronicSolverTypes%GF,electronicSolverTypes%OnlyTransport])&
         & .and. tp%taskUpload) then
-      call detailedError(value1, "Eigensolver incompatible with transport calculation&
+      call dftbp_error(value1, "Eigensolver incompatible with transport calculation&
           & (GreensFunction or TransportOnly required)")
     end if
   #:endif
@@ -2231,7 +2234,7 @@ contains
     case("dynamics")
       ctrl%forceType = forceTypes%dynamicTFinite
     case default
-      call detailedError(child, "Invalid force evaluation method.")
+      call dftbp_error(child, "Invalid force evaluation method.")
     end select
 
   end subroutine readForceOptions
@@ -2268,7 +2271,7 @@ contains
       end select
     end if
     if (truncationCutOff < epsilon(0.0_dp)) then
-      call detailedError(field, "Truncation is shorter than the minimum distance over which SK data&
+      call dftbp_error(field, "Truncation is shorter than the minimum distance over which SK data&
           & goes to 0")
     end if
 
@@ -2316,7 +2319,7 @@ contains
         do jj = 1, size(pTmpI1)
           iAt = pTmpI1(jj)
           if (initCharges(iAt) /= 0.0_dp) then
-            call detailedWarning(child3, "Previous setting for the charge &
+            call dftbp_warning(child3, "Previous setting for the charge &
                 &of atom" // i2c(iAt) // " overwritten")
           end if
           initCharges(iAt) = rTmp
@@ -2376,7 +2379,7 @@ contains
         do jj = 1, size(pTmpI1)
           iAt = pTmpI1(jj)
           if (any(initSpins(:,iAt) /= 0.0_dp)) then
-            call detailedWarning(child3, "Previous setting for the spin of atom" // i2c(iAt) //&
+            call dftbp_warning(child3, "Previous setting for the spin of atom" // i2c(iAt) //&
                 & " overwritten")
           end if
           initSpins(:,iAt) = rTmp
@@ -2421,7 +2424,7 @@ contains
       ctrl%iDerivMethod = diffTypes%richardson
     case default
       call getNodeHSDName(val, buffer)
-      call detailedError(child, "Invalid derivative calculation '" &
+      call dftbp_error(child, "Invalid derivative calculation '" &
           & // buffer // "'")
     end select
 
@@ -2487,7 +2490,7 @@ contains
 
     case default
       call getNodeHSDName(value1, buffer)
-      call detailedError(child, "Invalid HCorrection '" // buffer // "'")
+      call dftbp_error(child, "Invalid HCorrection '" // buffer // "'")
     end select
 
   end subroutine readHCorrection
@@ -2524,6 +2527,11 @@ contains
       ctrl%detailedOutputFormat = tmpFmt
     end block
     call getChildValue(node, "WriteResultsTag", ctrl%tWriteResultsTag, .false.)
+    block
+      character(len=:), allocatable :: tmpFmt
+      call getChildValue(node, "ResultsOutputFormat", tmpFmt, "tag")
+      ctrl%resultsOutputFormat = tmpFmt
+    end block
 
     if (.not.(ctrl%tMD.or.ctrl%isGeoOpt.or.allocated(ctrl%geoOpt))) then
       if (ctrl%tSCC) then
@@ -2553,14 +2561,14 @@ contains
     end if
     call getChildValue(node, "RandomSeed", ctrl%iSeed, 0, child=child)
     if (ctrl%iSeed < 0) then
-      call detailedError(child, "Random seed must be greater or equal zero")
+      call dftbp_error(child, "Random seed must be greater or equal zero")
     end if
     call getChildValue(node, "WriteHS", ctrl%tWriteHS, .false.)
     call getChildValue(node, "WriteRealHS", ctrl%tWriteRealHS, .false.)
     call hsd_rename_child(node, "MinimizeMemoryUsage", "MinimiseMemoryUsage")
     call getChildValue(node, "MinimiseMemoryUsage", ctrl%tMinMemory, .false., child=child)
     if (ctrl%tMinMemory) then
-      call detailedWarning(child, "Memory minimisation is not working currently, normal calculation&
+      call dftbp_warning(child, "Memory minimisation is not working currently, normal calculation&
           & will be used instead")
     end if
     call getChildValue(node, "ShowFoldedCoords", ctrl%tShowFoldedCoord, .false.)
@@ -2647,7 +2655,7 @@ contains
               call init(lr1)
               call getChildValue(child, "", 2, lr1, child=child2)
               if (len(lr1) < 1) then
-                call detailedError(child2, "At least one dynamic mixing parameter must be defined.")
+                call dftbp_error(child2, "At least one dynamic mixing parameter must be defined.")
               end if
               inp%nConvMixParam = len(lr1)
               allocate(inp%convMixParam(2, inp%nConvMixParam))
@@ -2676,7 +2684,7 @@ contains
         case default
 
           call getNodeHSDName(value1, buffer)
-          call detailedError(child, "Invalid mixer '" // buffer // "'")
+          call dftbp_error(child, "Invalid mixer '" // buffer // "'")
 
         end select
 
@@ -2796,7 +2804,7 @@ contains
             write(strTmp, "(A,I0,A,I0,A,A,A)")'Expecting a ', orb%nShell(iSp1), ' x ',&
                 & orb%nShell(iSp1), ' spin constant matrix for "', trim(geo%speciesNames(iSp1)),&
                 & '", as ShellResolvedSpin enabled.'
-            call detailedError(child, trim(strTmp))
+            call dftbp_error(child, trim(strTmp))
           end if
         else
           if (nConstants == 1) then
@@ -2806,7 +2814,7 @@ contains
           else
             write(strTmp, "(A,A,A)")'Expecting a single spin constant for "',&
                 & trim(geo%speciesNames(iSp1)),'", as ShellResolvedSpin not enabled.'
-            call detailedError(child, trim(strTmp))
+            call dftbp_error(child, trim(strTmp))
           end if
         end if
         call destruct(realBuffer)
@@ -2908,12 +2916,12 @@ contains
       call getSelectedAtomIndices(child, buffer, geo%speciesNames, geo%species,&
           & iAtInRegion(iCustomOcc)%data)
       if (any(atomOverriden(iAtInRegion(iCustomOcc)%data))) then
-        call detailedError(child, "Atom region contains atom(s) which have already been overridden")
+        call dftbp_error(child, "Atom region contains atom(s) which have already been overridden")
       end if
       atomOverriden(iAtInRegion(iCustomOcc)%data) = .true.
       iSpecies = geo%species(iAtInRegion(iCustomOcc)%data(1))
       if (any(geo%species(iAtInRegion(iCustomOcc)%data) /= iSpecies)) then
-        call detailedError(child, "All atoms in a ReferenceOccupation declaration must have the&
+        call dftbp_error(child, "All atoms in a ReferenceOccupation declaration must have the&
             & same type.")
       end if
       call getShellNames(iSpecies, orb, shellNamesTmp)

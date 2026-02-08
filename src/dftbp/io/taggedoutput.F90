@@ -20,11 +20,15 @@
 !> Contains routines to write out various data structures in a comprehensive tagged format.
 module dftbp_io_taggedoutput
   use dftbp_common_accuracy, only : dp
+  use hsd_data, only : hsd_table, hsd_value, hsd_node, &
+      & VALUE_TYPE_INTEGER, VALUE_TYPE_REAL, VALUE_TYPE_LOGICAL, VALUE_TYPE_COMPLEX
+  use dftbp_common_file, only : TFileDescr, openFile, closeFile
   implicit none
 
   private
   public :: tagLabels
   public :: TTaggedWriter, TTaggedWriter_init
+  public :: writeTreeAsTag
 
 
   !> Length of permissible tag labels. Tag names should be shorter than lenLabel!
@@ -384,6 +388,205 @@ contains
     end if
 
   end function getLabel
+
+
+  !> Write an hsd_table tree to a file in legacy tag format.
+  !!
+  !! Each hsd_value child of root is serialized as:
+  !!   tagname             :datatype:rank:dim1,dim2,...
+  !!     <formatted data>
+  !! Table children are skipped (they are structural containers).
+  subroutine writeTreeAsTag(fileName, root)
+
+    !> Output file name (opened in append mode)
+    character(len=*), intent(in) :: fileName
+
+    !> Root table whose children are written
+    type(hsd_table), intent(in) :: root
+
+    type(TFileDescr) :: fd
+    class(hsd_node), pointer :: child
+    character(len=lenFormStr) :: formReal, formCmplx, formInt, formLogical
+    integer :: nDecDigit, nExpDigit, nChar, nField, ii
+
+    ! Initialise format strings (same logic as TTaggedWriter_init)
+    nExpDigit = ceiling(log(maxexponent(1.0_dp) / log(10.0)) / log(10.0))
+    nDecDigit = precision(1.0_dp)
+    nChar = nDecDigit + nExpDigit + 6
+    nField = 80 / nChar
+    if (nField == 0) nField = 1
+    write(formReal, "('(', I2.2, 'E', I2.2, '.', I2.2, 'E', I3.3, ')')") nField, nChar,&
+        & nDecDigit, nExpDigit
+    write(formCmplx, "('(', I2.2, '(2E', I2.2, '.', I2.2, 'E', I3.3, '))')") nField / 2,&
+        & nChar, nDecDigit, nExpDigit
+    nChar = digits(1) + 2
+    nField = 80 / nChar
+    if (nField == 0) nField = 1
+    write(formInt, "('(', I2.2, 'I', I2.2, ')')") nField, nChar
+    write(formLogical, "('(40L2)')")
+
+    call openFile(fd, fileName, mode="a")
+
+    do ii = 1, root%num_children
+      call root%get_child(ii, child)
+      if (.not. associated(child)) cycle
+      select type (child)
+      type is (hsd_value)
+        call writeOneTagValue(fd%unit, child, formReal, formCmplx, formInt, formLogical)
+      end select
+    end do
+
+    call closeFile(fd)
+
+  end subroutine writeTreeAsTag
+
+
+  !> Write a single hsd_value node in tag format to an open file unit.
+  subroutine writeOneTagValue(unit, val, formReal, formCmplx, formInt, formLogical)
+
+    !> File unit (already open)
+    integer, intent(in) :: unit
+
+    !> Value node to serialise
+    type(hsd_value), intent(in) :: val
+
+    !> Format strings for the various data types
+    character(len=*), intent(in) :: formReal, formCmplx, formInt, formLogical
+
+    integer :: rank
+    integer, allocatable :: dataShape(:)
+
+    select case (val%value_type)
+
+    case (VALUE_TYPE_REAL)
+      if (allocated(val%real_matrix)) then
+        call parseShapeAttrib(val, rank, dataShape)
+        if (.not. allocated(dataShape)) then
+          allocate(dataShape(2))
+          dataShape = shape(val%real_matrix)
+        end if
+        call writeTaggedHeader(unit, val%name, 'real', dataShape)
+        write(unit, formReal) val%real_matrix
+      else if (allocated(val%real_array)) then
+        call parseShapeAttrib(val, rank, dataShape)
+        if (.not. allocated(dataShape)) then
+          allocate(dataShape(1))
+          dataShape(1) = size(val%real_array)
+        end if
+        call writeTaggedHeader(unit, val%name, 'real', dataShape)
+        write(unit, formReal) val%real_array
+      else
+        call writeTaggedHeader(unit, val%name, 'real')
+        write(unit, formReal) val%real_value
+      end if
+
+    case (VALUE_TYPE_INTEGER)
+      if (allocated(val%int_matrix)) then
+        call parseShapeAttrib(val, rank, dataShape)
+        if (.not. allocated(dataShape)) then
+          allocate(dataShape(2))
+          dataShape = shape(val%int_matrix)
+        end if
+        call writeTaggedHeader(unit, val%name, 'integer', dataShape)
+        write(unit, formInt) val%int_matrix
+      else if (allocated(val%int_array)) then
+        call parseShapeAttrib(val, rank, dataShape)
+        if (.not. allocated(dataShape)) then
+          allocate(dataShape(1))
+          dataShape(1) = size(val%int_array)
+        end if
+        call writeTaggedHeader(unit, val%name, 'integer', dataShape)
+        write(unit, formInt) val%int_array
+      else
+        call writeTaggedHeader(unit, val%name, 'integer')
+        write(unit, formInt) val%int_value
+      end if
+
+    case (VALUE_TYPE_LOGICAL)
+      if (allocated(val%logical_array)) then
+        call parseShapeAttrib(val, rank, dataShape)
+        if (.not. allocated(dataShape)) then
+          allocate(dataShape(1))
+          dataShape(1) = size(val%logical_array)
+        end if
+        call writeTaggedHeader(unit, val%name, 'logical', dataShape)
+        write(unit, formLogical) val%logical_array
+      else
+        call writeTaggedHeader(unit, val%name, 'logical')
+        write(unit, formLogical) val%logical_value
+      end if
+
+    case (VALUE_TYPE_COMPLEX)
+      if (allocated(val%complex_array)) then
+        call parseShapeAttrib(val, rank, dataShape)
+        if (.not. allocated(dataShape)) then
+          allocate(dataShape(1))
+          dataShape(1) = size(val%complex_array)
+        end if
+        call writeTaggedHeader(unit, val%name, 'complex', dataShape)
+        write(unit, formCmplx) val%complex_array
+      else
+        call writeTaggedHeader(unit, val%name, 'complex')
+        write(unit, formCmplx) val%complex_value
+      end if
+
+    end select
+
+  end subroutine writeOneTagValue
+
+
+  !> Parse rank and shape from the attrib field of an hsd_value.
+  !!
+  !! The expected format is "rank:dim1,dim2,...", e.g. "3:5,3,2".
+  !! If the attrib is absent or unparseable, dataShape is left unallocated.
+  subroutine parseShapeAttrib(val, rank, dataShape)
+
+    !> Value node whose attrib field is examined
+    type(hsd_value), intent(in) :: val
+
+    !> Parsed rank (0 if not parseable)
+    integer, intent(out) :: rank
+
+    !> Parsed shape dimensions (unallocated on failure)
+    integer, allocatable, intent(out) :: dataShape(:)
+
+    integer :: colonPos, nDims, pos, commaPos, ii
+    character(len=256) :: buf
+
+    rank = 0
+    if (.not. allocated(val%attrib)) return
+    if (len_trim(val%attrib) == 0) return
+
+    buf = val%attrib
+    colonPos = index(buf, ':')
+    if (colonPos == 0) return
+
+    read(buf(1:colonPos-1), *, err=999, end=999) rank
+    if (rank == 0) return
+
+    ! Count dimensions
+    nDims = 1
+    do ii = colonPos + 1, len_trim(buf)
+      if (buf(ii:ii) == ',') nDims = nDims + 1
+    end do
+
+    allocate(dataShape(nDims))
+    pos = colonPos + 1
+    do ii = 1, nDims
+      if (ii < nDims) then
+        commaPos = index(buf(pos:), ',') + pos - 1
+        read(buf(pos:commaPos-1), *) dataShape(ii)
+        pos = commaPos + 1
+      else
+        read(buf(pos:len_trim(buf)), *) dataShape(ii)
+      end if
+    end do
+    return
+
+    999 continue
+    rank = 0
+
+  end subroutine parseShapeAttrib
 
 
 end module dftbp_io_taggedoutput

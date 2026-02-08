@@ -12,8 +12,11 @@ module dftbp_dftb_elecconstraints
   use dftbp_common_accuracy, only : dp, hugeIterations
   use dftbp_dftbplus_input_geoopt, only : readOptimizerInput
   use dftbp_geoopt_package, only : createOptimizer, TOptimizer, TOptimizerInput
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, getChild, getChildren, getChildValue, &
-      & getSelectedAtomIndices, getLength, getItem1, destroyNodeList, hsd_rename_child
+  use hsd, only : hsd_rename_child
+  use hsd_data, only : hsd_table
+  use dftbp_io_hsdutils, only : hsd_child_list, getChild, getChildren, getChildValue, &
+      & getLength, getItem1, destroyNodeList
+  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1, TWrappedReal2
@@ -237,7 +240,7 @@ contains
         nAssociated = count([associated(populationsNode), associated(totalPopNode), &
             & associated(chargesNode), associated(totalChargeNode)])
         if (nAssociated /= 1) then
-          call detailedError(constrNode, "You must specify exactly one and only one of the options&
+          call dftbp_error(constrNode, "You must specify exactly one and only one of the options&
               & Populations, TotalPopulation, Charges or TotalCharge")
         end if
         input%constrValuesAreCharges = associated(chargesNode) .or. associated(totalChargeNode)

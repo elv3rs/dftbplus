@@ -846,6 +846,9 @@ module dftbp_dftbplus_initprogram
     !> Produce detailed.tag
     logical :: tWriteResultsTag
 
+    !> Output format for results tag file ("tag", "hsd", "json", "xml")
+    character(len=4) :: resultsOutputFormat
+
     !> Produce detailed.out
     logical :: tWriteDetailedOut
 
@@ -2984,6 +2987,7 @@ contains
     this%tWriteDetailedXML = env%tGlobalLead .and. input%ctrl%tWriteDetailedXML
     this%detailedOutputFormat = input%ctrl%detailedOutputFormat
     this%tWriteResultsTag = env%tGlobalLead .and. input%ctrl%tWriteResultsTag
+    this%resultsOutputFormat = input%ctrl%resultsOutputFormat
     this%tWriteCharges = env%tGlobalLead .and. input%ctrl%tWriteCharges
     this%tWriteDetailedOut = env%tGlobalLead .and. input%ctrl%tWriteDetailedOut .and.&
         & .not. this%tRestartNoSC
