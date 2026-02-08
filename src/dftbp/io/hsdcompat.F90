@@ -55,6 +55,7 @@ module dftbp_io_hsdcompat
   public :: splitModifier
   public :: warnUnprocessedNodes, setUnprocessed, setProcessed
   public :: getDescendant, setNodeName, removeChildNodes, destroyNode, removeChild
+  public :: renameDescendant
   public :: checkError
   public :: getFirstTextChild
   public :: dumpHsd
@@ -187,7 +188,10 @@ contains
       call error(formatErrMsg_(node, "Missing required integer value: '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_int
 
@@ -206,7 +210,10 @@ contains
       call error(formatErrMsg_(node, "Missing required real value: '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_real
 
@@ -225,7 +232,10 @@ contains
       call error(formatErrMsg_(node, "Missing required logical value: '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_logical
 
@@ -254,7 +264,10 @@ contains
       end if
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_string
 
@@ -274,7 +287,10 @@ contains
 
     call hsd_get_or_set(node, name, val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_int_def
 
@@ -290,7 +306,10 @@ contains
 
     call hsd_get_or_set(node, name, val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_real_def
 
@@ -305,7 +324,10 @@ contains
 
     call hsd_get_or_set(node, name, val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_logical_def
 
@@ -334,7 +356,10 @@ contains
     val(:nn) = tmp(:nn)
     if (present(nItem)) nItem = size(tmp)
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_intR1
 
@@ -358,7 +383,10 @@ contains
     val(:nn) = tmp(:nn)
     if (present(nItem)) nItem = size(tmp)
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_realR1
 
@@ -382,7 +410,10 @@ contains
     val(:nn) = tmp(:nn)
     if (present(nItem)) nItem = size(tmp)
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_logicalR1
 
@@ -412,7 +443,10 @@ contains
     val(:nr, :nc) = tmp(:nr, :nc)
     if (present(nItem)) nItem = nrows * ncols
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_realR2
 
@@ -438,7 +472,10 @@ contains
     val(:nr, :nc) = tmp(:nr, :nc)
     if (present(nItem)) nItem = nrows * ncols
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_intR2
 
@@ -471,7 +508,10 @@ contains
       if (present(nItem)) nItem = nrows * ncols
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_realR2_def
 
@@ -594,7 +634,10 @@ contains
       if (present(nItem)) nItem = size(tmp)
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_intR1_def
 
@@ -623,7 +666,10 @@ contains
       if (present(nItem)) nItem = size(tmp)
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_realR1_def
 
@@ -652,7 +698,10 @@ contains
       if (present(nItem)) nItem = size(tmp)
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_logicalR1_def
 
@@ -685,7 +734,10 @@ contains
       call error(formatErrMsg_(node, "Invalid string value in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lString
 
@@ -712,7 +764,10 @@ contains
       call error(formatErrMsg_(node, "Invalid real value in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lReal
 
@@ -745,7 +800,10 @@ contains
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lRealR1
 
@@ -772,7 +830,10 @@ contains
       call error(formatErrMsg_(node, "Invalid integer value in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lInt
 
@@ -803,7 +864,10 @@ contains
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lIntR1
 
@@ -830,7 +894,10 @@ contains
       call error(formatErrMsg_(node, "Invalid complex value in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lComplex
 
@@ -861,7 +928,10 @@ contains
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lComplexR1
 
@@ -915,7 +985,10 @@ contains
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lIntR1RealR1
 
@@ -968,7 +1041,10 @@ contains
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine getChVal_lStringIntR1RealR1
 
@@ -1027,7 +1103,7 @@ contains
 
   !> Set integer child value
   subroutine setChVal_int(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     integer, intent(in) :: val
     logical, intent(in), optional :: replace
@@ -1035,52 +1111,64 @@ contains
 
     ! In hsd-fortran, hsd_set always replaces (upsert semantics)
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_int
 
   !> Set real(dp) child value
   subroutine setChVal_real(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     real(dp), intent(in) :: val
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_real
 
   !> Set logical child value
   subroutine setChVal_logical(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     logical, intent(in) :: val
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_logical
 
   !> Set character child value
   subroutine setChVal_char(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     character(len=*), intent(in) :: val
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_char
 
   !> Set character array child value
   subroutine setChVal_charR1(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     character(len=*), intent(in) :: val(:)
     logical, intent(in), optional :: replace
@@ -1095,66 +1183,81 @@ contains
       combined = combined // trim(val(ii))
     end do
     call hsd_set(node, name, combined)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_charR1
 
   !> Set integer array child value
   subroutine setChVal_intR1(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     integer, intent(in) :: val(:)
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_intR1
 
   !> Set real(dp) array child value
   subroutine setChVal_realR1(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     real(dp), intent(in) :: val(:)
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_realR1
 
   !> Set integer matrix child value
   subroutine setChVal_intR2(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     integer, intent(in) :: val(:,:)
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_intR2
 
   !> Set real(dp) matrix child value
   subroutine setChVal_realR2(node, name, val, replace, child)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     real(dp), intent(in) :: val(:,:)
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
     call hsd_set(node, name, val)
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
 
   end subroutine setChVal_realR2
 
 
   !> Set mixed integer + real rank-2 child value (TypesAndCoordinates pattern)
   subroutine setChVal_intR2RealR2(node, name, intValue, realValue, replace, child, modifier)
-    type(hsd_table), intent(inout) :: node
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     integer, intent(in) :: intValue(:,:)
     real(dp), intent(in) :: realValue(:,:)
@@ -1182,7 +1285,10 @@ contains
       if (ii < nRow) strBuffer = strBuffer // new_line('a')
     end do
     call hsd_set(node, name, trim(adjustl(strBuffer)))
-    if (present(child)) call hsd_get_table(node, name, child)
+    if (present(child)) then
+      call hsd_get_table(node, name, child)
+      if (.not. associated(child)) child => node
+    end if
     if (present(modifier)) call hsd_set_attrib(node, name, modifier)
 
   end subroutine setChVal_intR2RealR2
@@ -1508,15 +1614,41 @@ contains
 
   !> Rename a node (replaces legacy setNodeName from hsdutils2).
   !>
-  !> Directly modifies the node's name field.
-  subroutine setNodeName(node, name, updateHsdName)
-    type(hsd_table), intent(inout) :: node
+  !> Directly modifies the node's name field. If parent is provided,
+  !> invalidates the parent's hash index so lookups use the new name.
+  subroutine setNodeName(node, name, updateHsdName, parent)
+    type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     logical, intent(in), optional :: updateHsdName
+    type(hsd_table), intent(inout), optional :: parent
 
     node%name = tolower(name)
+    if (present(parent)) call parent%invalidate_index()
 
   end subroutine setNodeName
+
+
+  !> Rename a descendant node by path, handling both table and value nodes.
+  !>
+  !> This wraps hsd_rename_child with path-based navigation and issues a warning.
+  !> Unlike getDescendant + setNodeName, this works for value nodes too.
+  subroutine renameDescendant(root, path, newName, warningMsg)
+    type(hsd_table), intent(inout), target :: root
+    character(len=*), intent(in) :: path
+    character(len=*), intent(in) :: newName
+    character(len=*), intent(in), optional :: warningMsg
+
+    integer :: stat
+
+    call hsd_rename_child(root, path, newName, stat, case_insensitive=.true.)
+    if (stat == HSD_STAT_OK) then
+      if (present(warningMsg)) then
+        call detailedWarning(root, warningMsg)
+      end if
+    end if
+
+  end subroutine renameDescendant
+
 
   ! ============================================================
   !  removeChildNodes — remove all children from a node

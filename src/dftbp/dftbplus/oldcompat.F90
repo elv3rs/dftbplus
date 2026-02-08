@@ -16,7 +16,8 @@ module dftbp_dftbplus_oldcompat
   use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, detailedWarning, getChild, getChildren, &
       & getChildValue, setChild, setChildValue, getLength, getNodeName, removeChild, &
       & getDescendant, setNodeName, setUnprocessed, destroyNode, removeChildNodes, &
-      & getItem1, destroyNodeList
+      & getItem1, destroyNodeList, renameDescendant, &
+      & hsd_get, hsd_has_child, hsd_remove_child, hsd_get_table, HSD_STAT_OK
   use dftbp_io_message, only : error
   implicit none
 
@@ -124,7 +125,7 @@ contains
       call getChild(child1, "SpeciesNames", child2, requested=.false.)
       if (associated(child2)) then
         call setUnprocessed(child2)
-        call setNodeName(child2, "TypeNames")
+        call setNodeName(child2, "TypeNames", parent=child1)
       end if
     end if
 
@@ -140,21 +141,15 @@ contains
     type(hsd_table), pointer :: ch1, ch2, par
     logical :: tValue
 
-    call getDescendant(root, &
+    call renameDescendant(root, &
         &"Driver/VelocityVerlet/Thermostat/Andersen/RescalingProbability", &
-        &ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword renamed to 'ReselectProbability'.")
-      call setNodeName(ch1, "ReselectProbability")
-    end if
+        &"ReselectProbability", &
+        &"Keyword renamed to 'ReselectProbability'.")
 
-    call getDescendant(root, &
+    call renameDescendant(root, &
         &"Driver/VelocityVerlet/Thermostat/Andersen/RescaleIndividually", &
-        &ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword renamed to 'ReselectIndividually'.")
-      call setNodeName(ch1, "ReselectIndividually")
-    end if
+        &"ReselectIndividually", &
+        &"Keyword renamed to 'ReselectIndividually'.")
 
     call getDescendant(root, "Hamiltonian/DFTB/Variational", ch1)
     if (associated(ch1)) then
@@ -181,25 +176,16 @@ contains
       end if
     end if
 
-    call getDescendant(root, "Options/PrintEigenvectors", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'WriteEigenvectors'")
-      call setNodeName(ch1, "WriteEigenvectors")
-    end if
+    call renameDescendant(root, "Options/PrintEigenvectors", "WriteEigenvectors", &
+        &"Keyword converted to 'WriteEigenvectors'")
 
-    call getDescendant(root, "Options/WriteTaggedOut", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'WriteAutotestTag'. &
+    call renameDescendant(root, "Options/WriteTaggedOut", "WriteAutotestTag", &
+        &"Keyword converted to 'WriteAutotestTag'. &
           &Output file name changed to 'autotest.out'")
-      call setNodeName(ch1, "WriteAutotestTag")
-    end if
 
-    call getDescendant(root, "Options/WriteBandDat", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'WriteBandOut'. &
+    call renameDescendant(root, "Options/WriteBandDat", "WriteBandOut", &
+        &"Keyword converted to 'WriteBandOut'. &
           &Output file name changed to 'band.out'")
-      call setNodeName(ch1, "WriteBandOut")
-    end if
 
   end subroutine convert_2_3
 
@@ -210,7 +196,7 @@ contains
     !> Root tag of the HSD-tree
     type(hsd_table), pointer :: root
 
-    type(hsd_table),pointer :: node, node2, node3
+    type(hsd_table),pointer :: node, node2, node3, par
     type(hsd_child_list), pointer :: children
     integer :: ii
 
@@ -235,12 +221,8 @@ contains
       call destroyNodeList(children)
     end if
 
-    call getDescendant(root, "Hamiltonian/DFTB/SpinPolarisation/Colinear&
-        &/InitialSpin", node)
-    if (associated(node)) then
-      call detailedWarning(node, "Keyword renamed to 'InitialSpins'.")
-      call setNodeName(node, "InitialSpins")
-    end if
+    call renameDescendant(root, "Hamiltonian/DFTB/SpinPolarisation/Colinear&
+        &/InitialSpin", "InitialSpins", "Keyword renamed to 'InitialSpins'.")
 
   end subroutine convert_3_4
 
@@ -277,11 +259,8 @@ contains
     type(hsd_table), pointer :: ch1, ch2, ch3, par, dummy
     logical :: tVal
 
-    call getDescendant(root, "Hamiltonian/DFTB/Eigensolver/Standard", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword renamed to 'QR'.")
-      call setNodeName(ch1, "QR")
-    end if
+    call renameDescendant(root, "Hamiltonian/DFTB/Eigensolver/Standard", &
+        &"QR", "Keyword renamed to 'QR'.")
 
     call getDescendant(root, "Options/MullikenAnalysis", ch1, parent=par)
     if (associated(ch1)) then
@@ -384,17 +363,11 @@ contains
     logical :: tVal
     real(dp) :: rTmp
 
-    call getDescendant(root, "Analysis/Localise/PipekMezey/Tollerance", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'Tolerance'.")
-      call setNodeName(ch1, "Tolerance")
-    end if
+    call renameDescendant(root, "Analysis/Localise/PipekMezey/Tollerance", &
+        &"Tolerance", "Keyword converted to 'Tolerance'.")
 
-    call getDescendant(root, "Analysis/Localise/PipekMezey/SparseTollerances", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'SparseTollerances'.")
-      call setNodeName(ch1, "SparseTolerances")
-    end if
+    call renameDescendant(root, "Analysis/Localise/PipekMezey/SparseTollerances", &
+        &"SparseTolerances", "Keyword converted to 'SparseTolerances'.")
 
     call getDescendant(root, "Hamiltonian/DFTB/DampXH", ch1, parent=par)
     if (associated(ch1)) then
@@ -434,20 +407,14 @@ contains
     !> Root tag of the HSD-tree
     type(hsd_table), pointer :: root
 
-    type(hsd_table), pointer :: ch1
+    type(hsd_table), pointer :: ch1, par
 
-    call getDescendant(root, "Hamiltonian/DFTB/OrbitalResolvedSCC", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'ShellResolvedSCC'.")
-      call setNodeName(ch1, "ShellResolvedSCC")
-    end if
+    call renameDescendant(root, "Hamiltonian/DFTB/OrbitalResolvedSCC", &
+        &"ShellResolvedSCC", "Keyword converted to 'ShellResolvedSCC'.")
     call handleD3Defaults(root)
 
-    call getDescendant(root, "Hamiltonian/DFTB/Eigensolver", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword renamed to 'Solver'.")
-      call setNodeName(ch1, "Solver")
-    end if
+    call renameDescendant(root, "Hamiltonian/DFTB/Eigensolver", &
+        &"Solver", "Keyword renamed to 'Solver'.")
 
   end subroutine convert_6_7
 
@@ -460,14 +427,12 @@ contains
 
     type(hsd_table), pointer :: ch1, ch2, par
     logical :: tVal
+    integer :: stat
     type(hsd_table), pointer :: pTaskType
     character(len=:), allocatable :: buffer
 
-    call getDescendant(root, "Analysis/EigenvectorsAsTxt", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword converted to 'EigenvectorsAsText'.")
-      call setNodeName(ch1, "EigenvectorsAsText")
-    end if
+    call renameDescendant(root, "Analysis/EigenvectorsAsTxt", &
+        &"EigenvectorsAsText", "Keyword converted to 'EigenvectorsAsText'.")
 
     call getDescendant(root, "Transport", ch1, parent=par)
     if (associated(ch1)) then
@@ -486,17 +451,16 @@ contains
       end if
     end if
 
-    call getDescendant(root, "ParserOptions/WriteXMLInput", ch1)
-    if (associated(ch1)) then
-      call getChildValue(ch1, "", tVal)
-      call setUnprocessed(ch1)
-      if (tVal) then
+    call getDescendant(root, "ParserOptions", ch1)
+    if (associated(ch1) .and. hsd_has_child(ch1, "WriteXMLInput", .true.)) then
+      call hsd_get(ch1, "WriteXMLInput", tVal, stat=stat)
+      if (stat == HSD_STAT_OK .and. tVal) then
         call detailedWarning(ch1, "Sorry, XML export of the dftb_in.hsd is not supported any more&
             & so is removed")
       else
         call detailedWarning(ch1, "XML export option is removed.")
       end if
-      call destroyNode(ch1)
+      call hsd_remove_child(ch1, "WriteXMLInput", stat, case_insensitive=.true.)
     end if
 
   end subroutine convert_7_8
@@ -808,17 +772,11 @@ contains
 
     if (isPerturb) then
 
-      call getDescendant(root, "Analysis/Eta", ch1)
-      if (associated(ch1)) then
-        call detailedWarning(ch1, "Keyword renamed to 'PerturbEta'.")
-        call setNodeName(ch1, "PerturbEta")
-      end if
+      call renameDescendant(root, "Analysis/Eta", "PerturbEta", &
+          &"Keyword renamed to 'PerturbEta'.")
 
-      call getDescendant(root, "Analysis/DegeneracyTolerance", ch1)
-      if (associated(ch1)) then
-        call detailedWarning(ch1, "Keyword renamed to 'PertubDegenTol'.")
-        call setNodeName(ch1, "PertubDegenTol")
-      end if
+      call renameDescendant(root, "Analysis/DegeneracyTolerance", "PertubDegenTol", &
+          &"Keyword renamed to 'PertubDegenTol'.")
 
       call getDescendant(root, "Hamiltonian/DFTB/MaxSCCIterations", ch1, parent=par1)
       if (associated(ch1)) then
@@ -862,18 +820,11 @@ contains
     character(lc) :: strTmp
     real(dp) :: rTol
 
-    call getDescendant(root, "Analysis/CalculateForces", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "Keyword renamed to 'PrintForces'.")
-      call setNodeName(ch1, "PrintForces")
-    end if
+    call renameDescendant(root, "Analysis/CalculateForces", "PrintForces", &
+        &"Keyword renamed to 'PrintForces'.")
 
-    call getDescendant(root, "Hamiltonian/DFTB/Rangeseparated", ch1)
-    if (associated(ch1)) then
-      call detailedWarning(ch1, "'Hamiltonian/DFTB/Rangeseparated' block renamed to&
-          & 'Hamiltonian/DFTB/Hybrid'.")
-      call setNodeName(ch1, "Hybrid")
-    end if
+    call renameDescendant(root, "Hamiltonian/DFTB/Rangeseparated", "Hybrid", &
+        &"'Hamiltonian/DFTB/Rangeseparated' block renamed to 'Hamiltonian/DFTB/Hybrid'.")
 
     call getDescendant(root, "Hamiltonian/DFTB/Filling/MethfesselPaxton", ch1)
     if (.not.associated(ch1)) then
