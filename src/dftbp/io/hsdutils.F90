@@ -1665,6 +1665,9 @@ contains
   ! ============================================================
 
   !> Get a child table by name.
+  !!
+  !! Uses hsd_get_table with auto_wrap to automatically promote value nodes
+  !! to table nodes with a #text child (handles bare "Key = value" patterns).
   subroutine getChild(node, name, child, requested, modifier, emptyIfMissing)
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
@@ -1676,43 +1679,13 @@ contains
     integer :: stat
     logical :: isRequired
     logical :: emptyIfMissing_
-    class(hsd_node), pointer :: anyChild
 
     isRequired = .true.
     if (present(requested)) isRequired = requested
     emptyIfMissing_ = .false.
     if (present(emptyIfMissing)) emptyIfMissing_ = emptyIfMissing
 
-    call hsd_get_table(node, name, child, stat)
-
-    if (stat /= HSD_STAT_OK) then
-      call hsd_get_child(node, name, anyChild, stat)
-      if (stat == HSD_STAT_OK .and. associated(anyChild)) then
-        select type (anyChild)
-        type is (hsd_value)
-          block
-            character(len=:), allocatable :: valStr
-            integer :: getStat
-            type(hsd_table) :: wrapTbl
-            call anyChild%get_string(valStr, getStat)
-            if (getStat /= 0) valStr = ""
-            call new_table(wrapTbl, name=anyChild%name, attrib=anyChild%attrib, line=anyChild%line)
-            block
-              type(hsd_value) :: txt
-              call new_value(txt, name="#text", line=anyChild%line)
-              call txt%set_string(valStr)
-              call wrapTbl%add_child(txt)
-            end block
-            call hsd_remove_child(node, name, stat, case_insensitive=.true.)
-            call addChildGetPtr_(node, wrapTbl, child)
-          end block
-        class default
-          child => null()
-        end select
-      else
-        child => null()
-      end if
-    end if
+    call hsd_get_table(node, name, child, stat, auto_wrap=.true.)
 
     if (.not. associated(child)) then
       if (emptyIfMissing_ .and. .not. isRequired) then
@@ -1725,7 +1698,6 @@ contains
         call dftbp_error(node, "Missing required block: '" // name // "'")
       end if
     end if
-
     if (present(modifier) .and. associated(child)) then
       call getModifier(node, name, modifier)
     end if
