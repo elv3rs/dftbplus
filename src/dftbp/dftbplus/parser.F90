@@ -54,7 +54,8 @@ module dftbp_dftbplus_parser
       & detailedError, detailedWarning, getChild, getChildren, getChildValue, &
       & getSelectedAtomIndices, setChild, setChildValue, getNodeName, getNodeHSDName, &
       & getNodeName2, getLength, getItem1, destroyNodeList, removeChild, &
-      & convertUnitHsd, hsd_rename_child, setUnprocessed
+      & convertUnitHsd, hsd_rename_child, setUnprocessed, new_table, hasInlineData, &
+      & hsd_get_table
   use dftbp_extlibs_hsddata, only : data_load, data_detect_format, DATA_FMT_AUTO
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3, determinant33, diagonal
@@ -131,20 +132,43 @@ contains
   !>   .json → JSON format
   !>   .toml → TOML format
   !>   other → defaults to HSD format
+  !>
+  !> The loaded content is wrapped in a rootTag child to match the tree
+  !> structure expected by parseHsdTree (document → rootTag → children).
   subroutine readHsdFile(hsdFile, hsdTree)
 
     !> Name of the input file
     character(*), intent(in) :: hsdFile
 
-    !> Data tree representation of the input
+    !> Data tree representation of the input (document → rootTag → content)
     type(hsd_table), pointer :: hsdTree
 
+    type(hsd_table), pointer :: content, existingRoot
     type(hsd_error_t), allocatable :: hsdError
+    integer :: stat
 
-    allocate(hsdTree)
-    call data_load(hsdFile, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+    ! Load raw content into a temporary table
+    allocate(content)
+    call data_load(hsdFile, content, hsdError, fmt=DATA_FMT_AUTO)
     if (allocated(hsdError)) then
       call error("Error loading input file '" // trim(hsdFile) // "': " // trim(hsdError%message))
+    end if
+
+    ! Check if content already has a rootTag child (e.g. from processed dftb_pin.hsd).
+    ! If so, we must not wrap again — just use the content as the document node.
+    existingRoot => null()
+    call hsd_get_table(content, rootTag, existingRoot, stat)
+    if (associated(existingRoot)) then
+      ! Already wrapped (dftb_pin.hsd starts with "dftbplusinput { ... }")
+      content%name = "document"
+      hsdTree => content
+    else
+      ! Bare content — wrap in document structure: hsdTree → rootTag → {children}
+      ! This matches the tree layout the legacy parseHSD() produced.
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
     end if
 
   end subroutine readHsdFile
@@ -650,6 +674,7 @@ contains
     call getChildValue(node, "PolynomialRepulsive", value1, "", child=child, list=.true.,&
         & allowEmptyValue=.true., dummyValue=.true.)
     call getNodeName2(value1, buffer)
+    if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
     select case (buffer)
     case ("")
       repPoly(:,:) = .false.
@@ -2616,7 +2641,7 @@ contains
             call getChildValue(value1, "DynMixingParameters", value2, "", child=child,&
                 & allowEmptyValue=.true.)
             call getNodeName2(value2, buffer2)
-            if (buffer2 == "") then
+            if (buffer2 == "" .and. .not. hasInlineData(child)) then
               inp%nConvMixParam = 0
             else
               call init(lr1)

@@ -226,12 +226,14 @@ contains
 
   $:TEST("getNodeName2_test", label="hsdcompat")
     !! Get the name of a table node
-    type(hsd_table) :: root
+    type(hsd_table), target :: root
+    type(hsd_table), pointer :: rootPtr
     character(len=:), allocatable :: name
 
     call new_table(root, "MyTable")
-    call getNodeName2(root, name)
-    @:ASSERT(name == "MyTable")
+    rootPtr => root
+    call getNodeName2(rootPtr, name)
+    @:ASSERT(name == "mytable")
   $:END_TEST()
 
 
@@ -278,7 +280,7 @@ contains
       call getChildValue(child, "", dispatch)
       @:ASSERT(associated(dispatch))
       call getNodeName2(dispatch, name)
-      @:ASSERT(name == "ConjugateGradient")
+      @:ASSERT(name == "conjugategradient")
     end block
   $:END_TEST()
 
@@ -304,17 +306,19 @@ contains
     call new_table(tbl, name="MyBlock")
     ptr => tbl
     call getNodeName(ptr, name)
-    @:ASSERT(name == "MyBlock")
+    @:ASSERT(name == "myblock")
   $:END_TEST()
 
 
   $:TEST("getNodeHSDName_works", label="hsdcompat")
     !! getNodeHSDName returns the node name
-    type(hsd_table) :: root
+    type(hsd_table), target :: root
+    type(hsd_table), pointer :: rootPtr
     character(len=:), allocatable :: name
 
     call new_table(root, name="TestNode")
-    call getNodeHSDName(root, name)
+    rootPtr => root
+    call getNodeHSDName(rootPtr, name)
     @:ASSERT(name == "TestNode")
   $:END_TEST()
 
@@ -329,7 +333,7 @@ contains
     call setChild(root, "NewBlock", child)
     @:ASSERT(associated(child))
     call getNodeName2(child, name)
-    @:ASSERT(name == "NewBlock")
+    @:ASSERT(name == "newblock")
     ! Verify the child is accessible via getChild
     block
       type(hsd_table), pointer :: found

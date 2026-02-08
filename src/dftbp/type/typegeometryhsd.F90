@@ -248,7 +248,7 @@ contains
       call detailedError(node, "Unknown boundary condition type '" &
           &// txt // "'")
     end select
-    if (iStart < iEnd) then
+    if (iStart < iEnd .and. len_trim(text(iStart:iEnd - 1)) > 0) then
       call detailedError(node, "Found trailing characters in first line")
     end if
     iStart = iEnd + 1
@@ -291,7 +291,7 @@ contains
       call getNextToken(text(:iEnd), coords, iStart, iErr)
       call checkError(node, iErr, "Bad coordinates for atom "//trim(errorStr))
       geo%coords(:, ii) = coords(:)
-      if (iStart < iEnd) then
+      if (iStart < iEnd .and. len_trim(text(iStart:iEnd - 1)) > 0) then
         call detailedError(node, "Found trailing characters for atom "//trim(errorStr))
       end if
       iStart = iEnd + 1
@@ -338,7 +338,7 @@ contains
     end if
 
     ! Check if any data remains in the geometry - should be nothing left now
-    if (iStart <= len(text)) then
+    if (iStart <= len(text) .and. len_trim(text(iStart:)) > 0) then
       call detailedError(node, "Superfluous data found. Check if specified number of atoms matches&
           & the number of actually entered positions.")
     end if
@@ -407,7 +407,7 @@ contains
     call getNextToken(text(:iEnd), geo%nAtom, iStart, iErr)
     call checkError(node, iErr, "Bad number of atoms.")
 
-    if (iStart < iEnd) then
+    if (iStart < iEnd .and. len_trim(text(iStart:iEnd - 1)) > 0) then
       call checkError(node, TOKEN_ERROR, "Additional field(s) found on first line of xyz geometry")
     end if
 
@@ -462,7 +462,7 @@ contains
       call detailedError(node, "Nr. of species and nr. of specified elements do not match.")
     end if
 
-    if (iStart <= len(text)) then
+    if (iStart <= len(text) .and. len_trim(text(iStart:)) > 0) then
       call detailedError(node, "Superfluous data found. Check if specified number of atoms matches&
           & the number of actually entered positions.")
     end if

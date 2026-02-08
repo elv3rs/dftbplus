@@ -12,7 +12,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, &
       & getChild, getChildren, getChildValue, getSelectedAtomIndices, setChildValue, &
       & getNodeName, getNodeName2, getLength, getItem1, destroyNodeList, &
-      & convertUnitHsd, hsd_rename_child
+      & convertUnitHsd, hsd_rename_child, hasInlineData
   use dftbp_io_message, only : error
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_solvation_solvparser, only : readCM5
@@ -469,7 +469,7 @@ contains
     call getChildValue(child, "Points", child2, "", child=child3, modifier=modifier,&
         & allowEmptyValue=.true.)
     call getNodeName2(child2, buffer)
-    if (buffer /= "") then
+    if (buffer /= "" .or. hasInlineData(child3)) then
       call getChildValue(child3, "", 3, lr1, modifier=modifier)
       allocate(ctrl%elStatPotentialsInp%espGrid(3,len(lr1)))
       call asArray(lr1, ctrl%elStatPotentialsInp%espGrid)

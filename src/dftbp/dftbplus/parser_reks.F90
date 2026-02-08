@@ -15,7 +15,7 @@ module dftbp_dftbplus_parser_reks
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c
   use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, &
-      & getNodeName, getNodeHSDName, getNodeName2
+      & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_linkedlist, only : asArray, destruct, init, len, TListRealR1, TListString
   use dftbp_type_typegeometry, only : TGeometry
@@ -217,7 +217,7 @@ contains
     call getChildValue(node, "SpinTuning", value1, "", child=child, modifier=modifier,&
         & allowEmptyValue=.true.)
     call getNodeName2(value1, buffer)
-    if (buffer == "") then
+    if (buffer == "" .and. .not. hasInlineData(child)) then
       ! no 'SpinTuning' block in REKS input
       allocate(ctrl%reksInp%Tuning(nType))
       do iType = 1, nType

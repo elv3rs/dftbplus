@@ -28,7 +28,7 @@ module waveplot_initwaveplot
       & getItem1, getLength, getNodeName, hsd_dump, hsd_error_t,&
       & hsd_rename_child, detailedError, detailedWarning, getChild, getChildren,&
       & getChildValue, getSelectedIndices, setChild, setChildValue, convertUnitHsd,&
-      & warnUnprocessedNodes, destroyNodeList, removeChildNodes
+      & warnUnprocessedNodes, destroyNodeList, removeChildNodes, new_table
   use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
@@ -294,11 +294,18 @@ contains
     call printDftbHeader('(WAVEPLOT '// version //')', releaseYear)
 
     ! Read in input file as HSD
-    allocate(hsdTree)
-    call data_load(hsdInput, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
-    if (allocated(hsdError)) then
-      call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
-    end if
+    block
+      type(hsd_table), pointer :: content
+      allocate(content)
+      call data_load(hsdInput, content, hsdError, fmt=DATA_FMT_AUTO)
+      if (allocated(hsdError)) then
+        call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
+      end if
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
+    end block
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"

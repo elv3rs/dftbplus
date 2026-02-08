@@ -30,10 +30,13 @@ cmake --build build -j$(nproc) 2>&1 | tail -5
 ctest --test-dir build -R "unit" 2>&1 | tail -5
 
 # Application tests
-ctest --test-dir build -R "app/dftb+" 2>&1 | tail -5
-
-
+ctest --test-dir build -R "app/dftb+" -j6 --stop-on-failure --output-on-failure | tee testlog.txt | tail -5
 ```
+
+Application tests take a very long time to run.
+Therefore prefer to run a subset whenever possible, and always employ parallelism and use --stop-on-failure --output-on-failure.
+Do not run the tests multiple time to grep for things, instead direct the output to a file the first time round.
+Ideally, distill iterated upon behaviour into a unit test.
 
 ## Build System
 

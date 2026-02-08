@@ -21,7 +21,7 @@
 !>   - convertUnitHsd(mod,units,child,val)  → convertUnitHsd(mod,units,child,val)
 !>
 !> This is a TRANSITIONAL module — it will be removed once all call sites are converted
-!> to direct hsd-fortran API calls (Phase 7).
+!> to direct hsd-fortran API calls.
 module dftbp_io_hsdcompat
   use dftbp_common_accuracy, only : dp, lc, mc
   use dftbp_common_status, only : TStatus
@@ -54,6 +54,7 @@ module dftbp_io_hsdcompat
   public :: getSelectedAtomIndices, getSelectedIndices
   public :: splitModifier
   public :: warnUnprocessedNodes, setUnprocessed, setProcessed
+  public :: hasInlineData
   public :: getDescendant, setNodeName, removeChildNodes, destroyNode, removeChild
   public :: renameDescendant
   public :: checkError
@@ -170,6 +171,77 @@ module dftbp_io_hsdcompat
 contains
 
   ! ============================================================
+  !  Private helpers
+  ! ============================================================
+
+  !> Resolve empty name to "#text" for inline-text access.
+  !>
+  !> The legacy xmlf90 API used getChildValue(node, "", val) to read the text
+  !> content of the current element.  In hsd-fortran, inline text is stored as
+  !> a child named "#text".  This helper maps "" → "#text" so that
+  !> hsd_get / hsd_get_or_set / hsd_get_matrix find the right child.
+  pure function textName_(name) result(resolved)
+    character(len=*), intent(in) :: name
+    character(len=:), allocatable :: resolved
+
+    if (len_trim(name) == 0) then
+      resolved = "#text"
+    else
+      resolved = name
+    end if
+
+  end function textName_
+
+  !> Add a table child to a parent and return a pointer to the STORED copy.
+  !>
+  !> add_child() copies via source=, so the local table and the stored table are
+  !> distinct objects.  This helper ensures callers get a pointer to the stored
+  !> copy so that subsequent modifications (adding sub-children, etc.) affect
+  !> the tree.
+  subroutine addChildGetPtr_(parent, child, stored)
+    type(hsd_table), intent(inout), target :: parent
+    type(hsd_table), intent(in) :: child
+    type(hsd_table), pointer, intent(out) :: stored
+
+    class(hsd_node), pointer :: storedNode
+
+    call parent%add_child(child)
+    call parent%get_child(parent%num_children, storedNode)
+    select type (t => storedNode)
+    type is (hsd_table)
+      stored => t
+    class default
+      stored => null()
+    end select
+
+  end subroutine addChildGetPtr_
+
+
+  !> Remove any existing child with the given name, then create a new TABLE
+  !> child and return a pointer to the stored copy.
+  !>
+  !> Used by setChVal_* when the caller requests a child pointer. By creating
+  !> a TABLE + #text VALUE instead of a bare VALUE, we preserve typed data for
+  !> later hsd_get() calls while also providing a valid hsd_table pointer.
+  subroutine replaceOrAddTable_(node, name, child)
+    type(hsd_table), intent(inout), target :: node
+    character(len=*), intent(in) :: name
+    type(hsd_table), pointer, intent(out) :: child
+
+    integer :: stat
+    type(hsd_table) :: newTable
+
+    ! Remove any existing child with this name (VALUE or TABLE)
+    call hsd_remove_child(node, name, stat, case_insensitive=.true.)
+
+    ! Create and add a new TABLE
+    call new_table(newTable, name=name)
+    call addChildGetPtr_(node, newTable, child)
+
+  end subroutine replaceOrAddTable_
+
+
+  ! ============================================================
   !  getChildValue — scalar required (no default)
   ! ============================================================
 
@@ -183,7 +255,7 @@ contains
 
     integer :: stat
 
-    call hsd_get(node, name, val, stat=stat)
+    call hsd_get(node, textName_(name), val, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required integer value: '" // name // "'"))
     end if
@@ -205,7 +277,7 @@ contains
 
     integer :: stat
 
-    call hsd_get(node, name, val, stat=stat)
+    call hsd_get(node, textName_(name), val, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required real value: '" // name // "'"))
     end if
@@ -227,7 +299,7 @@ contains
 
     integer :: stat
 
-    call hsd_get(node, name, val, stat=stat)
+    call hsd_get(node, textName_(name), val, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required logical value: '" // name // "'"))
     end if
@@ -256,9 +328,9 @@ contains
     integer :: stat
 
     if (present(default)) then
-      call hsd_get_or_set(node, name, val, default)
+      call hsd_get_or_set(node, textName_(name), val, default)
     else
-      call hsd_get(node, name, val, stat=stat)
+      call hsd_get(node, textName_(name), val, stat=stat)
       if (stat /= HSD_STAT_OK) then
         call error(formatErrMsg_(node, "Missing required string value: '" // name // "'"))
       end if
@@ -285,7 +357,7 @@ contains
     type(hsd_table), pointer, intent(out), optional :: child
     logical, intent(in), optional :: isDefaultExported
 
-    call hsd_get_or_set(node, name, val, default)
+    call hsd_get_or_set(node, textName_(name), val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
     if (present(child)) then
       call hsd_get_table(node, name, child)
@@ -304,7 +376,7 @@ contains
     type(hsd_table), pointer, intent(out), optional :: child
     logical, intent(in), optional :: isDefaultExported
 
-    call hsd_get_or_set(node, name, val, default)
+    call hsd_get_or_set(node, textName_(name), val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
     if (present(child)) then
       call hsd_get_table(node, name, child)
@@ -322,7 +394,7 @@ contains
     character(len=:), allocatable, intent(out), optional :: modifier
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_get_or_set(node, name, val, default)
+    call hsd_get_or_set(node, textName_(name), val, default)
     if (present(modifier)) call getModifier_(node, name, modifier)
     if (present(child)) then
       call hsd_get_table(node, name, child)
@@ -348,7 +420,7 @@ contains
     integer, allocatable :: tmp(:)
     integer :: stat, nn
 
-    call hsd_get(node, name, tmp, stat=stat)
+    call hsd_get(node, textName_(name), tmp, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required integer array: '" // name // "'"))
     end if
@@ -375,7 +447,7 @@ contains
     real(dp), allocatable :: tmp(:)
     integer :: stat, nn
 
-    call hsd_get(node, name, tmp, stat=stat)
+    call hsd_get(node, textName_(name), tmp, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required real array: '" // name // "'"))
     end if
@@ -402,7 +474,7 @@ contains
     logical, allocatable :: tmp(:)
     integer :: stat, nn
 
-    call hsd_get(node, name, tmp, stat=stat)
+    call hsd_get(node, textName_(name), tmp, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required logical array: '" // name // "'"))
     end if
@@ -434,13 +506,15 @@ contains
     integer :: stat, nrows, ncols, r, c
     integer :: nr, nc
 
-    call hsd_get_matrix(node, name, tmp, nrows, ncols, stat=stat)
+    call hsd_get_matrix(node, textName_(name), tmp, nrows, ncols, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required real matrix: '" // name // "'"))
     end if
-    nr = min(nrows, size(val, 1))
-    nc = min(ncols, size(val, 2))
-    val(:nr, :nc) = tmp(:nr, :nc)
+    ! Legacy compatibility: the old xmlf90 code read matrix values sequentially
+    ! (row by row from text) and filled Fortran arrays in column-major order.
+    ! hsd_get_matrix returns tmp(nrows, ncols) in text layout (rows = lines).
+    ! We must flatten in row-major (text) order and refill in column-major.
+    call fillColumnMajorFromTextMatrix_real_(tmp, nrows, ncols, val)
     if (present(nItem)) nItem = nrows * ncols
     if (present(modifier)) call getModifier_(node, name, modifier)
     if (present(child)) then
@@ -463,13 +537,11 @@ contains
     integer :: stat, nrows, ncols
     integer :: nr, nc
 
-    call hsd_get_matrix(node, name, tmp, nrows, ncols, stat=stat)
+    call hsd_get_matrix(node, textName_(name), tmp, nrows, ncols, stat=stat)
     if (stat /= HSD_STAT_OK) then
       call error(formatErrMsg_(node, "Missing required integer matrix: '" // name // "'"))
     end if
-    nr = min(nrows, size(val, 1))
-    nc = min(ncols, size(val, 2))
-    val(:nr, :nc) = tmp(:nr, :nc)
+    call fillColumnMajorFromTextMatrix_int_(tmp, nrows, ncols, val)
     if (present(nItem)) nItem = nrows * ncols
     if (present(modifier)) call getModifier_(node, name, modifier)
     if (present(child)) then
@@ -493,7 +565,7 @@ contains
     integer :: stat, nrows, ncols
     integer :: nr, nc
 
-    call hsd_get_matrix(node, name, tmp, nrows, ncols, stat=stat)
+    call hsd_get_matrix(node, textName_(name), tmp, nrows, ncols, stat=stat)
     if (stat /= HSD_STAT_OK) then
       nr = min(size(default, 1), size(val, 1))
       nc = min(size(default, 2), size(val, 2))
@@ -502,9 +574,7 @@ contains
       call hsd_set(node, name, reshape(default, [size(default)]))
       if (present(nItem)) nItem = size(default)
     else
-      nr = min(nrows, size(val, 1))
-      nc = min(ncols, size(val, 2))
-      val(:nr, :nc) = tmp(:nr, :nc)
+      call fillColumnMajorFromTextMatrix_real_(tmp, nrows, ncols, val)
       if (present(nItem)) nItem = nrows * ncols
     end if
     if (present(modifier)) call getModifier_(node, name, modifier)
@@ -568,11 +638,60 @@ contains
       ! Find the named child table
       call hsd_get_table(node, name, container, stat)
       if (stat /= HSD_STAT_OK) then
+        ! Not found as a table — check if it exists as a value node.
+        ! (Same value/table mismatch handling as getChild.)
+        block
+          class(hsd_node), pointer :: anyChild
+          call hsd_get_child(node, name, anyChild, stat)
+          if (stat == HSD_STAT_OK .and. associated(anyChild)) then
+            select type (anyChild)
+            type is (hsd_value)
+              ! Wrap value in a table with #text child (like getChild does)
+              block
+                character(len=:), allocatable :: valStr
+                integer :: getStat
+                type(hsd_table) :: wrapTbl
+                call anyChild%get_string(valStr, getStat)
+                if (getStat /= 0) valStr = ""
+                call new_table(wrapTbl, name=anyChild%name, attrib=anyChild%attrib, &
+                    & line=anyChild%line)
+                block
+                  type(hsd_value) :: txt
+                  call new_value(txt, name="#text", line=anyChild%line)
+                  call txt%set_string(valStr)
+                  call wrapTbl%add_child(txt)
+                end block
+                call hsd_remove_child(node, name, stat, case_insensitive=.true.)
+                call addChildGetPtr_(node, wrapTbl, container)
+              end block
+            class default
+              container => null()
+              stat = HSD_STAT_NOT_FOUND
+            end select
+          else
+            stat = HSD_STAT_NOT_FOUND
+          end if
+        end block
+      end if
+
+      if (.not. associated(container)) then
         if (present(default)) then
-          ! Create the child with default
-          allocate(container)
-          call new_table(container, name=tolower(name))
-          call node%add_child(container)
+          ! Create the child with default.
+          ! In the legacy dispatch pattern, the default string becomes the name
+          ! of a child element inside the container (e.g. default="None" creates
+          ! a child table named "None" so getNodeName returns "none").
+          block
+            type(hsd_table) :: defContainer
+            call new_table(defContainer, name=tolower(name))
+            if (len_trim(default) > 0) then
+              block
+                type(hsd_table) :: default_child
+                call new_table(default_child, name=default)
+                call defContainer%add_child(default_child)
+              end block
+            end if
+            call addChildGetPtr_(node, defContainer, container)
+          end block
         else if (isRequired) then
           call error(formatErrMsg_(node, "Missing required block: '" // name // "'"))
           return
@@ -589,7 +708,7 @@ contains
     if (associated(container)) then
       call getFirstTableChild_(container, variableValue, stat)
     end if
-    ! If no table child found, variableValue stays null (= "#text" / inline data)
+    ! If no table child found, variableValue stays null (= no dispatch method / empty default)
 
     if (present(child)) then
       child => container
@@ -622,7 +741,7 @@ contains
     integer, allocatable :: tmp(:)
     integer :: stat, nn
 
-    call hsd_get(node, name, tmp, stat=stat)
+    call hsd_get(node, textName_(name), tmp, stat=stat)
     if (stat /= HSD_STAT_OK) then
       nn = min(size(default), size(val))
       val(:nn) = default(:nn)
@@ -654,7 +773,7 @@ contains
     real(dp), allocatable :: tmp(:)
     integer :: stat, nn
 
-    call hsd_get(node, name, tmp, stat=stat)
+    call hsd_get(node, textName_(name), tmp, stat=stat)
     if (stat /= HSD_STAT_OK) then
       nn = min(size(default), size(val))
       val(:nn) = default(:nn)
@@ -686,7 +805,7 @@ contains
     logical, allocatable :: tmp(:)
     integer :: stat, nn
 
-    call hsd_get(node, name, tmp, stat=stat)
+    call hsd_get(node, textName_(name), tmp, stat=stat)
     if (stat /= HSD_STAT_OK) then
       nn = min(size(default), size(val))
       val(:nn) = default(:nn)
@@ -1071,6 +1190,7 @@ contains
     integer :: stat
     logical :: isRequired
     logical :: emptyIfMissing_
+    class(hsd_node), pointer :: anyChild
 
     isRequired = .true.
     if (present(requested)) isRequired = requested
@@ -1080,12 +1200,52 @@ contains
     call hsd_get_table(node, name, child, stat)
 
     if (stat /= HSD_STAT_OK) then
-      child => null()
+      ! Not found as a table — check if it exists as a value node.
+      ! The legacy xmlf90 DOM used uniform fnode elements for both blocks and
+      ! scalar values.  hsd-fortran distinguishes hsd_table from hsd_value.
+      ! To preserve the legacy behaviour where getChild() could locate value
+      ! nodes (e.g. `ParserVersion = 4`), we wrap value children in a new
+      ! table and splice them into the tree so that subsequent calls for the
+      ! same name also succeed.
+      call hsd_get_child(node, name, anyChild, stat)
+      if (stat == HSD_STAT_OK .and. associated(anyChild)) then
+        select type (anyChild)
+        type is (hsd_value)
+          ! Wrap the value node in a table child so the caller sees an
+          ! hsd_table that contains the original value as inline text.
+          block
+            character(len=:), allocatable :: valStr
+            integer :: getStat
+            type(hsd_table) :: wrapTbl
+            call anyChild%get_string(valStr, getStat)
+            if (getStat /= 0) valStr = ""
+            call new_table(wrapTbl, name=anyChild%name, attrib=anyChild%attrib, line=anyChild%line)
+            block
+              type(hsd_value) :: txt
+              call new_value(txt, name="#text", line=anyChild%line)
+              call txt%set_string(valStr)
+              call wrapTbl%add_child(txt)
+            end block
+            ! Replace the value node with the new table in the parent
+            call hsd_remove_child(node, name, stat, case_insensitive=.true.)
+            call addChildGetPtr_(node, wrapTbl, child)
+          end block
+        class default
+          child => null()
+        end select
+      else
+        child => null()
+      end if
+    end if
+
+    if (.not. associated(child)) then
       if (emptyIfMissing_ .and. .not. isRequired) then
         ! Create an empty child block
-        allocate(child)
-        call new_table(child, name=tolower(name))
-        call node%add_child(child)
+        block
+          type(hsd_table) :: emptyChild
+          call new_table(emptyChild, name=tolower(name))
+          call addChildGetPtr_(node, emptyChild, child)
+        end block
       else if (isRequired) then
         call error(formatErrMsg_(node, "Missing required block: '" // name // "'"))
       end if
@@ -1109,11 +1269,18 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    ! In hsd-fortran, hsd_set always replaces (upsert semantics)
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      ! Create TABLE + typed #text VALUE so that both the child pointer
+      ! (for detailedWarning/setUnprocessed) and hsd_get() work correctly.
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        call new_value(txt, name="#text")
+        call txt%set_integer(val)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_int
@@ -1126,10 +1293,16 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        call new_value(txt, name="#text")
+        call txt%set_real(val)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_real
@@ -1142,10 +1315,16 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        call new_value(txt, name="#text")
+        call txt%set_logical(val)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_logical
@@ -1158,10 +1337,16 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        call new_value(txt, name="#text")
+        call txt%set_string(val)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_char
@@ -1182,10 +1367,17 @@ contains
       if (ii > 1) combined = combined // " "
       combined = combined // trim(val(ii))
     end do
-    call hsd_set(node, name, combined)
+
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        call new_value(txt, name="#text")
+        call txt%set_raw(combined)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, combined)
     end if
 
   end subroutine setChVal_charR1
@@ -1198,10 +1390,25 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        character(len=32) :: buffer
+        character(len=:), allocatable :: raw
+        integer :: ii
+        raw = ""
+        do ii = 1, size(val)
+          write(buffer, '(I0)') val(ii)
+          if (ii > 1) raw = raw // " "
+          raw = raw // trim(adjustl(buffer))
+        end do
+        call new_value(txt, name="#text")
+        call txt%set_raw(raw)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_intR1
@@ -1214,10 +1421,25 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        character(len=32) :: buffer
+        character(len=:), allocatable :: raw
+        integer :: ii
+        raw = ""
+        do ii = 1, size(val)
+          write(buffer, '(G0)') val(ii)
+          if (ii > 1) raw = raw // " "
+          raw = raw // trim(adjustl(buffer))
+        end do
+        call new_value(txt, name="#text")
+        call txt%set_raw(raw)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_realR1
@@ -1230,10 +1452,28 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        character(len=32) :: buffer
+        character(len=:), allocatable :: raw
+        integer :: ir, ic
+        raw = ""
+        do ir = 1, size(val, 1)
+          if (ir > 1) raw = raw // new_line('a')
+          do ic = 1, size(val, 2)
+            write(buffer, '(I0)') val(ir, ic)
+            if (ic > 1) raw = raw // " "
+            raw = raw // trim(adjustl(buffer))
+          end do
+        end do
+        call new_value(txt, name="#text")
+        call txt%set_raw(raw)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_intR2
@@ -1246,10 +1486,28 @@ contains
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_set(node, name, val)
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        character(len=32) :: buffer
+        character(len=:), allocatable :: raw
+        integer :: ir, ic
+        raw = ""
+        do ir = 1, size(val, 1)
+          if (ir > 1) raw = raw // new_line('a')
+          do ic = 1, size(val, 2)
+            write(buffer, '(G0)') val(ir, ic)
+            if (ic > 1) raw = raw // " "
+            raw = raw // trim(adjustl(buffer))
+          end do
+        end do
+        call new_value(txt, name="#text")
+        call txt%set_raw(raw)
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, val)
     end if
 
   end subroutine setChVal_realR2
@@ -1284,10 +1542,17 @@ contains
       end do
       if (ii < nRow) strBuffer = strBuffer // new_line('a')
     end do
-    call hsd_set(node, name, trim(adjustl(strBuffer)))
+
     if (present(child)) then
-      call hsd_get_table(node, name, child)
-      if (.not. associated(child)) child => node
+      call replaceOrAddTable_(node, name, child)
+      block
+        type(hsd_value) :: txt
+        call new_value(txt, name="#text")
+        call txt%set_raw(trim(adjustl(strBuffer)))
+        call child%add_child(txt)
+      end block
+    else
+      call hsd_set(node, name, trim(adjustl(strBuffer)))
     end if
     if (present(modifier)) call hsd_set_attrib(node, name, modifier)
 
@@ -1407,18 +1672,52 @@ contains
 
   !> Get the name of an HSD node (replaces legacy getNodeName / getNodeName2).
   !>
-  !> Returns the node's name as an allocatable character string.
+  !> Returns the node's name as an allocatable character string, lowercased
+  !> to match the legacy xmlf90 HSD parser behavior.
+  !> If node pointer is null, returns "".
   subroutine getNodeName2(node, nodeName)
-    type(hsd_table), intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
     character(len=:), allocatable, intent(out) :: nodeName
 
+    if (.not. associated(node)) then
+      nodeName = ""
+      return
+    end if
+
     if (allocated(node%name)) then
-      nodeName = node%name
+      nodeName = tolower(node%name)
     else
       nodeName = ""
     end if
 
   end subroutine getNodeName2
+
+
+  !> Check whether inline data was provided in a getChildValue table result.
+  !>
+  !> After calling getChildValue(node, name, variableValue, "", child=child),
+  !> getNodeName2(variableValue) returns "" for BOTH empty defaults AND inline
+  !> text data (because variableValue is null in both cases). This function
+  !> distinguishes the two by checking if the container (child) has text content.
+  !>
+  !> Usage:
+  !>   call getChildValue(node, "Velocities", value1, "", child=child, ...)
+  !>   if (.not. associated(value1) .and. .not. hasInlineData(child)) then
+  !>     ! Truly empty — no data provided
+  !>   else
+  !>     ! Data provided (inline text or dispatch method)
+  !>   end if
+  function hasInlineData(container) result(has)
+    type(hsd_table), pointer, intent(in) :: container
+    logical :: has
+
+    if (.not. associated(container)) then
+      has = .false.
+    else
+      has = hasTextChildren_(container)
+    end if
+
+  end function hasInlineData
 
   ! ============================================================
   !  warnUnprocessedNodes — stub for transition
@@ -1445,7 +1744,7 @@ contains
   !>
   !> For hsd_table nodes, returns the node name. For the dispatch pattern where
   !> the table pointer is null (indicating inline value data), returns "#text".
-  !> This matches the legacy xmlf90 getNodeName behavior.
+  !> This matches the legacy xmlf90 getNodeName behavior where names were lowercased.
   subroutine getNodeName(node, nodeName)
     type(hsd_table), pointer, intent(in) :: node
     character(len=:), allocatable, intent(out) :: nodeName
@@ -1453,7 +1752,7 @@ contains
     if (.not. associated(node)) then
       nodeName = textNodeName
     else if (allocated(node%name)) then
-      nodeName = node%name
+      nodeName = tolower(node%name)
     else
       nodeName = ""
     end if
@@ -1468,9 +1767,15 @@ contains
   !>
   !> Returns the node name in its original case. In the legacy code, this would
   !> look up the attrName attribute. In hsd-fortran, we just return the name.
+  !> If node pointer is null, returns "".
   subroutine getNodeHSDName(node, nodeName)
-    type(hsd_table), intent(in), target :: node
+    type(hsd_table), pointer, intent(in) :: node
     character(len=:), allocatable, intent(out) :: nodeName
+
+    if (.not. associated(node)) then
+      nodeName = ""
+      return
+    end if
 
     if (allocated(node%name)) then
       nodeName = node%name
@@ -1496,13 +1801,21 @@ contains
     logical, intent(in), optional :: list
     character(len=*), intent(in), optional :: modifier
 
-    type(hsd_table), pointer :: newChild
+    type(hsd_table) :: newTable
+    class(hsd_node), pointer :: storedChild
 
-    ! Create and add a new table child
-    allocate(newChild)
-    call new_table(newChild, name=name)
-    call node%add_child(newChild)
-    child => newChild
+    ! Create a table and add it (add_child makes a copy via source=)
+    call new_table(newTable, name=name)
+    call node%add_child(newTable)
+
+    ! Get pointer to the STORED copy (not the local original)
+    call node%get_child(node%num_children, storedChild)
+    select type (t => storedChild)
+    type is (hsd_table)
+      child => t
+    class default
+      child => null()
+    end select
 
     if (present(modifier)) then
       if (len_trim(modifier) > 0) then
@@ -1570,7 +1883,7 @@ contains
     logical, intent(in), optional :: processed
     type(hsd_table), pointer, intent(out), optional :: parent
 
-    integer :: stat, iSlash
+    integer :: iSlash
     logical :: isRequired
     type(hsd_table), pointer :: cur
     character(len=:), allocatable :: remaining, segment
@@ -1595,9 +1908,12 @@ contains
 
       if (present(parent)) parent => cur
 
-      call hsd_get_table(cur, segment, child, stat)
-      if (stat /= HSD_STAT_OK) then
-        child => null()
+      ! Use getChild which handles VALUE→TABLE wrapping, so that
+      ! descendant paths like "Options/CalculateForces" work even when
+      ! the leaf is a VALUE node (the legacy xmlf90 DOM made no such
+      ! distinction).
+      call getChild(cur, segment, child, requested=.false.)
+      if (.not. associated(child)) then
         if (isRequired) then
           call error(formatErrMsg_(root, "Required path not found: '" // path // "'"))
         end if
@@ -1928,6 +2244,11 @@ contains
   ! ============================================================
 
   !> Get the modifier (attrib) of a child node by path.
+  !>
+  !> When name is empty, returns the attrib of the parent node itself (legacy
+  !> behavior for inline-value patterns like ``getChildValue(node, "", val,
+  !> modifier=modifier)``).  When name is non-empty, returns the attrib of the
+  !> named child.
   subroutine getModifier_(parent, name, modifier)
     type(hsd_table), intent(in), target :: parent
     character(len=*), intent(in) :: name
@@ -1935,9 +2256,20 @@ contains
 
     integer :: stat
 
-    call hsd_get_attrib(parent, name, modifier, stat)
-    if (stat /= HSD_STAT_OK) then
-      modifier = ""
+    if (len_trim(name) == 0) then
+      ! Empty name: return the attrib of the node itself.
+      ! This matches the legacy xmlf90 behavior where the modifier lived on the
+      ! enclosing element (e.g. Temperature [Kelvin] = 1273.15).
+      if (allocated(parent%attrib)) then
+        modifier = parent%attrib
+      else
+        modifier = ""
+      end if
+    else
+      call hsd_get_attrib(parent, name, modifier, stat)
+      if (stat /= HSD_STAT_OK) then
+        modifier = ""
+      end if
     end if
 
   end subroutine getModifier_
@@ -1965,6 +2297,31 @@ contains
     end do
 
   end subroutine getFirstTableChild_
+
+
+  !> Check whether a table node has any text (value) children.
+  !>
+  !> Returns .true. if the node contains at least one hsd_value child with
+  !> non-empty text content. Used to distinguish empty default containers
+  !> from containers with inline text data.
+  function hasTextChildren_(node) result(has)
+    type(hsd_table), intent(in) :: node
+    logical :: has
+
+    type(hsd_iterator) :: iter
+    class(hsd_node), pointer :: cur
+
+    has = .false.
+    call iter%init(node)
+    do while (iter%next(cur))
+      select type (cur)
+      type is (hsd_value)
+        has = .true.
+        return
+      end select
+    end do
+
+  end function hasTextChildren_
 
 
   !> Get the text content of a node (public wrapper around getTextContent_).
@@ -2012,12 +2369,13 @@ contains
       end if
     end if
 
-    ! Collect all unnamed value children's text
+    ! Collect all unnamed or #text value children's text
     call iter%init(container)
     do while (iter%next(cur))
       select type (v => cur)
       type is (hsd_value)
-        if (.not. allocated(v%name) .or. len_trim(v%name) == 0) then
+        if (.not. allocated(v%name) .or. len_trim(v%name) == 0 &
+            & .or. v%name == "#text") then
           call v%get_string(piece, stat)
           if (stat == HSD_STAT_OK .and. allocated(piece)) then
             if (len(text) > 0) then
@@ -2032,7 +2390,7 @@ contains
 
     if (len(text) == 0) then
       ! Fallback: try hsd_get as string (handles simple named values)
-      call hsd_get(container, "", text, stat=stat)
+      call hsd_get(container, "#text", text, stat=stat)
       if (stat /= HSD_STAT_OK) text = ""
     end if
 
@@ -2107,6 +2465,64 @@ contains
     write(unit, '(A)') str
 
   end subroutine dumpHsd_unit
+
+
+  ! ============================================================
+  !  fillColumnMajorFromTextMatrix — legacy matrix-fill helpers
+  ! ============================================================
+
+  !> Fill a Fortran rank-2 real array in column-major order from a text-layout matrix.
+  !>
+  !> hsd_get_matrix returns tmp(nrows, ncols) where rows correspond to text lines
+  !> and columns to values within each line. The legacy xmlf90 code read all values
+  !> sequentially (row by row) and filled the Fortran array in column-major order.
+  !> This helper reproduces that behavior.
+  subroutine fillColumnMajorFromTextMatrix_real_(tmp, nrows, ncols, val)
+    real(dp), intent(in) :: tmp(:,:)
+    integer, intent(in) :: nrows, ncols
+    real(dp), intent(out) :: val(:,:)
+
+    integer :: totalText, totalVal, fillSize, k, i, j
+
+    totalText = nrows * ncols
+    totalVal = size(val, 1) * size(val, 2)
+    fillSize = min(totalText, totalVal)
+
+    ! Fill val in column-major order from text values in row-major order
+    k = 0
+    outer: do j = 1, size(val, 2)
+      do i = 1, size(val, 1)
+        k = k + 1
+        if (k > fillSize) exit outer
+        ! k-th value in text order is at tmp row (k-1)/ncols+1, col mod(k-1,ncols)+1
+        val(i, j) = tmp((k - 1) / ncols + 1, mod(k - 1, ncols) + 1)
+      end do
+    end do outer
+
+  end subroutine fillColumnMajorFromTextMatrix_real_
+
+  !> Fill a Fortran rank-2 integer array in column-major order from a text-layout matrix.
+  subroutine fillColumnMajorFromTextMatrix_int_(tmp, nrows, ncols, val)
+    integer, intent(in) :: tmp(:,:)
+    integer, intent(in) :: nrows, ncols
+    integer, intent(out) :: val(:,:)
+
+    integer :: totalText, totalVal, fillSize, k, i, j
+
+    totalText = nrows * ncols
+    totalVal = size(val, 1) * size(val, 2)
+    fillSize = min(totalText, totalVal)
+
+    k = 0
+    outer: do j = 1, size(val, 2)
+      do i = 1, size(val, 1)
+        k = k + 1
+        if (k > fillSize) exit outer
+        val(i, j) = tmp((k - 1) / ncols + 1, mod(k - 1, ncols) + 1)
+      end do
+    end do outer
+
+  end subroutine fillColumnMajorFromTextMatrix_int_
 
 
 end module dftbp_io_hsdcompat

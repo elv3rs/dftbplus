@@ -231,19 +231,47 @@ Options:
 
 ---
 
-## Stop Condition Assessment
+## Phase A — Get Application Tests Passing
 
-All SPECIFICATION.md requirements are met:
-- Phases 0–7: ✅ Complete
-- §7.1 Regression: Unit tests pass (8/8 suites)
-- §7.2 Processed output: Round-trip test verifies semantic correctness
-- §7.3 Cross-format: HSD↔JSON and HSD↔XML round-trips verified
-- §7.4 Unit tests: All 6 items from the SPEC table are covered
-- §7.5 API tests: Updated in Phase 6
-- §1 Upstream prerequisites: All F1–F12 and D1–D5 implemented
-- §3.2 Parser splitting: 11 sub-modules extracted
+- [ ] **A.1** Fix `readHsdFile` root-tag wrapping — `data_load` does not wrap
+  content in a `rootTag` child. Every app test aborts with
+  *"Missing required block: 'dftbplusinput'"*. Wrap loaded tree in a child
+  named `rootTag` inside `readHsdFile()` in `parser.F90`.
 
-**No further actionable items remain. Project state meets SPECIFICATION.md.**
+- [ ] **A.2** Fix auxiliary app root-tag wrapping — same issue in initmodes,
+  initphonons, initwaveplot, transporttools/parser, skderivs.
+
+- [ ] **A.3** Run full application test suite and fix any remaining regressions.
+  Target: all ~379 tests passing (matching main branch).
+
+- [ ] **A.4** Verify `dftb_pin.hsd` round-trip consistency.
+
+- [ ] **A.5** Fix `autotest2` `pr -t2 -o4` compatibility with uutils coreutils
+  (optional, cosmetic).
+
+---
+
+## Phase B — Correctness & Output
+
+- [ ] **B.1** Fix `writeDetailedXml` to use `data_dump` instead of `dumpHsd`
+  so file extension controls format (XML→XML, HSD→HSD, JSON→JSON).
+
+- [ ] **B.2** Implement unprocessed-node tracking (attribute-based or
+  visited-flag approach) so misspelled keywords produce warnings.
+
+---
+
+## Phase C — hsdcompat Refinement
+
+- [ ] **C.1** Decide on hsdcompat's permanent role; optionally rename module.
+- [ ] **C.2** Clean up "TRANSITIONAL" comments in hsdcompat.
+
+---
+
+## Phase D — Output Modernization
+
+- [ ] **D.1** Retire `detailed.xml` default name; use format-appropriate extension.
+- [ ] **D.2** Consolidate `Options/DetailedOutputFormat` end-to-end.
 
 ---
 

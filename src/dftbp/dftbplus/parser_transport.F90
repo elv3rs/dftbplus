@@ -17,7 +17,7 @@ module dftbp_dftbplus_parser_transport
   use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, detailedWarning, &
       & getChild, getChildren, getChildValue, getSelectedAtomIndices, setChild, setChildValue, &
       & getNodeName, getNodeHSDName, getNodeName2, getLength, getItem1, destroyNodeList, &
-      & convertUnitHsd, splitModifier
+      & convertUnitHsd, splitModifier, hasInlineData
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3
   use dftbp_type_commontypes, only : TOrbitals
@@ -1275,7 +1275,7 @@ contains
         call getChildValue(pNode, "FermiLevel", child1, "", child=child2, allowEmptyValue=.true.,&
             & modifier=modifier)
         call getNodeName2(child1, buffer)
-        if (buffer == "") then
+        if (buffer == "" .and. .not. hasInlineData(child2)) then
           contacts(ii)%tFermiSet = .false.
           call detailedWarning(pNode, "Missing Fermi level - required to be set in solver block or&
               & read from a contact shift file")

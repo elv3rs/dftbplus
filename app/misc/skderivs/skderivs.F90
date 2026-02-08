@@ -18,7 +18,7 @@ program skderivs
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_hsdcompat, only : hsd_table, hsd_error_t, &
       & detailedError, getChild, getChildValue, &
-      & warnUnprocessedNodes
+      & warnUnprocessedNodes, new_table
   use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListInt, TListIntR1
@@ -181,14 +181,19 @@ contains
       angShellOrdered(ii) = ii - 1
     end do
 
-    allocate(hsdTree)
     block
       type(hsd_error_t), allocatable :: hsdError
-      call data_load(hsdInputName, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+      type(hsd_table), pointer :: content
+      allocate(content)
+      call data_load(hsdInputName, content, hsdError, fmt=DATA_FMT_AUTO)
       if (allocated(hsdError)) then
         call error("Error loading input file '" // trim(hsdInputName) // "': " &
             & // trim(hsdError%message))
       end if
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
     end block
 
     write(stdout, "(A)") repeat("-", 80)

@@ -24,7 +24,7 @@ module phonons_initphonons
       & getSelectedAtomIndices, getSelectedIndices, setChild, setChildValue, &
       & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
       & getNodeName, textNodeName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, getFirstTextChild
+      & dumpHsd, getFirstTextChild, new_table
   use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken
@@ -225,13 +225,18 @@ contains
     !! Read in input file as HSD or XML.
     write(stdOut, "(A)") "Interpreting input file '" // hsdInput // "'"
     write(stdOut, "(A)") repeat("-", 80)
-    allocate(hsdTree)
     block
       type(hsd_error_t), allocatable :: hsdError
-      call data_load(hsdInput, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+      type(hsd_table), pointer :: content
+      allocate(content)
+      call data_load(hsdInput, content, hsdError, fmt=DATA_FMT_AUTO)
       if (allocated(hsdError)) then
         call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
       end if
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
     end block
     call getChild(hsdTree, rootTag, root)
 

@@ -449,34 +449,34 @@ if [ -n "$STAGE_SUMMARY" ]; then
     echo "$TABLE_SEP"
 
 	echo "Match:";
-	echo "${match_list:-$LIST_NONE}"      | xargs -n1 | pr -t2 -o4
+	echo "${match_list:-$LIST_NONE}"      | xargs -n1 | sed 's/^/    /'
 
     if [ -n "$mismatch_list" ]; then
 	problems="$problems $STATUS_MISMATCH"
 	echo ""
 	echo "Mismatch:";
-	echo "${mismatch_list:-$LIST_NONE}"   | xargs -n1 | pr -t2 -o4
+	echo "${mismatch_list:-$LIST_NONE}"   | xargs -n1 | sed 's/^/    /'
     fi
 
     if [ -n "$incomplete_list" ]; then
 	problems="$problems $STATUS_INCOMPLETE"
 	echo ""
 	echo "Incomplete:";
-	echo "${incomplete_list:-$LIST_NONE}" | xargs -n1 | pr -t2 -o4
+	echo "${incomplete_list:-$LIST_NONE}" | xargs -n1 | sed 's/^/    /'
     fi
 
     if [ -n "$error_list" ]; then
 	problems="$problems $STATUS_ERROR"
 	echo ""
 	echo "Errors:";
-	echo "${error_list:-$LIST_NONE}"      | xargs -n1 | pr -t2 -o4
+	echo "${error_list:-$LIST_NONE}"      | xargs -n1 | sed 's/^/    /'
     fi
 
     if [ -n "$todo_list" ]; then
 	problems="$problems $STATUS_TODO"
 	echo ""
 	echo "Not run:"
-	echo "${todo_list:-$LIST_NONE}"       | xargs -n1 | pr -t2 -o4
+	echo "${todo_list:-$LIST_NONE}"       | xargs -n1 | sed 's/^/    /'
     fi
 
     echo "$TABLE_SEP"

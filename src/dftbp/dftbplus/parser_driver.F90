@@ -18,7 +18,7 @@ module dftbp_dftbplus_parser_driver
   use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, textNodeName, &
       & detailedError, detailedWarning, getChild, getChildren, getChildValue, &
       & getSelectedAtomIndices, getNodeName, getNodeHSDName, getNodeName2, &
-      & convertUnitHsd, hsd_rename_child
+      & convertUnitHsd, hsd_rename_child, hasInlineData
   use dftbp_io_message, only : error
   use dftbp_md_tempprofile, only : identifyTempProfile, tempProfileTypes, TTempProfileInput
   use dftbp_md_thermostats, only : thermostatTypes, TThermostatInput
@@ -600,7 +600,7 @@ contains
 
     call getChildValue(node, "Constraints", value1, "", child=child, allowEmptyValue=.true.)
     call getNodeName2(value1, buffer)
-    if (buffer == "") then
+    if (buffer == "" .and. .not. hasInlineData(child)) then
       ctrl%nrConstr = 0
     else
       call init(intBuffer)
@@ -642,7 +642,7 @@ contains
     call getChildValue(node, "Velocities", value1, "", child=child, modifier=modifier,&
         & allowEmptyValue=.true.)
     call getNodeName2(value1, buffer)
-    if (buffer == "") then
+    if (buffer == "" .and. .not. hasInlineData(child)) then
       ctrl%tReadMDVelocities = .false.
     else
       call init(realBuffer)
@@ -1029,7 +1029,7 @@ contains
     call getChildValue(node, "Velocities", value1, "", child=child, modifier=modifier,&
         & allowEmptyValue=.true.)
     call getNodeName2(value1, buffer)
-    if (buffer == "") then
+    if (buffer == "" .and. .not. hasInlineData(child)) then
        input%tReadMDVelocities = .false.
     else
        call init(realBuffer)

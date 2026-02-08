@@ -23,7 +23,7 @@ module transporttools_parser
       & getChildValue, getSelectedAtomIndices, &
       & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
       & getNodeName, getNodeHSDName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, destroyNode
+      & dumpHsd, destroyNode, new_table
   use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
@@ -97,14 +97,19 @@ contains
     write(stdOut, "(/, A, /)") "***  Parsing and initializing"
 
     ! Read in the input
-    allocate(hsdTree)
     block
       type(hsd_error_t), allocatable :: hsdError
-      call data_load(hsdInputName, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
+      type(hsd_table), pointer :: content
+      allocate(content)
+      call data_load(hsdInputName, content, hsdError, fmt=DATA_FMT_AUTO)
       if (allocated(hsdError)) then
         call error("Error loading input file '" // trim(hsdInputName) // "': " &
             & // trim(hsdError%message))
       end if
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
     end block
     call getChild(hsdTree, rootTag, root)
 

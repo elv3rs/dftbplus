@@ -25,7 +25,7 @@ module modes_initmodes
       & getItem1, getLength, getNodeName, textNodeName, hsd_dump, hsd_error_t,&
       & detailedError, detailedWarning, getChild, getChildren, getChildValue,&
       & getSelectedAtomIndices, getSelectedIndices, convertUnitHsd, getNodeName2, setUnprocessed,&
-      & warnUnprocessedNodes, removeChildNodes
+      & warnUnprocessedNodes, removeChildNodes, new_table
   use dftbp_extlibs_hsddata, only : data_load, DATA_FMT_AUTO
   use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -164,17 +164,24 @@ contains
     character(len=:), allocatable :: strOut, strJoin, hessianFile
     type(TFileDescr) :: file
     integer :: iErr
-    type(hsd_error_t), allocatable :: hsdError
 
     !! Write header
     call printDftbHeader('(MODES '// version //')', releaseYear)
 
     !! Read in input file as HSD
-    allocate(hsdTree)
-    call data_load(hsdInput, hsdTree, hsdError, fmt=DATA_FMT_AUTO)
-    if (allocated(hsdError)) then
-      call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
-    end if
+    block
+      type(hsd_table), pointer :: content
+      type(hsd_error_t), allocatable :: hsdError
+      allocate(content)
+      call data_load(hsdInput, content, hsdError, fmt=DATA_FMT_AUTO)
+      if (allocated(hsdError)) then
+        call error("Error loading input file '" // trim(hsdInput) // "': " // trim(hsdError%message))
+      end if
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
+    end block
     call getChild(hsdTree, rootTag, root)
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"
