@@ -19,15 +19,20 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug \
   -DWITH_OMP=FALSE -DWITH_MPI=FALSE -DWITH_API=TRUE \
   -DWITH_UNIT_TESTS=TRUE \
   -DCMAKE_Fortran_FLAGS="-ffree-line-length-none"
+  
+# Download Slater Koster data
+./utils/get_opt_externals ALL
 
 # Build
 cmake --build build -j$(nproc) 2>&1 | tail -5
 
-# Unit tests (7 suites, all should pass)
+# Unit tests
 ctest --test-dir build -R "unit" 2>&1 | tail -5
 
-# Application tests (require Slater-Koster data files)
+# Application tests
 ctest --test-dir build -R "app/dftb+" 2>&1 | tail -5
+
+
 ```
 
 ## Build System
