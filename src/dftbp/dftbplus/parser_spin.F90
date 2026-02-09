@@ -16,8 +16,6 @@ module dftbp_dftbplus_parser_spin
   use dftbp_common_unitconversion, only : energyUnits
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdutils, only : &
-      & getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices, &
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_message, only : error
@@ -26,7 +24,8 @@ module dftbp_dftbplus_parser_spin
   use dftbp_type_commontypes, only : TOrbitals
 
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables
+  use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables,&
+      & hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK
   use hsd_data, only : hsd_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
@@ -69,8 +68,9 @@ contains
     type(hsd_table), pointer :: child, child2
     character(len=:), allocatable :: modifier
     integer :: iSp
+    integer :: stat
 
-    call getChild(node, "SpinOrbit", child, requested=.false.)
+    call hsd_get_table(node, "SpinOrbit", child, stat, auto_wrap=.true.)
     if (.not. associated(child)) then
       ctrl%tSpinOrbit = .false.
       allocate(ctrl%xi(0,0))
@@ -86,8 +86,17 @@ contains
 
       allocate(ctrl%xi(orb%mShell,geo%nSpecies), source = 0.0_dp)
       do iSp = 1, geo%nSpecies
-        call getChildValue(child, geo%speciesNames(iSp), &
-            & ctrl%xi(:orb%nShell(iSp),iSp), modifier=modifier, child=child2 )
+        block
+          real(dp), allocatable :: tmpArr(:)
+          call hsd_get(child, geo%speciesNames(iSp), tmpArr, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: '" &
+              & // trim(geo%speciesNames(iSp)) // "'")
+          ctrl%xi(:orb%nShell(iSp),iSp) = tmpArr(:orb%nShell(iSp))
+        end block
+        call hsd_get_attrib(child, geo%speciesNames(iSp), modifier, stat)
+        if (stat /= HSD_STAT_OK) modifier = ""
+        call hsd_get_table(child, geo%speciesNames(iSp), child2, stat, auto_wrap=.true.)
+        if (.not. associated(child2)) child2 => child
         call convertUnitHsd(modifier, energyUnits, child2,&
             & ctrl%xi(:orb%nShell(iSp),iSp))
       end do
@@ -122,12 +131,16 @@ contains
     do ii = 1, maxL+1
       angShellOrdered(ii) = ii - 1
     end do
-    call getChild(node, "MaxAngularMomentum", child)
+    call hsd_get_table(node, "MaxAngularMomentum", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'MaxAngularMomentum'")
     allocate(angShells(geo%nSpecies))
     do iSp1 = 1, geo%nSpecies
       call initAngShellBlocks(angShells(iSp1))
-      call getChildValue(child, geo%speciesNames(iSp1), value1, child=child2)
-      call getNodeName(value1, buffer)
+      call hsd_get_table(child, geo%speciesNames(iSp1), child2, stat, auto_wrap=.true.)
+      if (.not. associated(child2)) call dftbp_error(child, "Missing '" &
+          & // trim(geo%speciesNames(iSp1)) // "'")
+      call hsd_get_choice(child2, "", buffer, value1, stat)
+      if (.not. associated(value1)) buffer = textNodeName
       select case(buffer)
       case("selectedshells")
         call hsd_get(value1, "#text", strArr, stat=stat)
@@ -165,7 +178,8 @@ contains
         end do
 
       case(textNodeName)
-        call getChildValue(child2, "", buffer)
+        call hsd_get(child2, "#text", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
         strTmp = unquote(buffer)
         do jj = 1, size(shellNames)
           if (trim(strTmp) == trim(shellNames(jj))) then
@@ -270,12 +284,17 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer
+    integer :: stat
 
     call hsd_rename_child(node, "SpinPolarization", "SpinPolarisation")
-    call getChildValue(node, "SpinPolarisation", value1, "", child=child, allowEmptyValue=.true.)
-    call getNodeName2(value1, buffer)
-    if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
-    select case(buffer)
+    call hsd_get_table(node, "SpinPolarisation", child, stat, auto_wrap=.true.)
+    value1 => null()
+    buffer = ""
+    if (associated(child)) then
+      call hsd_get_choice(child, "", buffer, value1, stat)
+      if (len_trim(buffer) == 0 .and. hasInlineData(child)) buffer = textNodeName
+    end if
+    select case(tolower(buffer))
     case ("")
       ctrl%tSpin = .false.
       ctrl%t2Component = .false.
@@ -298,7 +317,6 @@ contains
       end if
 
     case default
-      call getNodeHSDName(value1, buffer)
       call dftbp_error(child, "Invalid spin polarisation type '" //&
           & buffer // "'")
     end select
@@ -324,26 +342,37 @@ contains
     character(len=:), allocatable :: buffer
     real(dp) :: rTmp
     integer :: ii, jj, iAt
+    integer :: stat
 
-    call getChildValue(node, "InitialCharges", val, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true., list=.true.)
+    call hsd_get_table(node, "InitialCharges", child, stat, auto_wrap=.true.)
 
     ! Read either all atom charges, or individual atom specifications
-    call getChild(child, "AllAtomCharges", child2, requested=.false.)
+    child2 => null()
+    if (associated(child)) then
+      call hsd_get_table(child, "AllAtomCharges", child2, stat, auto_wrap=.true.)
+    end if
     if (associated(child2)) then
-      allocate(initCharges(geo%nAtom))
-      call getChildValue(child2, "", initCharges)
+      call hsd_get(child2, "#text", initCharges, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Error reading charges")
     else
-      call hsd_get_child_tables(child, "AtomCharge", children)
+      if (associated(child)) then
+        call hsd_get_child_tables(child, "AtomCharge", children)
+      else
+        allocate(children(0))
+      end if
       if (size(children) > 0) then
         allocate(initCharges(geo%nAtom))
         initCharges = 0.0_dp
       end if
       do ii = 1, size(children)
         child2 => children(ii)%ptr
-        call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
+        call hsd_get(child2, "Atoms", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Atoms'")
+        call hsd_get_table(child2, "Atoms", child3, stat, auto_wrap=.true.)
+        if (.not. associated(child3)) child3 => child2
         call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
-        call getChildValue(child2, "ChargePerAtom", rTmp)
+        call hsd_get(child2, "ChargePerAtom", rTmp, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'ChargePerAtom'")
         do jj = 1, size(pTmpI1)
           iAt = pTmpI1(jj)
           if (initCharges(iAt) /= 0.0_dp) then
@@ -380,19 +409,31 @@ contains
     character(len=:), allocatable :: buffer
     real(dp), allocatable :: rTmp(:)
     integer :: ii, jj, iAt
+    integer :: stat
 
     @:ASSERT(nSpin == 1 .or. nSpin == 3)
 
-    call getChildValue(node, "InitialSpins", val, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true., list=.true.)
+    call hsd_get_table(node, "InitialSpins", child, stat, auto_wrap=.true.)
 
     ! Read either all atom spins, or individual spin specifications
-    call getChild(child, "AllAtomSpins", child2, requested=.false.)
+    child2 => null()
+    if (associated(child)) then
+      call hsd_get_table(child, "AllAtomSpins", child2, stat, auto_wrap=.true.)
+    end if
     if (associated(child2)) then
-      allocate(initSpins(nSpin, geo%nAtom))
-      call getChildValue(child2, "", initSpins)
+      block
+        real(dp), allocatable :: flat(:)
+        call hsd_get(child2, "#text", flat, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Error reading initial spins")
+        allocate(initSpins(nSpin, geo%nAtom))
+        initSpins = reshape(flat, [nSpin, geo%nAtom])
+      end block
     else
-      call hsd_get_child_tables(child, "AtomSpin", children)
+      if (associated(child)) then
+        call hsd_get_child_tables(child, "AtomSpin", children)
+      else
+        allocate(children(0))
+      end if
       if (size(children) > 0) then
         allocate(initSpins(nSpin, geo%nAtom))
         initSpins = 0.0_dp
@@ -400,9 +441,13 @@ contains
       allocate(rTmp(nSpin))
       do ii = 1, size(children)
         child2 => children(ii)%ptr
-        call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
+        call hsd_get(child2, "Atoms", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Atoms'")
+        call hsd_get_table(child2, "Atoms", child3, stat, auto_wrap=.true.)
+        if (.not. associated(child3)) child3 => child2
         call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
-        call getChildValue(child2, "SpinPerAtom", rTmp)
+        call hsd_get(child2, "SpinPerAtom", rTmp, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'SpinPerAtom'")
         do jj = 1, size(pTmpI1)
           iAt = pTmpI1(jj)
           if (any(initSpins(:,iAt) /= 0.0_dp)) then
@@ -458,7 +503,8 @@ contains
       allocate(ctrl%spinW(orb%mShell, orb%mShell, geo%nSpecies))
       ctrl%spinW(:,:,:) = 0.0_dp
 
-      call getChild(hamNode, "SpinConstants", child)
+      call hsd_get_table(hamNode, "SpinConstants", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) call dftbp_error(hamNode, "Missing required block: 'SpinConstants'")
       if (ctrl%hamiltonian == hamiltonianTypes%xtb) then
         call hsd_get_or_set(child, "ShellResolvedSpin", tShellResolvedW, .true.)
       else

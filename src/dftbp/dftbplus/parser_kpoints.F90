@@ -10,8 +10,8 @@ module dftbp_dftbplus_parser_kpoints
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChildValue
-  use hsd, only : hsd_get_or_set, hsd_get_matrix, HSD_STAT_OK
+  use hsd, only : hsd_get_or_set, hsd_get_matrix, HSD_STAT_OK, hsd_get, hsd_get_table, &
+      & hsd_get_choice, hsd_get_attrib
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
@@ -170,8 +170,12 @@ contains
     !! True, if a Gamma-only k-point sampling is requested
     logical :: tGammaOnly
 
-    call getChildValue(node, "KPointsAndWeights", value1, child=child, modifier=modifier)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "KPointsAndWeights", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'KPointsAndWeights'")
+    call hsd_get_attrib(node, "KPointsAndWeights", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (.not. associated(value1)) buffer = textNodeName
 
     select case(buffer)
 
@@ -180,7 +184,12 @@ contains
       if (len(modifier) > 0) then
         call dftbp_error(child, "No modifier is allowed, if the SupercellFolding scheme is used.")
       end if
-      call getChildValue(value1, "", coeffsAndShifts)
+      block
+        real(dp), allocatable :: flat(:)
+        call hsd_get(value1, "#text", flat, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required matrix data")
+        coeffsAndShifts = reshape(flat, [3, 4])
+      end block
       if (abs(determinant33(coeffsAndShifts(:,1:3))) - 1.0_dp < -1e-06_dp) then
         call dftbp_error(value1, "Determinant of the supercell matrix must be greater than 1")
       end if
@@ -337,11 +346,18 @@ contains
     ! assume the user knows what they are doing
     ctrl%poorKSampling = .false.
 
-    call getChildValue(node, "KPointsAndWeights", value1, child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "KPointsAndWeights", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'KPointsAndWeights'")
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (.not. associated(value1)) buffer = textNodeName
     select case(buffer)
     case ("helicaluniform")
-      call getChildValue(value1, "", rTmp3(:2))
+      block
+        real(dp), allocatable :: tmpArr(:)
+        call hsd_get(value1, "#text", tmpArr, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Error reading data")
+        rTmp3(:2) = tmpArr(:2)
+      end block
       if (abs(modulo(rTmp3(1) + 0.5_dp, 1.0_dp) - 0.5_dp) > 1e-6_dp) then
         call dftbp_error(value1, "The k-point grid must be integer values.")
       end if
@@ -367,7 +383,12 @@ contains
         call error("Helical boundaries not yet added for spin-orbit")
       end if
     case ("helicalsampled")
-      call getChildValue(value1, "", rTmp22)
+      block
+        real(dp), allocatable :: flat(:)
+        call hsd_get(value1, "#text", flat, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Error reading data")
+        rTmp22 = reshape(flat, [2, 2])
+      end block
       iTmp2 = nint(rTmp22(:,1))
       if (any(abs(iTmp2-rTmp22(:,1)) > 1e-6_dp)) then
         call dftbp_error(value1, "The k-point grid must be integers.")

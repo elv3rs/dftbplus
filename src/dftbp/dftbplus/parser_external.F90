@@ -17,9 +17,8 @@ module dftbp_dftbplus_parser_external
   use dftbp_common_unitconversion, only : EFieldUnits, energyUnits, freqUnits, lengthUnits
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : unquote
-  use dftbp_io_hsdutils, only : getChild, getChildValue
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib, hsd_table_ptr, &
-      & hsd_get_child_tables
+      & hsd_get_child_tables, hsd_get_table, hsd_get_choice, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, textNodeName, getNodeName
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -54,26 +53,40 @@ contains
     real(dp), allocatable :: tmpR2(:,:)
     real(dp), allocatable :: allCharges(:,:), allBlurs(:)
 
-    call getChildValue(node, "ElectricField", value1, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true., list=.true.)
+    call hsd_get_table(node, "ElectricField", child, stat, auto_wrap=.true.)
 
     ! external applied field
-    call getChild(child, "External", child2, requested=.false.)
+    child2 => null()
+    if (associated(child)) then
+      call hsd_get_table(child, "External", child2, stat, auto_wrap=.true.)
+    end if
     if (associated(child2)) then
       allocate(ctrl%electricField)
       ctrl%tMulliken = .true.
-      call getChildValue(child2, "Strength", ctrl%electricField%EFieldStrength, modifier=modifier,&
-          & child=child3)
+      call hsd_get(child2, "Strength", ctrl%electricField%EFieldStrength, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Strength'")
+      call hsd_get_attrib(child2, "Strength", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(child2, "Strength", child3, stat, auto_wrap=.true.)
+      if (.not. associated(child3)) child3 => child2
       call convertUnitHsd(modifier, EFieldUnits, child3, ctrl%electricField%EFieldStrength)
-      call getChildValue(child2, "Direction", ctrl%electricField%EfieldVector)
+      block
+        real(dp), allocatable :: tmpArr(:)
+        call hsd_get(child2, "Direction", tmpArr, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Direction'")
+        ctrl%electricField%EfieldVector = tmpArr(:3)
+      end block
       if (sum(ctrl%electricField%EfieldVector**2) < 1e-8_dp) then
         call dftbp_error(child2,"Vector too small")
       else
         ctrl%electricField%EfieldVector = ctrl%electricField%EfieldVector&
             & / sqrt(sum(ctrl%electricField%EfieldVector**2))
       end if
-      call getChildValue(child2, "Frequency", ctrl%electricField%EFieldOmega, 0.0_dp, &
-          & modifier=modifier, child=child3)
+      call hsd_get_or_set(child2, "Frequency", ctrl%electricField%EFieldOmega, 0.0_dp)
+      call hsd_get_attrib(child2, "Frequency", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(child2, "Frequency", child3, stat, auto_wrap=.true.)
+      if (.not. associated(child3)) child3 => child2
       call convertUnitHsd(modifier, freqUnits, child3, ctrl%electricField%EFieldOmega)
       if (ctrl%electricField%EFieldOmega > 0.0) then
         ! angular frequency
@@ -92,7 +105,11 @@ contains
     ctrl%nExtChrg = 0
     if (ctrl%hamiltonian == hamiltonianTypes%dftb) then
 
-      call hsd_get_child_tables(child, "PointCharges", children)
+      if (associated(child)) then
+        call hsd_get_child_tables(child, "PointCharges", children)
+      else
+        allocate(children(0))
+      end if
       if (size(children) > 0) then
         ! Point charges present
         if (.not.ctrl%tSCC) then
@@ -103,8 +120,13 @@ contains
         ctrl%nExtChrg = 0
         do ii = 1, size(children)
           child2 => children(ii)%ptr
-          call getChildValue(child2, "CoordsAndCharges", value1, modifier=modifier, child=child3)
-          call getNodeName(value1, buffer)
+          call hsd_get_table(child2, "CoordsAndCharges", child3, stat, auto_wrap=.true.)
+          if (.not. associated(child3)) call dftbp_error(child2, &
+              & "Missing required block: 'CoordsAndCharges'")
+          call hsd_get_attrib(child2, "CoordsAndCharges", modifier, stat)
+          if (stat /= HSD_STAT_OK) modifier = ""
+          call hsd_get_choice(child3, "", buffer, value1, stat)
+          if (.not. associated(value1)) buffer = textNodeName
           select case(buffer)
           case (textNodeName)
             call hsd_get_matrix(child2, "CoordsAndCharges", tmpR2, nrows, ncols, stat=stat, &
@@ -112,8 +134,10 @@ contains
             if (stat /= 0) call dftbp_error(child2, "Error reading CoordsAndCharges")
             ctrl%nExtChrg = ctrl%nExtChrg + ncols
           case ("directread")
-            call getChildValue(value1, "Records", ind)
-            call getChildValue(value1, "File", buffer2)
+            call hsd_get(value1, "Records", ind, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Records'")
+            call hsd_get(value1, "File", buffer2, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'File'")
             allocate(tmpR2(4, ind))
             call openFile(file, unquote(buffer2), mode="r", iostat=iErr)
             if (iErr /= 0) then
@@ -139,8 +163,11 @@ contains
             if (prevN > 0) allCharges(:, 1:prevN) = tmpChrg
             allCharges(:, prevN+1:) = tmpR2
           end block
-          call getChildValue(child2, "GaussianBlurWidth", rTmp, 0.0_dp, modifier=modifier,&
-              & child=child3)
+          call hsd_get_or_set(child2, "GaussianBlurWidth", rTmp, 0.0_dp)
+          call hsd_get_attrib(child2, "GaussianBlurWidth", modifier, stat)
+          if (stat /= HSD_STAT_OK) modifier = ""
+          call hsd_get_table(child2, "GaussianBlurWidth", child3, stat, auto_wrap=.true.)
+          if (.not. associated(child3)) child3 => child2
           if (rTmp < 0.0_dp) then
             call dftbp_error(child3, "Gaussian blur width may not be negative")
           end if
@@ -162,18 +189,22 @@ contains
 
     else
 
-      call hsd_get_child_tables(child, "PointCharges", children)
+      if (associated(child)) then
+        call hsd_get_child_tables(child, "PointCharges", children)
+      else
+        allocate(children(0))
+      end if
       if (size(children) > 0) then
         call dftbp_error(child, "External charges are not currently supported for this model")
       end if
 
     end if
 
-    call getChild(node, "AtomSitePotential", child, requested=.false.)
+    call hsd_get_table(node, "AtomSitePotential", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(ctrl%atomicExtPotential)
 
-      call getChild(child, "Net", child2, requested=.false.)
+      call hsd_get_table(child, "Net", child2, stat, auto_wrap=.true.)
       if (associated(child2)) then
         ! onsites
         ctrl%tNetAtomCharges = .true.
@@ -184,11 +215,12 @@ contains
           call dftbp_error(child2, "Mismatch in number of sites and potentials")
         end if
         call hsd_get_attrib(child2, "Vext", modifier)
-        call getChild(child2, "Vext", child3)
+        call hsd_get_table(child2, "Vext", child3, stat, auto_wrap=.true.)
+        if (.not. associated(child3)) call dftbp_error(child2, "Missing required block: 'Vext'")
         call convertUnitHsd(modifier, energyUnits, child3, ctrl%atomicExtPotential%VextOnSite)
       end if
 
-      call getChild(child, "Gross", child2, requested=.false.)
+      call hsd_get_table(child, "Gross", child2, stat, auto_wrap=.true.)
       if (associated(child2)) then
         ! atomic
         call hsd_get(child2, "Atoms", ctrl%atomicExtPotential%iAt)
@@ -197,7 +229,8 @@ contains
           call dftbp_error(child2, "Mismatch in number of sites and potentials")
         end if
         call hsd_get_attrib(child2, "Vext", modifier)
-        call getChild(child2, "Vext", child3)
+        call hsd_get_table(child2, "Vext", child3, stat, auto_wrap=.true.)
+        if (.not. associated(child3)) call dftbp_error(child2, "Missing required block: 'Vext'")
         call convertUnitHsd(modifier, energyUnits, child3, ctrl%atomicExtPotential%Vext)
       end if
 

@@ -13,12 +13,12 @@ module dftbp_dftbplus_parser_reks
   use dftbp_common_accuracy, only : dp
   use dftbp_common_globalenv, only : stdOut
   use dftbp_dftbplus_inputdata, only : TControl
-  use dftbp_io_charmanip, only : i2c
+  use dftbp_io_charmanip, only : i2c, tolower
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName, getNodeName2,&
       & hasInlineData
-  use hsd, only : hsd_get, hsd_get_matrix
+  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_get_table, hsd_get_choice, &
+      & HSD_STAT_OK, new_table
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -86,7 +86,8 @@ contains
 
 
     !> Read 'Energy' block
-    call getChild(node, "Energy", child=child1)
+    call hsd_get_table(node, "Energy", child1, stat, auto_wrap=.true.)
+    if (.not. associated(child1)) call dftbp_error(node, "Missing required block: 'Energy'")
 
     !> Read 'Functional' block in 'Energy' block
     call hsd_get(child1, "Functional", tmpFunc, stat=stat)
@@ -127,47 +128,58 @@ contains
     !> Decide the energy states in SA-REKS
     !> If true, it includes all possible states in current active space
     !> If false, it includes the states used in minimized energy functional
-    call getChildValue(child1, "IncludeAllStates", ctrl%reksInp%tAllStates, default=.false.)
+    call hsd_get_or_set(child1, "IncludeAllStates", ctrl%reksInp%tAllStates, .false.)
     !> Calculate SSR state with inclusion of SI, otherwise calculate SA-REKS state
-    call getChildValue(child1, "StateInteractions", ctrl%reksInp%tSSR, default=.false.)
+    call hsd_get_or_set(child1, "StateInteractions", ctrl%reksInp%tSSR, .false.)
 
 
     !> Target SSR state
-    call getChildValue(node, "TargetState", ctrl%reksInp%rstate, default=1)
+    call hsd_get_or_set(node, "TargetState", ctrl%reksInp%rstate, 1)
     !> Target microstate
-    call getChildValue(node, "TargetMicrostate", ctrl%reksInp%Lstate, default=0)
+    call hsd_get_or_set(node, "TargetMicrostate", ctrl%reksInp%Lstate, 0)
 
     !> Read initial guess for eigenvectors in REKS
     !> If true, initial eigenvectors are obtained from 'eigenvec.bin'
     !> If false, initial eigenvectors are obtained from diagonalisation of H0
-    call getChildValue(node, "ReadEigenvectors", ctrl%reksInp%tReadMO, default=.false.)
+    call hsd_get_or_set(node, "ReadEigenvectors", ctrl%reksInp%tReadMO, .false.)
     !> Maximum iteration used in FON optimisation
-    call getChildValue(node, "FonMaxIter", ctrl%reksInp%FonMaxIter, default=20)
+    call hsd_get_or_set(node, "FonMaxIter", ctrl%reksInp%FonMaxIter, 20)
     !> Shift value in SCC cycle
-    call getChildValue(node, "Shift", ctrl%reksInp%shift, default=0.3_dp)
+    call hsd_get_or_set(node, "Shift", ctrl%reksInp%shift, 0.3_dp)
 
     !> Read "SpinTuning" block with 'nType' elements
     call readSpinTuning(node, ctrl, geo%nSpecies)
 
     !> Calculate transition dipole moments
-    call getChildValue(node, "TransitionDipole", ctrl%reksInp%tTDP, default=.false.)
+    call hsd_get_or_set(node, "TransitionDipole", ctrl%reksInp%tTDP, .false.)
 
 
     !> Read 'Gradient' block
     !> Algorithms to calculate analytical gradients
-    call getChildValue(node, "Gradient", value2, "ConjugateGradient", child=child2)
-    call getNodeName(value2, buffer2)
+    call hsd_get_table(node, "Gradient", child2, stat, auto_wrap=.true.)
+    if (.not. associated(child2)) then
+      block
+        type(hsd_table) :: defContainer, defChild
+        call new_table(defContainer, name="gradient")
+        call new_table(defChild, name="ConjugateGradient")
+        call defContainer%add_child(defChild)
+        call node%add_child(defContainer)
+      end block
+      call hsd_get_table(node, "Gradient", child2, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child2, "", buffer2, value2, stat)
+    if (.not. associated(value2) .and. len_trim(buffer2) == 0) buffer2 = "conjugategradient"
 
-    select case (buffer2)
+    select case (tolower(buffer2))
     case ("conjugategradient")
       !> Maximum iteration used in calculation of gradient with PCG and CG
-      call getChildValue(value2, "CGmaxIter", ctrl%reksInp%CGmaxIter, default=20)
+      call hsd_get_or_set(value2, "CGmaxIter", ctrl%reksInp%CGmaxIter, 20)
       !> Tolerance used in calculation of gradient with PCG and CG
-      call getChildValue(value2, "Tolerance", ctrl%reksInp%Glimit, default=1.0E-8_dp)
+      call hsd_get_or_set(value2, "Tolerance", ctrl%reksInp%Glimit, 1.0E-8_dp)
       !> Use preconditioner for conjugate gradient algorithm
-      call getChildValue(value2, "Preconditioner", ctrl%reksInp%tPrecond, default=.false.)
+      call hsd_get_or_set(value2, "Preconditioner", ctrl%reksInp%tPrecond, .false.)
       !> Save 'A' and 'Hxc' to memory in gradient calculation
-      call getChildValue(value2, "SaveMemory", ctrl%reksInp%tSaveMem, default=.false.)
+      call hsd_get_or_set(value2, "SaveMemory", ctrl%reksInp%tSaveMem, .false.)
       if (ctrl%reksInp%tPrecond) then
         !> 1: preconditioned conjugate gradient (PCG)
         ctrl%reksInp%Glevel = 1
@@ -179,17 +191,16 @@ contains
       !> 3: direct inverse-matrix multiplication
       ctrl%reksInp%Glevel = 3
     case default
-      call getNodeHSDName(value2, buffer2)
       call dftbp_error(child2, "Invalid Algorithm '" // buffer2 // "'")
     end select
 
     !> Calculate relaxed density of SSR or SA-REKS state
-    call getChildValue(node, "RelaxedDensity", ctrl%reksInp%tRD, default=.false.)
+    call hsd_get_or_set(node, "RelaxedDensity", ctrl%reksInp%tRD, .false.)
     !> Calculate nonadiabatic coupling vectors
-    call getChildValue(node, "NonAdiabaticCoupling", ctrl%reksInp%tNAC, default=.false.)
+    call hsd_get_or_set(node, "NonAdiabaticCoupling", ctrl%reksInp%tNAC, .false.)
 
     !> Print level in standard output file
-    call getChildValue(node, "VerbosityLevel", ctrl%reksInp%Plevel, default=1)
+    call hsd_get_or_set(node, "VerbosityLevel", ctrl%reksInp%Plevel, 1)
 
   end subroutine readSSR22
 
@@ -211,10 +222,8 @@ contains
     integer :: nAtom, iType, nrows, ncols, stat
     real(dp), allocatable :: tmpTuning(:,:)
 
-    call getChildValue(node, "SpinTuning", value1, "", child=child, modifier=modifier,&
-        & allowEmptyValue=.true.)
-    call getNodeName2(value1, buffer)
-    if (buffer == "" .and. .not. hasInlineData(child)) then
+    call hsd_get_table(node, "SpinTuning", child, stat, auto_wrap=.true.)
+    if (.not. associated(child) .or. .not. hasInlineData(child)) then
       ! no 'SpinTuning' block in REKS input
       allocate(ctrl%reksInp%Tuning(nType))
       do iType = 1, nType

@@ -12,9 +12,9 @@ module dftbp_dftb_elecconstraints
   use dftbp_common_accuracy, only : dp, hugeIterations
   use dftbp_dftbplus_input_geoopt, only : readOptimizerInput
   use dftbp_geoopt_package, only : createOptimizer, TOptimizer, TOptimizerInput
-  use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables
+  use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables, hsd_get_table, &
+      & hsd_get_choice, hsd_get_or_set, hsd_get, HSD_STAT_OK, new_table
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_typegeometry, only : TGeometry
@@ -177,19 +177,37 @@ contains
     logical, intent(in) :: is2Component
 
     type(hsd_table), pointer :: constrContainer, dummyNode, child1
+    integer :: stat
 
     call hsd_rename_child(node, "Optimizer", "Optimiser")
-    call getChildValue(node, "Optimiser", child1, "FIRE")
+    call hsd_get_table(node, "Optimiser", child1, stat, auto_wrap=.true.)
+    if (.not. associated(child1)) then
+      block
+        type(hsd_table) :: defContainer, defChild
+        call new_table(defContainer, name="optimiser")
+        call new_table(defChild, name="FIRE")
+        call defContainer%add_child(defChild)
+        call node%add_child(defContainer)
+      end block
+      call hsd_get_table(node, "Optimiser", child1, stat, auto_wrap=.true.)
+    end if
+    block
+      character(len=:), allocatable :: tmpName
+      type(hsd_table), pointer :: tmpChild
+      call hsd_get_choice(child1, "", tmpName, tmpChild, stat)
+      if (associated(tmpChild)) child1 => tmpChild
+    end block
     call readOptimizerInput(child1, input%optimiser)
 
-    call getChildValue(node, "ConstrTolerance", input%constrTol, 1.0e-08_dp)
-    call getChildValue(node, "MaxConstrIterations", input%nConstrIter, 100)
-    call getChildValue(node, "ConvergentConstrOnly", input%isConvRequired, .true.)
+    call hsd_get_or_set(node, "ConstrTolerance", input%constrTol, 1.0e-08_dp)
+    call hsd_get_or_set(node, "MaxConstrIterations", input%nConstrIter, 100)
+    call hsd_get_or_set(node, "ConvergentConstrOnly", input%isConvRequired, .true.)
 
-    call getChildValue(node, "Constraints", dummyNode, "", child=constrContainer,&
-        & allowEmptyValue=.true., dummyValue=.true., list=.true.)
-    call readMullikenConstraintInputs(constrContainer, geo, isSpinPol, is2Component,&
-        & input%mullikenConstrs)
+    call hsd_get_table(node, "Constraints", constrContainer, stat, auto_wrap=.true.)
+    if (associated(constrContainer)) then
+      call readMullikenConstraintInputs(constrContainer, geo, isSpinPol, is2Component,&
+          & input%mullikenConstrs)
+    end if
 
   end subroutine readElecConstraintInput
 
@@ -218,6 +236,7 @@ contains
     character(len=:), allocatable :: buffer
     real(dp) :: rTmp
     integer :: iConstrInp, nConstrInp, nAssociated
+    integer :: stat
 
     call hsd_get_child_tables(constrContainer, "MullikenPopulation", constrNodes)
     if (size(constrNodes) == 0) return
@@ -228,14 +247,17 @@ contains
     do iConstrInp = 1, nConstrInp
       associate(input => inputs(iConstrInp))
         constrNode => constrNodes(iConstrInp)%ptr
-        call getChildValue(constrNode, "Atoms", buffer, child=child1, multiple=.true.)
+        call hsd_get(constrNode, "Atoms", buffer, stat=stat)
+        if (stat /= 0) call dftbp_error(constrNode, "Missing required value: 'Atoms'")
+        call hsd_get_table(constrNode, "Atoms", child1, stat, auto_wrap=.true.)
+        if (.not. associated(child1)) child1 => constrNode
         call getSelectedAtomIndices(child1, buffer, geo%speciesNames, geo%species,&
             & input%atoms)
 
-        call getChild(constrNode, "Populations", populationsNode, requested=.false.)
-        call getChild(constrNode, "TotalPopulation", totalPopNode, requested=.false.)
-        call getChild(constrNode, "Charges", chargesNode, requested=.false.)
-        call getChild(constrNode, "TotalCharge", totalChargeNode, requested=.false.)
+        call hsd_get_table(constrNode, "Populations", populationsNode, stat, auto_wrap=.true.)
+        call hsd_get_table(constrNode, "TotalPopulation", totalPopNode, stat, auto_wrap=.true.)
+        call hsd_get_table(constrNode, "Charges", chargesNode, stat, auto_wrap=.true.)
+        call hsd_get_table(constrNode, "TotalCharge", totalChargeNode, stat, auto_wrap=.true.)
         nAssociated = count([associated(populationsNode), associated(totalPopNode), &
             & associated(chargesNode), associated(totalChargeNode)])
         if (nAssociated /= 1) then
@@ -244,17 +266,20 @@ contains
         end if
         input%constrValuesAreCharges = associated(chargesNode) .or. associated(totalChargeNode)
         if (associated(populationsNode) .or. associated(chargesNode)) then
-          allocate(input%constrValues(size(input%atoms)), source=0.0_dp)
           if (associated(populationsNode)) then
-            call getChildValue(populationsNode, "", input%constrValues)
+            call hsd_get(populationsNode, "#text", input%constrValues, stat=stat)
+            if (stat /= 0) call dftbp_error(populationsNode, "Error reading constraint values")
           else
-            call getChildValue(chargesNode, "", input%constrValues)
+            call hsd_get(chargesNode, "#text", input%constrValues, stat=stat)
+            if (stat /= 0) call dftbp_error(chargesNode, "Error reading constraint values")
           end if
         else
           if (associated(totalPopNode)) then
-            call getChildValue(totalPopNode, "", rTmp)
+            call hsd_get(totalPopNode, "#text", rTmp, stat=stat)
+            if (stat /= 0) call dftbp_error(totalPopNode, "Error reading total population")
           else
-            call getChildValue(totalChargeNode, "", rTmp)
+            call hsd_get(totalChargeNode, "#text", rTmp, stat=stat)
+            if (stat /= 0) call dftbp_error(totalChargeNode, "Error reading total charge")
           end if
           input%constrValues = [rTmp]
         end if

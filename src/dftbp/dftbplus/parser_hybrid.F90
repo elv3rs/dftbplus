@@ -17,8 +17,8 @@ module dftbp_dftbplus_parser_hybrid
   use dftbp_dftb_repulsive_chimesrep, only : TChimesRepInp
   use dftbp_dftbplus_inputdata, only : TControl, THybridXcInp
   use dftbp_io_charmanip, only : newline, tolower, unquote
-  use dftbp_io_hsdutils, only : getChild, getChildValue
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_get, &
+      & HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
@@ -79,6 +79,7 @@ contains
 
     !! Temporary string buffer, that stores the gamma function type
     character(len=:), allocatable :: strBuffer
+    integer :: stat
 
     @:ASSERT(size(skFiles, dim=1) == size(skFiles, dim=2))
     @:ASSERT((size(skFiles, dim=1) > 0))
@@ -91,9 +92,14 @@ contains
     call parseHybridXcTag(fileName, hybridXcTag=hybridXcSkTag, hybridXcType=hybridXcSkType)
     isHybridSk = hybridXcSkTag /= hybridXcFunc%none
 
-    call getChild(node, "Hybrid", child=hybridChild, requested=.false.)
-    call getChildValue(node, "Hybrid", hybridValue, "None", child=hybridChild)
-    call getNodeName(hybridValue, buffer)
+    call hsd_get_table(node, "Hybrid", hybridChild, stat, auto_wrap=.true.)
+    if (associated(hybridChild)) then
+      call hsd_get_choice(hybridChild, "", buffer, hybridValue, stat)
+      if (.not. associated(hybridValue) .and. len_trim(buffer) == 0) buffer = "none"
+    else
+      buffer = "none"
+      hybridValue => null()
+    end if
 
     isHybridInp = associated(hybridChild) .and. (tolower(buffer) /= "none")
 
@@ -126,15 +132,24 @@ contains
 
       allocate(input)
       input%hybridXcType = hybridXcSkType
-      call getChildValue(hybridValue, "Screening", screeningValue, "MatrixBased",&
-          & child=screeningChild)
+      call hsd_get_table(hybridValue, "Screening", screeningChild, stat, auto_wrap=.true.)
+      if (associated(screeningChild)) then
+        call hsd_get_choice(screeningChild, "", buffer, screeningValue, stat)
+        if (.not. associated(screeningValue) .and. len_trim(buffer) == 0) buffer = "matrixbased"
+      else
+        buffer = "matrixbased"
+        screeningValue => null()
+        screeningChild => null()
+      end if
 
-      call getNodeName(screeningValue, buffer)
       select case(tolower(buffer))
       case ("neighbourbased")
         input%hybridXcAlg = hybridXcAlgo%neighbourBased
-        call getChildValue(screeningValue, "CutoffReduction", input%cutoffRed, 0.0_dp,&
-            & modifier=modifier, child=child1)
+        call hsd_get_or_set(screeningValue, "CutoffReduction", input%cutoffRed, 0.0_dp)
+        call hsd_get_attrib(screeningValue, "CutoffReduction", modifier, stat)
+        if (stat /= HSD_STAT_OK) modifier = ""
+        call hsd_get_table(screeningValue, "CutoffReduction", child1, stat, auto_wrap=.true.)
+        if (.not. associated(child1)) child1 => screeningValue
         call convertUnitHsd(modifier, lengthUnits, child1, input%cutoffRed)
         if (geo%tPeriodic) then
           call hsd_get_or_set(screeningValue, "Threshold", input%screeningThreshold, 1e-6_dp)
@@ -142,15 +157,17 @@ contains
       case ("thresholded")
         input%hybridXcAlg = hybridXcAlgo%thresholdBased
         call hsd_get_or_set(screeningValue, "Threshold", input%screeningThreshold, 1e-6_dp)
-        call getChildValue(screeningValue, "CutoffReduction", input%cutoffRed, 0.0_dp,&
-            & modifier=modifier, child=child1)
+        call hsd_get_or_set(screeningValue, "CutoffReduction", input%cutoffRed, 0.0_dp)
+        call hsd_get_attrib(screeningValue, "CutoffReduction", modifier, stat)
+        if (stat /= HSD_STAT_OK) modifier = ""
+        call hsd_get_table(screeningValue, "CutoffReduction", child1, stat, auto_wrap=.true.)
+        if (.not. associated(child1)) child1 => screeningValue
         call convertUnitHsd(modifier, lengthUnits, child1, input%cutoffRed)
       case ("matrixbased")
         input%hybridXcAlg = hybridXcAlgo%matrixBased
         ! In this case, CutoffRedunction is not used so it should be set to zero.
         input%cutoffRed = 0.0_dp
       case default
-        call getNodeHSdName(screeningValue, buffer)
         call dftbp_error(screeningChild, "Invalid screening method '" // buffer // "'")
       end select
 
@@ -167,10 +184,17 @@ contains
       ifPeriodic: if (geo%tPeriodic) then
 
         ! parse gamma function type (full, truncated, mic, ...)
-        call getChildValue(hybridValue, "CoulombMatrix", cmValue, "Truncated", child=cmChild)
+        call hsd_get_table(hybridValue, "CoulombMatrix", cmChild, stat, auto_wrap=.true.)
+        if (associated(cmChild)) then
+          call hsd_get_choice(cmChild, "", buffer, cmValue, stat)
+          if (.not. associated(cmValue) .and. len_trim(buffer) == 0) buffer = "truncated"
+        else
+          buffer = "truncated"
+          cmValue => null()
+          cmChild => null()
+        end if
 
-        call getNodeName(cmValue, buffer)
-        select case(buffer)
+        select case(tolower(buffer))
         case ("full")
           input%gammaType = hybridXcGammaTypes%full
         case ("minimumimage")
@@ -180,29 +204,32 @@ contains
         case ("truncatedanddamped")
           input%gammaType = hybridXcGammaTypes%truncatedAndDamped
         case default
-          call getNodeHSdName(cmValue, buffer)
-          call dftbp_error(cmChild, "Invalid Gamma function type '" // strBuffer // "'")
+          call dftbp_error(cmChild, "Invalid Gamma function type '" // buffer // "'")
         end select
 
         ! g-Summation cutoff not needed for MIC CAM Hamiltonian
         if (input%gammaType /= hybridXcGammaTypes%mic) then
-          call getChild(cmValue, "GSummationCutoff", child=child1, modifier=modifier,&
-              & requested=.false.)
+          call hsd_get_table(cmValue, "GSummationCutoff", child1, stat, auto_wrap=.true.)
           if (associated(child1)) then
+            call hsd_get_attrib(cmValue, "GSummationCutoff", modifier, stat)
+            if (stat /= HSD_STAT_OK) modifier = ""
             allocate(input%gSummationCutoff)
-            call getChildValue(child1, "", input%gSummationCutoff, modifier=modifier, child=child2)
-            call convertUnitHsd(modifier, lengthUnits, child2, input%gSummationCutoff)
+            call hsd_get(child1, "#text", input%gSummationCutoff, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child1, "Missing GSummationCutoff value")
+            call convertUnitHsd(modifier, lengthUnits, child1, input%gSummationCutoff)
           end if
         end if
 
         if (input%gammaType == hybridXcGammaTypes%truncated&
             & .or. input%gammaType == hybridXcGammaTypes%truncatedAndDamped) then
-          call getChild(cmValue, "CoulombCutoff", child=child1, modifier=modifier,&
-              & requested=.false.)
+          call hsd_get_table(cmValue, "CoulombCutoff", child1, stat, auto_wrap=.true.)
           if (associated(child1)) then
+            call hsd_get_attrib(cmValue, "CoulombCutoff", modifier, stat)
+            if (stat /= HSD_STAT_OK) modifier = ""
             allocate(input%gammaCutoff)
-            call getChildValue(child1, "", input%gammaCutoff, modifier=modifier, child=child2)
-            call convertUnitHsd(modifier, lengthUnits, child2, input%gammaCutoff)
+            call hsd_get(child1, "#text", input%gammaCutoff, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child1, "Missing CoulombCutoff value")
+            call convertUnitHsd(modifier, lengthUnits, child1, input%gammaCutoff)
           end if
         end if
 
@@ -214,7 +241,7 @@ contains
       ! Number of primitive cells regarded in MIC, along each supercell folding direction
       if (input%gammaType == hybridXcGammaTypes%mic) then
         allocate(input%wignerSeitzReduction)
-        call getChildValue(cmValue, "WignerSeitzReduction", input%wignerSeitzReduction, default=0)
+        call hsd_get_or_set(cmValue, "WignerSeitzReduction", input%wignerSeitzReduction, 0)
       end if
 
     end if
@@ -229,6 +256,7 @@ contains
     type(TChimesRepInp), allocatable, intent(out) :: chimesRepInput
 
     type(hsd_table), pointer :: chimes
+    integer :: stat
 
   #:if WITH_CHIMES
     character(len=:), allocatable :: buffer
@@ -236,11 +264,11 @@ contains
     character(len=:), allocatable :: chimesFile
   #:endif
 
-    call getChild(root, "Chimes", chimes, requested=.false.)
+    call hsd_get_table(root, "Chimes", chimes, stat, auto_wrap=.true.)
     if (.not. associated(chimes)) return
     #:if WITH_CHIMES
       allocate(chimesRepInput)
-      call getChildValue(chimes, "ParameterFile", buffer, default="chimes.dat")
+      call hsd_get_or_set(chimes, "ParameterFile", buffer, "chimes.dat")
       chimesFile = unquote(buffer)
       call getParamSearchPaths(searchPath)
       call findFile(searchPath, chimesFile, chimesRepInput%chimesFile)
