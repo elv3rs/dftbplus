@@ -11,12 +11,10 @@ module dftbp_dftbplus_parser_kpoints
   use dftbp_io_charmanip, only : tolower
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : getChildValue
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get_or_set, hsd_get_matrix, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
-  use dftbp_type_linkedlist, only : asArray, asVector, destruct, get, init, len, &
-      & TListIntR1, TListRealR1
   use dftbp_type_typegeometry, only : TGeometry
 
   implicit none
@@ -162,10 +160,9 @@ contains
     integer :: ind, ii, jj, kk
     real(dp), target :: coeffsAndShifts(3, 4)
     real(dp) :: rTmp3(3)
-    type(TListIntR1) :: li1
-    type(TListRealR1) :: lr1
     integer, allocatable :: tmpI1(:)
-    real(dp), allocatable :: kpts(:,:)
+    real(dp), allocatable :: kpts(:,:), matrix(:,:)
+    integer :: nMatRows, nMatCols, stat
 
     !! True, if k-points should be reduced by inversion
     logical :: tReduceByInversion
@@ -205,19 +202,15 @@ contains
     case ("klines")
       ! probably unable to integrate charge for SCC
       ctrl%poorKSampling = .true.
-      call init(li1)
-      call init(lr1)
-      call getChildValue(value1, "", 1, li1, 3, lr1)
-      if (len(li1) < 1) then
+      call hsd_get_matrix(child, trim(buffer), matrix, nMatRows, nMatCols, stat=stat)
+      if (stat /= HSD_STAT_OK .or. nMatRows < 1 .or. nMatCols /= 4) then
         call dftbp_error(value1, "At least one line must be specified.")
       end if
-      allocate(tmpI1(len(li1)))
-      allocate(kpts(3, 0:len(lr1)))
-      call asVector(li1, tmpI1)
-      call asArray(lr1, kpts(:,1:len(lr1)))
+      allocate(tmpI1(nMatRows))
+      allocate(kpts(3, 0:nMatRows))
+      tmpI1(:) = nint(matrix(:, 1))
+      kpts(:, 1:nMatRows) = transpose(matrix(:, 2:4))
       kpts(:,0) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
-      call destruct(li1)
-      call destruct(lr1)
       if (any(tmpI1 < 0)) then
         call dftbp_error(value1, "Interval steps must be greater equal to &
             &zero.")
@@ -264,15 +257,13 @@ contains
       ! no idea, but assume user knows what they are doing
       ctrl%poorKSampling = .false.
 
-      call init(lr1)
-      call getChildValue(child, "", 4, lr1, modifier=modifier)
-      if (len(lr1) < 1) then
+      call hsd_get_matrix(node, "KPointsAndWeights", matrix, nMatRows, nMatCols, stat=stat)
+      if (stat /= HSD_STAT_OK .or. nMatRows < 1 .or. nMatCols /= 4) then
         call dftbp_error(child, "At least one k-point must be defined.")
       end if
-      ctrl%nKPoint = len(lr1)
+      ctrl%nKPoint = nMatRows
       allocate(kpts(4, ctrl%nKPoint))
-      call asArray(lr1, kpts)
-      call destruct(lr1)
+      kpts(:,:) = transpose(matrix)
       if (len(modifier) > 0) then
         select case (tolower(modifier))
         case ("relative")
@@ -336,8 +327,9 @@ contains
 
     character(len=:), allocatable :: buffer
     type(hsd_table), pointer :: value1, child
-    type(TListRealR1) :: lr1
     real(dp):: rTmp3(3), rTmp22(2,2)
+    real(dp), allocatable :: matrix(:,:)
+    integer :: nMatRows, nMatCols, stat
     integer :: iTmp, iTmp2(2), kk, ii, jj
     real(dp), allocatable :: kPts(:,:)
     character(lc) :: errorStr
@@ -423,15 +415,13 @@ contains
 
     case (textNodeName)
 
-      call init(lr1)
-      call getChildValue(child, "", 3, lr1)
-      if (len(lr1) < 1) then
+      call hsd_get_matrix(node, "KPointsAndWeights", matrix, nMatRows, nMatCols, stat=stat)
+      if (stat /= HSD_STAT_OK .or. nMatRows < 1 .or. nMatCols /= 3) then
         call dftbp_error(child, "At least one k-point must be defined.")
       end if
-      ctrl%nKPoint = len(lr1)
+      ctrl%nKPoint = nMatRows
       allocate(kpts(3, ctrl%nKPoint))
-      call asArray(lr1, kpts)
-      call destruct(lr1)
+      kpts(:,:) = transpose(matrix)
       allocate(ctrl%kPoint(2, ctrl%nKPoint))
       allocate(ctrl%kWeight(ctrl%nKPoint))
       ! first two are point values

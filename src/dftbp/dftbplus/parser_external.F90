@@ -20,12 +20,11 @@ module dftbp_dftbplus_parser_external
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue, &
       & getLength, getItem1, destroyNodeList
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib
   use dftbp_io_hsdutils, only : dftbp_error, textNodeName, getNodeName
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
-  use dftbp_type_linkedlist, only : append, asArray, destruct, init, intoArray, len, &
-      & TListInt, TListReal, TListRealR1, TListRealR2
+
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table
   implicit none
@@ -52,12 +51,9 @@ contains
     character(len=:), allocatable :: modifier, buffer, buffer2
     real(dp) :: rTmp
     type(TFileDescr) :: file
-    integer :: ind, ii, iErr, nElem
-    real(dp), allocatable :: tmpR1(:), tmpR2(:,:)
-    type(TListRealR2) :: lCharges
-    type(TListRealR1) :: lBlurs, lr1
-    type(TListReal) :: lr
-    type(TListInt) :: li
+    integer :: ind, ii, iErr, stat, nrows, ncols, prevN
+    real(dp), allocatable :: tmpR2(:,:)
+    real(dp), allocatable :: allCharges(:,:), allBlurs(:)
 
     call getChildValue(node, "ElectricField", value1, "", child=child, allowEmptyValue=.true.,&
         & dummyValue=.true., list=.true.)
@@ -103,8 +99,8 @@ contains
         if (.not.ctrl%tSCC) then
           call error("External charges can only be used in an SCC calculation")
         end if
-        call init(lCharges)
-        call init(lBlurs)
+        allocate(allCharges(4, 0))
+        allocate(allBlurs(0))
         ctrl%nExtChrg = 0
         do ii = 1, getLength(children)
           call getItem1(children, ii, child2)
@@ -112,12 +108,10 @@ contains
           call getNodeName(value1, buffer)
           select case(buffer)
           case (textNodeName)
-            call init(lr1)
-            call getChildValue(child3, "", 4, lr1, modifier=modifier)
-            allocate(tmpR2(4, len(lr1)))
-            call asArray(lr1, tmpR2)
-            ctrl%nExtChrg = ctrl%nExtChrg + len(lr1)
-            call destruct(lr1)
+            call hsd_get_matrix(child2, "CoordsAndCharges", tmpR2, nrows, ncols, stat=stat, &
+                & order="column-major")
+            if (stat /= 0) call dftbp_error(child2, "Error reading CoordsAndCharges")
+            ctrl%nExtChrg = ctrl%nExtChrg + ncols
           case ("directread")
             call getChildValue(value1, "Records", ind)
             call getChildValue(value1, "File", buffer2)
@@ -138,35 +132,33 @@ contains
             call dftbp_error(value1, "Invalid block name")
           end select
           call convertUnitHsd(modifier, lengthUnits, child3, tmpR2(1:3,:))
-          call append(lCharges, tmpR2)
+          prevN = size(allCharges, 2)
+          block
+            real(dp), allocatable :: tmpChrg(:,:)
+            call move_alloc(allCharges, tmpChrg)
+            allocate(allCharges(4, prevN + size(tmpR2, 2)))
+            if (prevN > 0) allCharges(:, 1:prevN) = tmpChrg
+            allCharges(:, prevN+1:) = tmpR2
+          end block
           call getChildValue(child2, "GaussianBlurWidth", rTmp, 0.0_dp, modifier=modifier,&
               & child=child3)
           if (rTmp < 0.0_dp) then
             call dftbp_error(child3, "Gaussian blur width may not be negative")
           end if
           call convertUnitHsd(modifier, lengthUnits, child3, rTmp)
-          allocate(tmpR1(size(tmpR2, dim=2)))
-          tmpR1(:) = rTmp
-          call append(lBlurs, tmpR1)
-          deallocate(tmpR1)
+          prevN = size(allBlurs)
+          block
+            real(dp), allocatable :: tmpBlr(:)
+            call move_alloc(allBlurs, tmpBlr)
+            allocate(allBlurs(prevN + size(tmpR2, 2)))
+            if (prevN > 0) allBlurs(1:prevN) = tmpBlr
+            allBlurs(prevN+1:) = rTmp
+          end block
           deallocate(tmpR2)
         end do
 
-        allocate(ctrl%extChrg(4, ctrl%nExtChrg))
-        ind = 1
-        do ii = 1, len(lCharges)
-          call intoArray(lCharges, ctrl%extChrg(:, ind:), nElem, ii)
-          ind = ind + nElem
-        end do
-        call destruct(lCharges)
-
-        allocate(ctrl%extChrgBlurWidth(ctrl%nExtChrg))
-        ind = 1
-        do ii = 1, len(lBlurs)
-          call intoArray(lBlurs, ctrl%extChrgBlurWidth(ind:), nElem, ii)
-          ind = ind + nElem
-        end do
-        call destruct(lBlurs)
+        call move_alloc(allCharges, ctrl%extChrg)
+        call move_alloc(allBlurs, ctrl%extChrgBlurWidth)
         call destroyNodeList(children)
       end if
 
@@ -187,39 +179,28 @@ contains
       if (associated(child2)) then
         ! onsites
         ctrl%tNetAtomCharges = .true.
-        call init(li)
-        call init(lr)
-        call getChildValue(child2, "Atoms", li)
-        call getChildValue(child2, "Vext", lr, modifier=modifier, child=child3)
-        if (len(li) /= len(lr)) then
+        call hsd_get(child2, "Atoms", ctrl%atomicExtPotential%iAtOnSite)
+        call hsd_get(child2, "Vext", ctrl%atomicExtPotential%VextOnSite)
+        if (size(ctrl%atomicExtPotential%iAtOnSite) /= &
+            & size(ctrl%atomicExtPotential%VextOnSite)) then
           call dftbp_error(child2, "Mismatch in number of sites and potentials")
         end if
-        allocate(ctrl%atomicExtPotential%iAtOnSite(len(li)))
-        call asArray(li, ctrl%atomicExtPotential%iAtOnSite)
-        allocate(ctrl%atomicExtPotential%VextOnSite(len(lr)))
-        call asArray(lr, ctrl%atomicExtPotential%VextOnSite)
+        call hsd_get_attrib(child2, "Vext", modifier)
+        call getChild(child2, "Vext", child3)
         call convertUnitHsd(modifier, energyUnits, child3, ctrl%atomicExtPotential%VextOnSite)
-        call destruct(li)
-        call destruct(lr)
       end if
 
       call getChild(child, "Gross", child2, requested=.false.)
       if (associated(child2)) then
         ! atomic
-        call init(li)
-        call init(lr)
-        call getChildValue(child2, "Atoms", li)
-        call getChildValue(child2, "Vext", lr, modifier=modifier, child=child3)
-        if (len(li) /= len(lr)) then
+        call hsd_get(child2, "Atoms", ctrl%atomicExtPotential%iAt)
+        call hsd_get(child2, "Vext", ctrl%atomicExtPotential%Vext)
+        if (size(ctrl%atomicExtPotential%iAt) /= size(ctrl%atomicExtPotential%Vext)) then
           call dftbp_error(child2, "Mismatch in number of sites and potentials")
         end if
-        allocate(ctrl%atomicExtPotential%iAt(len(li)))
-        call asArray(li, ctrl%atomicExtPotential%iAt)
-        allocate(ctrl%atomicExtPotential%Vext(len(lr)))
-        call asArray(lr, ctrl%atomicExtPotential%Vext)
+        call hsd_get_attrib(child2, "Vext", modifier)
+        call getChild(child2, "Vext", child3)
         call convertUnitHsd(modifier, energyUnits, child3, ctrl%atomicExtPotential%Vext)
-        call destruct(li)
-        call destruct(lr)
       end if
 
       if (.not.allocated(ctrl%atomicExtPotential%iAt)&

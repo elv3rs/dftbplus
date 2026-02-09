@@ -15,12 +15,14 @@ module dftbp_dftbplus_parser_driver
   use dftbp_extlibs_plumed, only : withPlumed
   use dftbp_geoopt_geoopt, only : geoOptTypes
   use dftbp_io_charmanip, only : i2c, unquote
-  use hsd, only : hsd_rename_child, hsd_get_or_set
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_matrix
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData, &
+      & getFirstTextChild
+  use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use dftbp_md_tempprofile, only : identifyTempProfile, tempProfileTypes, TTempProfileInput
@@ -28,8 +30,6 @@ module dftbp_dftbplus_parser_driver
   use dftbp_md_xlbomd, only : TXlbomdInp
   use dftbp_timedep_timeprop, only : envTypes, pertTypes, tdSpinTypes, TElecDynamicsInp
   use dftbp_transport_negfvars, only : TTransPar
-  use dftbp_type_linkedlist, only : asArray, asVector, destruct, init, len, &
-      & TListIntR1, TListRealR1, TListString
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_SOCKETS
   use dftbp_io_ipisocket, only : IPI_PROTOCOLS
@@ -598,27 +598,29 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer
-    type(TListIntR1) :: intBuffer
-    type(TListRealR1) :: realBuffer
+    real(dp), allocatable :: constraintMatrix(:,:)
+    integer :: nMatRows, nMatCols, ii, stat
 
     call getChildValue(node, "Constraints", value1, "", child=child, allowEmptyValue=.true.)
     call getNodeName2(value1, buffer)
     if (buffer == "" .and. .not. hasInlineData(child)) then
       ctrl%nrConstr = 0
     else
-      call init(intBuffer)
-      call init(realBuffer)
-      call getChildValue(child, "", 1, intBuffer, 3, realBuffer)
-      ctrl%nrConstr = len(intBuffer)
+      call hsd_get_matrix(node, "Constraints", constraintMatrix, nMatRows, nMatCols, &
+          & stat=stat, order="column-major")
+      if (stat /= 0 .or. nMatRows /= 4) then
+        call dftbp_error(child, "Invalid constraint data (expected rows of 1 int + 3 reals)")
+      end if
+      ctrl%nrConstr = nMatCols
       allocate(ctrl%conAtom(ctrl%nrConstr))
       allocate(ctrl%conVec(3, ctrl%nrConstr))
-      call asVector(intBuffer, ctrl%conAtom)
+      do ii = 1, ctrl%nrConstr
+        ctrl%conAtom(ii) = nint(constraintMatrix(1, ii))
+      end do
       if (.not.all(ctrl%conAtom<=nAtom)) then
         call dftbp_error(node,"Non-existent atom specified in constraint")
       end if
-      call asArray(realBuffer, ctrl%conVec)
-      call destruct(intBuffer)
-      call destruct(realBuffer)
+      ctrl%conVec(:,:) = constraintMatrix(2:4, :)
     end if
 
   end subroutine readGeoConstraints
@@ -638,8 +640,7 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer, modifier
-    type(TListRealR1) :: realBuffer
-    integer :: nVelocities
+    integer :: nVelocities, nMatRows, nMatCols, stat
     real(dp), allocatable :: tmpVelocities(:,:)
 
     call getChildValue(node, "Velocities", value1, "", child=child, modifier=modifier,&
@@ -648,21 +649,21 @@ contains
     if (buffer == "" .and. .not. hasInlineData(child)) then
       ctrl%tReadMDVelocities = .false.
     else
-      call init(realBuffer)
-      call getChildValue(child, "", 3, realBuffer, modifier=modifier)
-      nVelocities = len(realBuffer)
+      call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
+          & stat=stat, order="column-major")
+      if (stat /= 0 .or. nMatRows /= 3) then
+        call dftbp_error(child, "Invalid velocity data (expected rows of 3 reals)")
+      end if
+      nVelocities = nMatCols
       if (nVelocities /= nAtom) then
         call dftbp_error(node, "Incorrect number of specified velocities: " &
             & // i2c(3*nVelocities) // " supplied, " &
             & // i2c(3*nAtom) // " required.")
       end if
-      allocate(tmpVelocities(3, nVelocities))
-      call asArray(realBuffer, tmpVelocities)
       if (len(modifier) > 0) then
         call convertUnitHsd(modifier, VelocityUnits, child, &
             & tmpVelocities)
       end if
-      call destruct(realBuffer)
       allocate(ctrl%initialVelocities(3, ctrl%nrMoved))
       ctrl%initialVelocities(:,:) = tmpVelocities(:,ctrl%indMovedAtom(:))
       ctrl%tReadMDVelocities = .true.
@@ -705,29 +706,51 @@ contains
     !> Temperature profile input data on exit
     type(TTempProfileInput), intent(out) :: tempProfInp
 
-    type(TListString) :: ls
-    type(TListIntR1) :: li1
-    type(TListRealR1) :: lr1
+    character(len=:), allocatable :: text, bufferStr
+    integer :: bufferInt(1)
+    real(dp) :: bufferReal(1)
+    integer :: iStart, iErr, nItem, nEntries, ii
     character(len=20), allocatable :: tmpC1(:)
-    integer :: ii
     logical :: success
 
-    call init(ls)
-    call init(li1)
-    call init(lr1)
-    call getChildValue(node, "", ls, 1, li1, 1, lr1)
-    if (len(ls) < 1) then
+    ! Read raw text content and parse (string, int, real) triplets
+    call getFirstTextChild(node, text)
+
+    ! First pass: count entries
+    nEntries = 0
+    iStart = 1
+    iErr = TOKEN_OK
+    do while (iErr == TOKEN_OK)
+      call getNextToken(text, bufferStr, iStart, iErr)
+      if (iErr /= TOKEN_OK) exit
+      call getNextToken(text, bufferInt, iStart, iErr, nItem)
+      if (iErr /= TOKEN_OK) then
+        call dftbp_error(node, "Invalid integer value in temperature profile")
+      end if
+      call getNextToken(text, bufferReal, iStart, iErr, nItem)
+      if (iErr /= TOKEN_OK) then
+        call dftbp_error(node, "Invalid real value in temperature profile")
+      end if
+      nEntries = nEntries + 1
+    end do
+
+    if (nEntries < 1) then
       call dftbp_error(node, "At least one annealing step must be specified.")
     end if
-    allocate(tmpC1(len(ls)))
-    allocate(tempProfInp%tempInts(len(li1)))
-    allocate(tempProfInp%tempValues(len(lr1)))
-    call asArray(ls, tmpC1)
-    call asVector(li1, tempProfInp%tempInts)
-    call asVector(lr1, tempProfInp%tempValues)
-    call destruct(ls)
-    call destruct(li1)
-    call destruct(lr1)
+
+    ! Second pass: read data into arrays
+    allocate(tmpC1(nEntries))
+    allocate(tempProfInp%tempInts(nEntries))
+    allocate(tempProfInp%tempValues(nEntries))
+    iStart = 1
+    do ii = 1, nEntries
+      call getNextToken(text, bufferStr, iStart, iErr)
+      tmpC1(ii) = bufferStr
+      call getNextToken(text, bufferInt, iStart, iErr, nItem)
+      tempProfInp%tempInts(ii) = bufferInt(1)
+      call getNextToken(text, bufferReal, iStart, iErr, nItem)
+      tempProfInp%tempValues(ii) = bufferReal(1)
+    end do
     allocate(tempProfInp%tempMethods(size(tmpC1)))
     do ii = 1, size(tmpC1)
       call identifyTempProfile(tempProfInp%tempMethods(ii), tmpC1(ii), success)
@@ -1025,9 +1048,8 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer, modifier
-    type(TListRealR1) :: realBuffer
-    integer :: nVelocities
-    real(dp), pointer :: tmpVelocities(:,:)
+    integer :: nVelocities, nMatRows, nMatCols, stat
+    real(dp), allocatable :: tmpVelocities(:,:)
 
     call getChildValue(node, "Velocities", value1, "", child=child, modifier=modifier,&
         & allowEmptyValue=.true.)
@@ -1035,21 +1057,21 @@ contains
     if (buffer == "" .and. .not. hasInlineData(child)) then
        input%tReadMDVelocities = .false.
     else
-       call init(realBuffer)
-       call getChildValue(child, "", 3, realBuffer, modifier=modifier)
-       nVelocities = len(realBuffer)
+       call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
+           & stat=stat, order="column-major")
+       if (stat /= 0 .or. nMatRows /= 3) then
+          call dftbp_error(child, "Invalid velocity data (expected rows of 3 reals)")
+       end if
+       nVelocities = nMatCols
        if (nVelocities /= nAtom) then
           call dftbp_error(node, "Incorrect number of specified velocities: " &
                & // i2c(3*nVelocities) // " supplied, " &
                & // i2c(3*nAtom) // " required.")
        end if
-       allocate(tmpVelocities(3, nVelocities))
-       call asArray(realBuffer, tmpVelocities)
        if (len(modifier) > 0) then
           call convertUnitHsd(modifier, VelocityUnits, child, &
                & tmpVelocities)
        end if
-       call destruct(realBuffer)
        allocate(input%initialVelocities(3, input%nMovedAtom))
        input%initialVelocities(:,:) = tmpVelocities(:, input%indMovedAtom(:))
        input%tReadMDVelocities = .true.
