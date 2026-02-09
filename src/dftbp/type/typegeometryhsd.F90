@@ -12,14 +12,14 @@ module dftbp_type_typegeometryhsd
   use dftbp_common_constants, only : AA__Bohr, avogadConst, Bohr__AA, pi
   use dftbp_common_globalenv, only : stdout
   use dftbp_common_unitconversion, only : angularUnits, lengthUnits
-  use dftbp_io_charmanip, only : i2c, tolower
+  use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChildValue, setChildValue
+  use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, checkError, splitModifier,&
       & getNodeName, getFirstTextChild
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
-  use dftbp_io_tokenreader, only : getNextToken, TOKEN_ERROR, TOKEN_OK
+  use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
   use dftbp_math_simplealgebra, only : determinant33, invert33
   use dftbp_type_linkedlist, only : append, asArray, destruct, find, init, len, TListIntR1,&
       & TListRealR1, TListString
@@ -90,7 +90,22 @@ contains
       call error("Periodic and helical boundary conditions mutually exclusive.")
     end if
     call init(stringBuffer)
-    call getChildValue(node, "TypeNames", stringBuffer)
+    block
+      character(len=:), allocatable :: txt, tok
+      integer :: iSt, iEr
+      type(hsd_table), pointer :: nameChild
+      call getChild(node, "TypeNames", nameChild)
+      call getFirstTextChild(nameChild, txt)
+      iSt = 1
+      call getNextToken(txt, tok, iSt, iEr)
+      do while (iEr == TOKEN_OK)
+        call append(stringBuffer, trim(unquote(tok)))
+        call getNextToken(txt, tok, iSt, iEr)
+      end do
+      if (iEr == TOKEN_ERROR) then
+        call dftbp_error(nameChild, "Invalid string value in 'TypeNames'")
+      end if
+    end block
     geo%nSpecies = len(stringBuffer)
     if (geo%nSpecies == 0) then
       call dftbp_error(node, "Missing species names.")
@@ -100,8 +115,43 @@ contains
     call destruct(stringBuffer)
     call init(intBuffer)
     call init(realBuffer)
-    call getChildValue(node, "TypesAndCoordinates", 1, intBuffer, 3, &
-        &realBuffer, modifier=modifier, child=typesAndCoords)
+    block
+      character(len=:), allocatable :: txt
+      integer, allocatable :: bufI(:)
+      real(dp), allocatable :: bufR(:)
+      integer :: iSt, iEr, nIt
+      allocate(bufI(1))
+      allocate(bufR(3))
+      call getChild(node, "TypesAndCoordinates", typesAndCoords, modifier=modifier)
+      call getFirstTextChild(typesAndCoords, txt)
+      iSt = 1
+      iEr = TOKEN_OK
+      do while (iEr == TOKEN_OK)
+        call getNextToken(txt, bufI, iSt, iEr, nIt)
+        if (iEr == TOKEN_ERROR) then
+          call dftbp_error(typesAndCoords, "Invalid integer value in 'TypesAndCoordinates'")
+        end if
+        if (iEr == TOKEN_EOS .and. nIt /= 0) then
+          call dftbp_error(typesAndCoords, "Unexpected end of data in 'TypesAndCoordinates'")
+        end if
+        if (iEr == TOKEN_OK) then
+          call append(intBuffer, bufI)
+          call getNextToken(txt, bufR, iSt, iEr, nIt)
+          if (iEr == TOKEN_ERROR) then
+            call dftbp_error(typesAndCoords, "Invalid real value in 'TypesAndCoordinates'")
+          end if
+          if (iEr == TOKEN_EOS .and. nIt /= 0) then
+            call dftbp_error(typesAndCoords, "Unexpected end of data in 'TypesAndCoordinates'")
+          end if
+          if (iEr == TOKEN_OK) then
+            call append(realBuffer, bufR)
+          end if
+        end if
+      end do
+      if (len(intBuffer) /= len(realBuffer)) then
+        call dftbp_error(typesAndCoords, "Unexpected end of data in 'TypesAndCoordinates'")
+      end if
+    end block
     geo%nAtom = len(intBuffer)
     if (geo%nAtom == 0) then
       call dftbp_error(typesAndCoords, "Missing coordinates")

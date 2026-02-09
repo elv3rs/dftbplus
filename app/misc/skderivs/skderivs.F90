@@ -18,6 +18,7 @@ program skderivs
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error
+  use dftbp_io_hsdutils_list, only : getChildValue
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_error_t, hsd_table, new_table
   use dftbp_io_message, only : error, warning

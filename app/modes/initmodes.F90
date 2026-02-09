@@ -26,6 +26,7 @@ module modes_initmodes
       & getChild, getChildren, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getSelectedIndices, getNodeName, textNodeName, getNodeName2, setUnprocessed, hasInlineData
+  use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table

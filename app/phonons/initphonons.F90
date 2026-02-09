@@ -25,6 +25,7 @@ module phonons_initphonons
       & getItem1, getLength, destroyNodeList
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
       & setUnprocessed, getNodeName, textNodeName, getFirstTextChild
+  use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table

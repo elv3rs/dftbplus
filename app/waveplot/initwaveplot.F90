@@ -30,6 +30,7 @@ module waveplot_initwaveplot
       & getChildValue, setChild, setChildValue,&
       & destroyNodeList
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName
+  use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
       & hsd_dump, hsd_clear_children
