@@ -28,7 +28,7 @@ module dftbp_dftbplus_parser_dispersion
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, textNodeName, getNodeName,&
-      & getNodeHSDName, splitModifier, setUnprocessed
+      & getNodeHSDName, splitModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_type_typegeometry, only : TGeometry
@@ -268,7 +268,7 @@ contains
         end if
       end do
     case default
-      call setUnprocessed(value1)
+      if (associated(value1)) value1%processed = .false.
       do iSp = 1, geo%nSpecies
         call getChild(child, geo%speciesNames(iSp), child2)
         call getChildValue(child2, "Distance", input%distances(iSp), &

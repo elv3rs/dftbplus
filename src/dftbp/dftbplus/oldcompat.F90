@@ -20,7 +20,7 @@ module dftbp_dftbplus_oldcompat
       & getChildValue, setChild, setChildValue, getLength, removeChild, &
       & getDescendant, setNodeName, &
       & getItem1, destroyNodeList, renameDescendant
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, setUnprocessed
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_message, only : error
   implicit none
 
@@ -124,10 +124,10 @@ contains
 
     call getChild(root, "Geometry", child1, requested=.false.)
     if (associated(child1)) then
-      call setUnprocessed(child1)
+      if (associated(child1)) child1%processed = .false.
       call getChild(child1, "SpeciesNames", child2, requested=.false.)
       if (associated(child2)) then
-        call setUnprocessed(child2)
+        if (associated(child2)) child2%processed = .false.
         call setNodeName(child2, "TypeNames", parent=child1)
       end if
     end if
@@ -157,7 +157,7 @@ contains
     call getDescendant(root, "Hamiltonian/DFTB/Variational", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tValue)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
       if (.not. tValue) then
         call dftbp_error(ch1, "Sorry, non-variational energy calculation &
             &is not supported any more!")
@@ -170,10 +170,10 @@ contains
     call getDescendant(root, "Hamiltonian/DFTB/SCC", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tValue)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
       if (tValue) then
         call setChildValue(par, "OrbitalResolvedSCC", .true., child=ch2)
-        call setUnprocessed(ch2)
+        if (associated(ch2)) ch2%processed = .false.
         call dftbp_warning(ch2, "Calculations are not orbital resolved &
             &per default any more. Keyword 'OrbitalResolvedSCC' added.")
       end if
@@ -277,7 +277,7 @@ contains
         call setChild(root, "Analysis", ch1)
       end if
       call setChildValue(ch1, "MullikenAnalysis", tVal)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
     end if
 
     call getDescendant(root, "Options/AtomResolvedEnergies", ch1, parent=par)
@@ -292,7 +292,7 @@ contains
         call setChild(root, "Analysis", ch1)
       end if
       call setChildValue(ch1,"AtomResolvedEnergies",tVal)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
     end if
 
     call getDescendant(root, "Options/WriteEigenvectors", ch1, parent=par)
@@ -307,7 +307,7 @@ contains
         call setChild(root, "Analysis", ch1)
       end if
       call setChildValue(ch1, "WriteEigenvectors", tVal)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
     end if
 
     call getDescendant(root, "Options/WriteBandOut", ch1, parent=par)
@@ -322,7 +322,7 @@ contains
         call setChild(root, "Analysis", ch1)
       end if
       call setChildValue(ch1, "WriteBandOut", tVal)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
     end if
 
     call getDescendant(root, "Options/CalculateForces", ch1, parent=par)
@@ -337,7 +337,7 @@ contains
         call setChild(root, "Analysis", ch1)
       end if
       call setChildValue(ch1, "CalculateForces", tVal)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
     end if
 
     call getDescendant(root, "Hamiltonian/DFTB", ch1, parent=par)
@@ -483,14 +483,14 @@ contains
     call getDescendant(root, "ElectronDynamics/Restart", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tVal1)
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
       tVal2 = .false.
       ! Population projection requires eigenvectors, which are not currently stored in the restart
       ! file.
       call getDescendant(root, "ElectronDynamics/Populations", ch2)
       if (associated(ch2)) then
         call getChildValue(ch2, "", tVal2)
-        call setUnprocessed(ch2)
+        if (associated(ch2)) ch2%processed = .false.
       end if
       if (tVal1 .and. .not.tVal2) then
         call getDescendant(root, "Hamiltonian/DFTB/Filling", ch1)
@@ -510,10 +510,10 @@ contains
     call getDescendant(root, "Driver/lBFGS", ch1)
     if (associated(ch1)) then
       call setChildValue(ch1, "LineSearch", .true., child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
       call dftbp_warning(ch2, "Set 'LineSearch = Yes'")
       call setChildValue(ch1, "oldLineSearch", .true., child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
       call dftbp_warning(ch2, "Set 'oldLineSearch = Yes'")
     end if
 
@@ -536,15 +536,15 @@ contains
       call getChildValue(ch1, "TestArnoldi", tVal2, default=.false., child=ch2)
       dummy => removeChild(ch1, ch2)
       call dftbp_warning(ch1, "Keyword moved to Diagonaliser block.")
-      call setUnprocessed(ch1)
+      if (associated(ch1)) ch1%processed = .false.
       call setChild(ch1, "Diagonaliser", ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
       call setChild(ch2, "Arpack", ch3)
-      call setUnprocessed(ch3)
+      if (associated(ch3)) ch3%processed = .false.
       call setChildValue(ch3, "WriteStatusArnoldi", tVal1, child=ch4)
-      call setUnprocessed(ch4)
+      if (associated(ch4)) ch4%processed = .false.
       call setChildValue(ch3, "TestArnoldi", tVal2, child=ch4)
-      call setUnprocessed(ch4)
+      if (associated(ch4)) ch4%processed = .false.
     end if
 
     ! move ConvergentSccOnly and ConvergentForces into a common keyword
@@ -557,7 +557,7 @@ contains
       ch1 => null()
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Hamiltonian/Dispersion/Mbd/ConvergentSCCOnly", ch1, parent=par)
@@ -572,7 +572,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/ConjugateGradient/ConvergentForcesOnly", ch1, parent=par)
@@ -587,7 +587,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/VelocityVerlet/ConvergentForcesOnly", ch1, parent=par)
@@ -602,7 +602,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/SteepestDescent/ConvergentForcesOnly", ch1, parent=par)
@@ -617,7 +617,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/gDiis/ConvergentForcesOnly", ch1, parent=par)
@@ -632,7 +632,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/LBfgs/ConvergentForcesOnly", ch1, parent=par)
@@ -647,7 +647,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/Fire/ConvergentForcesOnly", ch1, parent=par)
@@ -662,7 +662,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/SecondDerivatives/ConvergentForcesOnly", ch1, parent=par)
@@ -677,7 +677,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
     call getDescendant(root, "Driver/Socket/ConvergentForcesOnly", ch1, parent=par)
@@ -692,7 +692,7 @@ contains
       end if
       call getDescendant(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
-      call setUnprocessed(ch2)
+      if (associated(ch2)) ch2%processed = .false.
     end if
 
   end subroutine convert_9_10
@@ -744,7 +744,7 @@ contains
       #:for LABEL in [("xTB"), ("DFTB")]
         call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1)
         if (associated(ch1)) then
-          call setUnprocessed(ch1)
+          if (associated(ch1)) ch1%processed = .false.
           call dftbp_warning(ch1, "Device region charge cannot be set if contacts are present.")
           ch1 => null()
         end if
@@ -786,7 +786,7 @@ contains
         call getChildValue(par1, "MaxSCCIterations", maxIter)
         call getDescendant(root, "Analysis", ch1)
         call setChildValue(ch1, "MaxPerturbIter", maxIter, child=ch2)
-        call setUnprocessed(ch2)
+        if (associated(ch2)) ch2%processed = .false.
       end if
 
       call getDescendant(root, "Hamiltonian/DFTB/ConvergentSCCOnly", ch1, parent=par1)
@@ -794,7 +794,7 @@ contains
         call getChildValue(par1, "ConvergentSCCOnly", isConvRequired)
         call getDescendant(root, "Analysis", ch1)
         call setChildValue(ch1, "ConvergedPerturb", isConvRequired, child=ch2)
-        call setUnprocessed(ch2)
+        if (associated(ch2)) ch2%processed = .false.
       end if
 
       call getDescendant(root, "Hamiltonian/DFTB/SccTolerance", ch1, parent=par1)
@@ -802,7 +802,7 @@ contains
         call getChildValue(par1, "SccTolerance", sccTol)
         call getDescendant(root, "Analysis", ch1)
         call setChildValue(ch1, "PerturbSccTol", sccTol, child=ch2)
-        call setUnprocessed(ch2)
+        if (associated(ch2)) ch2%processed = .false.
       end if
 
     end if
@@ -871,8 +871,8 @@ contains
       if (.not. associated(ch2)) then
         call setChild(ch1, "Screening", ch2)
         call setChild(ch2, "Thresholded", ch3)
-        call setUnprocessed(ch1)
-        call setUnprocessed(ch2)
+        if (associated(ch1)) ch1%processed = .false.
+        if (associated(ch2)) ch2%processed = .false.
       end if
     end if
 
@@ -909,8 +909,8 @@ contains
     call useDftb3Default(pD3, "s8", 0.5883_dp)
 
     call getChildValue(pD3, "Damping", pDampMethod, default="BeckeJohnson", child=pChild)
-    call setUnprocessed(pChild)
-    call setUnprocessed(pDampMethod)
+    if (associated(pChild)) pChild%processed = .false.
+    if (associated(pDampMethod)) pDampMethod%processed = .false.
     call getNodeName(pDampMethod, buffer)
 
     select case (buffer)
@@ -941,7 +941,7 @@ contains
       call setChildValue(root, option, default, child=pChild)
       call dftbp_warning(pChild, "Using DFTB3 optimised default value for parameter " // option)
     end if
-    call setUnprocessed(pChild)
+    if (associated(pChild)) pChild%processed = .false.
 
   end subroutine useDftb3Default
 

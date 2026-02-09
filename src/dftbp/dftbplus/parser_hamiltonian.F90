@@ -32,7 +32,7 @@ module dftbp_dftbplus_parser_hamiltonian
       & setChild, setChildValue, &
       & getLength, getItem1, destroyNodeList, removeChild
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning,&
-      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, setUnprocessed, hasInlineData
+      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table
   use dftbp_io_message, only : error, warning
@@ -249,7 +249,7 @@ contains
         end do
       end do
     case default
-      call setUnprocessed(value1)
+      if (associated(value1)) value1%processed = .false.
       call getChildValue(child, "Prefix", buffer2, "")
       prefix = unquote(buffer2)
       call getChild(child, "Suffix", child2, requested=.false.)

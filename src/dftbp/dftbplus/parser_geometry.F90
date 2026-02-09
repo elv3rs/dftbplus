@@ -4,7 +4,7 @@
 !> Parser routine for the Geometry block.
 module dftbp_dftbplus_parser_geometry
   use dftbp_dftbplus_inputdata, only : TInputData
-  use dftbp_io_hsdutils, only : getChildValue, setUnprocessed
+  use dftbp_io_hsdutils, only : getChildValue
   use dftbp_io_hsdutils, only : getNodeName
   use hsd_data, only : hsd_table
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, readTGeometryLammps,&
@@ -43,7 +43,7 @@ contains
     case ("lammpsformat")
       call readTGeometryLammps(value1, input%geom)
     case default
-      call setUnprocessed(value1)
+      if (associated(value1)) value1%processed = .false.
       call readTGeometryHSD(child, input%geom)
     end select
 
