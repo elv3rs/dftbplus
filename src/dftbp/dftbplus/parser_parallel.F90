@@ -14,6 +14,7 @@ module dftbp_dftbplus_parser_parallel
   use dftbp_common_globalenv, only : withMpi, withScalapack
   use dftbp_dftbplus_inputdata, only : TBlacsOpts, TInputData
   use dftbp_io_hsdutils, only : getChild, getChildValue
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_warning
   implicit none
 
@@ -42,7 +43,7 @@ contains
       end if
       allocate(input%ctrl%parallelOpts)
       call getChildValue(node, "Groups", input%ctrl%parallelOpts%nGroup, 1, child=pTmp)
-      call getChildValue(node, "UseOmpThreads", input%ctrl%parallelOpts%tOmpThreads, .not. withMpi)
+      call hsd_get_or_set(node, "UseOmpThreads", input%ctrl%parallelOpts%tOmpThreads, .not. withMpi)
       call readBlacs(node, input%ctrl%parallelOpts%blacsOpts)
     end if
 
@@ -66,7 +67,7 @@ contains
         call dftbp_warning(node, "Settings will be read but ignored (compiled without SCALAPACK&
             & support)")
       end if
-      call getChildValue(node, "BlockSize", blacsOpts%blockSize, 32)
+      call hsd_get_or_set(node, "BlockSize", blacsOpts%blockSize, 32)
     end if
 
   end subroutine readBlacs

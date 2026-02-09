@@ -24,7 +24,7 @@ module dftbp_dftbplus_parser_dispersion
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_io_charmanip, only : tolower, unquote
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_get_or_set
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, textNodeName, getNodeName,&
@@ -584,8 +584,8 @@ contains
         & child=child)
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoff)
 
-    call getChildValue(node, "EwaldParameter", input%parEwald, 0.0_dp)
-    call getChildValue(node, "EwaldTolerance", input%tolEwald, 1.0e-9_dp)
+    call hsd_get_or_set(node, "EwaldParameter", input%parEwald, 0.0_dp)
+    call hsd_get_or_set(node, "EwaldTolerance", input%tolEwald, 1.0e-9_dp)
 
     call readCoordinationNumber(node, input%cnInput, geo, "Erf", 8.0_dp)
 
@@ -731,7 +731,7 @@ contains
     type(hsd_table), pointer :: child
 
     input%method = 'mbd-rsscs'
-    call getChildValue(node, "Beta", input%mbd_beta, input%mbd_beta)
+    call hsd_get_or_set(node, "Beta", input%mbd_beta, input%mbd_beta)
     call getChildValue(node, "NOmegaGrid", input%n_omega_grid, default=(input%n_omega_grid))
     call getChildValue(node, "KGrid", input%k_grid)
     call getChildValue(node, "KGridShift", input%k_grid_shift, default=(input%k_grid_shift))

@@ -31,6 +31,7 @@ module dftbp_dftbplus_parser_hamiltonian
       & getChild, getChildren, getChildValue, &
       & setChild, setChildValue, &
       & getLength, getItem1, destroyNodeList, removeChild
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning,&
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -219,13 +220,13 @@ contains
     call getNodeName(value1, buffer)
     select case(buffer)
     case ("type2filenames")
-      call getChildValue(value1, "Prefix", buffer2, "")
+      call hsd_get_or_set(value1, "Prefix", buffer2, "")
       prefix = unquote(buffer2)
-      call getChildValue(value1, "Suffix", buffer2, "")
+      call hsd_get_or_set(value1, "Suffix", buffer2, "")
       suffix = unquote(buffer2)
-      call getChildValue(value1, "Separator", buffer2, "")
+      call hsd_get_or_set(value1, "Separator", buffer2, "")
       separator = unquote(buffer2)
-      call getChildValue(value1, "LowerCaseTypeName", tLower, .false.)
+      call hsd_get_or_set(value1, "LowerCaseTypeName", tLower, .false.)
       do iSp1 = 1, geo%nSpecies
         if (tLower) then
           elem1 = tolower(geo%speciesNames(iSp1))
@@ -250,7 +251,7 @@ contains
       end do
     case default
       if (associated(value1)) value1%processed = .false.
-      call getChildValue(child, "Prefix", buffer2, "")
+      call hsd_get_or_set(child, "Prefix", buffer2, "")
       prefix = unquote(buffer2)
       call getChild(child, "Suffix", child2, requested=.false.)
       if (associated(child2)) then
@@ -308,7 +309,7 @@ contains
         do iSp2 = 1, geo%nSpecies
           strTmp = trim(geo%speciesNames(iSp1)) // "-" &
               &// trim(geo%speciesNames(iSp2))
-          call getChildValue(child, trim(strTmp), repPoly(iSp2, iSp1), .false.)
+          call hsd_get_or_set(child, trim(strTmp), repPoly(iSp2, iSp1), .false.)
         end do
       end do
       if (.not. all(repPoly .eqv. transpose(repPoly))) then
@@ -320,7 +321,7 @@ contains
     call parseChimes(node, ctrl%chimesRepInput)
 
     ! SCC
-    call getChildValue(node, "SCC", ctrl%tSCC, .false.)
+    call hsd_get_or_set(node, "SCC", ctrl%tSCC, .false.)
 
     call parseHybridBlock(node, ctrl%hybridXcInp, ctrl, geo, skFiles)
 
@@ -331,12 +332,12 @@ contains
     end if
 
     if (ctrl%tSCC) then
-      call getChildValue(node, "ShellResolvedSCC", ctrl%tShellResolved, .false.)
+      call hsd_get_or_set(node, "ShellResolvedSCC", ctrl%tShellResolved, .false.)
     else
       ctrl%tShellResolved = .false.
     end if
 
-    call getChildValue(node, "OldSKInterpolation", ctrl%oldSKInter, .false.)
+    call hsd_get_or_set(node, "OldSKInterpolation", ctrl%oldSKInter, .false.)
     if (ctrl%oldSKInter) then
       skInterMeth = skEqGridOld
     else
@@ -386,8 +387,8 @@ contains
       call getChild(node, "NonAufbau", child, requested=.false.)
       if (associated(child)) then
         ctrl%isNonAufbau = .true.
-        call getChildValue(child, "SpinPurify", ctrl%isSpinPurify, .true.)
-        call getChildValue(child, "GroundGuess", ctrl%isGroundGuess, .false.)
+        call hsd_get_or_set(child, "SpinPurify", ctrl%isSpinPurify, .true.)
+        call hsd_get_or_set(child, "GroundGuess", ctrl%isGroundGuess, .false.)
         ctrl%tSpin = .true.
         ctrl%t2Component = .false.
         ctrl%nrSpinPol = 0.0_dp
@@ -434,13 +435,13 @@ contains
       ctrl%nrChrg =  0.0_dp
     else
       ! Charge
-      call getChildValue(node, "Charge", ctrl%nrChrg, 0.0_dp)
+      call hsd_get_or_set(node, "Charge", ctrl%nrChrg, 0.0_dp)
     end if
   #:else
     call readSolver(node, ctrl, geo, poisson)
 
     ! Charge
-    call getChildValue(node, "Charge", ctrl%nrChrg, 0.0_dp)
+    call hsd_get_or_set(node, "Charge", ctrl%nrChrg, 0.0_dp)
   #:endif
 
     ! K-Points
@@ -452,7 +453,7 @@ contains
       call getChild(node, "OrbitalPotential", child, requested=.false.)
       if (associated(child)) then
         allocate(ctrl%dftbUInp)
-        call getChildValue(child, "Functional", buffer, "fll")
+        call hsd_get_or_set(child, "Functional", buffer, "fll")
         select case(tolower(buffer))
         case ("fll")
           ctrl%dftbUInp%iFunctional = plusUFunctionals%fll
@@ -590,7 +591,7 @@ contains
     if (associated(value1)) then
       allocate(ctrl%solvInp)
       call readSolvation(child, geo, ctrl%solvInp)
-      call getChildValue(value1, "RescaleSolvatedFields", ctrl%isSolvatedFieldRescaled, .true.)
+      call hsd_get_or_set(value1, "RescaleSolvatedFields", ctrl%isSolvatedFieldRescaled, .true.)
     end if
 
     ! Electronic constraints
@@ -625,8 +626,8 @@ contains
     ctrl%t3rd = .false.
     ctrl%t3rdFull = .false.
     if (ctrl%tSCC) then
-      call getChildValue(node, "ThirdOrder", ctrl%t3rd, .false.)
-      call getChildValue(node, "ThirdOrderFull", ctrl%t3rdFull, .false.)
+      call hsd_get_or_set(node, "ThirdOrder", ctrl%t3rd, .false.)
+      call hsd_get_or_set(node, "ThirdOrderFull", ctrl%t3rdFull, .false.)
       if (ctrl%t3rd .and. ctrl%t3rdFull) then
         call dftbp_error(node, "You must choose either ThirdOrder or&
             & ThirdOrderFull")
@@ -663,7 +664,7 @@ contains
             & any([(any(halogenXSpecies2(ii) == geo%speciesNames), ii=1, size(halogenXSpecies2))])
 
         if (isHalogenXCorr) then
-          call getChildValue(node, "HalogenXCorr", ctrl%tHalogenX, .false.)
+          call hsd_get_or_set(node, "HalogenXCorr", ctrl%tHalogenX, .false.)
         end if
 
       end if
@@ -758,10 +759,10 @@ contains
       end if
     end if
 
-    call getChildValue(node, "ShellResolvedSCC", ctrl%tShellResolved, .true.)
+    call hsd_get_or_set(node, "ShellResolvedSCC", ctrl%tShellResolved, .true.)
 
     ! SCC parameters
-    call getChildValue(node, "SCC", ctrl%tSCC, .true.)
+    call hsd_get_or_set(node, "SCC", ctrl%tSCC, .true.)
     ifSCC: if (ctrl%tSCC) then
 
       ! get charge mixing options etc.
@@ -771,8 +772,8 @@ contains
       call getChild(node, "NonAufbau", child, requested=.false.)
       if (associated(child)) then
         ctrl%isNonAufbau = .true.
-        call getChildValue(child, "SpinPurify", ctrl%isSpinPurify, .true.)
-        call getChildValue(child, "GroundGuess", ctrl%isGroundGuess, .false.)
+        call hsd_get_or_set(child, "SpinPurify", ctrl%isSpinPurify, .true.)
+        call hsd_get_or_set(child, "GroundGuess", ctrl%isGroundGuess, .false.)
         ctrl%tSpin = .true.
         ctrl%t2Component = .false.
         ctrl%nrSpinPol = 0.0_dp
@@ -816,13 +817,13 @@ contains
       ctrl%nrChrg =  0.0_dp
     else
       ! Charge
-      call getChildValue(node, "Charge", ctrl%nrChrg, 0.0_dp)
+      call hsd_get_or_set(node, "Charge", ctrl%nrChrg, 0.0_dp)
     end if
   #:else
     call readSolver(node, ctrl, geo, poisson)
 
     ! Charge
-    call getChildValue(node, "Charge", ctrl%nrChrg, 0.0_dp)
+    call hsd_get_or_set(node, "Charge", ctrl%nrChrg, 0.0_dp)
   #:endif
 
     ! K-Points
@@ -843,7 +844,7 @@ contains
     if (associated(value1)) then
       allocate(ctrl%solvInp)
       call readSolvation(child, geo, ctrl%solvInp)
-      call getChildValue(value1, "RescaleSolvatedFields", ctrl%isSolvatedFieldRescaled, .true.)
+      call hsd_get_or_set(value1, "RescaleSolvatedFields", ctrl%isSolvatedFieldRescaled, .true.)
     end if
 
     if (ctrl%tLatOpt .and. .not. geo%tPeriodic) then
@@ -911,20 +912,20 @@ contains
 
           allocate(ctrl%mixerInp%broydenMixerInp)
           associate (inp => ctrl%mixerInp%broydenMixerInp)
-            call getChildValue(value1, "MixingParameter", inp%mixParam, 0.2_dp)
-            call getChildValue(value1, "InverseJacobiWeight", inp%omega0, 0.01_dp)
-            call getChildValue(value1, "MinimalWeight", inp%minWeight, 1.0_dp)
-            call getChildValue(value1, "MaximalWeight", inp%maxWeight, 1.0e5_dp)
-            call getChildValue(value1, "WeightFactor", inp%weightFac, 1.0e-2_dp)
+            call hsd_get_or_set(value1, "MixingParameter", inp%mixParam, 0.2_dp)
+            call hsd_get_or_set(value1, "InverseJacobiWeight", inp%omega0, 0.01_dp)
+            call hsd_get_or_set(value1, "MinimalWeight", inp%minWeight, 1.0_dp)
+            call hsd_get_or_set(value1, "MaximalWeight", inp%maxWeight, 1.0e5_dp)
+            call hsd_get_or_set(value1, "WeightFactor", inp%weightFac, 1.0e-2_dp)
           end associate
 
         case ("anderson")
 
           allocate(ctrl%mixerInp%andersonMixerInp)
           associate (inp => ctrl%mixerInp%andersonMixerInp)
-            call getChildValue(value1, "MixingParameter", inp%mixParam, 0.05_dp)
-            call getChildValue(value1, "Generations", inp%iGenerations, 4)
-            call getChildValue(value1, "InitMixingParameter", inp%initMixParam, 0.01_dp)
+            call hsd_get_or_set(value1, "MixingParameter", inp%mixParam, 0.05_dp)
+            call hsd_get_or_set(value1, "Generations", inp%iGenerations, 4)
+            call hsd_get_or_set(value1, "InitMixingParameter", inp%initMixParam, 0.01_dp)
             call getChildValue(value1, "DynMixingParameters", value2, "", child=child,&
                 & allowEmptyValue=.true.)
             call getNodeName2(value2, buffer2)
@@ -941,23 +942,23 @@ contains
               call asArray(lr1, inp%convMixParam)
               call destruct(lr1)
             end if
-            call getChildValue(value1, "DiagonalRescaling", inp%omega0, 1.0e-2_dp)
+            call hsd_get_or_set(value1, "DiagonalRescaling", inp%omega0, 1.0e-2_dp)
           end associate
 
         case ("simple")
 
           allocate(ctrl%mixerInp%simpleMixerInp)
           associate (inp => ctrl%mixerInp%simpleMixerInp)
-            call getChildValue(value1, "MixingParameter", inp%mixParam, 0.05_dp)
+            call hsd_get_or_set(value1, "MixingParameter", inp%mixParam, 0.05_dp)
           end associate
 
         case ("diis")
 
           allocate(ctrl%mixerInp%diisMixerInp)
           associate (inp => ctrl%mixerInp%diisMixerInp)
-            call getChildValue(value1, "InitMixingParameter", inp%initMixParam, 0.2_dp)
-            call getChildValue(value1, "Generations", inp%iGenerations, 6)
-            call getChildValue(value1, "UseFromStart", inp%tFromStart, .true.)
+            call hsd_get_or_set(value1, "InitMixingParameter", inp%initMixParam, 0.2_dp)
+            call hsd_get_or_set(value1, "Generations", inp%iGenerations, 6)
+            call hsd_get_or_set(value1, "UseFromStart", inp%tFromStart, .true.)
           end associate
 
         case default
@@ -973,7 +974,7 @@ contains
         if (ctrl%thermostatInp%thermostatType /= thermostatTypes%dummy) then
           call getChildValue(driverNode, "Thermostat", child, child=child2)
           if (ctrl%reksInp%reksAlg == reksTypes%noReks) then
-            call getChildValue(child, "AdaptFillingTemp", ctrl%tSetFillingTemp, .false.)
+            call hsd_get_or_set(child, "AdaptFillingTemp", ctrl%tSetFillingTemp, .false.)
           end if
         end if
       end if

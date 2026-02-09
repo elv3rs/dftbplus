@@ -28,7 +28,7 @@ module dftbp_dftbplus_parser_spin
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, intoArray, len, &
       & TListIntR1, TListReal, TListString
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_get_or_set
   use hsd_data, only : hsd_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
@@ -74,7 +74,7 @@ contains
       ctrl%tSpinOrbit = .true.
       ctrl%t2Component = .true.
 
-      call getChildValue(child, "Dual", ctrl%tDualSpinOrbit, .true.)
+      call hsd_get_or_set(child, "Dual", ctrl%tDualSpinOrbit, .true.)
 
       allocate(ctrl%xi(orb%mShell,geo%nSpecies), source = 0.0_dp)
       do iSp = 1, geo%nSpecies
@@ -278,8 +278,8 @@ contains
     case ("colinear", "collinear")
       ctrl%tSpin = .true.
       ctrl%t2Component = .false.
-      call getChildValue(value1, 'UnpairedElectrons', ctrl%nrSpinPol, 0.0_dp)
-      call getChildValue(value1, 'RelaxTotalSpin', ctrl%tSpinSharedEf, .false.)
+      call hsd_get_or_set(value1, 'UnpairedElectrons', ctrl%nrSpinPol, 0.0_dp)
+      call hsd_get_or_set(value1, 'RelaxTotalSpin', ctrl%tSpinSharedEf, .false.)
       if (.not. ctrl%tReadChrg) then
         call getInitialSpins(value1, geo, 1, ctrl%initialSpins)
       end if
@@ -456,10 +456,10 @@ contains
 
       call getChild(hamNode, "SpinConstants", child)
       if (ctrl%hamiltonian == hamiltonianTypes%xtb) then
-        call getChildValue(child, "ShellResolvedSpin", tShellResolvedW, .true.)
+        call hsd_get_or_set(child, "ShellResolvedSpin", tShellResolvedW, .true.)
       else
         if (.not.ctrl%tShellResolved) then
-          call getChildValue(child, "ShellResolvedSpin", tShellResolvedW, .false.)
+          call hsd_get_or_set(child, "ShellResolvedSpin", tShellResolvedW, .false.)
         else
           tShellResolvedW = .true.
         end if

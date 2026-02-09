@@ -16,7 +16,7 @@ module dftbp_dftbplus_parser_excited
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_arpack, only : withArpack
   use dftbp_io_charmanip, only : tolower, unquote
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_get_or_set
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName
@@ -111,10 +111,10 @@ contains
       call getChildValue(child, "WriteCoefficients", ctrl%lrespini%tCoeffs, default=.false.)
       ctrl%lrespini%tGrndState = .false.
       if (ctrl%lrespini%tCoeffs) then
-        call getChildValue(child, "TotalStateCoeffs", ctrl%lrespini%tGrndState, .false.)
+        call hsd_get_or_set(child, "TotalStateCoeffs", ctrl%lrespini%tGrndState, .false.)
       end if
-      call getChildValue(child, "WriteEigenvectors", ctrl%lrespini%tPrintEigVecs, .false.)
-      call getChildValue(child, "WriteDensityMatrix", ctrl%lrespini%tWriteDensityMatrix, .false.)
+      call hsd_get_or_set(child, "WriteEigenvectors", ctrl%lrespini%tPrintEigVecs, .false.)
+      call hsd_get_or_set(child, "WriteDensityMatrix", ctrl%lrespini%tWriteDensityMatrix, .false.)
       call getChildValue(child, "WriteXplusY", ctrl%lrespini%tXplusY, default=.false.)
       call getChildValue(child, "StateCouplings", ctrl%lrespini%indNACouplings, default=[0, 0])
       if (all(ctrl%lrespini%indNACouplings == 0)) then
@@ -143,7 +143,7 @@ contains
           ctrl%lrespini%iLinRespSolver = linRespSolverTypes%Arpack
         case ("stratmann")
           ctrl%lrespini%iLinRespSolver = linRespSolverTypes%Stratmann
-          call getChildValue(child2, "SubSpaceFactor", ctrl%lrespini%subSpaceFactorStratmann, 20)
+          call hsd_get_or_set(child2, "SubSpaceFactor", ctrl%lrespini%subSpaceFactorStratmann, 20)
         case default
           call dftbp_error(child2, "Invalid diagonaliser method '" // buffer // "'")
         end select

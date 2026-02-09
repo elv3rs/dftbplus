@@ -18,6 +18,7 @@ module dftbp_dftbplus_parser_filling
   use dftbp_dftb_etemp, only : fillingTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_hsdutils, only : getChild, getChildValue
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getNodeHSDName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
@@ -58,7 +59,7 @@ contains
       ctrl%iDistribFn = fillingTypes%Methfessel ! Gauss function broadening of levels (0th order MP)
     case ("methfesselpaxton")
       ! Set the order of the Methfessel-Paxton step function approximation, defaulting to 1st order
-      call getChildValue(value1, "Order", ctrl%iDistribFn, 1)
+      call hsd_get_or_set(value1, "Order", ctrl%iDistribFn, 1)
       if (ctrl%iDistribFn < 1) then
         call getNodeHSDName(value1, buffer)
         select case(ctrl%iDistribFn)
@@ -100,7 +101,7 @@ contains
     end if
 
     if (geo%tPeriodic .and. .not.ctrl%tFixEf) then
-      call getChildValue(value1, "IndependentKFilling", ctrl%tFillKSep, .false.)
+      call hsd_get_or_set(value1, "IndependentKFilling", ctrl%tFillKSep, .false.)
     end if
 
   end subroutine readFilling

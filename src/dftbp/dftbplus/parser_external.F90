@@ -20,6 +20,7 @@ module dftbp_dftbplus_parser_external
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue, &
       & getLength, getItem1, destroyNodeList
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, textNodeName, getNodeName
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -89,7 +90,7 @@ contains
       end if
       ctrl%electricField%EfieldPhase = 0
       if (ctrl%electricField%isTDEfield) then
-        call getChildValue(child2, "Phase", ctrl%electricField%EfieldPhase, 0)
+        call hsd_get_or_set(child2, "Phase", ctrl%electricField%EfieldPhase, 0)
       end if
     end if
 

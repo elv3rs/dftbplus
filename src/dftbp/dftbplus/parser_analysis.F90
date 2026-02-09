@@ -9,7 +9,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_dftbplus_parser_kpoints, only : maxSelfConsIterations
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_get_or_set
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue, setChildValue, &
       & getLength, getItem1, destroyNodeList
@@ -114,7 +114,7 @@ contains
           end if
           deallocate(pTmpI1)
           write(strTmp, "('region',I0)") iReg
-          call getChildValue(child2, "Label", buffer, trim(strTmp))
+          call hsd_get_or_set(child2, "Label", buffer, trim(strTmp))
           ctrl%RegionLabel(iReg) = unquote(buffer)
         end do
       end if
@@ -128,10 +128,10 @@ contains
         if (associated(child2)) then
           allocate(ctrl%pipekMezeyInp)
           associate(inp => ctrl%pipekMezeyInp)
-            call getChildValue(child2, "MaxIterations", inp%maxIter, 100)
+            call hsd_get_or_set(child2, "MaxIterations", inp%maxIter, 100)
             tPipekDense = .true.
             if (.not. geo%tPeriodic) then
-              call getChildValue(child2, "Dense", tPipekDense, .false.)
+              call hsd_get_or_set(child2, "Dense", tPipekDense, .false.)
               if (.not. tPipekDense) then
                 call init(lr1)
                 call getChild(child2, "SparseTolerances", child=child3, requested=.false.)
@@ -151,7 +151,7 @@ contains
               end if
             end if
             if (tPipekDense) then
-              call getChildValue(child2, "Tolerance", inp%tolerance, 1.0E-4_dp)
+              call hsd_get_or_set(child2, "Tolerance", inp%tolerance, 1.0E-4_dp)
             end if
           end associate
         else
@@ -159,7 +159,7 @@ contains
         end if
       end if
 
-      call getChildValue(node, "WriteEigenvectors", ctrl%tPrintEigVecs, .false.)
+      call hsd_get_or_set(node, "WriteEigenvectors", ctrl%tPrintEigVecs, .false.)
 
     #:if WITH_SOCKETS
       tWriteBandDatDefault = .not. allocated(ctrl%socketInput)
@@ -167,7 +167,7 @@ contains
       tWriteBandDatDefault = .true.
     #:endif
 
-      call getChildValue(node, "WriteBandOut", ctrl%tWriteBandDat, tWriteBandDatDefault)
+      call hsd_get_or_set(node, "WriteBandOut", ctrl%tWriteBandDat, tWriteBandDatDefault)
 
       ! electric field polarisability of system
       call hsd_rename_child(node, "Polarizability", "Polarisability")
@@ -184,7 +184,7 @@ contains
         if (.not.allocated(ctrl%perturbInp)) allocate(ctrl%perturbInp)
         ctrl%perturbInp%isRespKernelPert = .true.
         if (ctrl%tSCC) then
-          call getChildValue(child, "RPA", ctrl%perturbInp%isRespKernelRPA, .false.)
+          call hsd_get_or_set(child, "RPA", ctrl%perturbInp%isRespKernelRPA, .false.)
         else
           ctrl%perturbInp%isRespKernelRPA = .true.
         end if
@@ -236,9 +236,9 @@ contains
       if (allocated(ctrl%perturbInp)) then
         call maxSelfConsIterations(node, ctrl, "MaxPerturbIter", ctrl%perturbInp%maxPerturbIter)
         if (ctrl%tScc) then
-          call getChildValue(node, "PerturbSccTol", ctrl%perturbInp%perturbSccTol, 1.0e-5_dp)
+          call hsd_get_or_set(node, "PerturbSccTol", ctrl%perturbInp%perturbSccTol, 1.0e-5_dp)
           ! self consistency required, or not, to proceed with perturbation
-          call getChildValue(node, "ConvergedPerturb", ctrl%perturbInp%isPerturbConvRequired,&
+          call hsd_get_or_set(node, "ConvergedPerturb", ctrl%perturbInp%isPerturbConvRequired,&
               & .true.)
         end if
       end if
@@ -250,7 +250,7 @@ contains
       ! Is this compatible with Poisson solver use?
       call readElectrostaticPotential(node, geo, ctrl)
 
-      call getChildValue(node, "MullikenAnalysis", ctrl%tPrintMulliken, .true.)
+      call hsd_get_or_set(node, "MullikenAnalysis", ctrl%tPrintMulliken, .true.)
       if (ctrl%tPrintMulliken) then
         call getChildValue(node, "WriteNetCharges", ctrl%tPrintNetAtomCharges, default=.false.)
         if (ctrl%tPrintNetAtomCharges) then
@@ -262,7 +262,7 @@ contains
           call readCM5(child, ctrl%cm5Input, geo)
         end if
       end if
-      call getChildValue(node, "AtomResolvedEnergies", ctrl%tAtomicEnergy, .false.)
+      call hsd_get_or_set(node, "AtomResolvedEnergies", ctrl%tAtomicEnergy, .false.)
 
       if (allocated(ctrl%solvInp)) then
         call getChildValue(node, "writeCosmoFile", ctrl%tWriteCosmoFile, &
@@ -272,7 +272,7 @@ contains
         end if
       end if
 
-      call getChildValue(node, "PrintForces", ctrl%tPrintForces, .false.)
+      call hsd_get_or_set(node, "PrintForces", ctrl%tPrintForces, .false.)
 
     else
 
@@ -324,7 +324,7 @@ contains
     real(dp) :: tmp3R(3)
     logical :: isStatic
 
-    call getChildValue(node, "Static", isStatic, .true.)
+    call hsd_get_or_set(node, "Static", isStatic, .true.)
     if (isStatic) then
       call growFreqArray(frequencies, 1)
       ! should already be zero, but just in case:
@@ -430,7 +430,7 @@ contains
     tPrintEigVecs = ctrl%tPrintEigVecs
     if (allocated(ctrl%lrespini)) tPrintEigvecs = tPrintEigvecs .or. ctrl%lrespini%tPrintEigVecs
     if (tPrintEigVecs) then
-      call getChildValue(node, "EigenvectorsAsText", ctrl%tPrintEigVecsTxt, .false.)
+      call hsd_get_or_set(node, "EigenvectorsAsText", ctrl%tPrintEigVecsTxt, .false.)
     end if
 
   end subroutine readLaterAnalysis
@@ -462,11 +462,11 @@ contains
       call error("Electrostatic potentials only available in an SCC calculation")
     end if
     allocate(ctrl%elStatPotentialsInp)
-    call getChildValue(child, "OutputFile", buffer, "ESP.dat")
+    call hsd_get_or_set(child, "OutputFile", buffer, "ESP.dat")
     ctrl%elStatPotentialsInp%espOutFile = unquote(buffer)
     ctrl%elStatPotentialsInp%tAppendEsp = .false.
     if (ctrl%isGeoOpt .or. ctrl%tMD) then
-      call getChildValue(child, "AppendFile", ctrl%elStatPotentialsInp%tAppendEsp, .false.)
+      call hsd_get_or_set(child, "AppendFile", ctrl%elStatPotentialsInp%tAppendEsp, .false.)
     end if
     call init(lr1)
     ! discrete points

@@ -17,6 +17,7 @@ module dftbp_dftbplus_parser_solver
   use dftbp_extlibs_elsiiface, only : withELSI, withPEXSI
   use dftbp_extlibs_poisson, only : TPoissonInfo
   use dftbp_io_hsdutils, only : getChildValue, getNodeName, dftbp_error
+  use hsd, only : hsd_get_or_set
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use hsd_data, only : hsd_table
@@ -86,7 +87,7 @@ contains
     case ("magma")
   #:if WITH_MAGMA
       ctrl%solver%isolver = electronicSolverTypes%magmaGvd
-      call getChildValue(value1, "DensityMatrixGPU", ctrl%isDmOnGpu, .true.)
+      call hsd_get_or_set(value1, "DensityMatrixGPU", ctrl%isDmOnGpu, .true.)
   #:else
       call dftbp_error(node, "DFTB+ must be compiled with MAGMA support in order to enable&
           & this solver")
@@ -94,15 +95,15 @@ contains
 
     case ("elpa")
       allocate(ctrl%solver%elsi)
-      call getChildValue(value1, "Sparse", ctrl%solver%elsi%elsiCsr, .false.)
+      call hsd_get_or_set(value1, "Sparse", ctrl%solver%elsi%elsiCsr, .false.)
       if (ctrl%solver%elsi%elsiCsr) then
         ctrl%solver%isolver = electronicSolverTypes%elpadm
       else
         ctrl%solver%isolver = electronicSolverTypes%elpa
       end if
       ctrl%solver%elsi%iSolver = ctrl%solver%isolver
-      call getChildValue(value1, "Mode", ctrl%solver%elsi%elpaSolver, 2)
-      call getChildValue(value1, "Autotune", ctrl%solver%elsi%elpaAutotune, .false.)
+      call hsd_get_or_set(value1, "Mode", ctrl%solver%elsi%elpaSolver, 2)
+      call hsd_get_or_set(value1, "Autotune", ctrl%solver%elsi%elpaAutotune, .false.)
       call getChildValue(value1, "Gpu", ctrl%solver%elsi%elpaGpu, .false., child=child)
       #:if not WITH_GPU
         if (ctrl%solver%elsi%elpaGpu) then
@@ -115,18 +116,18 @@ contains
       ctrl%solver%isolver = electronicSolverTypes%omm
       allocate(ctrl%solver%elsi)
       ctrl%solver%elsi%iSolver = ctrl%solver%isolver
-      call getChildValue(value1, "nIterationsELPA", ctrl%solver%elsi%ommIterationsElpa, 5)
-      call getChildValue(value1, "Tolerance", ctrl%solver%elsi%ommTolerance, 1.0E-10_dp)
-      call getChildValue(value1, "Choleskii", ctrl%solver%elsi%ommCholesky, .true.)
+      call hsd_get_or_set(value1, "nIterationsELPA", ctrl%solver%elsi%ommIterationsElpa, 5)
+      call hsd_get_or_set(value1, "Tolerance", ctrl%solver%elsi%ommTolerance, 1.0E-10_dp)
+      call hsd_get_or_set(value1, "Choleskii", ctrl%solver%elsi%ommCholesky, .true.)
 
     case ("pexsi")
       ctrl%solver%isolver = electronicSolverTypes%pexsi
       allocate(ctrl%solver%elsi)
       ctrl%solver%elsi%iSolver = ctrl%solver%isolver
     #:if ELSI_VERSION > 2.5
-      call getChildValue(value1, "Method", ctrl%solver%elsi%pexsiMethod, 3)
+      call hsd_get_or_set(value1, "Method", ctrl%solver%elsi%pexsiMethod, 3)
     #:else
-      call getChildValue(value1, "Method", ctrl%solver%elsi%pexsiMethod, 2)
+      call hsd_get_or_set(value1, "Method", ctrl%solver%elsi%pexsiMethod, 2)
     #:endif
       select case(ctrl%solver%elsi%pexsiMethod)
       case(1)
@@ -136,7 +137,7 @@ contains
       case(3)
         iTmp = 30
       end select
-      call getChildValue(value1, "Poles", ctrl%solver%elsi%pexsiNPole, iTmp)
+      call hsd_get_or_set(value1, "Poles", ctrl%solver%elsi%pexsiNPole, iTmp)
       if (ctrl%solver%elsi%pexsiNPole < 10) then
         call dftbp_error(value1, "Too few PEXSI poles")
       end if
@@ -150,9 +151,9 @@ contains
           call dftbp_error(value1, "Unsupported number of PEXSI poles for this method")
         end if
       end select
-      call getChildValue(value1, "ProcsPerPole", ctrl%solver%elsi%pexsiNpPerPole, 1)
-      call getChildValue(value1, "muPoints", ctrl%solver%elsi%pexsiNMu, 2)
-      call getChildValue(value1, "SymbolicFactorProcs", ctrl%solver%elsi%pexsiNpSymbo, 1)
+      call hsd_get_or_set(value1, "ProcsPerPole", ctrl%solver%elsi%pexsiNpPerPole, 1)
+      call hsd_get_or_set(value1, "muPoints", ctrl%solver%elsi%pexsiNMu, 2)
+      call hsd_get_or_set(value1, "SymbolicFactorProcs", ctrl%solver%elsi%pexsiNpSymbo, 1)
       call getChildValue(value1, "SpectralRadius", ctrl%solver%elsi%pexsiDeltaE, 10.0_dp,&
           & modifier=modifier, child=child)
       call convertUnitHsd(modifier, energyUnits, child, ctrl%solver%elsi%pexsiDeltaE)
@@ -164,9 +165,9 @@ contains
       if (ctrl%tSpin) then
         call dftbp_error(value1, "Solver does not currently support spin polarisation")
       end if
-      call getChildValue(value1, "PurificationMethod", ctrl%solver%elsi%ntpolyMethod, 2)
-      call getChildValue(value1, "Tolerance", ctrl%solver%elsi%ntpolyTolerance, 1.0E-5_dp)
-      call getChildValue(value1, "Truncation", ctrl%solver%elsi%ntpolyTruncation, 1.0E-10_dp)
+      call hsd_get_or_set(value1, "PurificationMethod", ctrl%solver%elsi%ntpolyMethod, 2)
+      call hsd_get_or_set(value1, "Tolerance", ctrl%solver%elsi%ntpolyTolerance, 1.0E-5_dp)
+      call hsd_get_or_set(value1, "Truncation", ctrl%solver%elsi%ntpolyTruncation, 1.0E-10_dp)
 
   #:if WITH_TRANSPORT
     case ("greensfunction")
@@ -211,11 +212,11 @@ contains
 
     if (any(ctrl%solver%isolver == [electronicSolverTypes%omm, electronicSolverTypes%pexsi,&
         & electronicSolverTypes%ntpoly])) then
-      call getChildValue(value1, "Sparse", ctrl%solver%elsi%elsiCsr, .true.)
+      call hsd_get_or_set(value1, "Sparse", ctrl%solver%elsi%elsiCsr, .true.)
       if (.not.ctrl%solver%elsi%elsiCsr) then
         if (any(ctrl%solver%isolver == [electronicSolverTypes%pexsi,electronicSolverTypes%ntpoly]))&
             & then
-          call getChildValue(value1, "Threshold", ctrl%solver%elsi%elsi_zero_def, 1.0E-15_dp)
+          call hsd_get_or_set(value1, "Threshold", ctrl%solver%elsi%elsi_zero_def, 1.0E-15_dp)
         end if
       end if
     end if

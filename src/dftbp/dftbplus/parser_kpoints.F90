@@ -11,6 +11,7 @@ module dftbp_dftbplus_parser_kpoints
   use dftbp_io_charmanip, only : tolower
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : getChildValue
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
@@ -104,7 +105,7 @@ contains
       else
         ii = 100
       end if
-      call getChildValue(node, trim(label), maxSccIter, ii)
+      call hsd_get_or_set(node, trim(label), maxSccIter, ii)
     end if
 
     if (ctrl%poorKSampling .and. maxSccIter /= 1) then

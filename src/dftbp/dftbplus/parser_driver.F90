@@ -15,7 +15,7 @@ module dftbp_dftbplus_parser_driver
   use dftbp_extlibs_plumed, only : withPlumed
   use dftbp_geoopt_geoopt, only : geoOptTypes
   use dftbp_io_charmanip, only : i2c, unquote
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_get_or_set
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue
@@ -117,7 +117,7 @@ contains
 
       call readGeoOptInput(node, geom, ctrl%geoOpt, atomsRange)
 
-      call getChildValue(node, "AppendGeometries", ctrl%tAppendGeo, .false.)
+      call hsd_get_or_set(node, "AppendGeometries", ctrl%tAppendGeo, .false.)
 
       ! Geometry optimisation drivers
       ctrl%iGeoOpt = geoOptTypes%geometryoptimisation
@@ -154,8 +154,8 @@ contains
 
       ! Gradient DIIS optimisation, only stable in the quadratic region
       ctrl%iGeoOpt = geoOptTypes%diis
-      call getChildValue(node, "alpha", ctrl%deltaGeoOpt, 1.0E-1_dp)
-      call getChildValue(node, "Generations", ctrl%iGenGeoOpt, 8)
+      call hsd_get_or_set(node, "alpha", ctrl%deltaGeoOpt, 1.0E-1_dp)
+      call hsd_get_or_set(node, "Generations", ctrl%iGenGeoOpt, 8)
       call commonGeoOptions(node, ctrl, geom, atomsRange)
 
     case ("lbfgs")
@@ -168,16 +168,16 @@ contains
       ctrl%iGeoOpt = geoOptTypes%lbfgs
 
       allocate(ctrl%lbfgsInp)
-      call getChildValue(node, "Memory", ctrl%lbfgsInp%memory, 20)
+      call hsd_get_or_set(node, "Memory", ctrl%lbfgsInp%memory, 20)
 
-      call getChildValue(node, "LineSearch", ctrl%lbfgsInp%isLineSearch, .false.)
+      call hsd_get_or_set(node, "LineSearch", ctrl%lbfgsInp%isLineSearch, .false.)
 
       isMaxStepNeeded = .not. ctrl%lbfgsInp%isLineSearch
       if (isMaxStepNeeded) then
-        call getChildValue(node, "setMaxStep", ctrl%lbfgsInp%isLineSearch, isMaxStepNeeded)
+        call hsd_get_or_set(node, "setMaxStep", ctrl%lbfgsInp%isLineSearch, isMaxStepNeeded)
         ctrl%lbfgsInp%MaxQNStep = isMaxStepNeeded
       else
-        call getChildValue(node, "oldLineSearch", ctrl%lbfgsInp%isOldLS, .false.)
+        call hsd_get_or_set(node, "oldLineSearch", ctrl%lbfgsInp%isOldLS, .false.)
       end if
 
       call commonGeoOptions(node, ctrl, geom, atomsRange, ctrl%lbfgsInp%isLineSearch)
@@ -243,7 +243,7 @@ contains
       ctrl%tForces = .true.
       ctrl%tMD = .true.
 
-      call getChildValue(node, "MDRestartFrequency", ctrl%restartFreq, 1)
+      call hsd_get_or_set(node, "MDRestartFrequency", ctrl%restartFreq, 1)
       call getChildValue(node, "MovedAtoms", buffer2, trim(atomsRange), child=child, &
           &multiple=.true.)
       call getSelectedAtomIndices(child, buffer2, geom%speciesNames, geom%species, &
@@ -254,7 +254,7 @@ contains
       end if
       call readInitialVelocities(node, ctrl, geom%nAtom)
 
-      call getChildValue(node, "KeepStationary", ctrl%tMDstill,.true.)
+      call hsd_get_or_set(node, "KeepStationary", ctrl%tMDstill,.true.)
       if (ctrl%tMDstill .and. geom%nAtom == 1) then
         call error("Removing translational freedom with only one atom not&
             & possible.")
@@ -271,7 +271,7 @@ contains
         call getChildValue(node, "Steps", ctrl%maxRun)
       end if
 
-      call getChildValue(node, "OutputPrefix", buffer2, "geo_end")
+      call hsd_get_or_set(node, "OutputPrefix", buffer2, "geo_end")
       ctrl%outFile = unquote(buffer2)
 
       call getChildValue(node, "Plumed", ctrl%tPlumed, default=.false., child=child)
@@ -319,7 +319,7 @@ contains
                   & for Barostatting.")
             end if
           end if
-          call getChildValue(child, "Isotropic", ctrl%tIsotropic, .true.)
+          call hsd_get_or_set(child, "Isotropic", ctrl%tIsotropic, .true.)
           ctrl%tBarostat = .true.
         end if
       end if
@@ -367,7 +367,7 @@ contains
         ctrl%socketInput%protocol = IPI_PROTOCOLS%IPI_1
         ! want a file path
         if (ctrl%socketInput%port == 0) then
-          call getChildValue(node, "Prefix", buffer2, "/tmp/ipi_")
+          call hsd_get_or_set(node, "Prefix", buffer2, "/tmp/ipi_")
           sTmp = unquote(buffer2)
           ctrl%socketInput%host = trim(sTmp) // trim(ctrl%socketInput%host)
         end if
@@ -375,8 +375,8 @@ contains
       case default
         call dftbp_error(child, "Invalid protocol '" // buffer // "'")
       end select
-      call getChildValue(node, "Verbosity", ctrl%socketInput%verbosity, 0)
-      call getChildValue(node, "MaxSteps", ctrl%maxRun, 200)
+      call hsd_get_or_set(node, "Verbosity", ctrl%socketInput%verbosity, 0)
+      call hsd_get_or_set(node, "MaxSteps", ctrl%maxRun, 200)
 
     #:else
       call dftbp_error(node, "Program had been compiled without socket support")
@@ -466,7 +466,7 @@ contains
     ctrl%tForces = .true.
     ctrl%restartFreq = 1
 
-    call getChildValue(node, "LatticeOpt", ctrl%tLatOpt, .false.)
+    call hsd_get_or_set(node, "LatticeOpt", ctrl%tLatOpt, .false.)
     if (ctrl%tLatOpt) then
       if (allocated(ctrl%hybridXcInp)) then
         call dftbp_error(node, "Lattice optimisation not currently implemented for hybrid&
@@ -474,14 +474,14 @@ contains
       end if
       call getChildValue(node, "Pressure", ctrl%pressure, 0.0_dp, modifier=modifier, child=child)
       call convertUnitHsd(modifier, pressureUnits, child, ctrl%pressure)
-      call getChildValue(node, "FixAngles", ctrl%tLatOptFixAng, .false.)
+      call hsd_get_or_set(node, "FixAngles", ctrl%tLatOptFixAng, .false.)
       if (ctrl%tLatOptFixAng) then
         call getChildValue(node, "FixLengths", ctrl%tLatOptFixLen, [.false.,.false.,.false.])
       else
-        call getChildValue(node, "Isotropic", ctrl%tLatOptIsotropic, .false.)
+        call hsd_get_or_set(node, "Isotropic", ctrl%tLatOptIsotropic, .false.)
       end if
       if (isMaxStep) then
-        call getChildValue(node, "MaxLatticeStep", ctrl%maxLatDisp, 0.2_dp)
+        call hsd_get_or_set(node, "MaxLatticeStep", ctrl%maxLatDisp, 0.2_dp)
       end if
     end if
     call getChildValue(node, "MovedAtoms", buffer2, trim(atomsRange), child=child, multiple=.true.)
@@ -492,18 +492,18 @@ contains
     ctrl%tCoordOpt = (ctrl%nrMoved /= 0)
     if (ctrl%tCoordOpt) then
       if (isMaxStep) then
-        call getChildValue(node, "MaxAtomStep", ctrl%maxAtomDisp, 0.2_dp)
+        call hsd_get_or_set(node, "MaxAtomStep", ctrl%maxAtomDisp, 0.2_dp)
       end if
     end if
     call getChildValue(node, "MaxForceComponent", ctrl%maxForce, 1e-4_dp, modifier=modifier,&
         & child=field)
     call convertUnitHsd(modifier, forceUnits, field, ctrl%maxForce)
-    call getChildValue(node, "MaxSteps", ctrl%maxRun, 200)
+    call hsd_get_or_set(node, "MaxSteps", ctrl%maxRun, 200)
     call getChildValue(node, "StepSize", ctrl%deltaT, 100.0_dp, modifier=modifier, child=field)
     call convertUnitHsd(modifier, timeUnits, field, ctrl%deltaT)
-    call getChildValue(node, "OutputPrefix", buffer2, "geo_end")
+    call hsd_get_or_set(node, "OutputPrefix", buffer2, "geo_end")
     ctrl%outFile = unquote(buffer2)
-    call getChildValue(node, "AppendGeometries", ctrl%tAppendGeo, .false.)
+    call hsd_get_or_set(node, "AppendGeometries", ctrl%tAppendGeo, .false.)
     call readGeoConstraints(node, ctrl, geom%nAtom)
     if (ctrl%tLatOpt) then
       if (ctrl%nrConstr/=0) then
@@ -552,14 +552,14 @@ contains
       call dftbp_error(pChild, 'Invalid number of integration steps (must be&
           & 5, 6 or 7)')
     end if
-    call getChildValue(pRoot, 'PreSteps', input%nPreSteps, 0)
+    call hsd_get_or_set(pRoot, 'PreSteps', input%nPreSteps, 0)
 
     ! Since support for inverse Jacobian has been removed, we can set FullSccSteps
     ! to its minimal value (no averaging of inverse Jacobians is done anymore)
     input%nFullSccSteps = input%nKappa + 1
 
     if (tXlbomdFast) then
-      call getChildValue(pRoot, 'TransientSteps', input%nTransientSteps, 10)
+      call hsd_get_or_set(pRoot, 'TransientSteps', input%nTransientSteps, 10)
       input%minSccIter = 1
       input%maxSccIter = 1
       ! Dummy value as minSccIter and maxSccIter have been set to 1.
@@ -572,12 +572,12 @@ contains
 
     else
       input%nTransientSteps = 0
-      call getChildValue(pRoot, 'MinSccIterations', input%minSCCIter, 1)
-      call getChildValue(pRoot, 'MaxSccIterations', input%maxSCCIter, 200)
+      call hsd_get_or_set(pRoot, 'MinSccIterations', input%minSCCIter, 1)
+      call hsd_get_or_set(pRoot, 'MaxSccIterations', input%maxSCCIter, 200)
       if (input%maxSCCIter <= 0) then
         call dftbp_error(pRoot,"MaxSccIterations must be >= 1");
       end if
-      call getChildValue(pRoot, 'SccTolerance', input%sccTol, 1e-5_dp)
+      call hsd_get_or_set(pRoot, 'SccTolerance', input%sccTol, 1e-5_dp)
       input%scale = 1.0_dp
     end if
 
@@ -780,23 +780,23 @@ contains
     call getChildValue(node, "TimeStep", input%dt, modifier=modifier, child=child)
     call convertUnitHsd(modifier, timeUnits, child, input%dt)
 
-    call getChildValue(node, "Populations", input%tPopulations, .false.)
-    call getChildValue(node, "WriteFrequency", input%writeFreq, 50)
-    call getChildValue(node, "Restart", input%tReadRestart, .false.)
+    call hsd_get_or_set(node, "Populations", input%tPopulations, .false.)
+    call hsd_get_or_set(node, "WriteFrequency", input%writeFreq, 50)
+    call hsd_get_or_set(node, "Restart", input%tReadRestart, .false.)
     if (input%tReadRestart) then
-      call getChildValue(node, "RestartFromAscii", input%tReadRestartAscii, .false.)
+      call hsd_get_or_set(node, "RestartFromAscii", input%tReadRestartAscii, .false.)
     end if
-    call getChildValue(node, "WriteRestart", input%tWriteRestart, .true.)
+    call hsd_get_or_set(node, "WriteRestart", input%tWriteRestart, .true.)
     if (input%tWriteRestart) then
-      call getChildValue(node, "WriteAsciiRestart", input%tWriteRestartAscii, .false.)
+      call hsd_get_or_set(node, "WriteAsciiRestart", input%tWriteRestartAscii, .false.)
     end if
-    call getChildValue(node, "RestartFrequency", input%restartFreq, max(input%Steps / 10, 1))
-    call getChildValue(node, "Forces", input%tForces, .false.)
-    call getChildValue(node, "WriteBondEnergy", input%tBondE, .false.)
-    call getChildValue(node, "WriteBondPopulation", input%tBondP, .false.)
-    call getChildValue(node, "WriteAtomicEnergies", input%tWriteAtomEnergies, .false.)
-    call getChildValue(node, "Pump", input%tPump, .false.)
-    call getChildValue(node, "FillingsFromFile", input%tFillingsFromFile, .false.)
+    call hsd_get_or_set(node, "RestartFrequency", input%restartFreq, max(input%Steps / 10, 1))
+    call hsd_get_or_set(node, "Forces", input%tForces, .false.)
+    call hsd_get_or_set(node, "WriteBondEnergy", input%tBondE, .false.)
+    call hsd_get_or_set(node, "WriteBondPopulation", input%tBondP, .false.)
+    call hsd_get_or_set(node, "WriteAtomicEnergies", input%tWriteAtomEnergies, .false.)
+    call hsd_get_or_set(node, "Pump", input%tPump, .false.)
+    call hsd_get_or_set(node, "FillingsFromFile", input%tFillingsFromFile, .false.)
 
     if (input%tPump) then
       call getChildValue(node, "PumpProbeFrames", input%tdPPFrames)
@@ -814,14 +814,14 @@ contains
       end if
     end if
 
-    call getChildValue(node, "Probe", input%tProbe, .false.)
+    call hsd_get_or_set(node, "Probe", input%tProbe, .false.)
     if (input%tPump .and. input%tProbe) then
       call dftbp_error(child, "Pump and probe cannot be simultaneously true.")
     end if
 
-    call getChildValue(node, "EulerFrequency", input%eulerFreq, 0)
+    call hsd_get_or_set(node, "EulerFrequency", input%eulerFreq, 0)
 
-    call getChildValue(node, "VerboseDynamics", input%tVerboseDyn, .true.)
+    call hsd_get_or_set(node, "VerboseDynamics", input%tVerboseDyn, .true.)
 
     if ((input%eulerFreq < 50) .and. (input%eulerFreq > 0)) then
       call dftbp_error(child, "Wrong number of Euler steps, should be above 50")
@@ -848,7 +848,7 @@ contains
       call getChildValue(value1, "PolarisationDirection", buffer2)
       input%polDir = directionConversion(unquote(buffer2), value1)
 
-      call getChildValue(value1, "SpinType", buffer2, "Singlet")
+      call hsd_get_or_set(value1, "SpinType", buffer2, "Singlet")
       select case(unquote(buffer2))
       case ("singlet", "Singlet")
         input%spType = tdSpinTypes%singlet
@@ -886,7 +886,7 @@ contains
       input%pertType = pertTypes%kickAndLaser
       call getChildValue(value1, "KickPolDir", buffer2)
       input%polDir = directionConversion(unquote(buffer2), value1)
-      call getChildValue(value1, "SpinType", input%spType, tdSpinTypes%singlet)
+      call hsd_get_or_set(value1, "SpinType", input%spType, tdSpinTypes%singlet)
       call getChildValue(value1, "LaserPolDir", input%reFieldPolVec)
       call getChildValue(value1, "LaserImagPolDir", input%imFieldPolVec, [0.0_dp, 0.0_dp, 0.0_dp])
       call getChildValue(value1, "LaserEnergy", input%omega, modifier=modifier, child=child)
@@ -922,7 +922,7 @@ contains
       call convertUnitHsd(modifier, EFieldUnits, child, input%tdfield)
     end if
 
-    call getChildValue(node, "WriteEnergyAndCharges", input%tdWriteExtras, defaultWrite)
+    call hsd_get_or_set(node, "WriteEnergyAndCharges", input%tdWriteExtras, defaultWrite)
 
     !! Different envelope functions
     call getChildValue(node, "EnvelopeShape", value1, "Constant")
@@ -958,7 +958,7 @@ contains
     end select
 
     !! Non-adiabatic molecular dynamics
-    call getChildValue(node, "IonDynamics", input%tIons, .false.)
+    call hsd_get_or_set(node, "IonDynamics", input%tIons, .false.)
     if (input%tIons) then
       call getChildValue(node, "MovedAtoms", buffer, "1:-1", child=child, multiple=.true.)
       call getSelectedAtomIndices(child, buffer, geom%speciesNames, geom%species,&
@@ -1121,12 +1121,12 @@ contains
             & child=child2)
         call convertUnitHsd(modifier, freqUnits, child2, inp%coupling)
 
-        call getChildValue(thermNode, "ChainLength", inp%chainLength, 3)
+        call hsd_get_or_set(thermNode, "ChainLength", inp%chainLength, 3)
         call getChildValue(thermNode, "Order", inp%expOrder, 3, child=child2)
         if (.not. any(inp%expOrder == [3, 5])) then
           call dftbp_error(child2, "Order of Nose-Hoover thermostat must be either 3 or 5")
         end if
-        call getChildValue(thermNode, "IntegratorSteps", inp%nExpSteps, 1)
+        call hsd_get_or_set(thermNode, "IntegratorSteps", inp%nExpSteps, 1)
         call getChild(thermNode, "Restart",  child=child2, requested=.false.)
         if (associated(child2)) then
           allocate(inp%xnose(inp%chainLength))

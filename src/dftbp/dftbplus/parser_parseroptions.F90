@@ -7,6 +7,7 @@ module dftbp_dftbplus_parser_parseroptions
   use dftbp_dftbplus_oldcompat, only : convertOldHSD, minVersion, parserVersion, versionMaps
   use dftbp_io_charmanip, only : i2c, newline, unquote
   use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use hsd_data, only : hsd_table
   implicit none
@@ -109,15 +110,15 @@ contains
       write(stdout, "(A,/)") "***  Done."
     end if
 
-    call getChildValue(node, "WriteHSDInput", flags%tWriteHSD, .true.)
+    call hsd_get_or_set(node, "WriteHSDInput", flags%tWriteHSD, .true.)
     if (.not. flags%tWriteHSD) then
       call dftbp_warning(node, "WriteHSDInput turned off. You are not guaranteed" // newline // &
           &" to able to obtain the same results with a later version of the code!" // newline // &
           & "(the dftb_pin.hsd file DOES guarantee this)")
     end if
-    call getChildValue(node, "StopAfterParsing", flags%tStop, .false.)
+    call hsd_get_or_set(node, "StopAfterParsing", flags%tStop, .false.)
 
-    call getChildValue(node, "IgnoreUnprocessedNodes", &
+    call hsd_get_or_set(node, "IgnoreUnprocessedNodes", &
         &flags%tIgnoreUnprocessed, .false.)
 
   end subroutine readParserOptions

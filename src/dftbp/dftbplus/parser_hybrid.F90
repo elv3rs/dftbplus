@@ -18,6 +18,7 @@ module dftbp_dftbplus_parser_hybrid
   use dftbp_dftbplus_inputdata, only : TControl, THybridXcInp
   use dftbp_io_charmanip, only : newline, tolower, unquote
   use dftbp_io_hsdutils, only : getChild, getChildValue
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
@@ -136,11 +137,11 @@ contains
             & modifier=modifier, child=child1)
         call convertUnitHsd(modifier, lengthUnits, child1, input%cutoffRed)
         if (geo%tPeriodic) then
-          call getChildValue(screeningValue, "Threshold", input%screeningThreshold, 1e-6_dp)
+          call hsd_get_or_set(screeningValue, "Threshold", input%screeningThreshold, 1e-6_dp)
         end if
       case ("thresholded")
         input%hybridXcAlg = hybridXcAlgo%thresholdBased
-        call getChildValue(screeningValue, "Threshold", input%screeningThreshold, 1e-6_dp)
+        call hsd_get_or_set(screeningValue, "Threshold", input%screeningThreshold, 1e-6_dp)
         call getChildValue(screeningValue, "CutoffReduction", input%cutoffRed, 0.0_dp,&
             & modifier=modifier, child=child1)
         call convertUnitHsd(modifier, lengthUnits, child1, input%cutoffRed)

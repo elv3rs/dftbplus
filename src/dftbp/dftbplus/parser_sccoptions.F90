@@ -18,6 +18,7 @@ module dftbp_dftbplus_parser_sccoptions
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower, unquote
   use dftbp_io_hsdutils, only : getChild, getChildValue, getNodeName, getNodeHSDName
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
@@ -44,29 +45,29 @@ contains
 
     ctrl%tMulliken = .true.
 
-    call getChildValue(node, "ReadInitialCharges", ctrl%tReadChrg, .false.)
+    call hsd_get_or_set(node, "ReadInitialCharges", ctrl%tReadChrg, .false.)
     if (.not. ctrl%tReadChrg) then
       call getInitialCharges(node, geo, ctrl%initialCharges)
     end if
 
-    call getChildValue(node, "SCCTolerance", ctrl%sccTol, 1.0e-5_dp)
+    call hsd_get_or_set(node, "SCCTolerance", ctrl%sccTol, 1.0e-5_dp)
 
     ! temporarily removed until debugged
     ! call getChildValue(node, "WriteShifts", ctrl%tWriteShifts, .false.)
     ctrl%tWriteShifts = .false.
 
     if (geo%tPeriodic) then
-      call getChildValue(node, "EwaldParameter", ctrl%ewaldAlpha, 0.0_dp)
-      call getChildValue(node, "EwaldTolerance", ctrl%tolEwald, 1.0e-9_dp)
+      call hsd_get_or_set(node, "EwaldParameter", ctrl%ewaldAlpha, 0.0_dp)
+      call hsd_get_or_set(node, "EwaldTolerance", ctrl%tolEwald, 1.0e-9_dp)
     end if
 
     if (geo%tHelical) then
       ! Tolerance for k-points being commensurate with C_n rotation
-      call getChildValue(node, "HelicalSymmetryTol", ctrl%helicalSymTol, 1.0E-6_dp)
+      call hsd_get_or_set(node, "HelicalSymmetryTol", ctrl%helicalSymTol, 1.0E-6_dp)
     end if
 
     ! self consistency required or not to proceed
-    call getChildValue(node, "ConvergentSCCOnly", ctrl%isSccConvRequired, .true.)
+    call hsd_get_or_set(node, "ConvergentSCCOnly", ctrl%isSccConvRequired, .true.)
 
   end subroutine readSccOptions
 
@@ -118,7 +119,7 @@ contains
     call getChildValue(node, "SKMaxDistance", truncationCutOff, modifier=modifier, child=field)
     call convertUnitHsd(modifier, lengthUnits, field, truncationCutOff)
 
-    call getChildValue(node, "HardCutOff", tHardCutOff, .true.)
+    call hsd_get_or_set(node, "HardCutOff", tHardCutOff, .true.)
     if (tHardCutOff) then
       ! Adjust by the length of the tail appended to the cutoff
       select case(skInterMeth)
@@ -209,8 +210,8 @@ contains
     case ("h5")
       allocate(ctrl%h5Input)
       associate (h5Input => ctrl%h5Input)
-        call getChildValue(value1, "RScaling", h5Input%rScale, 0.714_dp)
-        call getChildValue(value1, "WScaling", h5Input%wScale, 0.25_dp)
+        call hsd_get_or_set(value1, "RScaling", h5Input%rScale, 0.714_dp)
+        call hsd_get_or_set(value1, "WScaling", h5Input%wScale, 0.25_dp)
         allocate(h5Input%elementParams(geo%nSpecies))
         call getChild(value1, "H5Scaling", child2, requested=.false., emptyIfMissing=.true.)
         do iSp = 1, geo%nSpecies
@@ -225,7 +226,7 @@ contains
             ! Default value is -1, this indicates that the element should be ignored
             h5ScalingDef = -1.0_dp
           end select
-          call getChildValue(child2, geo%speciesNames(iSp), h5Input%elementParams(iSp),&
+          call hsd_get_or_set(child2, geo%speciesNames(iSp), h5Input%elementParams(iSp),&
               & h5ScalingDef)
         end do
         h5Input%speciesNames = geo%speciesNames

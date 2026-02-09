@@ -14,6 +14,7 @@ module dftbp_dftbplus_parser_electrostatics
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_extlibs_poisson, only : TPoissonInfo, withPoisson
   use dftbp_io_hsdutils, only : getChild, getChildValue, getNodeName, getNodeHSDName
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table
@@ -147,7 +148,7 @@ contains
           call getChild(value1, 'AtomDIntegralScalings', child2, requested=.false.)
           if (associated(child2)) then
             do iSp1 = 1, geo%nSpecies
-              call getChildValue(child2, trim(geo%speciesNames(iSp1)),&
+              call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1)),&
                   & ctrl%mdftbAtomicIntegrals%DScaling(iSp1), 1.0_dp)
             end do
           end if
@@ -155,54 +156,54 @@ contains
           call getChild(value1, 'AtomQIntegralScalings', child2, requested=.false.)
           if (associated(child2)) then
             do iSp1 = 1, geo%nSpecies
-              call getChildValue(child2, trim(geo%speciesNames(iSp1)),&
+              call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1)),&
                   & ctrl%mdftbAtomicIntegrals%QScaling(iSp1), 1.0_dp)
             end do
           end if
 
           call getChild(value1, 'OneCenterAtomIntegrals', child2, requested=.true.)
           do iSp1 = 1, geo%nSpecies
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|X|Px",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|X|Px",&
                 & ctrl%mdftbAtomicIntegrals%SXPx(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Px|X|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Px|X|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%PxXDxxyy (iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Px|X|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Px|X|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%PxXDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Py|Y|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Py|Y|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%PyYDxxyy(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Pz|Z|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Pz|Z|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%PzZDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|XX|S",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|XX|S",&
                 & ctrl%mdftbAtomicIntegrals%SXXS(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Px|XX|Px",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Px|XX|Px",&
                 & ctrl%mdftbAtomicIntegrals%PxXXPx(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Py|XX|Py",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Py|XX|Py",&
                 & ctrl%mdftbAtomicIntegrals%PyXXPy(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|XX|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|XX|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%SXXDxxyy(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|XX|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|XX|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%SXXDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|YY|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|YY|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%SYYDxxyy(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|ZZ|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|ZZ|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%SZZDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dxy|XX|Dxy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dxy|XX|Dxy",&
                 & ctrl%mdftbAtomicIntegrals%DxyXXDxy(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dyz|XX|Dyz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dyz|XX|Dyz",&
                 & ctrl%mdftbAtomicIntegrals%DyzXXDyz(iSp1), 0.0_dp)
             !call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dxx-yy|XX|Dzz",&
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dzz|XX|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dzz|XX|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%DxxyyXXDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dzz|XX|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dzz|XX|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%DzzXXDzz(iSp1), 0.0_dp)
             !call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dxx-yy|YY|Dzz",&
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dzz|YY|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dzz|YY|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%DxxyyYYDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dzz|ZZ|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dzz|ZZ|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%DzzZZDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dxz|XZ|Dzz",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dxz|XZ|Dzz",&
                 & ctrl%mdftbAtomicIntegrals%DxzXZDzz(iSp1), 0.0_dp)
-            call getChildValue(child2, trim(geo%speciesNames(iSp1))//":Dyz|YZ|Dxx-yy",&
+            call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":Dyz|YZ|Dxx-yy",&
                 & ctrl%mdftbAtomicIntegrals%DyzYZDxxyy(iSp1), 0.0_dp)
           end do
         case("none")

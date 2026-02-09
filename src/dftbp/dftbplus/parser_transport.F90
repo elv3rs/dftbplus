@@ -18,6 +18,7 @@ module dftbp_dftbplus_parser_transport
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue, setChild, setChildValue, &
       & getLength, getItem1, destroyNodeList
+  use hsd, only : hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -134,13 +135,13 @@ contains
 
       transpar%ncont = 0
 
-      call getChildValue(root, "writeBinaryContact", transpar%tWriteBinShift, .true.)
+      call hsd_get_or_set(root, "writeBinaryContact", transpar%tWriteBinShift, .true.)
 
     case ("uploadcontacts")
 
       transpar%taskUpload = .true.
 
-      call getChildValue(root, "readBinaryContact", transpar%tReadBinShift, .true.)
+      call hsd_get_or_set(root, "readBinaryContact", transpar%tReadBinShift, .true.)
 
     case default
 
@@ -333,18 +334,18 @@ contains
       end if
     end if
 
-    call getChildValue(pNode, "LocalCurrents", greendens%doLocalCurr, .false.)
-    call getChildValue(pNode, "Verbosity", greendens%verbose, 51)
+    call hsd_get_or_set(pNode, "LocalCurrents", greendens%doLocalCurr, .false.)
+    call hsd_get_or_set(pNode, "Verbosity", greendens%verbose, 51)
     call getChildValue(pNode, "Delta", greendens%delta, 1.0e-5_dp, modifier=modifier, child=field)
     call convertUnitHsd(modifier, energyUnits, field, greendens%delta)
-    call getChildValue(pNode, "ReadSurfaceGFs", greendens%readSGF, .false.)
-    call getChildValue(pNode, "SaveSurfaceGFs", greendens%saveSGF, .not.greendens%readSGF)
+    call hsd_get_or_set(pNode, "ReadSurfaceGFs", greendens%readSGF, .false.)
+    call hsd_get_or_set(pNode, "SaveSurfaceGFs", greendens%saveSGF, .not.greendens%readSGF)
     call getChildValue(pNode, "ContourPoints", greendens%nP(1:2), [ 20, 20 ])
-    call getChildValue(pNode, "EnclosedPoles",  greendens%nPoles, 3)
+    call hsd_get_or_set(pNode, "EnclosedPoles",  greendens%nPoles, 3)
     call getChildValue(pNode, "LowestEnergy", greendens%enLow, -2.0_dp, modifier=modifier,&
         & child=field)
     call convertUnitHsd(modifier, energyUnits, field, greendens%enLow)
-    call getChildValue(pNode, "FermiCutoff", greendens%nkT, 10)
+    call hsd_get_or_set(pNode, "FermiCutoff", greendens%nkT, 10)
       ! Fermi energy had not been set by other means yet
 
       ! Non equilibrium integration along real axis:
@@ -478,7 +479,7 @@ contains
     call getChildValue(pNode, "MinimalGrid", poisson%poissGrid, [ 0.3_dp, 0.3_dp, 0.3_dp ],&
         & modifier=modifier, child=field)
     call convertUnitHsd(modifier, lengthUnits, field, poisson%poissGrid)
-    call getChildValue(pNode, "NumericalNorm", poisson%numericNorm, .false.)
+    call hsd_get_or_set(pNode, "NumericalNorm", poisson%numericNorm, .false.)
     call getChild(pNode, "AtomDensityCutoff", pTmp, requested=.false., modifier=modifier)
     call getChild(pNode, "AtomDensityTolerance", pTmp2, requested=.false.)
     if (associated(pTmp) .and. associated(pTmp2)) then
@@ -499,14 +500,14 @@ contains
       poisson%maxRadAtomDens = -denstol
     end if
 
-    call getChildValue(pNode, "CutoffCheck", poisson%cutoffcheck, .true.)
-    call getChildValue(pNode, "Verbosity", poisson%verbose, 51)
-    call getChildValue(pNode, "SavePotential", poisson%savePotential, .false.)
-    call getChildValue(pNode, "PoissonAccuracy", poisson%poissAcc, 1.0e-6_dp)
-    call getChildValue(pNode, "BuildBulkPotential", poisson%bulkBC, .true.)
-    call getChildValue(pNode, "ReadOldBulkPotential", poisson%readBulkPot, .false.)
-    call getChildValue(pNode, "RecomputeAfterDensity", updateSccAfterDiag, .false.)
-    call getChildValue(pNode, "MaxPoissonIterations", poisson%maxPoissIter, 60)
+    call hsd_get_or_set(pNode, "CutoffCheck", poisson%cutoffcheck, .true.)
+    call hsd_get_or_set(pNode, "Verbosity", poisson%verbose, 51)
+    call hsd_get_or_set(pNode, "SavePotential", poisson%savePotential, .false.)
+    call hsd_get_or_set(pNode, "PoissonAccuracy", poisson%poissAcc, 1.0e-6_dp)
+    call hsd_get_or_set(pNode, "BuildBulkPotential", poisson%bulkBC, .true.)
+    call hsd_get_or_set(pNode, "ReadOldBulkPotential", poisson%readBulkPot, .false.)
+    call hsd_get_or_set(pNode, "RecomputeAfterDensity", updateSccAfterDiag, .false.)
+    call hsd_get_or_set(pNode, "MaxPoissonIterations", poisson%maxPoissIter, 60)
 
     poisson%overrideBC(:) = poissonBCsEnum%periodic
     call getChild(pNode, "OverrideDefaultBC", pTmp, requested=.false.)
@@ -605,7 +606,7 @@ contains
 
     end select
 
-    call getChildValue(pNode, "MaxParallelNodes", poisson%maxNumNodes, 1)
+    call hsd_get_or_set(pNode, "MaxParallelNodes", poisson%maxNumNodes, 1)
 
     poisson%scratch = "contacts"
 
@@ -1067,9 +1068,9 @@ contains
     ! ncont is needed for contact option allocation
     ncont = transpar%ncont
 
-    call getChildValue(root, "Verbosity", tundos%verbose, 51)
-    call getChildValue(root, "WriteLDOS", tundos%writeLDOS, .true.)
-    call getChildValue(root, "WriteTunn", tundos%writeTunn, .true.)
+    call hsd_get_or_set(root, "Verbosity", tundos%verbose, 51)
+    call hsd_get_or_set(root, "WriteLDOS", tundos%writeLDOS, .true.)
+    call hsd_get_or_set(root, "WriteTunn", tundos%writeTunn, .true.)
 
     ! Read Temperature. Can override contact definition
     allocate(tundos%kbT(ncont))
@@ -1246,7 +1247,7 @@ contains
             & child=field)
         call convertUnitHsd(modifier, energyUnits, field, contacts(ii)%potential)
 
-        call getChildValue(pNode, "WideBand", contacts(ii)%wideBand, .false.)
+        call hsd_get_or_set(pNode, "WideBand", contacts(ii)%wideBand, .false.)
 
         if (contacts(ii)%wideBand) then
 
@@ -1444,7 +1445,7 @@ contains
     nReg = getLength(children)
 
     if (nReg == 0) then
-      call getChildValue(node, "ComputeLDOS", do_ldos, .true.)
+      call hsd_get_or_set(node, "ComputeLDOS", do_ldos, .true.)
       if (do_ldos) then
         write(strTmp,"(I0, ':', I0)") idxdevice(1), idxdevice(2)
         call setChild(node, "Region", child)
@@ -1476,7 +1477,7 @@ contains
         end if
       end if
       write(strTmp, "('region',I0)") iReg
-      call getChildValue(child, "Label", buffer, trim(strTmp))
+      call hsd_get_or_set(child, "Label", buffer, trim(strTmp))
       regionLabels(iReg) = unquote(buffer)
     end do
     call destroyNodeList(children)
