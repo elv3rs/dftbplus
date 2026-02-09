@@ -16,8 +16,8 @@ module dftbp_dftbplus_hsdhelpers
   use dftbp_common_globalenv, only : stdOut, tIoProc
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_parser, only : parseHsdTree, readHsdFile, rootTag, TParserFlags
-  use hsd, only : hsd_table, hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_dump, hsd_error_t
-  use dftbp_io_hsdutils, only : getChild
+  use hsd, only : hsd_table, hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_dump, hsd_error_t,&
+      & hsd_get_table
   use dftbp_io_message, only : error, warning
   implicit none
 
@@ -98,8 +98,10 @@ contains
     type(TParserFlags), intent(in) :: parserFlags
 
     type(hsd_table), pointer :: root
+    integer :: stat
 
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) return
 
     ! Issue warning about unprocessed nodes
     if (.not. parserFlags%tIgnoreUnprocessed) then

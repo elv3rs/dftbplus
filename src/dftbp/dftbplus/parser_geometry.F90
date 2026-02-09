@@ -4,7 +4,7 @@
 !> Parser routine for the Geometry block.
 module dftbp_dftbplus_parser_geometry
   use dftbp_dftbplus_inputdata, only : TInputData
-  use dftbp_io_hsdutils, only : getChildValue
+  use hsd, only : hsd_get_choice
   use dftbp_io_hsdutils, only : getNodeName
   use hsd_data, only : hsd_table
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, readTGeometryLammps,&
@@ -26,11 +26,11 @@ contains
     !> Input structure to be filled
     type(TInputData), intent(inout) :: input
 
-    type(hsd_table), pointer :: value1, child
+    type(hsd_table), pointer :: value1
     character(len=:), allocatable :: buffer
+    integer :: stat
 
-    call getChildValue(node, "", value1, child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_choice(node, "", buffer, value1, stat)
     input%geom%tPeriodic = .false.
     input%geom%tHelical = .false.
     select case (buffer)
@@ -44,7 +44,7 @@ contains
       call readTGeometryLammps(value1, input%geom)
     case default
       if (associated(value1)) value1%processed = .false.
-      call readTGeometryHSD(child, input%geom)
+      call readTGeometryHSD(node, input%geom)
     end select
 
   end subroutine readGeometry

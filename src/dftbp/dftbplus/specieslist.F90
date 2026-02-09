@@ -11,8 +11,8 @@
 module dftbp_dftbplus_specieslist
   use dftbp_common_accuracy, only : dp
   use dftbp_common_unitconversion, only : TUnit
-  use dftbp_io_hsdutils, only : getChildValue
-  use dftbp_io_hsdutils, only : setProcessed
+  use hsd, only : hsd_get, hsd_get_or_set, hsd_get_attrib, hsd_get_table, HSD_STAT_OK
+  use dftbp_io_hsdutils, only : setProcessed, dftbp_error
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table
   implicit none
@@ -54,31 +54,39 @@ contains
 
     type(hsd_table), pointer :: child
     character(len=:), allocatable :: modifier
-    integer :: iSp
+    integer :: iSp, stat
     logical :: markAllProcessed_
 
     if (present(default)) then
       if (present(units)) then
         do iSp = 1, size(speciesNames)
-          call getChildValue(node, speciesNames(iSp), array(iSp), default=default(iSp),&
-              & modifier=modifier, child=child, isDefaultExported=.false.)
+          call hsd_get_or_set(node, speciesNames(iSp), array(iSp), default(iSp))
+          call hsd_get_attrib(node, speciesNames(iSp), modifier, stat)
+          if (stat /= HSD_STAT_OK) modifier = ""
+          call hsd_get_table(node, speciesNames(iSp), child, stat, auto_wrap=.true.)
           call convertUnitHsd(modifier, units, child, array(iSp))
         end do
       else
         do iSp = 1, size(speciesNames)
-          call getChildValue(node, speciesNames(iSp), array(iSp), default=default(iSp),&
-              & isDefaultExported=.false.)
+          call hsd_get_or_set(node, speciesNames(iSp), array(iSp), default(iSp))
         end do
       end if
     else
       if (present(units)) then
         do iSp = 1, size(speciesNames)
-          call getChildValue(node, speciesNames(iSp), array(iSp), modifier=modifier, child=child)
+          call hsd_get(node, speciesNames(iSp), array(iSp), stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: '" &
+              & // trim(speciesNames(iSp)) // "'")
+          call hsd_get_attrib(node, speciesNames(iSp), modifier, stat)
+          if (stat /= HSD_STAT_OK) modifier = ""
+          call hsd_get_table(node, speciesNames(iSp), child, stat, auto_wrap=.true.)
           call convertUnitHsd(modifier, units, child, array(iSp))
         end do
       else
         do iSp = 1, size(speciesNames)
-          call getChildValue(node, speciesNames(iSp), array(iSp))
+          call hsd_get(node, speciesNames(iSp), array(iSp), stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: '" &
+              & // trim(speciesNames(iSp)) // "'")
         end do
       end if
     end if
@@ -108,17 +116,18 @@ contains
     !> Whether all unread subnodes should also be marked as processed (default: .true.)
     logical, optional, intent(in) :: markAllProcessed
 
-    integer :: iSp
+    integer :: iSp, stat
     logical :: markAllProcessed_
 
     if (present(default)) then
       do iSp = 1, size(speciesNames)
-        call getChildValue(node, speciesNames(iSp), array(iSp), default=default(iSp),&
-            & isDefaultExported = .false.)
+        call hsd_get_or_set(node, speciesNames(iSp), array(iSp), default(iSp))
       end do
     else
       do iSp = 1, size(speciesNames)
-        call getChildValue(node, speciesNames(iSp), array(iSp))
+        call hsd_get(node, speciesNames(iSp), array(iSp), stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: '" &
+            & // trim(speciesNames(iSp)) // "'")
       end do
     end if
 

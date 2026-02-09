@@ -28,8 +28,8 @@ module dftbp_mmapi
   use dftbp_dftbplus_qdepextpotgen, only : TQDepExtPotGen, TQDepExtPotGenWrapper
   use dftbp_dftbplus_qdepextpotproxy, only : TQDepExtPotProxy, TQDepExtPotProxy_init
   use dftbp_io_charmanip, only : newline
-  use dftbp_io_hsdutils, only : getChild
   use dftbp_io_message, only : error
+  use hsd, only : hsd_get_table
   use hsd_data, only : hsd_table, new_table
   use dftbp_type_linkedlist, only : append, asArray, get, init, len, TListString
   use dftbp_type_typegeometry, only : TGeometry
@@ -256,10 +256,13 @@ contains
     !> Pointer to root node
     type(hsd_table), pointer, intent(out) :: root
 
+    integer :: stat
+
     if (.not. associated(this%hsdTree)) then
       call error("Input has not been created yet!")
     end if
-    call getChild(this%hsdTree, rootTag, root)
+    call hsd_get_table(this%hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) call error("Root node not found in input tree")
 
   end subroutine TDftbPlusInput_getRootNode
 

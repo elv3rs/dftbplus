@@ -14,7 +14,7 @@ module dftbp_type_typegeometryhsd
   use dftbp_common_unitconversion, only : angularUnits, lengthUnits
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
+  use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_set, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, checkError, splitModifier,&
       & getNodeName, getFirstTextChild
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -52,16 +52,16 @@ contains
     !> The geometry
     type(TGeometry), intent(in) :: geo
 
-    call setChildValue(node, "TypeNames", geo%speciesNames, .false.)
+    call hsd_set(node, "TypeNames", geo%speciesNames)
     ! TODO: setChildValue with mixed int+real matrix not yet supported
     ! call setChildValue(node, "TypesAndCoordinates", &
     !     &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
-    call setChildValue(node, "Periodic", geo%tPeriodic, .false.)
+    call hsd_set(node, "Periodic", geo%tPeriodic)
     if (geo%tPeriodic .or. geo%tHelical) then
-      call setChildValue(node, "LatticeVectors", geo%latVecs, .false.)
-      call setChildValue(node, "CoordinateOrigin", geo%origin, .false.)
+      call hsd_set(node, "LatticeVectors", geo%latVecs)
+      call hsd_set(node, "CoordinateOrigin", geo%origin)
     end if
-    call setChildValue(node, "Helical", geo%tHelical, .false.)
+    call hsd_set(node, "Helical", geo%tHelical)
 
   end subroutine writeTGeometryHSD_dom
 
@@ -83,9 +83,10 @@ contains
     type(hsd_table), pointer :: child, typesAndCoords
     integer, allocatable :: tmpInt(:,:)
     real(dp) :: latvec(9), det, helVec(3)
+    integer :: stat
 
-    call getChildValue(node, "Periodic", geo%tPeriodic, default=.false.)
-    call getChildValue(node, "Helical", geo%tHelical, default=.false.)
+    call hsd_get_or_set(node, "Periodic", geo%tPeriodic, .false.)
+    call hsd_get_or_set(node, "Helical", geo%tHelical, .false.)
     if (geo%tPeriodic .and. geo%tHelical) then
       call error("Periodic and helical boundary conditions mutually exclusive.")
     end if
@@ -94,7 +95,8 @@ contains
       character(len=:), allocatable :: txt, tok
       integer :: iSt, iEr
       type(hsd_table), pointer :: nameChild
-      call getChild(node, "TypeNames", nameChild)
+      call hsd_get_table(node, "TypeNames", nameChild, stat, auto_wrap=.true.)
+      if (.not. associated(nameChild)) call dftbp_error(node, "Missing required block: 'TypeNames'")
       call getFirstTextChild(nameChild, txt)
       iSt = 1
       call getNextToken(txt, tok, iSt, iEr)
@@ -122,7 +124,11 @@ contains
       integer :: iSt, iEr, nIt
       allocate(bufI(1))
       allocate(bufR(3))
-      call getChild(node, "TypesAndCoordinates", typesAndCoords, modifier=modifier)
+      call hsd_get_table(node, "TypesAndCoordinates", typesAndCoords, stat, auto_wrap=.true.)
+      if (.not. associated(typesAndCoords)) call dftbp_error(node, &
+          & "Missing required block: 'TypesAndCoordinates'")
+      call hsd_get_attrib(node, "TypesAndCoordinates", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
       call getFirstTextChild(typesAndCoords, txt)
       iSt = 1
       iEr = TOKEN_OK
@@ -189,15 +195,25 @@ contains
     if (geo%tPeriodic) then
       allocate(geo%origin(3))
       if (geo%tFracCoord) then
-        call getChildValue(node, "CoordinateOrigin", geo%origin, [0.0_dp,0.0_dp,0.0_dp])
+        call hsd_get_or_set(node, "CoordinateOrigin", geo%origin, [0.0_dp,0.0_dp,0.0_dp])
       else
-        call getChildValue(node, "CoordinateOrigin", geo%origin, [0.0_dp,0.0_dp,0.0_dp],&
-            & modifier=modifier, child=child)
+        call hsd_get_or_set(node, "CoordinateOrigin", geo%origin, [0.0_dp,0.0_dp,0.0_dp])
+        call hsd_get_attrib(node, "CoordinateOrigin", modifier, stat)
+        if (stat /= HSD_STAT_OK) modifier = ""
+        call hsd_get_table(node, "CoordinateOrigin", child, stat, auto_wrap=.true.)
         call convertUnitHsd(modifier, lengthUnits, child, geo%origin, replace=.true.)
       end if
       geo%coords(:,:) = geo%coords - spread(geo%origin, 2, geo%nAtom)
       allocate(geo%latVecs(3,3))
-      call getChildValue(node, "LatticeVectors", latvec, modifier=modifier, child=child)
+      block
+        real(dp), allocatable :: tmpLatVec(:)
+        call hsd_get(node, "LatticeVectors", tmpLatVec, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'LatticeVectors'")
+        latvec(:min(size(tmpLatVec),9)) = tmpLatVec(:min(size(tmpLatVec),9))
+      end block
+      call hsd_get_attrib(node, "LatticeVectors", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(node, "LatticeVectors", child, stat, auto_wrap=.true.)
       call convertUnitHsd(modifier, lengthUnits, child, latvec, replace=.true.)
       geo%latVecs(:,:) = reshape(latvec, [3, 3])
       if (geo%tFracCoord) then
@@ -215,11 +231,23 @@ contains
 
     if (geo%tHelical) then
       allocate(geo%origin(3))
-      call getChildValue(node, "CoordinateOrigin", geo%origin, modifier=modifier, child=child)
+      call hsd_get(node, "CoordinateOrigin", geo%origin, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'CoordinateOrigin'")
+      call hsd_get_attrib(node, "CoordinateOrigin", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(node, "CoordinateOrigin", child, stat, auto_wrap=.true.)
       call convertUnitHsd(modifier, lengthUnits, child, geo%origin, replace=.true.)
       geo%coords(:,:) = geo%coords - spread(geo%origin, 2, geo%nAtom)
       allocate(geo%latVecs(3, 1))
-      call getChildValue(node, "LatticeVectors", helVec, modifier=modifier, child=child)
+      block
+        real(dp), allocatable :: tmpHelVec(:)
+        call hsd_get(node, "LatticeVectors", tmpHelVec, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'LatticeVectors'")
+        helVec(:min(size(tmpHelVec),3)) = tmpHelVec(:min(size(tmpHelVec),3))
+      end block
+      call hsd_get_attrib(node, "LatticeVectors", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(node, "LatticeVectors", child, stat, auto_wrap=.true.)
       if (len(modifier) > 0) then
         call splitModifier(modifier, child, modifs)
         call convertUnitHsd(modifs(1), lengthUnits, child, helVec(1))
@@ -738,14 +766,15 @@ contains
     type(TGeometry), intent(out) :: geo
 
     character(len=:), allocatable :: text1, text2
+    integer :: stat
 
-    call getChildValue(node, "CommandFile", text1)
-    if (.not. allocated(text1) .or. len_trim(text1) == 0) then
+    call hsd_get(node, "CommandFile", text1, stat=stat)
+    if (stat /= HSD_STAT_OK .or. .not. allocated(text1) .or. len_trim(text1) == 0) then
       call dftbp_error(node, "Missing CommandFile for LammpsFormat")
     end if
 
-    call getChildValue(node, "DataFile", text2)
-    if (.not. allocated(text2) .or. len_trim(text2) == 0) then
+    call hsd_get(node, "DataFile", text2, stat=stat)
+    if (stat /= HSD_STAT_OK .or. .not. allocated(text2) .or. len_trim(text2) == 0) then
       call dftbp_error(node, "Missing DataFile for LammpsFormat")
     end if
 

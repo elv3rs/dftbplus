@@ -10,8 +10,7 @@
 module dftbp_dftbplus_input_fileaccess
   use dftbp_common_file, only : fileAccessValues
   use dftbp_io_charmanip, only : tolower, unquote
-  use hsd, only : hsd_table, hsd_get
-  use dftbp_io_hsdutils, only : getChild, setChildValue
+  use hsd, only : hsd_table, hsd_get, hsd_get_table, hsd_set
   use dftbp_io_hsdutils, only : dftbp_error
   implicit none
 
@@ -32,13 +31,14 @@ contains
 
     type(hsd_table), pointer :: child
     character(:), allocatable :: stringArr(:)
-    integer :: nStr, ii
+    integer :: nStr, ii, stat
 
     @:ASSERT(size(accessTypes) == 2)
 
-    call getChild(node, "BinaryAccessTypes", child, requested=.false.)
+    call hsd_get_table(node, "BinaryAccessTypes", child, stat, auto_wrap=.true.)
     if (.not. associated(child)) then
-      call setChildValue(node, "BinaryAccessTypes", ["stream"], child=child)
+      call hsd_set(node, "BinaryAccessTypes", "stream")
+      call hsd_get_table(node, "BinaryAccessTypes", child, stat, auto_wrap=.true.)
     end if
     call hsd_get(node, "BinaryAccessTypes", stringArr)
     nStr = size(stringArr)

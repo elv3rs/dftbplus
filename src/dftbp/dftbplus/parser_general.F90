@@ -6,10 +6,9 @@ module dftbp_dftbplus_parser_general
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_elecsolvers_elecsolvers, only : providesEigenvalues
-  use hsd, only : hsd_rename_child, hsd_get_or_set
-  use dftbp_io_hsdutils, only : getChildValue
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_table
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
 
@@ -33,6 +32,7 @@ contains
 
     type(hsd_table), pointer :: child, value1
     logical :: tWriteDetailedOutDef
+    integer :: stat
 
   #:if WITH_SOCKETS
     tWriteDetailedOutDef = .not. allocated(ctrl%socketInput)
@@ -64,9 +64,16 @@ contains
     end if
     if (ctrl%tMD) then
       allocate(ctrl%mdOutput)
-      call getChildValue(node, "MDOutput", value1, "", child=child, allowEmptyValue=.true.,&
-          & dummyValue=.true.)
-      if (associated(value1)) then
+      call hsd_get_table(node, "MDOutput", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) then
+        block
+          type(hsd_table) :: tmpTbl
+          call new_table(tmpTbl, name="mdoutput")
+          call node%add_child(tmpTbl)
+        end block
+        call hsd_get_table(node, "MDOutput", child, stat)
+      end if
+      if (associated(child)) then
         if (providesEigenvalues(ctrl%solver%isolver)) then
           call hsd_get_or_set(child, "AppendBandOut", ctrl%mdOutput%bandStructure, .false.)
         end if

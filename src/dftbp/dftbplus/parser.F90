@@ -15,9 +15,8 @@ module dftbp_dftbplus_parser
   use dftbp_common_status, only : TStatus
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_oldcompat, only : parserVersion
-  use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error
-  use hsd, only : hsd_error_t, hsd_get_table
+  use hsd, only : hsd_error_t, hsd_get_table, hsd_get_choice
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error
   use dftbp_type_commontypes, only : TOrbitals
@@ -116,29 +115,51 @@ contains
     type(hsd_table), pointer :: root, tmp, driverNode, hamNode, analysisNode, child, dummy
     logical :: tReadAnalysis
     integer, allocatable :: implicitParserVersion
+    integer :: stat
+    character(len=:), allocatable :: choiceName
 
     write(stdout, '(A,1X,I0,/)') 'Parser version:', parserVersion
     write(stdout, "(A)") repeat("-", 80)
 
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) call error("Missing root node: '" // rootTag // "'")
 
     call handleInputVersion(root, implicitParserVersion)
-    call getChildValue(root, "ParserOptions", dummy, "", child=child, list=.true.,&
-        & allowEmptyValue=.true., dummyValue=.true.)
+    call hsd_get_table(root, "ParserOptions", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="parseroptions")
+        call root%add_child(tmpTbl)
+      end block
+      call hsd_get_table(root, "ParserOptions", child, stat)
+    end if
     call readParserOptions(child, root, parserFlags, implicitParserVersion)
 
     ! Read the geometry unless the list of atoms has been provided through the API
     if (.not. allocated(input%geom%coords)) then
-      call getChild(root, "Geometry", tmp)
+      call hsd_get_table(root, "Geometry", tmp, stat, auto_wrap=.true.)
+      if (.not. associated(tmp)) call dftbp_error(root, "Missing required block: 'Geometry'")
       call readGeometry(tmp, input)
     end if
     input%geom%areContactsPresent = .false.
 
     ! Hamiltonian settings that need to know settings from the REKS block
-    call getChildValue(root, "Reks", dummy, "None", child=child)
+    call hsd_get_table(root, "Reks", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defContainer, defChild
+        call new_table(defContainer, name="reks")
+        call new_table(defChild, name="None")
+        call defContainer%add_child(defChild)
+        call root%add_child(defContainer)
+      end block
+      call hsd_get_table(root, "Reks", child, stat)
+    end if
+    call hsd_get_choice(child, "", choiceName, dummy, stat)
     call readReks(child, dummy, input%ctrl, input%geom)
 
-    call getChild(root, "Transport", child, requested=.false.)
+    call hsd_get_table(root, "Transport", child, stat, auto_wrap=.true.)
 
   #:if WITH_TRANSPORT
 
@@ -153,14 +174,15 @@ contains
       input%transpar%idxdevice(2) = input%geom%nAtom
     end if
 
-    call getChild(root, "Dephasing", child, requested=.false.)
+    call hsd_get_table(root, "Dephasing", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       call dftbp_error(child, "Be patient... Dephasing feature will be available soon!")
       !call readDephasing(child, input%slako%orb, input%geom, input%transpar, input%ginfo%tundos)
     end if
 
     ! electronic Hamiltonian
-    call getChildValue(root, "Hamiltonian", hamNode)
+    call hsd_get_choice(root, "Hamiltonian", choiceName, hamNode, stat)
+    if (.not. associated(hamNode)) call dftbp_error(root, "Missing required block: 'Hamiltonian'")
     call readHamiltonian(hamNode, input%ctrl, input%geom, input%slako, input%transpar,&
         & input%ginfo%greendens, input%poisson, errStatus)
 
@@ -171,7 +193,8 @@ contains
     end if
 
     ! electronic Hamiltonian
-    call getChildValue(root, "Hamiltonian", hamNode)
+    call hsd_get_choice(root, "Hamiltonian", choiceName, hamNode, stat)
+    if (.not. associated(hamNode)) call dftbp_error(root, "Missing required block: 'Hamiltonian'")
     call readHamiltonian(hamNode, input%ctrl, input%geom, input%slako, input%poisson, errStatus)
 
   #:endif
@@ -180,7 +203,16 @@ contains
       call error(errStatus%message)
     end if
 
-    call getChildValue(root, "Driver", driverNode, "", child=child, allowEmptyValue=.true.)
+    call hsd_get_table(root, "Driver", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="driver")
+        call root%add_child(tmpTbl)
+      end block
+      call hsd_get_table(root, "Driver", child, stat)
+    end if
+    call hsd_get_choice(child, "", choiceName, driverNode, stat)
   #:if WITH_TRANSPORT
     call readDriver(driverNode, child, input%geom, input%ctrl, input%transpar)
   #:else
@@ -188,7 +220,7 @@ contains
   #:endif
 
     tReadAnalysis = .true.
-    call getChild(root, "ElectronDynamics", child=child, requested=.false.)
+    call hsd_get_table(root, "ElectronDynamics", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(input%ctrl%elecDynInp)
       call readElecDynamics(child, input%ctrl%elecDynInp, input%geom, input%ctrl%masses)
@@ -200,8 +232,15 @@ contains
 
     if (tReadAnalysis) then
       ! Analysis of properties
-      call getChildValue(root, "Analysis", dummy, "", child=analysisNode, list=.true.,&
-          & allowEmptyValue=.true., dummyValue=.true.)
+      call hsd_get_table(root, "Analysis", analysisNode, stat, auto_wrap=.true.)
+      if (.not. associated(analysisNode)) then
+        block
+          type(hsd_table) :: tmpTbl
+          call new_table(tmpTbl, name="analysis")
+          call root%add_child(tmpTbl)
+        end block
+        call hsd_get_table(root, "Analysis", analysisNode, stat)
+      end if
 
     #:if WITH_TRANSPORT
       call readAnalysis(analysisNode, input%ctrl, input%geom, input%slako%orb, input%transpar, &
@@ -214,15 +253,29 @@ contains
 
     end if
 
-    call getChildValue(root, "ExcitedState", dummy, "", child=child, list=.true.,&
-        & allowEmptyValue=.true., dummyValue=.true.)
+    call hsd_get_table(root, "ExcitedState", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="excitedstate")
+        call root%add_child(tmpTbl)
+      end block
+      call hsd_get_table(root, "ExcitedState", child, stat)
+    end if
     call readExcited(child, input%geom, input%ctrl)
 
     ! Hamiltonian settings that need to know about settings from the blocks above
     call readLaterHamiltonian(hamNode, input%ctrl, driverNode, input%geom)
 
-    call getChildValue(root, "Options", dummy, "", child=child, list=.true.,&
-        & allowEmptyValue=.true., dummyValue=.true.)
+    call hsd_get_table(root, "Options", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="options")
+        call root%add_child(tmpTbl)
+      end block
+      call hsd_get_table(root, "Options", child, stat)
+    end if
     call readOptions(child, input%ctrl, input%geom)
 
     ! W values if needed by Hamiltonian or excited state calculation

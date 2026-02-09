@@ -20,12 +20,11 @@ module dftbp_solvation_solvparser
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_lebedev, only : gridSize
   use dftbp_io_charmanip, only : tolower, unquote
-  use hsd, only : hsd_rename_child
-  use dftbp_io_hsdutils, only : getChild, getChildValue, setChild,&
-      & setChildValue
+  use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice,&
+      & hsd_get_attrib, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, textNodeName
   use dftbp_io_unitconv, only : convertUnitHsd
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_math_bisect, only : bisection
   use dftbp_solvation_born, only : fgbKernel, TGBInput
   use dftbp_solvation_cm5, only : TCM5Input
@@ -64,9 +63,11 @@ contains
 
     type(hsd_table), pointer :: solvModel
     character(len=:), allocatable :: buffer
+    integer :: stat
 
     call hsd_rename_child(node, "GeneralizedBorn", "GeneralisedBorn")
-    call getChildValue(node, "", solvModel)
+    call hsd_get_choice(node, "", buffer, solvModel, stat)
+    if (.not. associated(solvModel)) call dftbp_error(node, "Missing required solvation model")
     call getNodeName(solvModel, buffer)
 
     select case (buffer)
@@ -106,16 +107,18 @@ contains
     type(TSolventData) :: solvent
     real(dp), parameter :: alphaDefault = 0.571412_dp
     character(len=:), allocatable :: paramFile, paramTmp
+    integer :: stat
 
     if (geo%tPeriodic .or. geo%tHelical) then
       call dftbp_error(node, "Generalised Born model currently not available with the selected&
           & boundary conditions")
     end if
 
-    call getChild(node, "ParamFile", value1, requested=.false.)
+    call hsd_get_table(node, "ParamFile", value1, stat, auto_wrap=.true.)
     if (associated(value1)) then
       allocate(defaults)
-      call getChildValue(node, "ParamFile", buffer, "", child=child)
+      child => value1
+      call hsd_get_or_set(node, "ParamFile", buffer, "")
       paramFile = trim(unquote(buffer))
       call getParamSearchPaths(searchPath)
       call findFile(searchPath, paramFile, paramTmp)
@@ -126,9 +129,9 @@ contains
       call readSolvent(node, solvent)
     end if
 
-    call getChildValue(node, "ALPB", tALPB, .false.)
+    call hsd_get_or_set(node, "ALPB", tALPB, .false.)
     if (tALPB) then
-      call getChildValue(node, "Alpha", alphaALPB, alphaDefault)
+      call hsd_get_or_set(node, "Alpha", alphaALPB, alphaDefault)
       input%alpbet = alphaALPB / solvent%dielectricConstant
     else
       input%alpbet = 0.0_dp
@@ -136,7 +139,8 @@ contains
     input%keps = (1.0_dp / solvent%dielectricConstant - 1.0_dp) / (1.0_dp + input%alpbet)
     input%dielectricConstant = solvent%dielectricConstant
 
-    call getChildValue(node, "Kernel", buffer, "Still", child=child)
+    call hsd_get_or_set(node, "Kernel", buffer, "Still")
+    call hsd_get_table(node, "Kernel", child, stat, auto_wrap=.true.)
     select case(tolower(unquote(buffer)))
     case default
       call dftbp_error(child, "Unknown interaction kernel: "//buffer)
@@ -148,33 +152,43 @@ contains
 
     ! shift value for the free energy (usually fitted)
     if (allocated(defaults)) then
-      call getChildValue(node, "FreeEnergyShift", shift, defaults%freeEnergyShift,&
-          & modifier=modifier, child=field)
+      call hsd_get_or_set(node, "FreeEnergyShift", shift, defaults%freeEnergyShift)
     else
-      call getChildValue(node, "FreeEnergyShift", shift, modifier=modifier, child=field)
+      call hsd_get(node, "FreeEnergyShift", shift, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'FreeEnergyShift'")
     end if
+    call hsd_get_table(node, "FreeEnergyShift", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, energyUnits, field, shift)
 
     ! temperature, influence depends on the reference state
-    call getChildValue(node, "Temperature", temperature, ambientTemperature,&
-        & modifier=modifier, child=field)
+    call hsd_get_or_set(node, "Temperature", temperature, ambientTemperature)
+    call hsd_get_table(node, "Temperature", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, energyUnits, field, temperature)
 
     ! reference state for free energy calculation
     call readReferenceState(node, solvent, temperature, shift, input%freeEnergyShift)
 
     if (allocated(defaults)) then
-      call getChildValue(node, "BornScale", input%bornScale, defaults%bornScale)
-      call getChildValue(node, "BornOffset", input%bornOffset, defaults%bornOffset,&
-          & modifier=modifier, child=field)
+      call hsd_get_or_set(node, "BornScale", input%bornScale, defaults%bornScale)
+      call hsd_get_or_set(node, "BornOffset", input%bornOffset, defaults%bornOffset)
     else
-      call getChildValue(node, "BornScale", input%bornScale)
-      call getChildValue(node, "BornOffset", input%bornOffset, modifier=modifier, child=field)
+      call hsd_get(node, "BornScale", input%bornScale, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'BornScale'")
+      call hsd_get(node, "BornOffset", input%bornOffset, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'BornOffset'")
     end if
+    call hsd_get_table(node, "BornOffset", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, lengthUnits, field, input%bornOffset)
-    call getChildValue(node, "OBCCorrection", input%obc, [1.00_dp, 0.80_dp, 4.85_dp])
+    block
+      real(dp), allocatable :: tmpObc(:)
+      call hsd_get_or_set(node, "OBCCorrection", tmpObc, [1.00_dp, 0.80_dp, 4.85_dp])
+      input%obc = tmpObc
+    end block
 
-    call getChild(node, "CM5", child, requested=.false.)
+    call hsd_get_table(node, "CM5", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(input%cm5Input)
       call readCM5(child, input%cm5Input, geo)
@@ -184,10 +198,23 @@ contains
 
     allocate(input%descreening(geo%nSpecies))
     if (allocated(defaults)) then
-      call getChildValue(node, "Descreening", value1, "Defaults", child=child)
+      call hsd_get_table(node, "Descreening", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) then
+        block
+          type(hsd_table) :: tmpTbl, defChild
+          call new_table(tmpTbl, name="descreening")
+          call new_table(defChild, name="defaults")
+          call tmpTbl%add_child(defChild)
+          call node%add_child(tmpTbl)
+        end block
+        call hsd_get_table(node, "Descreening", child, stat, auto_wrap=.true.)
+      end if
     else
-      call getChildValue(node, "Descreening", value1, child=child)
+      call hsd_get_table(node, "Descreening", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) call dftbp_error(node,&
+          & "Missing required block: 'Descreening'")
     end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
@@ -205,15 +232,21 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%descreening)
     end select
 
-    call getChildValue(node, "Cutoff", input%rCutoff, 35.0_dp * AA__Bohr, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "Cutoff", input%rCutoff, 35.0_dp * AA__Bohr)
+    call hsd_get_table(node, "Cutoff", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
-    call getChild(node, "SASA", value1, requested=.false.)
+    call hsd_get_table(node, "SASA", value1, stat, auto_wrap=.true.)
     if (associated(value1) .or. allocated(defaults)) then
       allocate(input%sasaInput)
       if (.not.associated(value1)) then
-        call setChild(node, "SASA", value1)
+        block
+          type(hsd_table) :: tmpTbl
+          call new_table(tmpTbl, name="sasa")
+          call node%add_child(tmpTbl)
+        end block
+        call hsd_get_table(node, "SASA", value1, stat)
       end if
       if (allocated(defaults)) then
         call readSolvSASA(value1, geo, input%sasaInput, defaults%sasaInput%probeRad,&
@@ -223,18 +256,32 @@ contains
       end if
 
       if (allocated(defaults)) then
-        call getChildValue(node, "HBondCorr", tHBondCorr, allocated(defaults%hBondPar), child=child)
+        call hsd_get_or_set(node, "HBondCorr", tHBondCorr, allocated(defaults%hBondPar))
       else
-        call getChildValue(node, "HBondCorr", tHBondCorr, child=child)
+        call hsd_get(node, "HBondCorr", tHBondCorr, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'HBondCorr'")
       end if
 
       if (tHBondCorr) then
         allocate(input%hBondPar(geo%nSpecies))
         if (allocated(defaults)) then
-          call getChildValue(node, "HBondStrength", value1, "Defaults", child=child)
+          call hsd_get_table(node, "HBondStrength", child, stat, auto_wrap=.true.)
+          if (.not. associated(child)) then
+            block
+              type(hsd_table) :: tmpTbl, defChild
+              call new_table(tmpTbl, name="hbondstrength")
+              call new_table(defChild, name="defaults")
+              call tmpTbl%add_child(defChild)
+              call node%add_child(tmpTbl)
+            end block
+            call hsd_get_table(node, "HBondStrength", child, stat, auto_wrap=.true.)
+          end if
         else
-          call getChildValue(node, "HBondStrength", value1, child=child)
+          call hsd_get_table(node, "HBondStrength", child, stat, auto_wrap=.true.)
+          if (.not. associated(child)) call dftbp_error(node,&
+              & "Missing required block: 'HBondStrength'")
         end if
+        call hsd_get_choice(child, "", buffer, value1, stat)
         call getNodeName(value1, buffer)
         select case(buffer)
         case default
@@ -275,6 +322,7 @@ contains
     real(dp) :: temperature, shift
     real(dp), allocatable :: radScale(:), radScaleSpecies(:), radScaleDefault(:)
     type(TSolventData) :: solvent
+    integer :: stat
 
     if (geo%tPeriodic .or. geo%tHelical) then
       call dftbp_error(node, "COSMO solvation currently not available with the selected boundary&
@@ -286,19 +334,22 @@ contains
     input%keps = 0.5_dp * (1.0_dp - 1.0_dp/solvent%dielectricConstant)
 
     ! shift value for the free energy (usually zero)
-    call getChildValue(node, "FreeEnergyShift", shift, 0.0_dp, modifier=modifier, child=field)
+    call hsd_get_or_set(node, "FreeEnergyShift", shift, 0.0_dp)
+    call hsd_get_table(node, "FreeEnergyShift", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, energyUnits, field, shift)
 
     ! temperature, influence depends on the reference state
-    call getChildValue(node, "Temperature", temperature, ambientTemperature, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "Temperature", temperature, ambientTemperature)
+    call hsd_get_table(node, "Temperature", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, energyUnits, field, temperature)
 
     call readReferenceState(node, solvent, temperature, shift, input%freeEnergyShift)
 
     call readVanDerWaalsRad(node, geo, input%vdwRad)
 
-    call getChild(node, "RadiiScaling", child, requested=.false.)
+    call hsd_get_table(node, "RadiiScaling", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(radScaleSpecies(geo%nSpecies))
       allocate(radScaleDefault(geo%nSpecies), source=1.0_dp)
@@ -310,7 +361,18 @@ contains
 
     call readAngularGrid(node, input%gridSize)
 
-    call getChildValue(node, "Solver", value1, "DomainDecomposition", child=child)
+    call hsd_get_table(node, "Solver", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl, defChild
+        call new_table(tmpTbl, name="solver")
+        call new_table(defChild, name="domaindecomposition")
+        call tmpTbl%add_child(defChild)
+        call node%add_child(tmpTbl)
+      end block
+      call hsd_get_table(node, "Solver", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
@@ -319,7 +381,7 @@ contains
       call readDomainDecomposition(value1, input%ddInput)
     end select
 
-    call getChild(node, "SASA", value1, requested=.false.)
+    call hsd_get_table(node, "SASA", value1, stat, auto_wrap=.true.)
     if (associated(value1)) then
       allocate(input%sasaInput)
       call readSolvSASA(value1, geo, input%sasaInput)
@@ -338,11 +400,14 @@ contains
     type(TDomainDecompositionInput), intent(out) :: input
 
     type(hsd_table), pointer :: child
+    integer :: stat
 
-    call getChildValue(node, "MaxMoment", input%lmax, child=child)
+    call hsd_get(node, "MaxMoment", input%lmax, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'MaxMoment'")
     call hsd_rename_child(node, "Regularization", "Regularisation")
-    call getChildValue(node, "Regularisation", input%eta, 0.2_dp, child=child)
-    call getChildValue(node, "Accuracy", input%conv, child=child)
+    call hsd_get_or_set(node, "Regularisation", input%eta, 0.2_dp)
+    call hsd_get(node, "Accuracy", input%conv, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'Accuracy'")
 
   end subroutine readDomainDecomposition
 
@@ -367,21 +432,29 @@ contains
 
     character(len=:), allocatable :: buffer, modifier
     type(hsd_table), pointer :: child, value1, field
+    integer :: stat
 
     if (geo%tPeriodic .or. geo%tHelical) then
       call dftbp_error(node, "SASA model currently not available with the selected boundary&
           & conditions")
     end if
 
-    call getChildValue(node, "ProbeRadius", input%probeRad, probeRadDefault, modifier=modifier,&
-        & child=field)
+    if (present(probeRadDefault)) then
+      call hsd_get_or_set(node, "ProbeRadius", input%probeRad, probeRadDefault)
+    else
+      call hsd_get(node, "ProbeRadius", input%probeRad, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'ProbeRadius'")
+    end if
+    call hsd_get_table(node, "ProbeRadius", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, lengthUnits, field, input%probeRad)
 
-    call getChildValue(node, "Smoothing", input%smoothingPar, 0.3_dp*AA__Bohr, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "Smoothing", input%smoothingPar, 0.3_dp*AA__Bohr)
+    call hsd_get_table(node, "Smoothing", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, lengthUnits, field, input%smoothingPar)
 
-    call getChildValue(node, "Tolerance", input%tolerance, 1.0e-6_dp, child=child)
+    call hsd_get_or_set(node, "Tolerance", input%tolerance, 1.0e-6_dp)
 
     call readAngularGrid(node, input%gridSize, 230)
 
@@ -389,10 +462,23 @@ contains
 
     allocate(input%surfaceTension(geo%nSpecies))
     if (present(surfaceTensionDefault)) then
-      call getChildValue(node, "SurfaceTension", value1, "Defaults", child=child)
+      call hsd_get_table(node, "SurfaceTension", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) then
+        block
+          type(hsd_table) :: tmpTbl, defChild
+          call new_table(tmpTbl, name="surfacetension")
+          call new_table(defChild, name="defaults")
+          call tmpTbl%add_child(defChild)
+          call node%add_child(tmpTbl)
+        end block
+        call hsd_get_table(node, "SurfaceTension", child, stat, auto_wrap=.true.)
+      end if
     else
-      call getChildValue(node, "SurfaceTension", value1, child=child)
+      call hsd_get_table(node, "SurfaceTension", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) call dftbp_error(node,&
+          & "Missing required block: 'SurfaceTension'")
     end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
@@ -407,8 +493,9 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%surfaceTension)
     end select
 
-    call getChildValue(node, "Offset", input%sOffset, 2.0_dp * AA__Bohr, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "Offset", input%sOffset, 2.0_dp * AA__Bohr)
+    call hsd_get_table(node, "Offset", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, lengthUnits, field, input%sOffset)
 
   end subroutine readSolvSASA
@@ -429,13 +516,26 @@ contains
     type(hsd_table), pointer :: value1, dummy, child, field
     character(len=:), allocatable :: buffer, modifier
     real(dp), allocatable :: atomicRadDefault(:)
+    integer :: stat
 
-    call getChildValue(node, "Alpha", input%alpha, 2.474_dp/AA__Bohr, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "Alpha", input%alpha, 2.474_dp/AA__Bohr)
+    call hsd_get_table(node, "Alpha", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, inverseLengthUnits, field, input%alpha)
 
     allocate(input%atomicRad(geo%nSpecies))
-    call getChildValue(node, "Radii", value1, "AtomicRadii", child=child)
+    call hsd_get_table(node, "Radii", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl, defChild
+        call new_table(tmpTbl, name="radii")
+        call new_table(defChild, name="atomicradii")
+        call tmpTbl%add_child(defChild)
+        call node%add_child(tmpTbl)
+      end block
+      call hsd_get_table(node, "Radii", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
@@ -453,7 +553,9 @@ contains
       call dftbp_error(value1, "Atomic radii must be positive for all species")
     end if
 
-    call getChildValue(node, "Cutoff", input%rCutoff, 30.0_dp, modifier=modifier, child=field)
+    call hsd_get_or_set(node, "Cutoff", input%rCutoff, 30.0_dp)
+    call hsd_get_table(node, "Cutoff", field, stat, auto_wrap=.true.)
+    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
     call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
   end subroutine readCM5
@@ -471,20 +573,25 @@ contains
     character(len=:), allocatable :: buffer, modifier
     type(hsd_table), pointer :: child, value1, field
     logical :: found
+    integer :: stat
 
-    call getChildValue(node, "Solvent", value1, child=child)
+    call hsd_get_table(node, "Solvent", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'Solvent'")
+    call hsd_get_choice(child, "", buffer, value1, stat)
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
       call dftbp_error(child, "Invalid solvent method '" // buffer // "'")
     case('fromname')
-      call getChildValue(value1, "", buffer)
+      call hsd_get(value1, "#text", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value")
       call SolventFromName(solvent, unquote(buffer), found)
       if (.not. found) then
         call dftbp_error(value1, "Invalid solvent " // buffer)
       end if
     case('fromconstants')
-      call getChildValue(value1, "Epsilon", buffer)
+      call hsd_get(value1, "Epsilon", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Epsilon'")
       if (unquote(buffer) == "Inf") then
          if (ieee_support_inf(solvent%dielectricConstant)) then
             solvent%dielectricConstant = ieee_value(solvent%dielectricConstant, ieee_positive_inf)
@@ -492,12 +599,18 @@ contains
             solvent%dielectricConstant = huge(solvent%dielectricConstant)
          end if
       else
-         call getChildValue(value1, "Epsilon", solvent%dielectricConstant)
+         call hsd_get(value1, "Epsilon", solvent%dielectricConstant, stat=stat)
+         if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Epsilon'")
       end if
-      call getChildValue(value1, "MolecularMass", solvent%molecularMass, modifier=modifier,&
-          & child=field)
+      call hsd_get(value1, "MolecularMass", solvent%molecularMass, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'MolecularMass'")
+      call hsd_get_table(value1, "MolecularMass", field, stat, auto_wrap=.true.)
+      call hsd_get_attrib(field, "modifier", modifier, stat=stat)
       call convertUnitHsd(modifier, massUnits, field, solvent%molecularMass)
-      call getChildValue(value1, "Density", solvent%density, modifier=modifier, child=field)
+      call hsd_get(value1, "Density", solvent%density, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Density'")
+      call hsd_get_table(value1, "Density", field, stat, auto_wrap=.true.)
+      call hsd_get_attrib(field, "modifier", modifier, stat=stat)
       call convertUnitHsd(modifier, massDensityUnits, field, solvent%density)
     end select
 
@@ -527,8 +640,10 @@ contains
     real(dp), parameter :: referenceDensity = kg__au/(1.0e10_dp*AA__Bohr)**3
     real(dp), parameter :: referenceMolecularMass = amu__au
     real(dp), parameter :: idealGasMolVolume = 24.79_dp
+    integer :: stat
 
-    call getChildValue(node, "State", state, "gsolv", child=child)
+    call hsd_get_or_set(node, "State", state, "gsolv")
+    call hsd_get_table(node, "State", child, stat, auto_wrap=.true.)
     select case(tolower(unquote(state)))
     case default
       call dftbp_error(child, "Unknown reference state: "//state)
@@ -562,9 +677,21 @@ contains
     character(len=:), allocatable :: buffer
     type(hsd_table), pointer :: child, value1, dummy
     real(dp), allocatable :: vdwRadDefault(:)
+    integer :: stat
 
     allocate(vdwRad(geo%nSpecies))
-    call getChildValue(node, "Radii", value1, "vanDerWaalsRadiiD3", child=child)
+    call hsd_get_table(node, "Radii", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: tmpTbl, defChild
+        call new_table(tmpTbl, name="radii")
+        call new_table(defChild, name="vanderwaalsradiid3")
+        call tmpTbl%add_child(defChild)
+        call node%add_child(tmpTbl)
+      end block
+      call hsd_get_table(node, "Radii", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
     call getNodeName(value1, buffer)
     select case(buffer)
     case default
@@ -609,8 +736,15 @@ contains
     type(hsd_table), pointer :: child
     character(lc) :: errorStr
     integer :: gridPoints
+    integer :: stat
 
-    call getChildValue(node, "AngularGrid", gridPoints, default, child=child)
+    if (present(default)) then
+      call hsd_get_or_set(node, "AngularGrid", gridPoints, default)
+    else
+      call hsd_get(node, "AngularGrid", gridPoints, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'AngularGrid'")
+    end if
+    call hsd_get_table(node, "AngularGrid", child, stat, auto_wrap=.true.)
     angGrid = 0
     call bisection(angGrid, gridSize, gridPoints)
     if (angGrid == 0) then

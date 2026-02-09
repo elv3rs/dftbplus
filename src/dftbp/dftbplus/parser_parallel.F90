@@ -10,11 +10,10 @@
 
 !> Reads the parallel/BLACS block from the HSD input.
 module dftbp_dftbplus_parser_parallel
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_common_globalenv, only : withMpi, withScalapack
   use dftbp_dftbplus_inputdata, only : TBlacsOpts, TInputData
-  use dftbp_io_hsdutils, only : getChild, getChildValue
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get_or_set, hsd_get_table
   use dftbp_io_hsdutils, only : dftbp_warning
   implicit none
 
@@ -34,8 +33,17 @@ contains
     type(TInputData), intent(inout) :: input
 
     type(hsd_table), pointer :: node, pTmp
+    integer :: stat
 
-    call getChild(root, "Parallel", child=node, requested=.false., emptyIfMissing=withMpi)
+    call hsd_get_table(root, "Parallel", node, stat, auto_wrap=.true.)
+    if (.not. associated(node) .and. withMpi) then
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="parallel")
+        call root%add_child(tmpTbl)
+      end block
+      call hsd_get_table(root, "Parallel", node, stat)
+    end if
     if (associated(node)) then
       if (.not. withMpi) then
         call dftbp_warning(node, "Settings will be read but ignored (compiled without MPI&
@@ -60,8 +68,17 @@ contains
     type(TBlacsOpts), intent(inout) :: blacsOpts
 
     type(hsd_table), pointer :: node
+    integer :: stat
 
-    call getChild(root, "Blacs", child=node, requested=.false., emptyIfMissing=withScalapack)
+    call hsd_get_table(root, "Blacs", node, stat, auto_wrap=.true.)
+    if (.not. associated(node) .and. withScalapack) then
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="blacs")
+        call root%add_child(tmpTbl)
+      end block
+      call hsd_get_table(root, "Blacs", node, stat)
+    end if
     if (associated(node)) then
       if (.not. withScalapack) then
         call dftbp_warning(node, "Settings will be read but ignored (compiled without SCALAPACK&

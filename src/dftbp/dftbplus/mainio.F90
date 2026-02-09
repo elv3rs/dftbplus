@@ -38,7 +38,6 @@ module dftbp_dftbplus_mainio
   use dftbp_io_commonformats, only : format1U, format1U1e, format1Ue, format2U, format2Ue,&
       & formatBorn, formatdBorn, formatGeoOut, formatHessian
   use dftbp_io_formatout, only : writeGenFormat, writeSparse, writeSparseAsSquare, writeXYZFormat
-  use dftbp_io_hsdutils, only : setChildValue
   use hsd_data, only : data_dump, hsd_table, hsd_set, new_table, hsd_value, hsd_node, &
       & VALUE_TYPE_REAL, VALUE_TYPE_INTEGER, VALUE_TYPE_LOGICAL, VALUE_TYPE_COMPLEX, &
       & hsd_set_attrib
@@ -2320,14 +2319,36 @@ contains
     call hsd_set(root, "identity", runId)
 
     call new_table(geo, "geometry")
-    call setChildValue(geo, "typenames", speciesName)
-    if (tPeriodic .or. tHelical) then
-      call setChildValue(geo, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
-          & coord0Out + spread(origin, 2, size(coord0Out, dim=2)))
-    else
-      call setChildValue(geo, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
-          & coord0Out)
-    end if
+    call hsd_set(geo, "typenames", speciesName)
+    block
+      character(len=100) :: buf
+      character(len=:), allocatable :: strBuf
+      integer :: iiRow, jjCol, nRow
+      nRow = size(species0)
+      strBuf = ""
+      if (tPeriodic .or. tHelical) then
+        do iiRow = 1, nRow
+          write(buf, *) species0(iiRow)
+          strBuf = strBuf // " " // trim(adjustl(buf))
+          do jjCol = 1, 3
+            write(buf, *) coord0Out(jjCol, iiRow) + origin(jjCol)
+            strBuf = strBuf // " " // trim(adjustl(buf))
+          end do
+          if (iiRow < nRow) strBuf = strBuf // new_line('a')
+        end do
+      else
+        do iiRow = 1, nRow
+          write(buf, *) species0(iiRow)
+          strBuf = strBuf // " " // trim(adjustl(buf))
+          do jjCol = 1, 3
+            write(buf, *) coord0Out(jjCol, iiRow)
+            strBuf = strBuf // " " // trim(adjustl(buf))
+          end do
+          if (iiRow < nRow) strBuf = strBuf // new_line('a')
+        end do
+      end if
+      call hsd_set(geo, "typesandcoordinates", trim(adjustl(strBuf)))
+    end block
     call hsd_set(geo, "periodic", tPeriodic)
     call hsd_set(geo, "helical", tHelical)
     if (tPeriodic .or. tHelical) then

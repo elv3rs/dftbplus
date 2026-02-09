@@ -12,13 +12,13 @@ module dftbp_dftbplus_input_geoopt
   use dftbp_geoopt_package, only : TFilterInput, TFireInput, TLbfgsInput, TOptimizerInput,&
       & TOptTolerance, TRationalFuncInput, TSteepdescInput
   use dftbp_io_charmanip, only : unquote
-  use hsd, only : hsd_rename_child
-  use dftbp_io_hsdutils, only : getChild, getChildValue, getSelectedAtomIndices, &
-      & setChild, setChildValue
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_get_choice,&
+      & HSD_STAT_OK
+  use dftbp_io_hsdutils, only : getSelectedAtomIndices
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   implicit none
 
   private
@@ -66,22 +66,38 @@ contains
 
     type(hsd_table), pointer :: child, value1
     character(len=:), allocatable :: buffer
+    integer :: stat
 
     call hsd_rename_child(node, "Optimizer", "Optimiser")
-    call getChildValue(node, "Optimiser", child, "Rational")
+    call hsd_get_choice(node, "Optimiser", buffer, child, stat)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defContainer, defChild
+        call new_table(defContainer, name="optimiser")
+        call new_table(defChild, name="Rational")
+        call defContainer%add_child(defChild)
+        call node%add_child(defContainer)
+      end block
+      call hsd_get_choice(node, "Optimiser", buffer, child, stat)
+    end if
     call readOptimizerInput(child, input%optimiser)
 
     call readFilterInput(node, geom, input%filter, atomsRange)
 
-    call getChild(node, "Convergence", child, requested=.false.)
+    call hsd_get_table(node, "Convergence", child, stat, auto_wrap=.true.)
     if (.not.associated(child)) then
-      call setChild(node, "Convergence", child)
+      block
+        type(hsd_table) :: tmpTbl
+        call new_table(tmpTbl, name="convergence")
+        call node%add_child(tmpTbl)
+      end block
+      call hsd_get_table(node, "Convergence", child, stat)
     end if
     call readOptTolerance(child, input%tolerance)
 
-    call getChildValue(node, "MaxSteps", input%nGeoSteps, 20*geom%nAtom)
+    call hsd_get_or_set(node, "MaxSteps", input%nGeoSteps, 20*geom%nAtom)
 
-    call getChildValue(node, "OutputPrefix", buffer, "geo_end")
+    call hsd_get_or_set(node, "OutputPrefix", buffer, "geo_end")
     input%outFile = trim(unquote(buffer))
 
   end subroutine readGeoOptInput
@@ -145,17 +161,23 @@ contains
 
     type(hsd_table), pointer :: child
     character(len=:), allocatable :: buffer
+    integer :: stat
 
-    call getChildValue(node, "LatticeOpt", input%lattice, .false.)
+    call hsd_get_or_set(node, "LatticeOpt", input%lattice, .false.)
     if (input%lattice) then
-      call getChildValue(node, "FixAngles", input%fixAngles, .false.)
-      call getChildValue(node, "FixLengths", input%fixLength, [.false., .false., .false.])
+      call hsd_get_or_set(node, "FixAngles", input%fixAngles, .false.)
+      block
+        logical, allocatable :: tmpFixLen(:)
+        call hsd_get_or_set(node, "FixLengths", tmpFixLen, [.false., .false., .false.])
+        input%fixLength(:) = tmpFixLen(:min(size(tmpFixLen), size(input%fixLength)))
+      end block
       if (input%fixAngles .and. all(input%fixLength)) then
         call dftbp_error(node, "LatticeOpt with all lattice vectors fixed is not possible")
       end if
-      call getChildValue(node, "Isotropic", input%isotropic, .false.)
+      call hsd_get_or_set(node, "Isotropic", input%isotropic, .false.)
     end if
-    call getChildValue(node, "MovedAtoms", buffer, trim(atomsRange), multiple=.true., child=child)
+    call hsd_get_or_set(node, "MovedAtoms", buffer, trim(atomsRange))
+    call hsd_get_table(node, "MovedAtoms", child, stat, auto_wrap=.true.)
     call getSelectedAtomIndices(child, buffer, geom%speciesNames, geom%species, &
         & input%indMovedAtom)
 
@@ -173,21 +195,36 @@ contains
 
     type(hsd_table), pointer :: field
     character(len=:), allocatable :: modifier
+    integer :: stat
 
-    call getChildValue(node, "Energy", input%energy, huge(1.0_dp), modifier=modifier, child=field)
+    call hsd_get_or_set(node, "Energy", input%energy, huge(1.0_dp))
+    call hsd_get_attrib(node, "Energy", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "Energy", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, energyUnits, field, input%energy)
 
-    call getChildValue(node, "GradNorm", input%gradNorm, huge(1.0_dp), modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "GradNorm", input%gradNorm, huge(1.0_dp))
+    call hsd_get_attrib(node, "GradNorm", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "GradNorm", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, forceUnits, field, input%gradNorm)
-    call getChildValue(node, "GradElem", input%gradElem, 1.0e-4_dp, modifier=modifier, child=field)
+
+    call hsd_get_or_set(node, "GradElem", input%gradElem, 1.0e-4_dp)
+    call hsd_get_attrib(node, "GradElem", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "GradElem", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, forceUnits, field, input%gradElem)
 
-    call getChildValue(node, "DispNorm", input%dispNorm, huge(1.0_dp), modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(node, "DispNorm", input%dispNorm, huge(1.0_dp))
+    call hsd_get_attrib(node, "DispNorm", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "DispNorm", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, lengthUnits, field, input%dispNorm)
-    call getChildValue(node, "DispElem", input%dispElem, huge(1.0_dp), modifier=modifier,&
-        & child=field)
+
+    call hsd_get_or_set(node, "DispElem", input%dispElem, huge(1.0_dp))
+    call hsd_get_attrib(node, "DispElem", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "DispElem", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, lengthUnits, field, input%dispElem)
 
   end subroutine readOptTolerance
@@ -202,7 +239,7 @@ contains
     !> Control structure to be filled
     type(TSteepDescInput), intent(out) :: input
 
-    call getChildValue(node, "ScalingFactor", input%scalingFactor, 1.0_dp)
+    call hsd_get_or_set(node, "ScalingFactor", input%scalingFactor, 1.0_dp)
 
   end subroutine readSteepDescInput
 
@@ -218,13 +255,17 @@ contains
 
     type(hsd_table), pointer :: field
     character(len=:), allocatable :: modifier
+    integer :: stat
 
-    call getChildValue(node, "nMin", input%nMin, 5)
-    call getChildValue(node, "aPar", input%a_start, 0.1_dp)
-    call getChildValue(node, "fInc", input%f_inc, 1.1_dp)
-    call getChildValue(node, "fDec", input%f_dec, 0.5_dp)
-    call getChildValue(node, "fAlpha", input%f_alpha, 0.99_dp)
-    call getChildValue(node, "StepSize", input%dt_max, 1.0_dp, modifier=modifier, child=field)
+    call hsd_get_or_set(node, "nMin", input%nMin, 5)
+    call hsd_get_or_set(node, "aPar", input%a_start, 0.1_dp)
+    call hsd_get_or_set(node, "fInc", input%f_inc, 1.1_dp)
+    call hsd_get_or_set(node, "fDec", input%f_dec, 0.5_dp)
+    call hsd_get_or_set(node, "fAlpha", input%f_alpha, 0.99_dp)
+    call hsd_get_or_set(node, "StepSize", input%dt_max, 1.0_dp)
+    call hsd_get_attrib(node, "StepSize", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "StepSize", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, timeUnits, field, input%dt_max)
 
   end subroutine readFireInput
@@ -239,7 +280,7 @@ contains
     !> Control structure to be filled
     type(TLbfgsInput), intent(out) :: input
 
-    call getChildValue(node, "Memory", input%memory, 20)
+    call hsd_get_or_set(node, "Memory", input%memory, 20)
 
   end subroutine readLbfgsInput
 
@@ -253,7 +294,7 @@ contains
     !> Control structure to be filled
     type(TRationalFuncInput), intent(out) :: input
 
-    call getChildValue(node, "DiagLimit", input%diagLimit, 1.0e-2_dp)
+    call hsd_get_or_set(node, "DiagLimit", input%diagLimit, 1.0e-2_dp)
 
   end subroutine readRationalFuncInput
 
