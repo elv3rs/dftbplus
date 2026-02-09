@@ -10,7 +10,7 @@
 
 !> Reads in REKS (Real-time Electron Kohn-Sham) related settings from the HSD input.
 module dftbp_dftbplus_parser_reks
-  use dftbp_common_accuracy, only : dp, sc
+  use dftbp_common_accuracy, only : dp
   use dftbp_common_globalenv, only : stdOut
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c
@@ -18,8 +18,8 @@ module dftbp_dftbplus_parser_reks
   use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName, getNodeName2,&
       & hasInlineData
+  use hsd, only : hsd_get, hsd_get_matrix
   use dftbp_reks_reks, only : reksTypes
-  use dftbp_type_linkedlist, only : asArray, destruct, init, len, TListRealR1, TListString
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
 
@@ -79,10 +79,9 @@ contains
     type(TGeometry), intent(in) :: geo
 
     type(hsd_table), pointer :: child1, value2, child2
-    type(TListString) :: strBuffer
     character(len=:), allocatable :: buffer2
-    character(sc), allocatable :: tmpFunc(:)
-    integer :: ii, nFunc
+    character(len=:), allocatable :: tmpFunc(:)
+    integer :: ii, nFunc, stat
     logical :: tFunc = .true.
 
 
@@ -90,11 +89,8 @@ contains
     call getChild(node, "Energy", child=child1)
 
     !> Read 'Functional' block in 'Energy' block
-    call init(strBuffer)
-    call getChildValue(child1, "Functional", strBuffer)
-    allocate(tmpFunc(len(strBuffer)))
-    call asArray(strBuffer, tmpFunc)
-    call destruct(strBuffer)
+    call hsd_get(child1, "Functional", tmpFunc, stat=stat)
+    if (stat /= 0) call dftbp_error(child1, "Error reading Functional")
 
     !> Decide the energy functionals to be included in SA-REKS(2,2)
     nFunc = size(tmpFunc, dim=1)
@@ -212,8 +208,7 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer, modifier
-    type(TListRealR1) :: realBuffer
-    integer :: nAtom, iType
+    integer :: nAtom, iType, nrows, ncols, stat
     real(dp), allocatable :: tmpTuning(:,:)
 
     call getChildValue(node, "SpinTuning", value1, "", child=child, modifier=modifier,&
@@ -227,17 +222,14 @@ contains
       end do
     else
       ! 'SpinTuning' block in REKS input
-      call init(realBuffer)
-      call getChildValue(child, "", 1, realBuffer, modifier=modifier)
-      nAtom = len(realBuffer)
+      call hsd_get_matrix(node, "SpinTuning", tmpTuning, nrows, ncols, stat=stat)
+      if (stat /= 0) call dftbp_error(node, "Error reading SpinTuning")
+      nAtom = nrows
       if (nAtom /= nType) then
         call dftbp_error(node, "Incorrect number of 'SpinTuning' block: " &
             & // i2c(nAtom) // " supplied, " &
             & // i2c(nType) // " required.")
       end if
-      allocate(tmpTuning(1,nAtom))
-      call asArray(realBuffer, tmpTuning)
-      call destruct(realBuffer)
       allocate(ctrl%reksInp%Tuning(nType))
       ctrl%reksInp%Tuning(:) = tmpTuning(1,:)
     end if

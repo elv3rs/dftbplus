@@ -21,7 +21,8 @@ module dftbp_dftbplus_parser_skfiles
   use dftbp_dftbplus_inputdata, only : TSlater
   use dftbp_io_message, only : error
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : get, init, intoArray, len, TListCharLc, TListIntR1
+  use dftbp_type_linkedlist, only : get, len, TListCharLc
+  use dftbp_dftbplus_parser_spin, only : TAngShellBlocks, getAngShellBlock
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
   implicit none
 
@@ -51,7 +52,7 @@ contains
 
     !> For every species, a list of rank one arrays. Each array contains the angular momenta to pick
     !> from the appropriate SK-files.
-    type(TListIntR1), intent(inout) :: angShells(:)
+    type(TAngShellBlocks), intent(inout) :: angShells(:)
 
     !> Are the Hubbard Us different for each l-shell?
     logical, intent(in) :: orbRes
@@ -103,9 +104,9 @@ contains
 
     write(stdout, "(A)") "Reading SK-files:"
     lpSp1: do iSp1 = 1, nSpecies
-      nSK1 = len(angShells(iSp1))
+      nSK1 = angShells(iSp1)%nBlocks
       lpSp2: do iSp2 = iSp1, nSpecies
-        nSK2 = len(angShells(iSp2))
+        nSK2 = angShells(iSp2)%nBlocks
         allocate(skData12(nSK2, nSK1))
         allocate(skData21(nSK1, nSK2))
         ind = 1
@@ -147,7 +148,7 @@ contains
           end if
           ind = 1
           do iSK1 = 1, nSK1
-            call intoArray(angShells(iSp1), angShell, nShell, iSK1)
+            call getAngShellBlock(angShells(iSp1), iSK1, angShell, nShell)
             do iSh1 = 1, nShell
               slako%skSelf(ind, iSp1) = &
                   &skData12(iSK1,iSK1)%skSelf(angShell(iSh1)+1)
@@ -442,10 +443,10 @@ contains
     type(TOldSKData), intent(in), target :: skData21(:,:)
 
     !> Angular momenta to pick from the SK-files for species A
-    type(TListIntR1), intent(inout) :: angShells1
+    type(TAngShellBlocks), intent(inout) :: angShells1
 
     !> Angular momenta to pick from the SK-files for species B
-    type(TListIntR1), intent(inout) :: angShells2
+    type(TAngShellBlocks), intent(inout) :: angShells2
 
     integer :: ind, iSK1, iSK2, iSh1, iSh2, nSh1, nSh2, l1, l2, lMin, lMax, mm
     integer :: angShell1(maxL+1), angShell2(maxL+1)
@@ -463,12 +464,12 @@ contains
         &(/maxL + 1, maxL + 1, maxL + 1/))
 
     ind = 1
-    do iSK1 = 1, len(angShells1)
-      call intoArray(angShells1, angShell1, nSh1, iSK1)
+    do iSK1 = 1, angShells1%nBlocks
+      call getAngShellBlock(angShells1, iSK1, angShell1, nSh1)
       do iSh1 = 1, nSh1
         l1 = angShell1(iSh1)
-        do iSK2 = 1, len(angShells2)
-          call intoArray(angShells2, angShell2, nSh2, iSK2)
+        do iSK2 = 1, angShells2%nBlocks
+          call getAngShellBlock(angShells2, iSK2, angShell2, nSh2)
           do iSh2 = 1, nSh2
             l2 = angShell2(iSh2)
             if (l1 <= l2) then

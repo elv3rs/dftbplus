@@ -53,7 +53,7 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_dftbplus_parser_hybrid, only : parseHybridBlock, parseChimes
   use dftbp_dftbplus_parser_skfiles, only : readSKFiles
   use dftbp_dftbplus_parser_spin, only : readSpinPolarisation, readSpinOrbit, &
-      & readMaxAngularMomentum, setupOrbitals
+      & readMaxAngularMomentum, setupOrbitals, TAngShellBlocks
   use dftbp_dftbplus_parser_electrostatics, only : readElectrostatics, readMdftb
   use dftbp_dftbplus_parser_filling, only : readElectronicFilling
   use dftbp_dftbplus_parser_sccoptions, only : readSccOptions, readForceOptions, SKTruncations,&
@@ -180,7 +180,7 @@ contains
     type(TListReal), allocatable :: lrN(:)
     type(TListCharLc), allocatable :: skFiles(:,:)
     type(TListString) :: lStr
-    type(TListIntR1), allocatable :: angShells(:)
+    type(TAngShellBlocks), allocatable :: angShells(:)
     logical, allocatable :: repPoly(:,:)
     integer :: iSp1, iSp2, ii
     character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp, str2Tmp
@@ -270,9 +270,9 @@ contains
           strTmp = trim(geo%speciesNames(iSp1)) // "-" // trim(geo%speciesNames(iSp2))
           call init(lStr)
           call getChildValue(child, trim(strTmp), lStr, child=child2)
-          if (len(lStr) /= len(angShells(iSp1)) * len(angShells(iSp2))) then
+          if (len(lStr) /= angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks) then
             write(errorStr, "(A,I0,A,I0)") "Incorrect number of Slater-Koster files for " //&
-                & trim(strTmp) // ", expected ", len(angShells(iSp1)) * len(angShells(iSp2)),&
+                & trim(strTmp) // ", expected ", angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks,&
                 & " but received ", len(lStr)
             call dftbp_error(child2, errorStr)
           end if
@@ -365,7 +365,6 @@ contains
     end if
 
     do iSp1 = 1, geo%nSpecies
-      call destruct(angShells(iSp1))
       do iSp2 = 1, geo%nSpecies
         call destruct(skFiles(iSp2, iSp1))
       end do

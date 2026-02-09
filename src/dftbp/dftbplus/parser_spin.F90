@@ -25,10 +25,9 @@ module dftbp_dftbplus_parser_spin
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, intoArray, len, &
-      & TListIntR1, TListReal, TListString
+
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd, only : hsd_rename_child, hsd_get_or_set
+  use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set
   use hsd_data, only : hsd_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
@@ -39,6 +38,16 @@ module dftbp_dftbplus_parser_spin
   private
   public :: readSpinPolarisation, readSpinOrbit, readMaxAngularMomentum
   public :: setupOrbitals, getInitialSpins, getInitialCharges, readSpinConstants
+
+  !> Storage for angular shell blocks (replaces TListIntR1)
+  type, public :: TAngShellBlocks
+    integer :: nBlocks = 0
+    integer :: capacity = 0
+    integer, allocatable :: blockSize(:)
+    integer, allocatable :: angMom(:,:)  ! (maxL+1, capacity)
+  end type TAngShellBlocks
+
+  public :: initAngShellBlocks, appendAngShellBlock, getAngShellBlock
 
 contains
 
@@ -98,7 +107,7 @@ contains
     type(TGeometry), intent(in) :: geo
 
     !> List containing the angular momenta of the shells
-    type(TListIntR1), allocatable, intent(out) :: angShells(:)
+    type(TAngShellBlocks), allocatable, intent(out) :: angShells(:)
 
     type(hsd_table), pointer :: value1, child, child2
     character(len=:), allocatable :: buffer
@@ -106,7 +115,8 @@ contains
     character(lc) :: strTmp
     integer :: nShell
     character(1) :: tmpCh
-    type(TListString) :: lStr
+    character(len=:), allocatable :: strArr(:)
+    integer :: stat
     logical :: tShellIncl(4), tFound
     integer :: angShell(maxL+1), angShellOrdered(maxL+1)
 
@@ -116,16 +126,15 @@ contains
     call getChild(node, "MaxAngularMomentum", child)
     allocate(angShells(geo%nSpecies))
     do iSp1 = 1, geo%nSpecies
-      call init(angShells(iSp1))
+      call initAngShellBlocks(angShells(iSp1))
       call getChildValue(child, geo%speciesNames(iSp1), value1, child=child2)
       call getNodeName(value1, buffer)
       select case(buffer)
       case("selectedshells")
-        call init(lStr)
-        call getChildValue(value1, "", lStr)
-        do ii = 1, len(lStr)
-          call get(lStr, strTmp, ii)
-          strTmp = tolower(unquote(trim(strTmp)))
+        call hsd_get(value1, "#text", strArr, stat=stat)
+        if (stat /= 0) call dftbp_error(value1, "Error reading shell selections")
+        do ii = 1, size(strArr)
+          strTmp = tolower(unquote(trim(strArr(ii))))
           if (len_trim(strTmp) > 4 .or. len_trim(strTmp) < 1) then
             call dftbp_error(value1, "Invalid shell selection '" &
                 &// trim(strTmp) &
@@ -153,19 +162,18 @@ contains
               call dftbp_error(value1, "Invalid shell name '" // tmpCh // "'")
             end if
           end do
-          call append(angShells(iSp1), angShell(1:nShell))
+          call appendAngShellBlock(angShells(iSp1), angShell(1:nShell))
         end do
-        call destruct(lStr)
 
       case(textNodeName)
         call getChildValue(child2, "", buffer)
         strTmp = unquote(buffer)
         do jj = 1, size(shellNames)
           if (trim(strTmp) == trim(shellNames(jj))) then
-            call append(angShells(iSp1), angShellOrdered(:jj))
+            call appendAngShellBlock(angShells(iSp1), angShellOrdered(:jj))
           end if
         end do
-        if (len(angShells(iSp1)) < 1) then
+        if (angShells(iSp1)%nBlocks < 1) then
           call dftbp_error(child2, "Invalid orbital name '" // &
               &trim(strTmp) // "'")
         end if
@@ -189,9 +197,8 @@ contains
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
 
-    !> List containing the angular momenta of the shells,
-    !> must be inout, since intoArray requires inout arguments
-    type(TListIntR1), intent(inout) :: angShells(:)
+    !> List containing the angular momenta of the shells
+    type(TAngShellBlocks), intent(inout) :: angShells(:)
 
     integer :: nShell, iSp1, iSh1, ii, jj, ind
     integer :: angShell(maxL+1)
@@ -204,8 +211,8 @@ contains
     do iSp1 = 1, geo%nSpecies
       orb%nShell(iSp1) = 0
       orb%nOrbSpecies(iSp1) = 0
-      do ii = 1, len(angShells(iSp1))
-        call intoArray(angShells(iSp1), angShell, nShell, ii)
+      do ii = 1, angShells(iSp1)%nBlocks
+        call getAngShellBlock(angShells(iSp1), ii, angShell, nShell)
         orb%nShell(iSp1) = orb%nShell(iSp1) + nShell
         do jj = 1, nShell
           orb%nOrbSpecies(iSp1) = orb%nOrbSpecies(iSp1) &
@@ -225,8 +232,8 @@ contains
     do iSp1 = 1, geo%nSpecies
       ind = 1
       iSh1 = 1
-      do ii = 1, len(angShells(iSp1))
-        call intoArray(angShells(iSp1), angShell, nShell, ii)
+      do ii = 1, angShells(iSp1)%nBlocks
+        call getAngShellBlock(angShells(iSp1), ii, angShell, nShell)
         do jj = 1, nShell
           orb%posShell(iSh1, iSp1) = ind
           orb%angShell(iSh1, iSp1) = angShell(jj)
@@ -433,9 +440,9 @@ contains
     type(hsd_table), pointer :: child
     logical :: tLRNeedsSpinConstants, tShellResolvedW
     integer :: iSp1, nConstants
-    type(TListReal) :: realBuffer
+    real(dp), allocatable :: realArr(:)
+    integer :: stat
     character(lc) :: strTmp
-    real(dp) :: rWork(maxval(orb%nShell)**2)
 
     tLRNeedsSpinConstants = .false.
 
@@ -466,14 +473,14 @@ contains
       end if
 
       do iSp1 = 1, geo%nSpecies
-        call init(realBuffer)
-        call getChildValue(child, geo%speciesNames(iSp1), realBuffer)
-        nConstants = len(realBuffer)
+        call hsd_get(child, geo%speciesNames(iSp1), realArr, stat=stat)
+        if (stat /= 0) call dftbp_error(child, "Error reading spin constants for " &
+            &// trim(geo%speciesNames(iSp1)))
+        nConstants = size(realArr)
         if (tShellResolvedW) then
           if (nConstants == orb%nShell(iSp1)**2) then
-            call asArray(realBuffer, rWork(:orb%nShell(iSp1)**2))
             ctrl%spinW(:orb%nShell(iSp1), :orb%nShell(iSp1), iSp1) =&
-                & reshape(rWork(:orb%nShell(iSp1)**2), [orb%nShell(iSp1), orb%nShell(iSp1)])
+                & reshape(realArr(:orb%nShell(iSp1)**2), [orb%nShell(iSp1), orb%nShell(iSp1)])
           else
             write(strTmp, "(A,I0,A,I0,A,A,A)")'Expecting a ', orb%nShell(iSp1), ' x ',&
                 & orb%nShell(iSp1), ' spin constant matrix for "', trim(geo%speciesNames(iSp1)),&
@@ -482,20 +489,87 @@ contains
           end if
         else
           if (nConstants == 1) then
-            call asArray(realBuffer, rWork(:1))
             ! only one value for all atom spin constants
-            ctrl%spinW(:orb%nShell(iSp1), :orb%nShell(iSp1), iSp1) = rWork(1)
+            ctrl%spinW(:orb%nShell(iSp1), :orb%nShell(iSp1), iSp1) = realArr(1)
           else
             write(strTmp, "(A,A,A)")'Expecting a single spin constant for "',&
                 & trim(geo%speciesNames(iSp1)),'", as ShellResolvedSpin not enabled.'
             call dftbp_error(child, trim(strTmp))
           end if
         end if
-        call destruct(realBuffer)
       end do
     end if
 
   end subroutine readSpinConstants
+
+
+  !> Initialise an angular shell block list
+  subroutine initAngShellBlocks(self)
+
+    !> Angular shell blocks to initialise
+    type(TAngShellBlocks), intent(out) :: self
+
+    self%nBlocks = 0
+    self%capacity = 4
+    allocate(self%blockSize(4))
+    allocate(self%angMom(maxL + 1, 4))
+    self%blockSize(:) = 0
+    self%angMom(:,:) = 0
+
+  end subroutine initAngShellBlocks
+
+
+  !> Append a block of angular momentum values
+  subroutine appendAngShellBlock(self, shells)
+
+    !> Angular shell blocks to append to
+    type(TAngShellBlocks), intent(inout) :: self
+
+    !> Angular momentum values for this block
+    integer, intent(in) :: shells(:)
+
+    integer, allocatable :: tmpSize(:)
+    integer, allocatable :: tmpMom(:,:)
+    integer :: newCap
+
+    if (self%nBlocks >= self%capacity) then
+      newCap = self%capacity * 2
+      allocate(tmpSize(newCap))
+      allocate(tmpMom(maxL + 1, newCap))
+      tmpSize(:self%capacity) = self%blockSize(:self%capacity)
+      tmpMom(:, :self%capacity) = self%angMom(:, :self%capacity)
+      tmpSize(self%capacity + 1:) = 0
+      tmpMom(:, self%capacity + 1:) = 0
+      call move_alloc(tmpSize, self%blockSize)
+      call move_alloc(tmpMom, self%angMom)
+      self%capacity = newCap
+    end if
+    self%nBlocks = self%nBlocks + 1
+    self%blockSize(self%nBlocks) = size(shells)
+    self%angMom(:size(shells), self%nBlocks) = shells
+
+  end subroutine appendAngShellBlock
+
+
+  !> Retrieve a block of angular momentum values (replaces intoArray)
+  subroutine getAngShellBlock(self, idx, shells, nShells)
+
+    !> Angular shell blocks to query
+    type(TAngShellBlocks), intent(in) :: self
+
+    !> Index of the block (1-based)
+    integer, intent(in) :: idx
+
+    !> Angular momentum values (output, must be at least maxL+1 in size)
+    integer, intent(out) :: shells(:)
+
+    !> Number of shells in this block
+    integer, intent(out) :: nShells
+
+    nShells = self%blockSize(idx)
+    shells(:nShells) = self%angMom(:nShells, idx)
+
+  end subroutine getAngShellBlock
 
 
 end module dftbp_dftbplus_parser_spin

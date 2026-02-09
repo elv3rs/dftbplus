@@ -9,7 +9,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_dftbplus_parser_kpoints, only : maxSelfConsIterations
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
-  use hsd, only : hsd_rename_child, hsd_get_or_set
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue, setChildValue, &
       & getLength, getItem1, destroyNodeList
@@ -21,8 +21,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_solvation_solvparser, only : readCM5
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : append, asArray, asVector, destruct, init, len, &
-      & TListReal, TListRealR1
+  use dftbp_type_linkedlist, only : append, init
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_TRANSPORT
   use dftbp_dftbplus_parser_transport, only : readTunAndDos
@@ -71,7 +70,7 @@ contains
     character(len=:), allocatable :: buffer, modifier
     integer :: nReg, iReg
     character(lc) :: strTmp
-    type(TListRealR1) :: lr1
+    integer :: stat
     logical :: tPipekDense
     logical :: tWriteBandDatDefault, tHaveEigenDecomposition, tHaveDensityMatrix
     logical :: isEtaNeeded
@@ -133,21 +132,16 @@ contains
             if (.not. geo%tPeriodic) then
               call hsd_get_or_set(child2, "Dense", tPipekDense, .false.)
               if (.not. tPipekDense) then
-                call init(lr1)
-                call getChild(child2, "SparseTolerances", child=child3, requested=.false.)
-                if (associated(child3)) then
-                  call getChildValue(child3, "", 1, lr1)
-                  if (len(lr1) < 1) then
+                call hsd_get(child2, "SparseTolerances", inp%sparseTols, stat=stat)
+                if (stat == 0) then
+                  if (size(inp%sparseTols) < 1) then
                     call dftbp_error(child2, "Missing values of tolerances.")
                   end if
-                  allocate(inp%sparseTols(len(lr1)))
-                  call asVector(lr1, inp%sparseTols)
                 else
                   allocate(inp%sparseTols(4))
                   inp%sparseTols = [0.1_dp, 0.01_dp, 1.0E-6_dp, 1.0E-12_dp]
                   call setChildValue(child2, "SparseTolerances", inp%sparseTols)
                 end if
-                call destruct(lr1)
               end if
             end if
             if (tPipekDense) then
@@ -317,9 +311,9 @@ contains
     !> Frequencies, 0 being static
     real(dp), allocatable, intent(inout) :: frequencies(:)
 
-    type(TListReal) :: lr
-    type(hsd_table), pointer :: child, child2
+    type(hsd_table), pointer :: child
     character(len=:), allocatable :: modifier
+    real(dp), allocatable :: tmpFreqs(:)
     integer :: nFreq, iFreq, jFreq
     real(dp) :: tmp3R(3)
     logical :: isStatic
@@ -333,9 +327,8 @@ contains
 
     call getChild(node, "Frequencies", child=child, modifier=modifier, requested=.false.)
     if (associated(child)) then
-      call init(lr)
-      call getChildValue(child, "", lr, child=child2, modifier=modifier)
-      nFreq = len(lr)
+      call hsd_get(node, "Frequencies", tmpFreqs)
+      nFreq = size(tmpFreqs)
       if (nFreq > 0) then
         if (allocated(frequencies)) then
           iFreq = size(frequencies)
@@ -343,21 +336,19 @@ contains
           iFreq = 0
         end if
         call growFreqArray(frequencies, nFreq)
-        call asArray(lr, frequencies(iFreq+1:iFreq+nFreq))
-        call convertUnitHsd(modifier,freqUnits, child, frequencies(iFreq+1:iFreq+nFreq))
+        frequencies(iFreq+1:iFreq+nFreq) = tmpFreqs
+        call convertUnitHsd(modifier, freqUnits, child, frequencies(iFreq+1:iFreq+nFreq))
       end if
-      call destruct(lr)
       if (any(frequencies < 0.0_dp)) then
-        call dftbp_error(child2, "Negative driving frequency requested")
+        call dftbp_error(child, "Negative driving frequency requested")
       end if
     end if
 
     call getChild(node, "FrequencyRange", child=child, modifier=modifier, requested=.false.)
     if (associated(child)) then
-      call init(lr)
-      call getChildValue(child, "", lr, child=child2, modifier=modifier)
-      if (len(lr) == 3) then
-        call asArray(lr, tmp3R)
+      call hsd_get(node, "FrequencyRange", tmpFreqs)
+      if (size(tmpFreqs) == 3) then
+        tmp3R = tmpFreqs
         call convertUnitHsd(modifier, freqUnits, child, tmp3R)
         if (any(tmp3R(:2) < 0.0_dp)) then
           call dftbp_error(child, "Negative values in dynamic frequency range.")
@@ -379,9 +370,8 @@ contains
       else
         call dftbp_error(child,"Malformed frequency range.")
       end if
-      call destruct(lr)
       if (any(frequencies < 0.0_dp)) then
-        call dftbp_error(child2, "Negative driving frequency requested")
+        call dftbp_error(child, "Negative driving frequency requested")
       end if
     end if
 
@@ -451,7 +441,7 @@ contains
 
     type(hsd_table), pointer :: child, child2, child3
     character(len=:), allocatable :: buffer, modifier
-    type(TListRealR1) :: lr1
+    integer :: nMatRows, nMatCols
 
     call getChild(node, "ElectrostaticPotential", child, requested=.false.)
     if (.not. associated(child)) then
@@ -468,15 +458,13 @@ contains
     if (ctrl%isGeoOpt .or. ctrl%tMD) then
       call hsd_get_or_set(child, "AppendFile", ctrl%elStatPotentialsInp%tAppendEsp, .false.)
     end if
-    call init(lr1)
     ! discrete points
     call getChildValue(child, "Points", child2, "", child=child3, modifier=modifier,&
         & allowEmptyValue=.true.)
     call getNodeName2(child2, buffer)
     if (buffer /= "" .or. hasInlineData(child3)) then
-      call getChildValue(child3, "", 3, lr1, modifier=modifier)
-      allocate(ctrl%elStatPotentialsInp%espGrid(3,len(lr1)))
-      call asArray(lr1, ctrl%elStatPotentialsInp%espGrid)
+      call hsd_get_matrix(child, "Points", ctrl%elStatPotentialsInp%espGrid, nMatRows, nMatCols,&
+          & order="column-major")
       if (geo%tPeriodic .and. (modifier == "F" .or. modifier == "f")) then
         ctrl%elStatPotentialsInp%espGrid = matmul(geo%latVecs, ctrl%elStatPotentialsInp%espGrid)
       else
@@ -484,7 +472,6 @@ contains
             & ctrl%elStatPotentialsInp%espGrid)
       end if
     end if
-    call destruct(lr1)
 
     ! grid specification for points instead
     call getChild(child, "Grid", child=child2, modifier=modifier, requested=.false.)
