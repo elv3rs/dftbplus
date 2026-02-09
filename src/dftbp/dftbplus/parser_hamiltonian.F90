@@ -103,7 +103,7 @@ contains
     type(hsd_table), pointer :: child
     integer :: stat
 
-    buffer = node%name
+    buffer = tolower(node%name)
     select case (buffer)
     case ("dftb")
   #:if WITH_TRANSPORT

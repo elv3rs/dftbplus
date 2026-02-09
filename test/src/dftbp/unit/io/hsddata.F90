@@ -79,8 +79,8 @@ contains
 
     call data_load_string(input, root, DATA_FMT_HSD, error)
     @:ASSERT(.not. allocated(error))
-    @:ASSERT(hsd_has_child(root, "Geometry"))
-    call hsd_get(root, "Geometry/NAtoms", val, stat=stat)
+    @:ASSERT(hsd_has_child(root, "geometry"))
+    call hsd_get(root, "geometry/natoms", val, stat=stat)
     @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(val == 2)
   $:END_TEST()

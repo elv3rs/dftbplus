@@ -171,7 +171,7 @@ contains
     type(hsd_table) :: newTable
 
     call hsd_remove_child(node, name, stat, case_insensitive=.true.)
-    call new_table(newTable, name=name)
+    call new_table(newTable, name=tolower(name))
     call addChildGetPtr_(node, newTable, child)
 
   end subroutine replaceOrAddTable_
@@ -1647,7 +1647,7 @@ contains
     type(hsd_table) :: newTable
     class(hsd_node), pointer :: storedChild
 
-    call new_table(newTable, name=name)
+    call new_table(newTable, name=tolower(name))
     call node%add_child(newTable)
 
     call node%get_child(node%num_children, storedChild)

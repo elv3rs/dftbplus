@@ -141,7 +141,6 @@ contains
                     call dftbp_error(child2, "Missing values of tolerances.")
                   end if
                 else
-                  allocate(inp%sparseTols(4))
                   inp%sparseTols = [0.1_dp, 0.01_dp, 1.0E-6_dp, 1.0E-12_dp]
                   call hsd_set(child2, "SparseTolerances", inp%sparseTols)
                 end if

@@ -17,7 +17,7 @@ module dftbp_dftbplus_parser_reks
   use hsd_data, only : hsd_table
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName, getNodeName2,&
       & hasInlineData
-  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_get_table, hsd_get_choice, &
+  use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice, &
       & HSD_STAT_OK, new_table
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_typegeometry, only : TGeometry
@@ -220,7 +220,7 @@ contains
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer, modifier
     integer :: nAtom, iType, nrows, ncols, stat
-    real(dp), allocatable :: tmpTuning(:,:)
+    real(dp), allocatable :: tmpTuning(:)
 
     call hsd_get_table(node, "SpinTuning", child, stat, auto_wrap=.true.)
     if (.not. associated(child) .or. .not. hasInlineData(child)) then
@@ -231,16 +231,15 @@ contains
       end do
     else
       ! 'SpinTuning' block in REKS input
-      call hsd_get_matrix(node, "SpinTuning", tmpTuning, nrows, ncols, stat=stat)
+      call hsd_get(node, "SpinTuning", tmpTuning, stat=stat)
       if (stat /= 0) call dftbp_error(node, "Error reading SpinTuning")
-      nAtom = nrows
-      if (nAtom /= nType) then
+      if (size(tmpTuning) /= nType) then
         call dftbp_error(node, "Incorrect number of 'SpinTuning' block: " &
-            & // i2c(nAtom) // " supplied, " &
+            & // i2c(size(tmpTuning)) // " supplied, " &
             & // i2c(nType) // " required.")
       end if
       allocate(ctrl%reksInp%Tuning(nType))
-      ctrl%reksInp%Tuning(:) = tmpTuning(1,:)
+      ctrl%reksInp%Tuning(:) = tmpTuning(:)
     end if
 
   end subroutine readSpinTuning

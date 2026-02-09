@@ -21,8 +21,8 @@ module dftbp_solvation_solvparser
   use dftbp_extlibs_lebedev, only : gridSize
   use dftbp_io_charmanip, only : tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice,&
-      & hsd_get_attrib, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, textNodeName
+      & HSD_STAT_OK
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, textNodeName, getModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table, new_table
   use dftbp_math_bisect, only : bisection
@@ -158,13 +158,13 @@ contains
       if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'FreeEnergyShift'")
     end if
     call hsd_get_table(node, "FreeEnergyShift", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, energyUnits, field, shift)
 
     ! temperature, influence depends on the reference state
     call hsd_get_or_set(node, "Temperature", temperature, ambientTemperature)
     call hsd_get_table(node, "Temperature", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, energyUnits, field, temperature)
 
     ! reference state for free energy calculation
@@ -180,7 +180,7 @@ contains
       if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'BornOffset'")
     end if
     call hsd_get_table(node, "BornOffset", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, input%bornOffset)
     block
       real(dp), allocatable :: tmpObc(:)
@@ -234,7 +234,7 @@ contains
 
     call hsd_get_or_set(node, "Cutoff", input%rCutoff, 35.0_dp * AA__Bohr)
     call hsd_get_table(node, "Cutoff", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
     call hsd_get_table(node, "SASA", value1, stat, auto_wrap=.true.)
@@ -336,13 +336,13 @@ contains
     ! shift value for the free energy (usually zero)
     call hsd_get_or_set(node, "FreeEnergyShift", shift, 0.0_dp)
     call hsd_get_table(node, "FreeEnergyShift", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, energyUnits, field, shift)
 
     ! temperature, influence depends on the reference state
     call hsd_get_or_set(node, "Temperature", temperature, ambientTemperature)
     call hsd_get_table(node, "Temperature", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, energyUnits, field, temperature)
 
     call readReferenceState(node, solvent, temperature, shift, input%freeEnergyShift)
@@ -446,12 +446,12 @@ contains
       if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'ProbeRadius'")
     end if
     call hsd_get_table(node, "ProbeRadius", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, input%probeRad)
 
     call hsd_get_or_set(node, "Smoothing", input%smoothingPar, 0.3_dp*AA__Bohr)
     call hsd_get_table(node, "Smoothing", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, input%smoothingPar)
 
     call hsd_get_or_set(node, "Tolerance", input%tolerance, 1.0e-6_dp)
@@ -495,7 +495,7 @@ contains
 
     call hsd_get_or_set(node, "Offset", input%sOffset, 2.0_dp * AA__Bohr)
     call hsd_get_table(node, "Offset", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, input%sOffset)
 
   end subroutine readSolvSASA
@@ -520,7 +520,7 @@ contains
 
     call hsd_get_or_set(node, "Alpha", input%alpha, 2.474_dp/AA__Bohr)
     call hsd_get_table(node, "Alpha", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, inverseLengthUnits, field, input%alpha)
 
     allocate(input%atomicRad(geo%nSpecies))
@@ -555,7 +555,7 @@ contains
 
     call hsd_get_or_set(node, "Cutoff", input%rCutoff, 30.0_dp)
     call hsd_get_table(node, "Cutoff", field, stat, auto_wrap=.true.)
-    call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+    call getModifier(field, "", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
   end subroutine readCM5
@@ -605,12 +605,12 @@ contains
       call hsd_get(value1, "MolecularMass", solvent%molecularMass, stat=stat)
       if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'MolecularMass'")
       call hsd_get_table(value1, "MolecularMass", field, stat, auto_wrap=.true.)
-      call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+      call getModifier(field, "", modifier)
       call convertUnitHsd(modifier, massUnits, field, solvent%molecularMass)
       call hsd_get(value1, "Density", solvent%density, stat=stat)
       if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Density'")
       call hsd_get_table(value1, "Density", field, stat, auto_wrap=.true.)
-      call hsd_get_attrib(field, "modifier", modifier, stat=stat)
+      call getModifier(field, "", modifier)
       call convertUnitHsd(modifier, massDensityUnits, field, solvent%density)
     end select
 
