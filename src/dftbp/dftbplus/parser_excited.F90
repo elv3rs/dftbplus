@@ -16,9 +16,9 @@ module dftbp_dftbplus_parser_excited
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_arpack, only : withArpack
   use dftbp_io_charmanip, only : tolower, unquote
-  use hsd, only : hsd_rename_child, hsd_get_or_set
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_table, hsd_set,&
+      & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getNodeName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_timedep_linresptypes, only : linRespSolverTypes
@@ -47,9 +47,10 @@ contains
     type(hsd_table), pointer :: child2, child3
     type(hsd_table), pointer :: value
     character(len=:), allocatable :: buffer, modifier
+    integer :: stat
 
     ! Linear response stuff
-    call getChild(node, "Casida", child, requested=.false.)
+    call hsd_get_table(node, "Casida", child, stat, auto_wrap=.true.)
 
     if (associated(child)) then
 
@@ -59,7 +60,10 @@ contains
       if (ctrl%tSpin) then
         ctrl%lrespini%sym = ' '
       else
-        call getChildValue(child, "Symmetry", buffer, child=child2)
+        call hsd_get(child, "Symmetry", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'Symmetry'")
+        call hsd_get_table(child, "Symmetry", child2, stat)
+        if (.not. associated(child2)) child2 => child
         select case (unquote(buffer))
         case ("Singlet" , "singlet")
           ctrl%lrespini%sym = 'S'
@@ -73,14 +77,16 @@ contains
         end select
       end if
 
-      call getChildValue(child, "NrOfExcitations", ctrl%lrespini%nexc)
+      call hsd_get(child, "NrOfExcitations", ctrl%lrespini%nexc, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'NrOfExcitations'")
 
-      call getChild(child, "StateOfInterest", child2, requested=.false.)
+      call hsd_get_table(child, "StateOfInterest", child2, stat, auto_wrap=.true.)
       if (.not. associated(child2)) then
         ctrl%lrespini%nstat = 0
-        call setChildValue(child, "StateOfInterest", 0)
+        call hsd_set(child, "StateOfInterest", 0)
       else
-        call getChildValue(child2, "", buffer)
+        call hsd_get(child2, "#text", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
         if (tolower(unquote(buffer)) == "brightest") then
           if (ctrl%lrespini%sym /= "S" .or. ctrl%tSpin) then
             call dftbp_error(child2, "Brightest mode only allowed for spin unpolarised singlet&
@@ -88,7 +94,8 @@ contains
           end if
           ctrl%lrespini%nstat = -1
         else
-          call getChildValue(child2, "", ctrl%lrespini%nstat)
+          call hsd_get(child2, "#text", ctrl%lrespini%nstat, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
           if (ctrl%lrespini%nstat > ctrl%lrespini%nexc) then
             call dftbp_error(child2, "Invalid value, must be within range of NrOfExcitations")
           elseif (ctrl%lrespini%sym == "B" .and. ctrl%lrespini%nstat /= 0) then
@@ -98,48 +105,56 @@ contains
         end if
       end if
 
-      call getChildValue(child, "EnergyWindow", ctrl%lrespini%energyWindow, 0.0_dp, &
-          & modifier=modifier, child=child2)
+      call hsd_get_or_set(child, "EnergyWindow", ctrl%lrespini%energyWindow, 0.0_dp, child=child2)
+      call hsd_get_attrib(child, "EnergyWindow", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
       ctrl%lrespini%tEnergyWindow = ctrl%lrespini%energyWindow /= 0.0_dp
       call convertUnitHsd(modifier, energyUnits, child2, ctrl%lrespini%energyWindow)
-      call getChildValue(child, "OscillatorWindow", ctrl%lrespini%oscillatorWindow, 0.0_dp, &
-          & modifier=modifier,  child=child2)
+      call hsd_get_or_set(child, "OscillatorWindow", ctrl%lrespini%oscillatorWindow, 0.0_dp,&
+          & child=child2)
+      call hsd_get_attrib(child, "OscillatorWindow", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
       ctrl%lrespini%tOscillatorWindow = ctrl%lrespini%oscillatorWindow /= 0.0_dp
       call convertUnitHsd(modifier, dipoleUnits, child2, ctrl%lrespini%oscillatorWindow)
-      call getChildValue(child, "CacheCharges", ctrl%lrespini%tCacheCharges, default=.true.)
-      call getChildValue(child, "WriteMulliken", ctrl%lrespini%tMulliken, default=.false.)
-      call getChildValue(child, "WriteCoefficients", ctrl%lrespini%tCoeffs, default=.false.)
+      call hsd_get_or_set(child, "CacheCharges", ctrl%lrespini%tCacheCharges, .true.)
+      call hsd_get_or_set(child, "WriteMulliken", ctrl%lrespini%tMulliken, .false.)
+      call hsd_get_or_set(child, "WriteCoefficients", ctrl%lrespini%tCoeffs, .false.)
       ctrl%lrespini%tGrndState = .false.
       if (ctrl%lrespini%tCoeffs) then
         call hsd_get_or_set(child, "TotalStateCoeffs", ctrl%lrespini%tGrndState, .false.)
       end if
       call hsd_get_or_set(child, "WriteEigenvectors", ctrl%lrespini%tPrintEigVecs, .false.)
       call hsd_get_or_set(child, "WriteDensityMatrix", ctrl%lrespini%tWriteDensityMatrix, .false.)
-      call getChildValue(child, "WriteXplusY", ctrl%lrespini%tXplusY, default=.false.)
-      call getChildValue(child, "StateCouplings", ctrl%lrespini%indNACouplings, default=[0, 0])
+      call hsd_get_or_set(child, "WriteXplusY", ctrl%lrespini%tXplusY, .false.)
+      block
+        integer, allocatable :: tmpI(:)
+        call hsd_get_or_set(child, "StateCouplings", tmpI, [0, 0])
+        ctrl%lrespini%indNACouplings(:min(size(tmpI),2)) = tmpI(:min(size(tmpI),2))
+      end block
       if (all(ctrl%lrespini%indNACouplings == 0)) then
         ctrl%lrespini%tNaCoupling = .false.
       else
         ctrl%lrespini%tNaCoupling = .true.
       end if
-      call getChildValue(child, "WriteSPTransitions", ctrl%lrespini%tSPTrans, default=.false.)
-      call getChildValue(child, "WriteTransitions", ctrl%lrespini%tTrans, default=.false.)
-      call getChildValue(child, "WriteTransitionDipole", ctrl%lrespini%tTradip, default=.false.)
-      call getChildValue(child, "WriteTransitionCharges", ctrl%lrespini%tTransQ, default=.false.)
+      call hsd_get_or_set(child, "WriteSPTransitions", ctrl%lrespini%tSPTrans, .false.)
+      call hsd_get_or_set(child, "WriteTransitions", ctrl%lrespini%tTrans, .false.)
+      call hsd_get_or_set(child, "WriteTransitionDipole", ctrl%lrespini%tTradip, .false.)
+      call hsd_get_or_set(child, "WriteTransitionCharges", ctrl%lrespini%tTransQ, .false.)
       ctrl%lrespini%iLinRespSolver = linRespSolverTypes%None
 
       call hsd_rename_child(child, "Diagonalizer", "Diagonaliser")
-      call getChildValue(child, "Diagonaliser", child2, allowEmptyValue=.true.)
+      call hsd_get_table(child, "Diagonaliser", child3, stat, auto_wrap=.true.)
+      if (.not. associated(child3)) call dftbp_error(child, "Missing required block: 'Diagonaliser'")
+      call hsd_get_choice(child3, "", buffer, child2, stat)
       if (associated(child2)) then
-        call getNodeName(child2, buffer)
         select case(buffer)
         case ("arpack")
           if (.not. withArpack) then
             call dftbp_error(child2, 'This DFTB+ binary has been compiled without support for&
                 & linear response calculations using the ARPACK/ngARPACK library.')
           end if
-          call getChildValue(child2, "WriteStatusArnoldi", ctrl%lrespini%tArnoldi, default=.false.)
-          call getChildValue(child2, "TestArnoldi", ctrl%lrespini%tDiagnoseArnoldi, default=.false.)
+          call hsd_get_or_set(child2, "WriteStatusArnoldi", ctrl%lrespini%tArnoldi, .false.)
+          call hsd_get_or_set(child2, "TestArnoldi", ctrl%lrespini%tDiagnoseArnoldi, .false.)
           ctrl%lrespini%iLinRespSolver = linRespSolverTypes%Arpack
         case ("stratmann")
           ctrl%lrespini%iLinRespSolver = linRespSolverTypes%Stratmann
@@ -152,15 +167,15 @@ contains
       end if
 
       call hsd_rename_child(child, "OptimizerCI", "OptimiserCI")
-      call getChild(child, "OptimiserCI", child2, requested=.false.)
-      if (associated(child2)) then
-        call getChildValue(child, "OptimiserCI", child2, child=child3)
-        call getNodeName(child2, buffer)
+      call hsd_get_table(child, "OptimiserCI", child3, stat, auto_wrap=.true.)
+      if (associated(child3)) then
+        call hsd_get_choice(child3, "", buffer, child2, stat)
         select case(buffer)
         case ("bearpark")
           ctrl%lrespini%isCIopt = .true.
-          call getChildValue(child2, "EnergyShift", ctrl%lrespini%energyShiftCI,&
-              & modifier=modifier, default=0.0_dp)
+          call hsd_get_or_set(child2, "EnergyShift", ctrl%lrespini%energyShiftCI, 0.0_dp)
+          call hsd_get_attrib(child2, "EnergyShift", modifier, stat)
+          if (stat /= HSD_STAT_OK) modifier = ""
           call convertUnitHsd(modifier, energyUnits, child, ctrl%lrespini%energyShiftCI)
         case ("")
           call dftbp_error(child2, "Missing choice of CI optimiser.")
@@ -172,13 +187,13 @@ contains
       end if
 
       if (ctrl%tForces .or. ctrl%tPrintForces) then
-        call getChildValue(child, "ExcitedStateForces", ctrl%tCasidaForces, default=.true.)
+        call hsd_get_or_set(child, "ExcitedStateForces", ctrl%tCasidaForces, .true.)
       end if
 
     end if
 
     !pp-RPA
-    call getChild(node, "PP-RPA", child, requested=.false.)
+    call hsd_get_table(node, "PP-RPA", child, stat, auto_wrap=.true.)
 
     if (associated(child)) then
 
@@ -187,7 +202,10 @@ contains
       if (ctrl%tSpin) then
         ctrl%pprpa%sym = ' '
       else
-        call getChildValue(child, "Symmetry", buffer, child=child2)
+        call hsd_get(child, "Symmetry", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'Symmetry'")
+        call hsd_get_table(child, "Symmetry", child2, stat)
+        if (.not. associated(child2)) child2 => child
         select case (unquote(buffer))
         case ("Singlet" , "singlet")
           ctrl%pprpa%sym = 'S'
@@ -201,21 +219,24 @@ contains
         end select
       end if
 
-      call getChildValue(child, "NrOfExcitations", ctrl%pprpa%nexc)
+      call hsd_get(child, "NrOfExcitations", ctrl%pprpa%nexc, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'NrOfExcitations'")
 
-      call getChildValue(child, "HHubbard", value, child=child2)
+      call hsd_get_table(child, "HHubbard", child2, stat, auto_wrap=.true.)
+      if (.not. associated(child2)) call dftbp_error(child, "Missing required block: 'HHubbard'")
       allocate(ctrl%pprpa%hhubbard(geo%nSpecies))
       call readSpeciesList(child2, geo%speciesNames, ctrl%pprpa%hhubbard)
 
-      call getChildValue(child, "TammDancoff", ctrl%pprpa%tTDA, default=.false.)
+      call hsd_get_or_set(child, "TammDancoff", ctrl%pprpa%tTDA, .false.)
 
-      call getChild(child, "NrOfVirtualStates", child2, requested=.false.)
+      call hsd_get_table(child, "NrOfVirtualStates", child2, stat, auto_wrap=.true.)
       if (.not. associated(child2)) then
         ctrl%pprpa%nvirtual = 0
         ctrl%pprpa%tConstVir = .false.
-        call setChildValue(child, "NrOfVirtualStates", 0)
+        call hsd_set(child, "NrOfVirtualStates", 0)
       else
-        call getChildValue(child2, "", ctrl%pprpa%nvirtual)
+        call hsd_get(child2, "#text", ctrl%pprpa%nvirtual, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
         ctrl%pprpa%tConstVir = .true.
       end if
 

@@ -11,10 +11,9 @@
 !> Subroutines for reading customised Hubbard and reference occupation parameters.
 module dftbp_dftbplus_parser_customisation
   use dftbp_common_accuracy, only : dp, sc
-  use dftbp_io_hsdutils, only : &
-      & getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices
-  use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables
+  use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set,&
+      & hsd_get_table, HSD_STAT_OK
   use hsd_data, only : hsd_table
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_orbitals, only : getShellnames
@@ -49,21 +48,29 @@ contains
 
     type(hsd_table), pointer :: child, child2
     integer :: iSp1
+    integer :: stat
 
     call hsd_rename_child(node, "CustomizedHubbards", "CustomisedHubbards")
-    call getChild(node, "CustomisedHubbards", child, requested=.false.)
+    call hsd_get_table(node, "CustomisedHubbards", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(hubbU(orb%mShell, geo%nSpecies))
       hubbU(:,:) = 0.0_dp
       do iSp1 = 1, geo%nSpecies
-        call getChild(child, geo%speciesNames(iSp1), child2, requested=.false.)
+        call hsd_get_table(child, geo%speciesNames(iSp1), child2, stat, auto_wrap=.true.)
         if (.not. associated(child2)) then
           cycle
         end if
         if (tShellResolvedScc) then
-          call getChildValue(child2, "", hubbU(:orb%nShell(iSp1), iSp1))
+          block
+            real(dp), allocatable :: tmpR(:)
+            call hsd_get(child2, "#text", tmpR, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required values")
+            hubbU(:min(size(tmpR),orb%nShell(iSp1)), iSp1) = &
+                & tmpR(:min(size(tmpR),orb%nShell(iSp1)))
+          end block
         else
-          call getChildValue(child2, "", hubbU(1, iSp1))
+          call hsd_get(child2, "#text", hubbU(1, iSp1), stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
           hubbU(:orb%nShell(iSp1), iSp1) = hubbU(1, iSp1)
         end if
       end do
@@ -99,9 +106,10 @@ contains
     integer :: nCustomOcc, iCustomOcc, iShell, iSpecies, nAtom
     character(sc), allocatable :: shellNamesTmp(:)
     logical, allocatable :: atomOverriden(:)
+    integer :: stat
 
     call hsd_rename_child(root, "CustomizedOccupations", "CustomisedOccupations")
-    call getChild(root, "CustomisedOccupations", container, requested=.false.)
+    call hsd_get_table(root, "CustomisedOccupations", container, stat, auto_wrap=.true.)
     if (.not. associated(container)) then
       return
     end if
@@ -117,7 +125,10 @@ contains
 
     do iCustomOcc = 1, nCustomOcc
       node => nodes(iCustomOcc)%ptr
-      call getChildValue(node, "Atoms", buffer, child=child, multiple=.true.)
+      call hsd_get(node, "Atoms", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'Atoms'")
+      call hsd_get_table(node, "Atoms", child, stat)
+      if (.not. associated(child)) child => node
       call getSelectedAtomIndices(child, buffer, geo%speciesNames, geo%species,&
           & iAtInRegion(iCustomOcc)%data)
       if (any(atomOverriden(iAtInRegion(iCustomOcc)%data))) then
@@ -131,8 +142,8 @@ contains
       end if
       call getShellNames(iSpecies, orb, shellNamesTmp)
       do iShell = 1, orb%nShell(iSpecies)
-          call getChildValue(node, shellNamesTmp(iShell), customOcc(iShell, iCustomOcc), &
-            & default=referenceOcc(iShell, iSpecies))
+          call hsd_get_or_set(node, shellNamesTmp(iShell), customOcc(iShell, iCustomOcc), &
+            & referenceOcc(iShell, iSpecies))
       end do
       deallocate(shellNamesTmp)
     end do

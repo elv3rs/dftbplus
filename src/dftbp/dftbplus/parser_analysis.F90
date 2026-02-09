@@ -10,9 +10,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib,&
-      & hsd_table_ptr, hsd_get_child_tables
-  use dftbp_io_hsdutils, only : &
-      & getChild, getChildValue, setChildValue
+      & hsd_table_ptr, hsd_get_child_tables, hsd_get_table, hsd_set, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getNodeName, getNodeName2,&
       & hasInlineData
   use dftbp_io_message, only : error
@@ -80,10 +78,13 @@ contains
 
     if (tHaveEigenDecomposition) then
 
-      call getChildValue(node, "ProjectStates", val, "", child=child, allowEmptyValue=.true.,&
-          & list=.true.)
-      call hsd_get_child_tables(child, "Region", children)
-      nReg = size(children)
+      call hsd_get_table(node, "ProjectStates", child, stat, auto_wrap=.true.)
+      if (associated(child)) then
+        call hsd_get_child_tables(child, "Region", children)
+        nReg = size(children)
+      else
+        nReg = 0
+      end if
       ctrl%tProjEigenvecs = (nReg > 0)
       if (ctrl%tProjEigenvecs) then
         allocate(ctrl%tShellResInRegion(nReg))
@@ -92,10 +93,13 @@ contains
         call init(ctrl%iAtInRegion)
         do iReg = 1, nReg
           child2 => children(iReg)%ptr
-          call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
+          call hsd_get(child2, "Atoms", buffer, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Atoms'")
+          call hsd_get_table(child2, "Atoms", child3, stat)
+          if (.not. associated(child3)) child3 => child2
           call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
           call append(ctrl%iAtInRegion, pTmpI1)
-          call getChildValue(child2, "ShellResolved", ctrl%tShellResInRegion(iReg), .false.,&
+          call hsd_get_or_set(child2, "ShellResolved", ctrl%tShellResInRegion(iReg), .false.,&
               & child=child3)
           if (ctrl%tShellResInRegion(iReg)) then
             if (.not. all(geo%species(pTmpI1) == geo%species(pTmpI1(1)))) then
@@ -103,7 +107,7 @@ contains
                   &regions where all atoms belong to the same species")
             end if
           end if
-          call getChildValue(child2, "OrbitalResolved", &
+          call hsd_get_or_set(child2, "OrbitalResolved", &
               & ctrl%tOrbResInRegion(iReg), .false., child=child3)
           if (ctrl%tOrbResInRegion(iReg)) then
             if (.not. all(geo%species(pTmpI1) == geo%species(pTmpI1(1)))) then
@@ -119,10 +123,10 @@ contains
       end if
 
       call hsd_rename_child(node, "Localize", "Localise")
-      call getChild(node, "Localise", child=val, requested=.false.)
+      call hsd_get_table(node, "Localise", val, stat, auto_wrap=.true.)
       if (associated(val)) then
         ctrl%tLocalise = .true.
-        call getChild(val, "PipekMezey", child=child2, requested=.false.)
+        call hsd_get_table(val, "PipekMezey", child2, stat, auto_wrap=.true.)
         if (associated(child2)) then
           allocate(ctrl%pipekMezeyInp)
           associate(inp => ctrl%pipekMezeyInp)
@@ -139,7 +143,7 @@ contains
                 else
                   allocate(inp%sparseTols(4))
                   inp%sparseTols = [0.1_dp, 0.01_dp, 1.0E-6_dp, 1.0E-12_dp]
-                  call setChildValue(child2, "SparseTolerances", inp%sparseTols)
+                  call hsd_set(child2, "SparseTolerances", inp%sparseTols)
                 end if
               end if
             end if
@@ -164,7 +168,7 @@ contains
 
       ! electric field polarisability of system
       call hsd_rename_child(node, "Polarizability", "Polarisability")
-      call getChild(node, "Polarisability", child=child, requested=.false.)
+      call hsd_get_table(node, "Polarisability", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         if (.not.allocated(ctrl%perturbInp)) allocate(ctrl%perturbInp)
         ctrl%perturbInp%isEPerturb = .true.
@@ -172,7 +176,7 @@ contains
       end if
 
       ! Perturbation with respect to on-site potentials (related to Fukui charges)
-      call getChild(node, "ResponseKernel", child=child, requested=.false.)
+      call hsd_get_table(node, "ResponseKernel", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         if (.not.allocated(ctrl%perturbInp)) allocate(ctrl%perturbInp)
         ctrl%perturbInp%isRespKernelPert = .true.
@@ -185,7 +189,7 @@ contains
       end if
 
       ! Perturbation with respect to atom positions
-      call getChild(node, "CoordDerivatives", child=child, requested=.false.)
+      call hsd_get_table(node, "CoordDerivatives", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         if (.not.allocated(ctrl%perturbInp)) allocate(ctrl%perturbInp)
       #:if WITH_MPI
@@ -197,8 +201,10 @@ contains
       end if
 
       if (allocated(ctrl%perturbInp)) then
-        call getChildValue(node, "PerturbDegenTol", ctrl%perturbInp%tolDegenDFTBPT, 1.0E-9_dp,&
-            & modifier=modifier, child=child)
+        call hsd_get_or_set(node, "PerturbDegenTol", ctrl%perturbInp%tolDegenDFTBPT, 1.0E-9_dp,&
+            & child=child)
+        call hsd_get_attrib(node, "PerturbDegenTol", modifier, stat)
+        if (stat /= HSD_STAT_OK) modifier = ""
         call convertUnitHsd(modifier, energyUnits, child, ctrl%perturbInp%tolDegenDFTBPT)
         if (ctrl%perturbInp%tolDegenDFTBPT < epsilon(0.0_dp)) then
           call dftbp_error(child, "Perturbation degeneracy tolerance must be above machine&
@@ -245,11 +251,11 @@ contains
 
       call hsd_get_or_set(node, "MullikenAnalysis", ctrl%tPrintMulliken, .true.)
       if (ctrl%tPrintMulliken) then
-        call getChildValue(node, "WriteNetCharges", ctrl%tPrintNetAtomCharges, default=.false.)
+        call hsd_get_or_set(node, "WriteNetCharges", ctrl%tPrintNetAtomCharges, .false.)
         if (ctrl%tPrintNetAtomCharges) then
           ctrl%tNetAtomCharges = .true.
         end if
-        call getChild(node, "CM5", child, requested=.false.)
+        call hsd_get_table(node, "CM5", child, stat, auto_wrap=.true.)
         if (associated(child)) then
           allocate(ctrl%cm5Input)
           call readCM5(child, ctrl%cm5Input, geo)
@@ -258,7 +264,7 @@ contains
       call hsd_get_or_set(node, "AtomResolvedEnergies", ctrl%tAtomicEnergy, .false.)
 
       if (allocated(ctrl%solvInp)) then
-        call getChildValue(node, "writeCosmoFile", ctrl%tWriteCosmoFile, &
+        call hsd_get_or_set(node, "writeCosmoFile", ctrl%tWriteCosmoFile, &
             & allocated(ctrl%solvInp%cosmoInp), child=child)
         if (ctrl%tWriteCosmoFile .and. .not.allocated(ctrl%solvInp%cosmoInp)) then
           call dftbp_error(child, "Cosmo file can only be written for Cosmo calculations")
@@ -277,7 +283,7 @@ contains
 
 
   #:if WITH_TRANSPORT
-    call getChild(node, "TunnelingAndDOS", child, requested=.false.)
+    call hsd_get_table(node, "TunnelingAndDOS", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       if (.not.transpar%defined) then
         call error("Block TunnelingAndDos requires Transport block.")
@@ -316,6 +322,7 @@ contains
     integer :: nFreq, iFreq, jFreq
     real(dp) :: tmp3R(3)
     logical :: isStatic
+    integer :: stat
 
     call hsd_get_or_set(node, "Static", isStatic, .true.)
     if (isStatic) then
@@ -324,8 +331,10 @@ contains
       frequencies(:) = 0.0_dp
     end if
 
-    call getChild(node, "Frequencies", child=child, modifier=modifier, requested=.false.)
+    call hsd_get_table(node, "Frequencies", child, stat, auto_wrap=.true.)
     if (associated(child)) then
+      call hsd_get_attrib(node, "Frequencies", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
       call hsd_get(node, "Frequencies", tmpFreqs)
       nFreq = size(tmpFreqs)
       if (nFreq > 0) then
@@ -343,8 +352,10 @@ contains
       end if
     end if
 
-    call getChild(node, "FrequencyRange", child=child, modifier=modifier, requested=.false.)
+    call hsd_get_table(node, "FrequencyRange", child, stat, auto_wrap=.true.)
     if (associated(child)) then
+      call hsd_get_attrib(node, "FrequencyRange", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
       call hsd_get(node, "FrequencyRange", tmpFreqs)
       if (size(tmpFreqs) == 3) then
         tmp3R = tmpFreqs
@@ -441,8 +452,9 @@ contains
     type(hsd_table), pointer :: child, child2, child3
     character(len=:), allocatable :: buffer, modifier
     integer :: nMatRows, nMatCols
+    integer :: stat
 
-    call getChild(node, "ElectrostaticPotential", child, requested=.false.)
+    call hsd_get_table(node, "ElectrostaticPotential", child, stat, auto_wrap=.true.)
     if (.not. associated(child)) then
       return
     end if
@@ -458,23 +470,27 @@ contains
       call hsd_get_or_set(child, "AppendFile", ctrl%elStatPotentialsInp%tAppendEsp, .false.)
     end if
     ! discrete points
-    call getChildValue(child, "Points", child2, "", child=child3, modifier=modifier,&
-        & allowEmptyValue=.true.)
-    call getNodeName2(child2, buffer)
-    if (buffer /= "" .or. hasInlineData(child3)) then
+    call hsd_get_table(child, "Points", child3, stat, auto_wrap=.true.)
+    call hsd_get_attrib(child, "Points", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    if (associated(child3)) then
       call hsd_get_matrix(child, "Points", ctrl%elStatPotentialsInp%espGrid, nMatRows, nMatCols,&
-          & order="column-major")
-      if (geo%tPeriodic .and. (modifier == "F" .or. modifier == "f")) then
-        ctrl%elStatPotentialsInp%espGrid = matmul(geo%latVecs, ctrl%elStatPotentialsInp%espGrid)
-      else
-        call convertUnitHsd(modifier, lengthUnits, child3,&
-            & ctrl%elStatPotentialsInp%espGrid)
+          & order="column-major", stat=stat)
+      if (stat == HSD_STAT_OK .and. nMatRows > 0 .and. nMatCols > 0) then
+        if (geo%tPeriodic .and. (modifier == "F" .or. modifier == "f")) then
+          ctrl%elStatPotentialsInp%espGrid = matmul(geo%latVecs, ctrl%elStatPotentialsInp%espGrid)
+        else
+          call convertUnitHsd(modifier, lengthUnits, child3,&
+              & ctrl%elStatPotentialsInp%espGrid)
+        end if
       end if
     end if
 
     ! grid specification for points instead
-    call getChild(child, "Grid", child=child2, modifier=modifier, requested=.false.)
+    call hsd_get_table(child, "Grid", child2, stat, auto_wrap=.true.)
     if (associated(child2)) then
+      call hsd_get_attrib(child, "Grid", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
       if (allocated(ctrl%elStatPotentialsInp%espGrid)) then
         call error("Both grid and point specification not both currently possible")
       end if
@@ -493,8 +509,10 @@ contains
     if (.not.allocated(ctrl%elStatPotentialsInp%espGrid)) then
       call dftbp_error(child,"Either a grid or set of points must be specified")
     end if
-    call getChildValue(child, "Softening", ctrl%elStatPotentialsInp%softenESP, 1.0E-6_dp,&
-        & modifier=modifier, child=child2)
+    call hsd_get_or_set(child, "Softening", ctrl%elStatPotentialsInp%softenESP, 1.0E-6_dp,&
+        & child=child2)
+    call hsd_get_attrib(child, "Softening", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
     call convertUnitHsd(modifier, lengthUnits, child2, ctrl%elStatPotentialsInp%softenEsp)
 
   end subroutine readElectrostaticPotential
@@ -529,6 +547,7 @@ contains
     integer :: i3Tmp(3), iPt, ii, jj, kk
     logical :: tPeriodic
     real(dp) :: axes_(3,3), r33Tmp(3,3)
+    integer :: stat
 
     tPeriodic = present(latvecs)
 
@@ -537,9 +556,26 @@ contains
           & geometries")
     end if
 
-    call getChildValue(node, "Spacing", r3Tmp, child=child)
-    call getChildValue(node, "Origin", r3Tmpb, child=child)
-    call getChildValue(node, "GridPoints", i3Tmp, child=child)
+    block
+      real(dp), allocatable :: tmpR(:)
+      call hsd_get(node, "Spacing", tmpR, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required array: 'Spacing'")
+      r3Tmp(:min(size(tmpR),3)) = tmpR(:min(size(tmpR),3))
+    end block
+    block
+      real(dp), allocatable :: tmpR(:)
+      call hsd_get(node, "Origin", tmpR, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required array: 'Origin'")
+      r3Tmpb(:min(size(tmpR),3)) = tmpR(:min(size(tmpR),3))
+    end block
+    block
+      integer, allocatable :: tmpI(:)
+      call hsd_get(node, "GridPoints", tmpI, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required array: 'GridPoints'")
+      i3Tmp(:min(size(tmpI),3)) = tmpI(:min(size(tmpI),3))
+    end block
+    call hsd_get_table(node, "GridPoints", child, stat)
+    if (.not. associated(child)) child => node
     if (any(i3Tmp < 1)) then
       call dftbp_error(child,"Grid must be at least 1x1x1")
     end if
@@ -573,7 +609,22 @@ contains
     ! transformation matrix on directions, could use a 4x4 homogeneous coordinate transform instead
     if (.not.(modifier == "F" .or. modifier == "f") .or. .not.tPeriodic) then
       r33Tmp = reshape([1,0,0,0,1,0,0,0,1],[3,3])
-      call getChildValue(node, "Directions", axes_, r33Tmp, child=child)
+      block
+        real(dp), allocatable :: tmpMat(:,:)
+        integer :: nRows, nCols, nr, nc
+        call hsd_get_matrix(node, "Directions", tmpMat, nRows, nCols, stat=stat, &
+            & order="column-major")
+        if (stat /= HSD_STAT_OK) then
+          axes_ = r33Tmp
+          call hsd_set(node, "Directions", reshape(r33Tmp, [size(r33Tmp)]))
+        else
+          nr = min(size(tmpMat, 1), size(axes_, 1))
+          nc = min(size(tmpMat, 2), size(axes_, 2))
+          axes_(:nr, :nc) = tmpMat(:nr, :nc)
+        end if
+      end block
+      call hsd_get_table(node, "Directions", child, stat)
+      if (.not. associated(child)) child => node
       if (abs(determinant33(axes_)) < epsilon(1.0_dp)) then
         call dftbp_error(child, "Dependent axis directions")
       end if
