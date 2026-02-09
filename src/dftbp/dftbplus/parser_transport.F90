@@ -18,15 +18,14 @@ module dftbp_dftbplus_parser_transport
   use dftbp_io_hsdutils, only : hsd_child_list, &
       & getChild, getChildren, getChildValue, setChild, setChildValue, &
       & getLength, getItem1, destroyNodeList
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListInt, &
-      & TListReal, TListString
+
   use dftbp_type_typegeometry, only : reduce, setLattice, TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
 #:if WITH_TRANSPORT
@@ -234,19 +233,19 @@ contains
     logical, optional, intent(in) :: check
 
 
-    type(TListInt) :: li
+    integer, allocatable :: intArr(:)
+    integer :: stat
     logical :: checkidx
 
     checkidx = .true.
     if (present(check)) checkidx = check
 
     if (associated(pnode)) then
-        call init(li)
-        call getChildValue(pnode, "", li)
-        npl = len(li)
+        call hsd_get(pnode, "#text", intArr, stat=stat)
+        if (stat /= 0) call dftbp_error(pnode, "Error reading first layer atoms")
+        npl = size(intArr)
         allocate(pls(npl))
-        call asArray(li, pls)
-        call destruct(li)
+        pls(:) = intArr
         if (checkidx) then
           if (any(pls < idxdevice(1) .or. &
                   pls > idxdevice(2))) then
@@ -285,24 +284,25 @@ contains
     character(len=:), allocatable :: buffer, modifier
     logical :: realAxisConv, equilibrium
 
-    type(TListReal) :: fermiBuffer
+    real(dp), allocatable :: realArr(:)
+    integer :: stat
 
     greendens%defined = .true.
 
     if (.not. transpar%defined) then
       !! Fermi level: in case of collinear spin we accept two values
       !! (up and down)
-      call init(fermiBuffer)
-      call getChildValue(pNode, "FermiLevel", fermiBuffer, modifier=modifier)
-      if ( len(fermiBuffer) .eq. 1) then
-        call asArray(fermiBuffer, greendens%oneFermi)
-        greendens%oneFermi(2) = greendens%oneFermi(1)
-      else if ( len(fermiBuffer) .eq. 2) then
-        call asArray(fermiBuffer, greendens%oneFermi)
+      call hsd_get(pNode, "FermiLevel", realArr, stat=stat)
+      if (stat /= 0) call dftbp_error(pNode, "Error reading FermiLevel")
+      call hsd_get_attrib(pNode, "FermiLevel", modifier)
+      if (size(realArr) == 1) then
+        greendens%oneFermi(1) = realArr(1)
+        greendens%oneFermi(2) = realArr(1)
+      else if (size(realArr) == 2) then
+        greendens%oneFermi(1:2) = realArr(1:2)
       else
         call dftbp_error(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
       end if
-      call destruct(fermiBuffer)
       call convertUnitHsd(modifier, energyUnits, pNode, greendens%oneFermi)
 
       call getChild(pNode, "FirstLayerAtoms", pTmp, requested=.false.)
@@ -627,8 +627,8 @@ contains
 
     integer :: bctype, iBC
     integer :: faceBC, oppositeBC
-    integer :: ii
-    type(TListString) :: lStr
+    integer :: ii, stat
+    character(:), allocatable :: strArr(:)
     type(hsd_table), pointer :: pNode2, pChild
     character(lc) :: strTmp
     character(1), parameter :: sDirs(3) = ['x','y','z']
@@ -639,13 +639,14 @@ contains
       bctype = availableConditions(iBC)
       call getChild(pNode, trim(bcPoissonNames(bctype)), pNode2, requested=.false.)
       if (associated(pNode2)) then
-        call init(lStr)
-        call getChildValue(pNode2, "boundaries", lStr, child=pChild)
-        if (len(lStr).gt.6) then
+        call hsd_get(pNode2, "boundaries", strArr, stat=stat)
+        if (stat /= 0) call dftbp_error(pNode2, "Error reading boundaries")
+        call getChild(pNode2, "boundaries", pChild)
+        if (size(strArr) > 6) then
           call dftbp_error(pChild,"A maximum of 6 boundaries (or fewer) can be set")
         end if
-        do ii = 1, len(lStr)
-          call get(lStr, strTmp, ii)
+        do ii = 1, size(strArr)
+          strTmp = strArr(ii)
           select case(trim(strTmp))
           case("x")
             overrideBC(1) = bctype
@@ -670,7 +671,6 @@ contains
             overrideBC(6) = bctype
           end select
         end do
-        call destruct(lStr)
       end if
     end do
 
@@ -1061,7 +1061,8 @@ contains
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     logical, allocatable :: tShellResInRegion(:)
     character(lc), allocatable :: regionLabelPrefixes(:)
-    type(TListReal) :: temperature
+    real(dp), allocatable :: realArr(:)
+    integer :: stat
 
     tundos%defined = .true.
 
@@ -1076,13 +1077,12 @@ contains
     allocate(tundos%kbT(ncont))
     call getChild(root, "ContactTemperature", pTmp, modifier=modifier, requested=.false.)
     if (associated(pTmp)) then
-      call init(temperature)
-      call getChildValue(pTmp, "", temperature)
-      if (len(temperature) .ne. ncont) then
+      call hsd_get(pTmp, "#text", realArr, stat=stat)
+      if (stat /= 0) call dftbp_error(root, "Error reading ContactTemperature")
+      if (size(realArr) /= ncont) then
         call dftbp_error(root, "ContactTemperature does not match the number of contacts")
       end if
-      call asArray(temperature, tundos%kbT)
-      call destruct(temperature)
+      tundos%kbT(:) = realArr
       call convertUnitHsd(modifier, energyUnits, pTmp, tundos%kbT)
     else
       do ii = 1, ncont
@@ -1201,10 +1201,10 @@ contains
     !> Tolerance to distortion of contact vectors
     real(dp), intent(out) :: contactLayerTol
 
-    integer :: ii
+    integer :: ii, stat
     type(hsd_table), pointer :: field, pNode, pTmp, child1, child2
     character(len=:), allocatable :: buffer, modifier
-    type(TListReal) :: fermiBuffer
+    real(dp), allocatable :: realArr(:)
 
     do ii = 1, size(contacts)
 
@@ -1284,18 +1284,17 @@ contains
           call dftbp_warning(pNode, "Missing Fermi level - required to be set in solver block or&
               & read from a contact shift file")
         else
-          call init(fermiBuffer)
-          call getChildValue(child2, "", fermiBuffer, modifier=modifier)
-          select case(len(fermiBuffer))
+          call hsd_get(child2, "#text", realArr, stat=stat)
+          if (stat /= 0) call dftbp_error(pNode, "Error reading FermiLevel")
+          select case(size(realArr))
           case (1)
-            call asArray(fermiBuffer, contacts(ii)%eFermi(1:1))
-            contacts(ii)%eFermi(2) = contacts(ii)%eFermi(1)
+            contacts(ii)%eFermi(1) = realArr(1)
+            contacts(ii)%eFermi(2) = realArr(1)
           case (2)
-            call asArray(fermiBuffer, contacts(ii)%eFermi(:2))
+            contacts(ii)%eFermi(1:2) = realArr(1:2)
           case default
             call dftbp_error(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
           end select
-          call destruct(fermiBuffer)
           call convertUnitHsd(modifier, energyUnits, child2, contacts(ii)%eFermi)
 
           contacts(ii)%tFermiSet = .true.
@@ -1364,19 +1363,15 @@ contains
     !> Labels of contacts
     character(len=*), intent(in) :: contactNames(:)
 
-    type(TListString) :: lString
-    character(len=mc) :: buffer
+    character(:), allocatable :: strArr(:)
+    integer :: stat
 
-    call init(lString)
-    call getChildValue(pNode, "", lString)
-    if (len(lString) /= 2) then
+    call hsd_get(pNode, "#text", strArr, stat=stat)
+    if (stat /= 0 .or. size(strArr) /= 2) then
       call dftbp_error(pNode, "You must provide two contacts")
     end if
-    call get(lString, buffer, 1)
-    emitter = getContactByName(contactNames, buffer, pNode)
-    call get(lString, buffer, 2)
-    collector = getContactByName(contactNames, buffer, pNode)
-    call destruct(lString)
+    emitter = getContactByName(contactNames, strArr(1), pNode)
+    collector = getContactByName(contactNames, strArr(2), pNode)
 
   end subroutine getEmitterCollectorByName
 

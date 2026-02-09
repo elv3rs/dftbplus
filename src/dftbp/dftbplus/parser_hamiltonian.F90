@@ -31,7 +31,7 @@ module dftbp_dftbplus_parser_hamiltonian
       & getChild, getChildren, getChildValue, &
       & setChild, setChildValue, &
       & getLength, getItem1, destroyNodeList, removeChild
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning,&
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -41,8 +41,7 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_reks_reks, only : reksTypes
   use dftbp_solvation_solvparser, only : readSolvation
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len,&
-      & TListCharLc, TListInt, TListIntR1, TListReal, TListRealR1, TListString
+  use dftbp_type_linkedlist, only : append, destruct, init, TListCharLc
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TNEGFGreenDensInfo
@@ -174,19 +173,15 @@ contains
     type(hsd_table), pointer :: value1, child, child2, child3
     type(hsd_child_list), pointer :: children
     character(len=:), allocatable :: buffer, buffer2, modifier
-    type(TListInt) :: li
-    type(TListInt), allocatable :: liN(:)
-    type(TListIntR1), allocatable :: li1N(:)
-    type(TListReal), allocatable :: lrN(:)
     type(TListCharLc), allocatable :: skFiles(:,:)
-    type(TListString) :: lStr
+    integer, allocatable :: shellsTmp(:)
+    character(len=:), allocatable :: strArr(:)
     type(TAngShellBlocks), allocatable :: angShells(:)
     logical, allocatable :: repPoly(:,:)
     integer :: iSp1, iSp2, ii
-    character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp, str2Tmp
+    character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp
     character(lc) :: errorStr
     logical :: tLower
-    integer, allocatable :: pTmpI1(:)
     real(dp) :: rTmp
     integer, allocatable :: iTmpN(:)
     integer :: nShell, skInterMeth
@@ -268,17 +263,16 @@ contains
       do iSp1 = 1, geo%nSpecies
         do iSp2 = 1, geo%nSpecies
           strTmp = trim(geo%speciesNames(iSp1)) // "-" // trim(geo%speciesNames(iSp2))
-          call init(lStr)
-          call getChildValue(child, trim(strTmp), lStr, child=child2)
-          if (len(lStr) /= angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks) then
+          call hsd_get(child, trim(strTmp), strArr)
+          call getChild(child, trim(strTmp), child2)
+          if (size(strArr) /= angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks) then
             write(errorStr, "(A,I0,A,I0)") "Incorrect number of Slater-Koster files for " //&
                 & trim(strTmp) // ", expected ", angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks,&
-                & " but received ", len(lStr)
+                & " but received ", size(strArr)
             call dftbp_error(child2, errorStr)
           end if
-          do ii = 1, len(lStr)
-            call get(lStr, str2Tmp, ii)
-            strTmp = trim(prefix) // str2Tmp
+          do ii = 1, size(strArr)
+            strTmp = trim(prefix) // trim(strArr(ii))
             call findFile(searchPath, strTmp, strOut)
             if (.not. allocated(strOut)) then
               call dftbp_error(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
@@ -287,7 +281,6 @@ contains
             strTmp = strOut
             call append(skFiles(iSp2, iSp1), strTmp)
           end do
-          call destruct(lStr)
         end do
       end do
     end select
@@ -465,30 +458,28 @@ contains
         allocate(ctrl%dftbUInp%nUJ(geo%nSpecies))
         ctrl%dftbUInp%nUJ(:) = 0
 
-        ! to hold list of U-J values for each atom
-        allocate(lrN(geo%nSpecies))
-        ! to hold count of U-J values for each atom
-        allocate(liN(geo%nSpecies))
-        ! to hold list of shells for each U-J block of values
-        allocate(li1N(geo%nSpecies))
-
+        ! First pass: count blocks per species and read data into temporary arrays
         do iSp1 = 1, geo%nSpecies
-          call init(lrN(iSp1))
-          call init(liN(iSp1))
-          call init(li1N(iSp1))
           call getChildren(child, trim(geo%speciesNames(iSp1)), children)
           ctrl%dftbUInp%nUJ(iSp1) = getLength(children)
+          call destroyNodeList(children)
+        end do
+
+        allocate(ctrl%dftbUInp%UJ(maxval(ctrl%dftbUInp%nUJ), geo%nSpecies))
+        ctrl%dftbUInp%UJ(:,:) = 0.0_dp
+        allocate(ctrl%dftbUInp%niUJ(maxval(ctrl%dftbUInp%nUJ), geo%nSpecies))
+        ctrl%dftbUInp%niUJ(:,:) = 0
+
+        ! Second pass: read shells and U-J values
+        do iSp1 = 1, geo%nSpecies
+          call getChildren(child, trim(geo%speciesNames(iSp1)), children)
           do ii = 1, ctrl%dftbUInp%nUJ(iSp1)
             call getItem1(children, ii, child2)
 
-            call init(li)
-            call getChildValue(child2,"Shells",li)
-            allocate(pTmpI1(len(li)))
-            call asArray(li,pTmpI1)
-            call append(li1N(iSp1),pTmpI1)
-            call append(liN(iSp1),size(pTmpI1))
-            deallocate(pTmpI1)
-            call destruct(li)
+            call hsd_get(child2, "Shells", shellsTmp)
+            ctrl%dftbUInp%niUJ(ii, iSp1) = size(shellsTmp)
+            deallocate(shellsTmp)
+
             call getChildValue(child2, "uj", rTmp, 0.0_dp, modifier=modifier, &
                 & child=child3)
             call convertUnitHsd(modifier, energyUnits, child3, rTmp)
@@ -501,43 +492,26 @@ contains
               call dftbp_error(child2,"Invalid value of U-J, too small: " &
                   & //errorStr)
             end if
-            call append(lrN(iSp1),rTmp)
+            ctrl%dftbUInp%UJ(ii, iSp1) = rTmp
           end do
           call destroyNodeList(children)
         end do
 
-        do iSp1 = 1, geo%nSpecies
-          ctrl%dftbUInp%nUJ(iSp1) = len(lrN(iSp1))
-        end do
-        allocate(ctrl%dftbUInp%UJ(maxval(ctrl%dftbUInp%nUJ),geo%nSpecies))
-        ctrl%dftbUInp%UJ(:,:) = 0.0_dp
-        allocate(ctrl%dftbUInp%niUJ(maxval(ctrl%dftbUInp%nUJ),geo%nSpecies))
-        ctrl%dftbUInp%niUJ(:,:) = 0
-        do iSp1 = 1, geo%nSpecies
-          call asArray(lrN(iSp1),ctrl%dftbUInp%UJ(1:len(lrN(iSp1)),iSp1))
-          allocate(iTmpN(len(liN(iSp1))))
-          call asArray(liN(iSp1),iTmpN)
-          ctrl%dftbUInp%niUJ(1:len(liN(iSp1)),iSp1) = iTmpN(:)
-          deallocate(iTmpN)
-          call destruct(lrN(iSp1))
-          call destruct(liN(iSp1))
-        end do
         allocate(ctrl%dftbUInp%iUJ(maxval(ctrl%dftbUInp%niUJ),&
-            & maxval(ctrl%dftbUInp%nUJ),geo%nSpecies))
+            & maxval(ctrl%dftbUInp%nUJ), geo%nSpecies))
         ctrl%dftbUInp%iUJ(:,:,:) = 0
-        do iSp1 = 1, geo%nSpecies
-          do ii = 1, ctrl%dftbUInp%nUJ(iSp1)
-            allocate(iTmpN(ctrl%dftbUInp%niUJ(ii,iSp1)))
-            call get(li1N(iSp1),iTmpN,ii)
-            ctrl%dftbUInp%iUJ(1:ctrl%dftbUInp%niUJ(ii,iSp1),ii,iSp1) = iTmpN(:)
-            deallocate(iTmpN)
-          end do
-          call destruct(li1N(iSp1))
-        end do
 
-        deallocate(li1N)
-        deallocate(lrN)
-        deallocate(liN)
+        ! Third pass: read shell indices into final array
+        do iSp1 = 1, geo%nSpecies
+          call getChildren(child, trim(geo%speciesNames(iSp1)), children)
+          do ii = 1, ctrl%dftbUInp%nUJ(iSp1)
+            call getItem1(children, ii, child2)
+            call hsd_get(child2, "Shells", shellsTmp)
+            ctrl%dftbUInp%iUJ(1:size(shellsTmp), ii, iSp1) = shellsTmp(:)
+            deallocate(shellsTmp)
+          end do
+          call destroyNodeList(children)
+        end do
 
         ! check input values
         allocate(iTmpN(slako%orb%mShell))
@@ -897,7 +871,8 @@ contains
 
     type(hsd_table), pointer :: value1, value2, child, child2
     character(len=:), allocatable :: buffer, buffer2
-    type(TListRealR1) :: lr1
+    real(dp), allocatable :: dynMixMatrix(:,:)
+    integer :: dynMixNRows, dynMixNCols
 
     if (ctrl%reksInp%reksAlg == reksTypes%noReks) then
 
@@ -931,15 +906,14 @@ contains
             if (buffer2 == "" .and. .not. hasInlineData(child)) then
               inp%nConvMixParam = 0
             else
-              call init(lr1)
-              call getChildValue(child, "", 2, lr1, child=child2)
-              if (len(lr1) < 1) then
-                call dftbp_error(child2, "At least one dynamic mixing parameter must be defined.")
+              call hsd_get_matrix(child, "", dynMixMatrix, dynMixNRows, dynMixNCols)
+              if (dynMixNCols < 1) then
+                call dftbp_error(child, "At least one dynamic mixing parameter must be defined.")
               end if
-              inp%nConvMixParam = len(lr1)
+              inp%nConvMixParam = dynMixNCols
               allocate(inp%convMixParam(2, inp%nConvMixParam))
-              call asArray(lr1, inp%convMixParam)
-              call destruct(lr1)
+              inp%convMixParam(:,:) = dynMixMatrix(:,:)
+              deallocate(dynMixMatrix)
             end if
             call hsd_get_or_set(value1, "DiagonalRescaling", inp%omega0, 1.0e-2_dp)
           end associate
