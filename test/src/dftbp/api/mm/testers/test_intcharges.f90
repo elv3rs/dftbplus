@@ -9,7 +9,9 @@
 program test_intcharges
   use, intrinsic :: iso_fortran_env, only : output_unit
   use dftbplus, only : convertAtomTypesToSpecies, dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild,&
-      & getMaxAngFromSlakoFile, setChild, setChildValue, TDftbPlus, TDftbPlus_init, TDftbPlusInput
+      & getMaxAngFromSlakoFile, TDftbPlus, TDftbPlus_init, TDftbPlusInput
+  use hsd, only : hsd_set, new_table
+  use hsd_data, only : hsd_node
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
   implicit none
@@ -74,8 +76,8 @@ contains
 
     call dftbp%getEmptyInput(input)
     call input%getRootNode(pRoot)
-    call setChild(pRoot, "Geometry", pGeo)
-    call setChildValue(pGeo, "Periodic", .false.)
+    call create_child_table(pRoot, "geometry", pGeo)
+    call hsd_set(pGeo, "periodic", .false.)
 
     ! Demonstrates how to convert the atom types if they are not numbered from 1 but use atomic
     ! numbers instead. The atomTypeNames array is optional, if not present, the resulting type names
@@ -83,32 +85,32 @@ contains
     print "(A)", "Converting atom types"
     call convertAtomTypesToSpecies(atomTypes, species, speciesNames, atomTypeNames)
 
-    call setChildValue(pGeo, "TypeNames", speciesNames)
+    call hsd_set(pGeo, "typenames", speciesNames)
     coords(:,:) = 0.0_dp
-    call setChildValue(pGeo, "TypesAndCoordinates", reshape(species, [1, size(species)]), coords)
-    call setChild(pRoot, "Hamiltonian", pHam)
-    call setChild(pHam, "Dftb", pDftb)
-    call setChildValue(pDftb, "Scc", .true.)
-    call setChildValue(pDftb, "SccTolerance", 1e-12_dp)
-    call setChild(pDftb, "MaxAngularMomentum", pMaxAng)
+    call setTypesAndCoords(pGeo, "typesandcoordinates", reshape(species, [1, size(species)]), coords)
+    call create_child_table(pRoot, "hamiltonian", pHam)
+    call create_child_table(pHam, "dftb", pDftb)
+    call hsd_set(pDftb, "scc", .true.)
+    call hsd_set(pDftb, "scctolerance", 1e-12_dp)
+    call create_child_table(pDftb, "maxangularmomentum", pMaxAng)
 
     ! read angular momenta from SK data
-    call setChildValue(pMaxAng, speciesNames(1),&
+    call hsd_set(pMaxAng, to_lower(speciesNames(1)),&
         & maxAngNames(getMaxAngFromSlakoFile(slakoFiles(1, 1)) + 1))
-    call setChildValue(pMaxAng, speciesNames(2),&
+    call hsd_set(pMaxAng, to_lower(speciesNames(2)),&
         & maxAngNames(getMaxAngFromSlakoFile(slakoFiles(2, 2)) + 1))
 
     ! set up locations for SK file data
-    call setChild(pDftb, "SlaterKosterFiles", pSlakos)
-    call setChildValue(pSlakos, "O-O", trim(slakoFiles(1, 1)))
-    call setChildValue(pSlakos, "H-O", trim(slakoFiles(2, 1)))
-    call setChildValue(pSlakos, "O-H", trim(slakoFiles(1, 2)))
-    call setChildValue(pSlakos, "H-H", trim(slakoFiles(2, 2)))
-    call setChild(pRoot, "Analysis", pAnalysis)
-    call setChildValue(pAnalysis, "CalculateForces", .true.)
-    call setChild(pAnalysis, "CM5", pCm5)
-    call setChild(pRoot, "ParserOptions", pParserOpts)
-    call setChildValue(pParserOpts, "ParserVersion", 13)
+    call create_child_table(pDftb, "slaterkosterfiles", pSlakos)
+    call hsd_set(pSlakos, "o-o", trim(slakoFiles(1, 1)))
+    call hsd_set(pSlakos, "h-o", trim(slakoFiles(2, 1)))
+    call hsd_set(pSlakos, "o-h", trim(slakoFiles(1, 2)))
+    call hsd_set(pSlakos, "h-h", trim(slakoFiles(2, 2)))
+    call create_child_table(pRoot, "analysis", pAnalysis)
+    call hsd_set(pAnalysis, "calculateforces", .true.)
+    call create_child_table(pAnalysis, "cm5", pCm5)
+    call create_child_table(pRoot, "parseroptions", pParserOpts)
+    call hsd_set(pParserOpts, "parserversion", 13)
 
     print "(A)", 'Input tree in HSD format:'
     call dumpHsd(input%hsdTree, output_unit)
@@ -174,5 +176,66 @@ contains
         & atomMasses=atomMasses, cm5Charges=cm5Charges)
 
   end subroutine main_
+
+
+  subroutine create_child_table(parent, name, child)
+    type(hsd_table), intent(inout), target :: parent
+    character(len=*), intent(in) :: name
+    type(hsd_table), pointer, intent(out) :: child
+
+    type(hsd_table) :: tmp
+    class(hsd_node), pointer :: stored
+
+    call new_table(tmp, name=name)
+    call parent%add_child(tmp)
+    call parent%get_child(parent%num_children, stored)
+    select type (t => stored)
+    type is (hsd_table)
+      child => t
+    end select
+  end subroutine create_child_table
+
+
+  subroutine setTypesAndCoords(node, name, types, coords)
+    type(hsd_table), intent(inout) :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: types(:,:)
+    real(dp), intent(in) :: coords(:,:)
+
+    character(len=100) :: buffer
+    character(len=:), allocatable :: strBuffer
+    integer :: ii, jj, nRow, nCol1, nCol2
+
+    nRow = size(types, dim=2)
+    nCol1 = size(types, dim=1)
+    nCol2 = size(coords, dim=1)
+    strBuffer = ""
+    do ii = 1, nRow
+      do jj = 1, nCol1
+        write(buffer, *) types(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      do jj = 1, nCol2
+        write(buffer, *) coords(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      if (ii < nRow) strBuffer = strBuffer // new_line('a')
+    end do
+    call hsd_set(node, name, trim(adjustl(strBuffer)))
+  end subroutine setTypesAndCoords
+
+
+  function to_lower(str) result(lower)
+    character(len=*), intent(in) :: str
+    character(len=len(str)) :: lower
+    integer :: ii, ic
+
+    lower = str
+    do ii = 1, len(lower)
+      ic = iachar(lower(ii:ii))
+      if (ic >= iachar('A') .and. ic <= iachar('Z')) lower(ii:ii) = achar(ic + 32)
+    end do
+  end function to_lower
+
 
 end program test_intcharges

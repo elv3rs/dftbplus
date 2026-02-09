@@ -9,8 +9,10 @@
 !> periodic geometry with k-points.
 program test_treeinit
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, setChild,&
-      & setChildValue, TDftbPlus, TDftbPlus_init, TDftbPlusInput
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, &
+      & TDftbPlus, TDftbPlus_init, TDftbPlusInput
+  use hsd, only : hsd_set, new_table
+  use hsd_data, only : hsd_node
   use dftbp_common_constants, only : AA__Bohr
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
@@ -74,28 +76,28 @@ contains
     ! default values
     call dftbp%getEmptyInput(input)
     call input%getRootNode(pRoot)
-    call setChild(pRoot, "Geometry", pGeo)
-    call setChildValue(pGeo, "Periodic", .true.)
-    call setChildValue(pGeo, "LatticeVectors", initialLatVecs)
-    call setChildValue(pGeo, "TypeNames", ["Si"])
+    call create_child_table(pRoot, "geometry", pGeo)
+    call hsd_set(pGeo, "periodic", .true.)
+    call hsd_set(pGeo, "latticevectors", initialLatVecs)
+    call hsd_set(pGeo, "typenames", ["Si"])
     coords(:,:) = 0.0_dp
-    call setChildValue(pGeo, "TypesAndCoordinates", reshape([1, 1], [1, 2]), coords)
-    call setChild(pRoot, "Hamiltonian", pHam)
-    call setChild(pHam, "Dftb", pDftb)
-    call setChildValue(pDftb, "Scc", .false.)
-    call setChild(pDftb, "MaxAngularMomentum", pMaxAng)
-    call setChildValue(pMaxAng, "Si", "p")
-    call setChild(pDftb, "SlaterKosterFiles", pSlakos)
-    call setChildValue(pSlakos, "Si-Si", "./Si-Si.skf")
-    call setChildValue(pDftb, "KPointsAndWeights", reshape([&
+    call setTypesAndCoords(pGeo, "typesandcoordinates", reshape([1, 1], [1, 2]), coords)
+    call create_child_table(pRoot, "hamiltonian", pHam)
+    call create_child_table(pHam, "dftb", pDftb)
+    call hsd_set(pDftb, "scc", .false.)
+    call create_child_table(pDftb, "maxangularmomentum", pMaxAng)
+    call hsd_set(pMaxAng, "si", "p")
+    call create_child_table(pDftb, "slaterkosterfiles", pSlakos)
+    call hsd_set(pSlakos, "si-si", "./Si-Si.skf")
+    call hsd_set(pDftb, "kpointsandweights", reshape([&
         &  0.25_dp,  0.25_dp, 0.25_dp, 1.00_dp,&
         & -0.25_dp,  0.25_dp, 0.25_dp, 1.00_dp,&
         &  0.25_dp, -0.25_dp, 0.25_dp, 1.00_dp,&
         & -0.25_dp, -0.25_dp, 0.25_dp, 1.00_dp], [4, 4], order=[2, 1]))
-    call setChild(pRoot, "Options", pOptions)
-    call setChildValue(pOptions, "CalculateForces", .true.)
-    call setChild(pRoot, "ParserOptions", pParserOpts)
-    call setChildValue(pParserOpts, "ParserVersion", 3)
+    call create_child_table(pRoot, "options", pOptions)
+    call hsd_set(pOptions, "calculateforces", .true.)
+    call create_child_table(pRoot, "parseroptions", pParserOpts)
+    call hsd_set(pParserOpts, "parserversion", 3)
 
     ! print resulting input file, including defaults
     print *, 'Input tree in HSD format:'
@@ -130,5 +132,53 @@ contains
     call writeAutotestTag(merminEnergy=merminEnergy, gradients=gradients, stressTensor=stressTensor)
 
   end subroutine main_
+
+
+  subroutine create_child_table(parent, name, child)
+    type(hsd_table), intent(inout), target :: parent
+    character(len=*), intent(in) :: name
+    type(hsd_table), pointer, intent(out) :: child
+
+    type(hsd_table) :: tmp
+    class(hsd_node), pointer :: stored
+
+    call new_table(tmp, name=name)
+    call parent%add_child(tmp)
+    call parent%get_child(parent%num_children, stored)
+    select type (t => stored)
+    type is (hsd_table)
+      child => t
+    end select
+  end subroutine create_child_table
+
+
+  subroutine setTypesAndCoords(node, name, types, coords)
+    type(hsd_table), intent(inout) :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: types(:,:)
+    real(dp), intent(in) :: coords(:,:)
+
+    character(len=100) :: buffer
+    character(len=:), allocatable :: strBuffer
+    integer :: ii, jj, nRow, nCol1, nCol2
+
+    nRow = size(types, dim=2)
+    nCol1 = size(types, dim=1)
+    nCol2 = size(coords, dim=1)
+    strBuffer = ""
+    do ii = 1, nRow
+      do jj = 1, nCol1
+        write(buffer, *) types(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      do jj = 1, nCol2
+        write(buffer, *) coords(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      if (ii < nRow) strBuffer = strBuffer // new_line('a')
+    end do
+    call hsd_set(node, name, trim(adjustl(strBuffer)))
+  end subroutine setTypesAndCoords
+
 
 end program test_treeinit

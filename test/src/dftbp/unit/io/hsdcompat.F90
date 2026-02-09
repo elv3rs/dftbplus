@@ -18,7 +18,7 @@ module test_io_hsdcompat
   use dftbp_io_hsdutils, only : dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_table_ptr, hsd_get_child_tables
-  use dftbp_io_hsdutils, only : getNodeName, getNodeName2, getNodeHSDName, setUnprocessed,&
+  use dftbp_io_hsdutils, only : getNodeName, getNodeName2, getNodeHSDName,&
       & splitModifier, textNodeName
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
@@ -425,18 +425,6 @@ contains
     @:ASSERT(trim(mods(1)) == "Angstrom")
     @:ASSERT(trim(mods(2)) == "eV")
     @:ASSERT(trim(mods(3)) == "e")
-  $:END_TEST()
-
-
-  $:TEST("setUnprocessed_clears_flag", label="hsdcompat")
-    !! setUnprocessed clears the processed flag on a node
-    type(hsd_table), target :: root
-    type(hsd_table), pointer :: rootPtr
-    call new_table(root, "test")
-    root%processed = .true.
-    rootPtr => root
-    call setUnprocessed(rootPtr)
-    @:ASSERT(.not. root%processed)
   $:END_TEST()
 
 

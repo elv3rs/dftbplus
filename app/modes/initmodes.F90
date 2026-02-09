@@ -22,7 +22,7 @@ module modes_initmodes
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getSelectedIndices, getNodeName, textNodeName, getNodeName2, setUnprocessed, hasInlineData,&
+      & getSelectedIndices, getNodeName, textNodeName, getNodeName2, hasInlineData,&
       & getModifier
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -307,7 +307,7 @@ contains
           call append(skFiles(iSp1), strTmp)
         end do
       case default
-        call setUnprocessed(value)
+        value%processed = .false.
         call hsd_get_or_set(child, "Prefix", buffer2, "")
         prefix = unquote(buffer2)
 

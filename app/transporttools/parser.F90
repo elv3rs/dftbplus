@@ -22,7 +22,7 @@ module transporttools_parser
       & getChild, &
       & getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & setUnprocessed, getNodeName, getNodeHSDName
+      & getNodeName, getNodeHSDName
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
@@ -250,7 +250,7 @@ contains
     case ("genformat")
       call readTGeometryGen(value1, input%geom)
     case default
-      call setUnprocessed(value1)
+      value1%processed = .false.
       call readTGeometryHSD(child, input%geom)
     end select
 
@@ -518,7 +518,7 @@ contains
         end do
       end do
     case default
-      call setUnprocessed(value1)
+      value1%processed = .false.
       do iSp1 = 1, nSpecies
         do iSp2 = 1, nSpecies
           strTmp = trim(speciesNames(iSp1)) // "-" &

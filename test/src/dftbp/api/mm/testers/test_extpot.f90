@@ -7,8 +7,10 @@
 
 program test_extpot
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, &
       & TDftbPlus, TDftbPlus_init, TDftbPlusInput
+  use hsd, only : hsd_set, new_table
+  use hsd_data, only : hsd_node
   use extchargepot, only : getPointChargeGradients, getPointChargePotential
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
@@ -77,38 +79,38 @@ contains
 
     call dftbp%getEmptyInput(input)
     call input%getRootNode(pRoot)
-    call setChild(pRoot, "Geometry", pGeo)
-    call setChildValue(pGeo, "Periodic", .false.)
-    call setChildValue(pGeo, "TypeNames", ["O", "H"])
+    call create_child_table(pRoot, "geometry", pGeo)
+    call hsd_set(pGeo, "periodic", .false.)
+    call hsd_set(pGeo, "typenames", ["O", "H"])
     coords(:,:) = 0.0_dp
-    call setChildValue(pGeo, "TypesAndCoordinates", reshape(species, [1, size(species)]), coords)
-    call setChild(pRoot, "Hamiltonian", pHam)
-    call setChild(pHam, "Dftb", pDftb)
-    call setChildValue(pDftb, "Scc", .true.)
-    call setChildValue(pDftb, "SccTolerance", 1e-12_dp)
+    call setTypesAndCoords(pGeo, "typesandcoordinates", reshape(species, [1, size(species)]), coords)
+    call create_child_table(pRoot, "hamiltonian", pHam)
+    call create_child_table(pHam, "dftb", pDftb)
+    call hsd_set(pDftb, "scc", .true.)
+    call hsd_set(pDftb, "scctolerance", 1e-12_dp)
 
     ! sub-block inside hamiltonian for the maximum angular momenta
-    call setChild(pDftb, "MaxAngularMomentum", pMaxAng)
+    call create_child_table(pDftb, "maxangularmomentum", pMaxAng)
     ! explicitly set the maximum angular momenta for the species
-    call setChildValue(pMaxAng, "O", "p")
-    call setChildValue(pMaxAng, "H", "s")
+    call hsd_set(pMaxAng, "o", "p")
+    call hsd_set(pMaxAng, "h", "s")
 
     ! get the SK data
     ! You should provide the skfiles as found in the external/slakos/origin/mio-1-1/ folder. These
     ! can be downloaded with the utils/get_opt_externals script
-    call setChild(pDftb, "SlaterKosterFiles", pSlakos)
-    call setChild(pSlakos, "Type2FileNames", pType2Files)
-    call setChildValue(pType2Files, "Prefix", "./")
-    call setChildValue(pType2Files, "Separator", "-")
-    call setChildValue(pType2Files, "Suffix", ".skf")
+    call create_child_table(pDftb, "slaterkosterfiles", pSlakos)
+    call create_child_table(pSlakos, "type2filenames", pType2Files)
+    call hsd_set(pType2Files, "prefix", "./")
+    call hsd_set(pType2Files, "separator", "-")
+    call hsd_set(pType2Files, "suffix", ".skf")
 
     !  set up analysis options
-    call setChild(pRoot, "Analysis", pAnalysis)
-    call setChildValue(pAnalysis, "CalculateForces", .true.)
-    call setChild(pAnalysis, "CM5", pCm5)
+    call create_child_table(pRoot, "analysis", pAnalysis)
+    call hsd_set(pAnalysis, "calculateforces", .true.)
+    call create_child_table(pAnalysis, "cm5", pCm5)
 
-    call setChild(pRoot, "ParserOptions", pParserOpts)
-    call setChildValue(pParserOpts, "ParserVersion", 5)
+    call create_child_table(pRoot, "parseroptions", pParserOpts)
+    call hsd_set(pParserOpts, "parserversion", 5)
 
     print "(A)", 'Input tree in HSD format:'
     call dumpHsd(input%hsdTree, output_unit)
@@ -148,5 +150,53 @@ contains
         & extChargeGradients=extChargeGrads, potential=esps, cm5Charges=cm5Charges)
 
   end subroutine main_
+
+
+  subroutine create_child_table(parent, name, child)
+    type(hsd_table), intent(inout), target :: parent
+    character(len=*), intent(in) :: name
+    type(hsd_table), pointer, intent(out) :: child
+
+    type(hsd_table) :: tmp
+    class(hsd_node), pointer :: stored
+
+    call new_table(tmp, name=name)
+    call parent%add_child(tmp)
+    call parent%get_child(parent%num_children, stored)
+    select type (t => stored)
+    type is (hsd_table)
+      child => t
+    end select
+  end subroutine create_child_table
+
+
+  subroutine setTypesAndCoords(node, name, types, coords)
+    type(hsd_table), intent(inout) :: node
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: types(:,:)
+    real(dp), intent(in) :: coords(:,:)
+
+    character(len=100) :: buffer
+    character(len=:), allocatable :: strBuffer
+    integer :: ii, jj, nRow, nCol1, nCol2
+
+    nRow = size(types, dim=2)
+    nCol1 = size(types, dim=1)
+    nCol2 = size(coords, dim=1)
+    strBuffer = ""
+    do ii = 1, nRow
+      do jj = 1, nCol1
+        write(buffer, *) types(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      do jj = 1, nCol2
+        write(buffer, *) coords(jj, ii)
+        strBuffer = strBuffer // " " // trim(adjustl(buffer))
+      end do
+      if (ii < nRow) strBuffer = strBuffer // new_line('a')
+    end do
+    call hsd_set(node, name, trim(adjustl(strBuffer)))
+  end subroutine setTypesAndCoords
+
 
 end program test_extpot

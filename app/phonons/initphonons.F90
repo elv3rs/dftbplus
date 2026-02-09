@@ -20,7 +20,7 @@ module phonons_initphonons
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
-      & setUnprocessed, getNodeName, textNodeName, getFirstTextChild, getModifier
+      & getNodeName, textNodeName, getFirstTextChild, getModifier
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
@@ -523,7 +523,7 @@ contains
     case ("genformat")
       call readTGeometryGen(value, geo)
     case default
-      call setUnprocessed(value)
+      value%processed = .false.
       call readTGeometryHSD(child, geo)
     end select
 
@@ -823,7 +823,7 @@ contains
         end if
       end do
     case default
-      call setUnprocessed(value)
+      value%processed = .false.
       do iSp1 = 1, geo%nSpecies
         strTmp = trim(geo%speciesNames(iSp1)) // "-" &
             &// trim(geo%speciesNames(iSp1))
