@@ -27,11 +27,9 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_extlibs_poisson, only : TPoissonInfo
   use dftbp_extlibs_tblite, only : tbliteMethod
   use dftbp_io_charmanip, only : newline, tolower, unquote
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue, &
-      & setChild, setChildValue, &
-      & getLength, getItem1, destroyNodeList, removeChild
-  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set
+  use dftbp_io_hsdutils, only : getChild, getChildValue, &
+      & setChild, setChildValue, removeChild
+  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning,&
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -171,7 +169,7 @@ contains
     type(TStatus), intent(inout) :: errStatus
 
     type(hsd_table), pointer :: value1, child, child2, child3
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     character(len=:), allocatable :: buffer, buffer2, modifier
     type(TListCharLc), allocatable :: skFiles(:,:)
     integer, allocatable :: shellsTmp(:)
@@ -460,9 +458,8 @@ contains
 
         ! First pass: count blocks per species and read data into temporary arrays
         do iSp1 = 1, geo%nSpecies
-          call getChildren(child, trim(geo%speciesNames(iSp1)), children)
-          ctrl%dftbUInp%nUJ(iSp1) = getLength(children)
-          call destroyNodeList(children)
+          call hsd_get_child_tables(child, trim(geo%speciesNames(iSp1)), children)
+          ctrl%dftbUInp%nUJ(iSp1) = size(children)
         end do
 
         allocate(ctrl%dftbUInp%UJ(maxval(ctrl%dftbUInp%nUJ), geo%nSpecies))
@@ -472,9 +469,9 @@ contains
 
         ! Second pass: read shells and U-J values
         do iSp1 = 1, geo%nSpecies
-          call getChildren(child, trim(geo%speciesNames(iSp1)), children)
+          call hsd_get_child_tables(child, trim(geo%speciesNames(iSp1)), children)
           do ii = 1, ctrl%dftbUInp%nUJ(iSp1)
-            call getItem1(children, ii, child2)
+            child2 => children(ii)%ptr
 
             call hsd_get(child2, "Shells", shellsTmp)
             ctrl%dftbUInp%niUJ(ii, iSp1) = size(shellsTmp)
@@ -494,7 +491,6 @@ contains
             end if
             ctrl%dftbUInp%UJ(ii, iSp1) = rTmp
           end do
-          call destroyNodeList(children)
         end do
 
         allocate(ctrl%dftbUInp%iUJ(maxval(ctrl%dftbUInp%niUJ),&
@@ -503,14 +499,13 @@ contains
 
         ! Third pass: read shell indices into final array
         do iSp1 = 1, geo%nSpecies
-          call getChildren(child, trim(geo%speciesNames(iSp1)), children)
+          call hsd_get_child_tables(child, trim(geo%speciesNames(iSp1)), children)
           do ii = 1, ctrl%dftbUInp%nUJ(iSp1)
-            call getItem1(children, ii, child2)
+            child2 => children(ii)%ptr
             call hsd_get(child2, "Shells", shellsTmp)
             ctrl%dftbUInp%iUJ(1:size(shellsTmp), ii, iSp1) = shellsTmp(:)
             deallocate(shellsTmp)
           end do
-          call destroyNodeList(children)
         end do
 
         ! check input values

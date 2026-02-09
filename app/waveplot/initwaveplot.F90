@@ -24,16 +24,14 @@ module waveplot_initwaveplot
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdutils, only : hsd_child_list,&
-      & getItem1, getLength, &
-      & getChild, getChildren,&
-      & getChildValue, setChild, setChildValue,&
-      & destroyNodeList
+  use dftbp_io_hsdutils, only :&
+      & getChild,&
+      & getChildValue, setChild, setChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
-      & hsd_dump, hsd_clear_children
+      & hsd_dump, hsd_clear_children, hsd_table_ptr, hsd_get_child_tables
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
@@ -833,7 +831,7 @@ contains
     type(hsd_table), pointer :: tmpNode, child
 
     !! Node list instance
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
 
     !! Real-valued buffer lists
     type(TListReal) :: bufferExps, bufferCoeffs
@@ -845,8 +843,8 @@ contains
     integer :: ii
 
     call getChildValue(node, "AtomicNumber", spBasis%atomicNumber)
-    call getChildren(node, "Orbital", children)
-    spBasis%nOrb = getLength(children)
+    call hsd_get_child_tables(node, "Orbital", children)
+    spBasis%nOrb = size(children)
 
     if (spBasis%nOrb < 1) then
       call dftbp_error(node, "Missing orbital definitions")
@@ -858,7 +856,7 @@ contains
     allocate(spBasis%cutoffs(spBasis%nOrb))
 
     do ii = 1, spBasis%nOrb
-      call getItem1(children, ii, tmpNode)
+      tmpNode => children(ii)%ptr
       call getChildValue(tmpNode, "AngularMomentum", spBasis%angMoms(ii))
       call getChildValue(tmpNode, "Occupation", spBasis%occupations(ii))
       call getChildValue(tmpNode, "Cutoff", spBasis%cutoffs(ii))

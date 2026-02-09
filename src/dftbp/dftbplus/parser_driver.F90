@@ -17,8 +17,7 @@ module dftbp_dftbplus_parser_driver
   use dftbp_io_charmanip, only : i2c, unquote
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_matrix
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue
+  use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData, &
       & getFirstTextChild

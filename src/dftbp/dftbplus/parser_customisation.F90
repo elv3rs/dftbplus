@@ -11,11 +11,10 @@
 !> Subroutines for reading customised Hubbard and reference occupation parameters.
 module dftbp_dftbplus_parser_customisation
   use dftbp_common_accuracy, only : dp, sc
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue, &
-      & getLength, getItem1, destroyNodeList
+  use dftbp_io_hsdutils, only : &
+      & getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables
   use hsd_data, only : hsd_table
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_orbitals, only : getShellnames
@@ -95,7 +94,7 @@ contains
     real(dp), allocatable, intent(out) :: customOcc(:,:)
 
     type(hsd_table), pointer :: node, container, child
-    type(hsd_child_list), pointer :: nodes
+    type(hsd_table_ptr), allocatable :: nodes(:)
     character(len=:), allocatable :: buffer
     integer :: nCustomOcc, iCustomOcc, iShell, iSpecies, nAtom
     character(sc), allocatable :: shellNamesTmp(:)
@@ -107,8 +106,8 @@ contains
       return
     end if
 
-    call getChildren(container, "ReferenceOccupation", nodes)
-    nCustomOcc = getLength(nodes)
+    call hsd_get_child_tables(container, "ReferenceOccupation", nodes)
+    nCustomOcc = size(nodes)
     nAtom = size(geo%species)
     allocate(iAtInRegion(nCustomOcc))
     allocate(customOcc(orb%mShell, nCustomOcc))
@@ -117,7 +116,7 @@ contains
     customOcc(:,:) = 0.0_dp
 
     do iCustomOcc = 1, nCustomOcc
-      call getItem1(nodes, iCustomOcc, node)
+      node => nodes(iCustomOcc)%ptr
       call getChildValue(node, "Atoms", buffer, child=child, multiple=.true.)
       call getSelectedAtomIndices(child, buffer, geo%speciesNames, geo%species,&
           & iAtInRegion(iCustomOcc)%data)
@@ -137,7 +136,6 @@ contains
       end do
       deallocate(shellNamesTmp)
     end do
-    call destroyNodeList(nodes)
 
   end subroutine readCustomReferenceOcc
 

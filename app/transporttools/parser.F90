@@ -18,15 +18,15 @@ module transporttools_parser
   use dftbp_dftb_slakoeqgrid, only : skEqGridNew, skEqGridOld
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, &
-      & getChildValue, &
-      & getItem1, getLength, destroyNodeList
+  use dftbp_io_hsdutils, only :&
+      & getChild, &
+      & getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & setUnprocessed, getNodeName, getNodeHSDName
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
-  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
+      & hsd_table_ptr, hsd_get_child_tables
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
@@ -271,7 +271,7 @@ contains
 
     type(hsd_table), pointer :: pDevice, pTask, pTaskType
     character(len=:), allocatable :: buffer
-    type(hsd_child_list), pointer :: pNodeList
+    type(hsd_table_ptr), allocatable :: pNodeList(:)
     real(dp) :: skCutoff
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     integer, allocatable :: nPLs(:)
@@ -292,8 +292,8 @@ contains
       call getChildValue(pDevice, "AtomRange", transpar%idxdevice)
     end if
 
-    call getChildren(root, "Contact", pNodeList)
-    transpar%ncont = getLength(pNodeList)
+    call hsd_get_child_tables(root, "Contact", pNodeList)
+    transpar%ncont = size(pNodeList)
     if (transpar%ncont < 2) then
       call dftbp_error(root, "At least two contacts must be defined")
     end if
@@ -315,14 +315,13 @@ contains
 
    end select
 
-   call destroyNodeList(pNodeList)
 
   end subroutine readTransportGeometry
 
 
   !> Read bias information, used in Analysis and Green's function eigensolver
   subroutine readContacts(pNodeList, contacts, geom, task, iAtInRegion, nPLs)
-    type(hsd_child_list), pointer :: pNodeList
+    type(hsd_table_ptr), intent(in) :: pNodeList(:)
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
     type(TGeometry), intent(in) :: geom
     character(*), intent(in) :: task
@@ -344,7 +343,7 @@ contains
       contacts(ii)%wideBand = .false.
       contacts(ii)%wideBandDos = 0.0_dp
 
-      call getItem1(pNodeList, ii, pNode)
+      pNode => pNodeList(ii)%ptr
       call getChildValue(pNode, "Id", buffer, child=pTmp)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then

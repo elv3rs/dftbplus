@@ -17,10 +17,9 @@ module dftbp_dftbplus_parser_external
   use dftbp_common_unitconversion, only : EFieldUnits, energyUnits, freqUnits, lengthUnits
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : unquote
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue, &
-      & getLength, getItem1, destroyNodeList
-  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib
+  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib, hsd_table_ptr, &
+      & hsd_get_child_tables
   use dftbp_io_hsdutils, only : dftbp_error, textNodeName, getNodeName
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -47,7 +46,7 @@ contains
     type(TGeometry), intent(in) :: geo
 
     type(hsd_table), pointer :: value1, child, child2, child3
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     character(len=:), allocatable :: modifier, buffer, buffer2
     real(dp) :: rTmp
     type(TFileDescr) :: file
@@ -93,8 +92,8 @@ contains
     ctrl%nExtChrg = 0
     if (ctrl%hamiltonian == hamiltonianTypes%dftb) then
 
-      call getChildren(child, "PointCharges", children)
-      if (getLength(children) > 0) then
+      call hsd_get_child_tables(child, "PointCharges", children)
+      if (size(children) > 0) then
         ! Point charges present
         if (.not.ctrl%tSCC) then
           call error("External charges can only be used in an SCC calculation")
@@ -102,8 +101,8 @@ contains
         allocate(allCharges(4, 0))
         allocate(allBlurs(0))
         ctrl%nExtChrg = 0
-        do ii = 1, getLength(children)
-          call getItem1(children, ii, child2)
+        do ii = 1, size(children)
+          child2 => children(ii)%ptr
           call getChildValue(child2, "CoordsAndCharges", value1, modifier=modifier, child=child3)
           call getNodeName(value1, buffer)
           select case(buffer)
@@ -159,13 +158,12 @@ contains
 
         call move_alloc(allCharges, ctrl%extChrg)
         call move_alloc(allBlurs, ctrl%extChrgBlurWidth)
-        call destroyNodeList(children)
       end if
 
     else
 
-      call getChildren(child, "PointCharges", children)
-      if (getLength(children) > 0) then
+      call hsd_get_child_tables(child, "PointCharges", children)
+      if (size(children) > 0) then
         call dftbp_error(child, "External charges are not currently supported for this model")
       end if
 

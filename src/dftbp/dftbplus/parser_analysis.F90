@@ -9,10 +9,10 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_dftbplus_parser_kpoints, only : maxSelfConsIterations
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
-  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue, setChildValue, &
-      & getLength, getItem1, destroyNodeList
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib,&
+      & hsd_table_ptr, hsd_get_child_tables
+  use dftbp_io_hsdutils, only : &
+      & getChild, getChildValue, setChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getNodeName, getNodeName2,&
       & hasInlineData
   use dftbp_io_message, only : error
@@ -65,7 +65,7 @@ contains
   #:endif
 
     type(hsd_table), pointer :: val, child, child2, child3
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     integer, allocatable :: pTmpI1(:)
     character(len=:), allocatable :: buffer, modifier
     integer :: nReg, iReg
@@ -82,8 +82,8 @@ contains
 
       call getChildValue(node, "ProjectStates", val, "", child=child, allowEmptyValue=.true.,&
           & list=.true.)
-      call getChildren(child, "Region", children)
-      nReg = getLength(children)
+      call hsd_get_child_tables(child, "Region", children)
+      nReg = size(children)
       ctrl%tProjEigenvecs = (nReg > 0)
       if (ctrl%tProjEigenvecs) then
         allocate(ctrl%tShellResInRegion(nReg))
@@ -91,7 +91,7 @@ contains
         allocate(ctrl%RegionLabel(nReg))
         call init(ctrl%iAtInRegion)
         do iReg = 1, nReg
-          call getItem1(children, iReg, child2)
+          child2 => children(iReg)%ptr
           call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
           call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
           call append(ctrl%iAtInRegion, pTmpI1)
@@ -117,7 +117,6 @@ contains
           ctrl%RegionLabel(iReg) = unquote(buffer)
         end do
       end if
-      call destroyNodeList(children)
 
       call hsd_rename_child(node, "Localize", "Localise")
       call getChild(node, "Localise", child=val, requested=.false.)

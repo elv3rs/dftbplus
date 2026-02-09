@@ -13,7 +13,6 @@
 !>   - dftbp_error / dftbp_warning — formatted error/warning with node context
 !>   - getChildValue / getChild / setChildValue / setChild — high-level accessors
 !>     with error reporting, modifier extraction, and default write-back
-!>   - getChildren / getLength / getItem1 / destroyNodeList — child list iteration
 !>   - getDescendant / renameDescendant / setNodeName / removeChild — tree manipulation
 !>   - Atom/index selection helpers
 !>   - Node name and modifier extraction helpers
@@ -43,9 +42,6 @@ module dftbp_io_hsdutils
 
   ! --- Public: getChildValue / getChild / setChildValue / setChild ---
   public :: getChildValue, getChild, setChildValue, setChild
-
-  ! --- Public: child-list iteration ---
-  public :: getChildren, getLength, getItem1, destroyNodeList, hsd_child_list
 
   ! --- Public: tree manipulation ---
   public :: getDescendant, renameDescendant, setNodeName, removeChild
@@ -77,20 +73,6 @@ module dftbp_io_hsdutils
   ! ============================================================
   !  Types
   ! ============================================================
-
-  !> Wrapper for a pointer to hsd_table (for arrays of pointers).
-  type :: hsd_table_ptr
-    type(hsd_table), pointer :: ptr => null()
-  end type hsd_table_ptr
-
-  !> List of child tables (replaces fnodeList).
-  !>
-  !> Created by getChildren(), indexed by getItem1(), sized by getLength(),
-  !> freed by destroyNodeList().
-  type, public :: hsd_child_list
-    integer :: count = 0
-    type(hsd_table_ptr), allocatable :: items(:)
-  end type hsd_child_list
 
   ! ============================================================
   !  Generic interfaces
@@ -1683,99 +1665,6 @@ contains
     end if
 
   end subroutine setChild
-
-
-  ! ============================================================
-  !  getChildren / getLength / getItem1 / destroyNodeList
-  ! ============================================================
-
-  !> Get all child tables matching a given name.
-  subroutine getChildren(node, name, children)
-    type(hsd_table), intent(in), target :: node
-    character(len=*), intent(in) :: name
-    type(hsd_child_list), pointer, intent(out) :: children
-
-    type(hsd_iterator) :: iter
-    class(hsd_node), pointer :: cur
-    integer :: cnt, idx
-    character(len=:), allocatable :: childName
-
-    cnt = 0
-    call iter%init(node)
-    do while (iter%next(cur))
-      select type (t => cur)
-      type is (hsd_table)
-        if (allocated(t%name)) then
-          childName = tolower(t%name)
-          if (childName == tolower(name)) cnt = cnt + 1
-        end if
-      end select
-    end do
-
-    allocate(children)
-    children%count = cnt
-    if (cnt > 0) then
-      allocate(children%items(cnt))
-    end if
-
-    idx = 0
-    call iter%init(node)
-    do while (iter%next(cur))
-      select type (t => cur)
-      type is (hsd_table)
-        if (allocated(t%name)) then
-          childName = tolower(t%name)
-          if (childName == tolower(name)) then
-            idx = idx + 1
-            children%items(idx)%ptr => t
-          end if
-        end if
-      end select
-    end do
-
-  end subroutine getChildren
-
-
-  !> Get the number of items in a child list.
-  pure function getLength(children) result(length)
-    type(hsd_child_list), pointer, intent(in) :: children
-    integer :: length
-
-    if (associated(children)) then
-      length = children%count
-    else
-      length = 0
-    end if
-
-  end function getLength
-
-
-  !> Get the ii-th item from a child list (1-based indexing).
-  subroutine getItem1(children, ii, child)
-    type(hsd_child_list), pointer, intent(in) :: children
-    integer, intent(in) :: ii
-    type(hsd_table), pointer, intent(out) :: child
-
-    if (.not. associated(children) .or. ii < 1 .or. ii > children%count) then
-      child => null()
-      return
-    end if
-    child => children%items(ii)%ptr
-
-  end subroutine getItem1
-
-
-  !> Free a child list.
-  subroutine destroyNodeList(children)
-    type(hsd_child_list), pointer, intent(inout) :: children
-
-    if (associated(children)) then
-      if (allocated(children%items)) deallocate(children%items)
-      deallocate(children)
-    end if
-    children => null()
-
-  end subroutine destroyNodeList
 
 
   ! ============================================================

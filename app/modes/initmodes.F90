@@ -21,14 +21,14 @@ module modes_initmodes
   use dftbp_common_unitconversion, only : massUnits
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdutils, only : destroyNodeList, hsd_child_list,&
-      & getItem1, getLength, &
-      & getChild, getChildren, getChildValue
+  use dftbp_io_hsdutils, only :&
+      & getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getSelectedIndices, getNodeName, textNodeName, getNodeName2, setUnprocessed, hasInlineData
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
-  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump,&
+      & hsd_table_ptr, hsd_get_child_tables
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -473,7 +473,7 @@ contains
     real(dp), allocatable, intent(out) :: masses(:)
 
     type(hsd_table), pointer :: child, child2, child3, val
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     integer, allocatable :: pTmpI1(:)
     character(len=:), allocatable :: buffer, modifier
     real(dp) :: rTmp
@@ -483,15 +483,15 @@ contains
         & dummyValue=.true., list=.true.)
 
     ! Read individual atom specifications
-    call getChildren(child, "Mass", children)
-    if (getLength(children) == 0) then
+    call hsd_get_child_tables(child, "Mass", children)
+    if (size(children) == 0) then
       return
     end if
 
     allocate(masses(geo%nAtom))
     masses(:) = -1.0_dp
-    do ii = 1, getLength(children)
-      call getItem1(children, ii, child2)
+    do ii = 1, size(children)
+      child2 => children(ii)%ptr
       call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
       call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
       call getChildValue(child2, "MassPerAtom", rTmp, modifier=modifier, child=child)
@@ -506,7 +506,6 @@ contains
       end do
       deallocate(pTmpI1)
     end do
-    call destroyNodeList(children)
 
   end subroutine getInputMasses
 

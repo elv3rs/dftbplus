@@ -15,10 +15,9 @@ module dftbp_dftbplus_parser_transport
 #:endif
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue, setChild, setChildValue, &
-      & getLength, getItem1, destroyNodeList
-  use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set
+  use dftbp_io_hsdutils, only : &
+      & getChild, getChildValue, setChild, setChildValue
+  use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -61,7 +60,7 @@ contains
     type(hsd_table), pointer :: pDevice, pTask, pTaskType
     character(len=:), allocatable :: buffer, modifier
     type(hsd_table), pointer :: pTmp, field
-    type(hsd_child_list), pointer :: pNodeList
+    type(hsd_table_ptr), allocatable :: pNodeList(:)
     integer :: contact
     real(dp) :: lateralContactSeparation
     logical, allocatable :: atomInRegion(:)
@@ -86,8 +85,8 @@ contains
       call setChildValue(pDevice, "FirstLayerAtoms", transpar%PL)
     end if
 
-    call getChildren(root, "Contact", pNodeList)
-    transpar%ncont = getLength(pNodeList)
+    call hsd_get_child_tables(root, "Contact", pNodeList)
+    transpar%ncont = size(pNodeList)
     allocate(transpar%contacts(transpar%ncont))
     call readContacts(pNodeList, transpar%contacts, geom, buffer, transpar%contactLayerTol)
 
@@ -101,7 +100,7 @@ contains
             & "' contains an atom already in the device region or another contact: Atom nr. ",&
             & findloc(atomInRegion(transpar%contacts(ii)%idxrange(1):&
             & transpar%contacts(ii)%idxrange(2)), .true.) + transpar%contacts(ii)%idxrange(1)
-        call getItem1(pNodeList, ii, pTmp)
+        pTmp => pNodeList(ii)%ptr
         call dftbp_error(pTmp, strTmp)
       end if
       atomInRegion(transpar%contacts(ii)%idxrange(1):transpar%contacts(ii)%idxrange(2)) = .true.
@@ -111,8 +110,6 @@ contains
           & " is not in the device region or any contact"
       call dftbp_error(root, strTmp)
     end if
-
-    call destroyNodeList(pNodeList)
 
     transpar%taskUpload = .false.
 
@@ -148,8 +145,6 @@ contains
       call dftbp_error(pTask, "Invalid task '" // buffer // "'")
 
    end select
-
-   call destroyNodeList(pNodeList)
 
    geom%areContactsPresent = transpar%nCont > 0 .and. transpar%taskUpload
 
@@ -952,7 +947,7 @@ contains
 
     character(len=:), allocatable :: buffer, method, modifier, modifier2
     type(hsd_table), pointer :: val, child, child2, child3, child4, field
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     integer :: norbs, ii, jj, iAt
     integer :: atm_range(2)
     real(dp) :: rTmp
@@ -999,9 +994,9 @@ contains
       call getChild(child, "AtomCoupling", child2, requested=.false.)
       allocate(atmCoupling(atm_range(2)-atm_range(1)+1))
       atmCoupling = 0.d0
-      call getChildren(child2, "AtomList", children)
-      do ii = 1, getLength(children)
-        call getItem1(children, ii, child3)
+      call hsd_get_child_tables(child2, "AtomList", children)
+      do ii = 1, size(children)
+        child3 => children(ii)%ptr
         call getChildValue(child3, "Atoms", buffer, child=child4, multiple=.true.)
         call getSelectedAtomIndices(child4, buffer, geom%speciesNames, geom%species, tmpI1)
         call getChildValue(child3, "Value", rTmp, child=field, modifier=modifier2)
@@ -1020,7 +1015,6 @@ contains
           atmCoupling(iAt) = rTmp
         end do
       end do
-      call destroyNodeList(children)
 
       ! Transform atom coupling in orbital coupling
       norbs = 0
@@ -1054,7 +1048,7 @@ contains
     real(dp), intent(in) :: tempElec
 
     type(hsd_table), pointer :: pTmp, pNode, field
-    type(hsd_child_list), pointer :: pNodeList
+    type(hsd_table_ptr), allocatable :: pNodeList(:)
     integer :: ii, jj, ind, ncont, nKT
     real(dp) :: eRange(2), eRangeDefault(2)
     character(len=:), allocatable :: modifier
@@ -1138,15 +1132,14 @@ contains
     ! Terminal currents
     call getChild(root, "TerminalCurrents", pTmp, requested=.false.)
       if (associated(pTmp)) then
-        call getChildren(pTmp, "EmitterCollector", pNodeList)
-        allocate(tundos%ni(getLength(pNodeList)))
-        allocate(tundos%nf(getLength(pNodeList)))
-        do ii = 1, getLength(pNodeList)
-          call getItem1(pNodeList, ii, pNode)
+        call hsd_get_child_tables(pTmp, "EmitterCollector", pNodeList)
+        allocate(tundos%ni(size(pNodeList)))
+        allocate(tundos%nf(size(pNodeList)))
+        do ii = 1, size(pNodeList)
+          pNode => pNodeList(ii)%ptr
           call getEmitterCollectorByName(pNode, tundos%ni(ii), tundos%nf(ii),&
               & transpar%contacts(:)%name)
         end do
-        call destroyNodeList(pNodeList)
       else
         allocate(tundos%ni(ncont-1) )
         allocate(tundos%nf(ncont-1) )
@@ -1187,7 +1180,7 @@ contains
   subroutine readContacts(pNodeList, contacts, geom, task, contactLayerTol)
 
     !> Node to process
-    type(hsd_child_list), pointer :: pNodeList
+    type(hsd_table_ptr), intent(in) :: pNodeList(:)
 
     !> Contacts
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
@@ -1211,7 +1204,7 @@ contains
       contacts(ii)%wideBand = .false.
       contacts(ii)%wideBandDos = 0.0_dp
 
-      call getItem1(pNodeList, ii, pNode)
+      pNode => pNodeList(ii)%ptr
       call getChildValue(pNode, "Id", buffer, child=pTmp)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
@@ -1430,14 +1423,14 @@ contains
 
     integer :: nReg, iReg
     integer, allocatable :: tmpI1(:)
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     type(hsd_table), pointer :: child, child2
     character(len=:), allocatable :: buffer
     character(lc) :: strTmp
     logical :: do_ldos
 
-    call getChildren(node, "Region", children)
-    nReg = getLength(children)
+    call hsd_get_child_tables(node, "Region", children)
+    nReg = size(children)
 
     if (nReg == 0) then
       call hsd_get_or_set(node, "ComputeLDOS", do_ldos, .true.)
@@ -1446,9 +1439,8 @@ contains
         call setChild(node, "Region", child)
         call setChildValue(child, "Atoms", trim(strTmp))
         call setChildValue(child, "Label", "localDOS")
-        call destroyNodeList(children)
-        call getChildren(node, "Region", children)
-        nReg = getLength(children)
+        call hsd_get_child_tables(node, "Region", children)
+        nReg = size(children)
       else
         return
       end if
@@ -1458,7 +1450,7 @@ contains
     allocate(regionLabels(nReg))
     allocate(iAtInRegion(nReg))
     do iReg = 1, nReg
-      call getItem1(children, iReg, child)
+      child => children(iReg)%ptr
       call getChildValue(child, "Atoms", buffer, child=child2, multiple=.true.)
       call getSelectedAtomIndices(child2, buffer, geo%speciesNames,&
           & geo%species(idxdevice(1) : idxdevice(2)), tmpI1,&
@@ -1475,7 +1467,6 @@ contains
       call hsd_get_or_set(child, "Label", buffer, trim(strTmp))
       regionLabels(iReg) = unquote(buffer)
     end do
-    call destroyNodeList(children)
 
   end subroutine readPDOSRegions
 

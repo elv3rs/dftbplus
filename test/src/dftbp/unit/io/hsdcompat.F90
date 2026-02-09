@@ -15,10 +15,9 @@ module test_io_hsdcompat
       & hsd_has_child, hsd_get_attrib, hsd_set_attrib, hsd_get_table, hsd_get_child
   use hsd_data, only : new_table, data_load_string, DATA_FMT_HSD
   use dftbp_io_hsdutils, only : getChildValue, getChild, setChildValue, setChild, &
-      & dftbp_warning, &
-      & getChildren, getLength, getItem1, destroyNodeList, hsd_child_list
+      & dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
-  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_table_ptr, hsd_get_child_tables
   use dftbp_io_hsdutils, only : getNodeName, getNodeName2, getNodeHSDName, setUnprocessed,&
       & splitModifier, textNodeName
   $:FORTUNO_SERIAL_IMPORTS()
@@ -346,10 +345,10 @@ contains
 
 
   $:TEST("getChildren_getItem1_getLength", label="hsdcompat")
-    !! getChildren/getLength/getItem1/destroyNodeList workflow
+    !! hsd_get_child_tables workflow
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     type(hsd_table), pointer :: child
     integer :: nn
 
@@ -358,36 +357,28 @@ contains
         & "Region { Atoms = 3 }", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
 
-    call getChildren(root, "Region", children)
-    nn = getLength(children)
+    call hsd_get_child_tables(root, "Region", children)
+    nn = size(children)
     @:ASSERT(nn == 3)
 
     ! Get first and last
-    call getItem1(children, 1, child)
+    child => children(1)%ptr
     @:ASSERT(associated(child))
-    call getItem1(children, 3, child)
+    child => children(3)%ptr
     @:ASSERT(associated(child))
 
-    ! Out of bounds
-    call getItem1(children, 0, child)
-    @:ASSERT(.not. associated(child))
-    call getItem1(children, 4, child)
-    @:ASSERT(.not. associated(child))
-
-    call destroyNodeList(children)
-    @:ASSERT(.not. associated(children))
+    ! size-based bounds are enforced by the caller
   $:END_TEST()
 
 
   $:TEST("getChildren_empty", label="hsdcompat")
-    !! getChildren with no matches returns count 0
+    !! hsd_get_child_tables with no matches returns empty array
     type(hsd_table) :: root
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
 
     call new_table(root, name="root")
-    call getChildren(root, "Missing", children)
-    @:ASSERT(getLength(children) == 0)
-    call destroyNodeList(children)
+    call hsd_get_child_tables(root, "Missing", children)
+    @:ASSERT(size(children) == 0)
   $:END_TEST()
 
 

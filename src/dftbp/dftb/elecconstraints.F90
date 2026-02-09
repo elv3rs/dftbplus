@@ -12,10 +12,9 @@ module dftbp_dftb_elecconstraints
   use dftbp_common_accuracy, only : dp, hugeIterations
   use dftbp_dftbplus_input_geoopt, only : readOptimizerInput
   use dftbp_geoopt_package, only : createOptimizer, TOptimizer, TOptimizerInput
-  use hsd, only : hsd_rename_child
+  use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : hsd_child_list, getChild, getChildren, getChildValue, &
-      & getLength, getItem1, destroyNodeList
+  use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_typegeometry, only : TGeometry
@@ -213,22 +212,22 @@ contains
     !> Array of input structures (depending on number of Mulliken constraints defined)
     type(TMullikenConstrInp), allocatable, intent(out) :: inputs(:)
 
-    type(hsd_child_list), pointer :: constrNodes
+    type(hsd_table_ptr), allocatable :: constrNodes(:)
     type(hsd_table), pointer :: constrNode, child1
     type(hsd_table), pointer :: totalPopNode, populationsNode, totalChargeNode, chargesNode
     character(len=:), allocatable :: buffer
     real(dp) :: rTmp
     integer :: iConstrInp, nConstrInp, nAssociated
 
-    call getChildren(constrContainer, "MullikenPopulation", constrNodes)
-    if (.not. associated(constrNodes)) return
+    call hsd_get_child_tables(constrContainer, "MullikenPopulation", constrNodes)
+    if (size(constrNodes) == 0) return
 
-    nConstrInp = getLength(constrNodes)
+    nConstrInp = size(constrNodes)
     allocate(inputs(nConstrInp))
 
     do iConstrInp = 1, nConstrInp
       associate(input => inputs(iConstrInp))
-        call getItem1(constrNodes, iConstrInp, constrNode)
+        constrNode => constrNodes(iConstrInp)%ptr
         call getChildValue(constrNode, "Atoms", buffer, child=child1, multiple=.true.)
         call getSelectedAtomIndices(child1, buffer, geo%speciesNames, geo%species,&
             & input%atoms)
@@ -274,8 +273,6 @@ contains
 
       end associate
     end do
-
-    call destroyNodeList(constrNodes)
 
   end subroutine readMullikenConstraintInputs
 

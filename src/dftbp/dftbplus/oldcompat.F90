@@ -15,11 +15,11 @@ module dftbp_dftbplus_oldcompat
   use dftbp_io_charmanip, only : i2c, newline, tolower
   use hsd_data, only : hsd_table
   use hsd, only : hsd_get, hsd_has_child, hsd_remove_child, hsd_get_table, HSD_STAT_OK,&
-      & hsd_clear_children
-  use dftbp_io_hsdutils, only : hsd_child_list, getChild, getChildren, &
-      & getChildValue, setChild, setChildValue, getLength, removeChild, &
+      & hsd_clear_children, hsd_table_ptr, hsd_get_child_tables
+  use dftbp_io_hsdutils, only : getChild, &
+      & getChildValue, setChild, setChildValue, removeChild, &
       & getDescendant, setNodeName, &
-      & getItem1, destroyNodeList, renameDescendant
+      & renameDescendant
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_message, only : error
   implicit none
@@ -200,7 +200,7 @@ contains
     type(hsd_table), pointer :: root
 
     type(hsd_table),pointer :: node, node2, node3, par
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     integer :: ii
 
     ! Replace range operator with short start:end syntax
@@ -215,13 +215,12 @@ contains
     call hsd_get_table(root, "Hamiltonian/DFTB/SpinPolarisation/Colinear&
         &/InitialSpin", node)
     if (associated(node)) then
-      call getChildren(node, "AtomSpin", children)
-      do ii = 1, getLength(children)
-        call getItem1(children, ii, node2)
+      call hsd_get_child_tables(node, "AtomSpin", children)
+      do ii = 1, size(children)
+        node2 => children(ii)%ptr
         call getChild(node2, "Atoms", node3)
         call replaceRange(node3)
       end do
-      call destroyNodeList(children)
     end if
 
     call renameDescendant(root, "Hamiltonian/DFTB/SpinPolarisation/Colinear&

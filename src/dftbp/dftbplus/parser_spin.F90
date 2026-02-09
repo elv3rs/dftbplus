@@ -16,9 +16,8 @@ module dftbp_dftbplus_parser_spin
   use dftbp_common_unitconversion, only : energyUnits
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdutils, only : hsd_child_list, &
-      & getChild, getChildren, getChildValue, &
-      & getLength, getItem1, destroyNodeList
+  use dftbp_io_hsdutils, only : &
+      & getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices, &
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_message, only : error
@@ -27,7 +26,7 @@ module dftbp_dftbplus_parser_spin
   use dftbp_type_commontypes, only : TOrbitals
 
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set
+  use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables
   use hsd_data, only : hsd_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
@@ -320,7 +319,7 @@ contains
     real(dp), allocatable :: initCharges(:)
 
     type(hsd_table), pointer :: child, child2, child3, val
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     integer, allocatable :: pTmpI1(:)
     character(len=:), allocatable :: buffer
     real(dp) :: rTmp
@@ -335,13 +334,13 @@ contains
       allocate(initCharges(geo%nAtom))
       call getChildValue(child2, "", initCharges)
     else
-      call getChildren(child, "AtomCharge", children)
-      if (getLength(children) > 0) then
+      call hsd_get_child_tables(child, "AtomCharge", children)
+      if (size(children) > 0) then
         allocate(initCharges(geo%nAtom))
         initCharges = 0.0_dp
       end if
-      do ii = 1, getLength(children)
-        call getItem1(children, ii, child2)
+      do ii = 1, size(children)
+        child2 => children(ii)%ptr
         call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
         call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
         call getChildValue(child2, "ChargePerAtom", rTmp)
@@ -355,7 +354,6 @@ contains
         end do
         deallocate(pTmpI1)
       end do
-      call destroyNodeList(children)
     end if
 
   end subroutine getInitialCharges
@@ -377,7 +375,7 @@ contains
     real(dp), allocatable :: initSpins(:,:)
 
     type(hsd_table), pointer :: child, child2, child3, val
-    type(hsd_child_list), pointer :: children
+    type(hsd_table_ptr), allocatable :: children(:)
     integer, allocatable :: pTmpI1(:)
     character(len=:), allocatable :: buffer
     real(dp), allocatable :: rTmp(:)
@@ -394,14 +392,14 @@ contains
       allocate(initSpins(nSpin, geo%nAtom))
       call getChildValue(child2, "", initSpins)
     else
-      call getChildren(child, "AtomSpin", children)
-      if (getLength(children) > 0) then
+      call hsd_get_child_tables(child, "AtomSpin", children)
+      if (size(children) > 0) then
         allocate(initSpins(nSpin, geo%nAtom))
         initSpins = 0.0_dp
       end if
       allocate(rTmp(nSpin))
-      do ii = 1, getLength(children)
-        call getItem1(children, ii, child2)
+      do ii = 1, size(children)
+        child2 => children(ii)%ptr
         call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
         call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
         call getChildValue(child2, "SpinPerAtom", rTmp)
@@ -416,7 +414,6 @@ contains
         deallocate(pTmpI1)
       end do
       deallocate(rTmp)
-      call destroyNodeList(children)
     end if
 
   end subroutine getInitialSpins
