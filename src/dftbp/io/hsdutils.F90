@@ -11,7 +11,6 @@
 !> hsd-fortran's low-level tree API:
 !>
 !>   - dftbp_error / dftbp_warning — formatted error/warning with node context
-!>   - getChild — child table lookup with error reporting and modifier extraction
 !>   - setNodeName — node renaming
 !>   - Atom/index selection helpers
 !>   - Node name and modifier extraction helpers
@@ -24,9 +23,8 @@ module dftbp_io_hsdutils
   use dftbp_common_status, only : TStatus
   use hsd, only : hsd_table, hsd_value, hsd_node, hsd_iterator, &
       & hsd_format_error, hsd_format_warning, hsd_get, &
-      & hsd_get_child, hsd_get_table, hsd_get_attrib, &
+      & hsd_get_table, hsd_get_attrib, &
       & HSD_STAT_OK
-  use hsd_data, only : new_table
   use dftbp_io_charmanip, only : i2c, tolower
   use dftbp_io_indexselection, only : getIndexSelection
   use dftbp_io_message, only : error, warning
@@ -38,8 +36,6 @@ module dftbp_io_hsdutils
   ! --- Public: error / warning helpers ---
   public :: dftbp_error, dftbp_warning
 
-  ! --- Public: getChild ---
-  public :: getChild
 
   ! --- Public: tree manipulation ---
   public :: setNodeName
@@ -79,40 +75,7 @@ contains
   ! ============================================================
 
 
-  !> Add a table child to a parent and return a pointer to the STORED copy.
-  subroutine addChildGetPtr_(parent, child, stored)
-    type(hsd_table), intent(inout), target :: parent
-    type(hsd_table), intent(in) :: child
-    type(hsd_table), pointer, intent(out) :: stored
 
-    class(hsd_node), pointer :: storedNode
-
-    call parent%add_child(child)
-    call parent%get_child(parent%num_children, storedNode)
-    select type (t => storedNode)
-    type is (hsd_table)
-      stored => t
-    class default
-      stored => null()
-    end select
-
-  end subroutine addChildGetPtr_
-
-
-  !> Mark a named child of a parent table as processed.
-  subroutine markChildProcessed_(node, name)
-    type(hsd_table), intent(in) :: node
-    character(len=*), intent(in) :: name
-
-    class(hsd_node), pointer :: childNode
-    integer :: stat
-
-    call hsd_get_child(node, name, childNode, stat)
-    if (stat == HSD_STAT_OK .and. associated(childNode)) then
-      childNode%processed = .true.
-    end if
-
-  end subroutine markChildProcessed_
 
   ! ============================================================
   !  Error / warning helpers
@@ -482,50 +445,7 @@ contains
   end subroutine getModifier
 
 
-  ! ============================================================
-  !  getChild — get a child table by name
-  ! ============================================================
 
-  !> Get a child table by name.
-  !!
-  !! Uses hsd_get_table with auto_wrap to automatically promote value nodes
-  !! to table nodes with a #text child (handles bare "Key = value" patterns).
-  subroutine getChild(node, name, child, requested, modifier, emptyIfMissing)
-    type(hsd_table), intent(inout), target :: node
-    character(len=*), intent(in) :: name
-    type(hsd_table), pointer, intent(out) :: child
-    logical, intent(in), optional :: requested
-    character(len=:), allocatable, intent(out), optional :: modifier
-    logical, intent(in), optional :: emptyIfMissing
-
-    integer :: stat
-    logical :: isRequired
-    logical :: emptyIfMissing_
-
-    isRequired = .true.
-    if (present(requested)) isRequired = requested
-    emptyIfMissing_ = .false.
-    if (present(emptyIfMissing)) emptyIfMissing_ = emptyIfMissing
-
-    call hsd_get_table(node, name, child, stat, auto_wrap=.true.)
-
-    if (.not. associated(child)) then
-      if (emptyIfMissing_ .and. .not. isRequired) then
-        block
-          type(hsd_table) :: emptyChild
-          call new_table(emptyChild, name=tolower(name))
-          call addChildGetPtr_(node, emptyChild, child)
-        end block
-      else if (isRequired) then
-        call dftbp_error(node, "Missing required block: '" // name // "'")
-      end if
-    end if
-    if (present(modifier) .and. associated(child)) then
-      call getModifier(node, name, modifier)
-    end if
-    if (associated(child)) call markChildProcessed_(node, name)
-
-  end subroutine getChild
 
 
 
