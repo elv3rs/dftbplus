@@ -14,10 +14,10 @@ module dftbp_dftbplus_parser_driver
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes
   use dftbp_extlibs_plumed, only : withPlumed
   use dftbp_geoopt_geoopt, only : geoOptTypes
-  use dftbp_io_charmanip, only : i2c, unquote
-  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_matrix
-  use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChild, getChildValue
+  use dftbp_io_charmanip, only : i2c, tolower, unquote
+  use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_matrix, hsd_get_table, &
+      & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK
+  use hsd_data, only : hsd_table, hsd_node
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData, &
       & getFirstTextChild
@@ -77,6 +77,7 @@ contains
 
     character(mc) :: modeName
     logical :: isMaxStepNeeded
+    integer :: stat
 
     ctrl%isGeoOpt = .false.
     ctrl%tCoordOpt = .false.
@@ -190,8 +191,10 @@ contains
 
       ctrl%iGeoOpt = geoOptTypes%fire
       call commonGeoOptions(node, ctrl, geom, atomsRange, .false.)
-      call getChildValue(node, "TimeStep", ctrl%deltaT, 1.0_dp, modifier=modifier, child=field)
-      call convertUnitHsd(modifier, timeUnits, field, ctrl%deltaT)
+      call hsd_get_or_set(node, "TimeStep", ctrl%deltaT, 1.0_dp)
+      call hsd_get_attrib(node, "TimeStep", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, node, ctrl%deltaT)
 
     case("secondderivatives")
       ! currently only numerical derivatives of forces is implemented
@@ -201,21 +204,24 @@ contains
       ctrl%tDerivs = .true.
       ctrl%tForces = .true.
 
-      call getChildValue(node, "Atoms", buffer2, trim(atomsRange), child=child,&
-          & multiple=.true.)
+      call hsd_get_or_set(node, "Atoms", buffer2, trim(atomsRange))
+      call hsd_get_table(node, "Atoms", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) child => node
       call getSelectedAtomIndices(child, buffer2, geom%speciesNames, geom%species,&
           & ctrl%indDerivAtom)
       if (size(ctrl%indDerivAtom) == 0) then
         call error("No atoms specified for derivatives calculation.")
       end if
 
-      call getChild(node, "MovedAtoms", child, requested=.false.)
+      call hsd_get_table(node, "MovedAtoms", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         if (.not. isContiguousRange(ctrl%indDerivAtom)) then
           call dftbp_error(child,&
             & "Atoms for calculation of partial Hessian must be a contiguous range.")
         end if
-        call getChildValue(child, "", buffer2, child=child2, multiple=.true.)
+        call hsd_get(child, "#text", buffer2, stat=stat)
+        if (stat /= HSD_STAT_OK) buffer2 = ""
+        child2 => child
         call getSelectedAtomIndices(child2, buffer2, geom%speciesNames, geom%species, &
            & ctrl%indMovedAtom)
         if (.not. isContiguousRange(ctrl%indMovedAtom)) then
@@ -230,9 +236,10 @@ contains
       end if
       ctrl%nrMoved = size(ctrl%indMovedAtom)
 
-      call getChildValue(node, "Delta", ctrl%deriv2ndDelta, 1.0E-4_dp, &
-          & modifier=modifier, child=field)
-      call convertUnitHsd(modifier, lengthUnits, field, ctrl%deriv2ndDelta)
+      call hsd_get_or_set(node, "Delta", ctrl%deriv2ndDelta, 1.0E-4_dp)
+      call hsd_get_attrib(node, "Delta", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, lengthUnits, node, ctrl%deriv2ndDelta)
 
     case ("velocityverlet")
       ! molecular dynamics
@@ -243,8 +250,9 @@ contains
       ctrl%tMD = .true.
 
       call hsd_get_or_set(node, "MDRestartFrequency", ctrl%restartFreq, 1)
-      call getChildValue(node, "MovedAtoms", buffer2, trim(atomsRange), child=child, &
-          &multiple=.true.)
+      call hsd_get_or_set(node, "MovedAtoms", buffer2, trim(atomsRange))
+      call hsd_get_table(node, "MovedAtoms", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) child => node
       call getSelectedAtomIndices(child, buffer2, geom%speciesNames, geom%species, &
           & ctrl%indMovedAtom)
       ctrl%nrMoved = size(ctrl%indMovedAtom)
@@ -259,23 +267,26 @@ contains
             & possible.")
       end if
 
-      call getChildValue(node, "TimeStep", ctrl%deltaT, modifier=modifier, &
-          &child=field)
-      call convertUnitHsd(modifier, timeUnits, field, ctrl%deltaT)
+      call hsd_get(node, "TimeStep", ctrl%deltaT, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'TimeStep'")
+      call hsd_get_attrib(node, "TimeStep", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, node, ctrl%deltaT)
 
       call parseThermostat(node, ctrl%deltaT, ctrl%tReadMDVelocities, ctrl%maxRun,&
           & ctrl%thermostatInp, ctrl%tempProfileInp)
 
       if (ctrl%maxRun < -1) then
-        call getChildValue(node, "Steps", ctrl%maxRun)
+        call hsd_get(node, "Steps", ctrl%maxRun, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'Steps'")
       end if
 
       call hsd_get_or_set(node, "OutputPrefix", buffer2, "geo_end")
       ctrl%outFile = unquote(buffer2)
 
-      call getChildValue(node, "Plumed", ctrl%tPlumed, default=.false., child=child)
+      call hsd_get_or_set(node, "Plumed", ctrl%tPlumed, .false.)
       if (ctrl%tPlumed .and. .not. withPlumed) then
-        call dftbp_error(child, "Metadynamics can not be used since code has been compiled&
+        call dftbp_error(node, "Metadynamics can not be used since code has been compiled&
             & without PLUMED support")
       end if
 
@@ -284,7 +295,7 @@ contains
         ctrl%tBarostat = .false.
         ctrl%pressure = 0.0_dp
         ctrl%BarostatStrength = 0.0_dp
-        call getChild(node, "Barostat", child, requested=.false.)
+        call hsd_get_table(node, "Barostat", child, stat, auto_wrap=.true.)
         if (associated(child)) then
           if (allocated(ctrl%hybridXcInp)) then
             call dftbp_error(node, "Barostating not currently implemented for hybrid functionals")
@@ -293,24 +304,30 @@ contains
             call error("Dynamics for a subset of atoms is not currently&
                 & possible when using a barostat")
           end if
-          call getChildValue(child, "Pressure", ctrl%pressure, &
-              & modifier=modifier, child=child2)
-          call convertUnitHsd(modifier, pressureUnits, child2, &
+          call hsd_get(child, "Pressure", ctrl%pressure, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'Pressure'")
+          call hsd_get_attrib(child, "Pressure", modifier, stat)
+          if (stat /= HSD_STAT_OK) modifier = ""
+          call convertUnitHsd(modifier, pressureUnits, child, &
               & ctrl%pressure)
-          call getChild(child, "Coupling", child=child2, requested=.false.)
+          call hsd_get_table(child, "Coupling", child2, stat, auto_wrap=.true.)
           if (associated(child2)) then
-            call getChildValue(child2, "", ctrl%BarostatStrength)
-            call getChild(child, "Timescale",child=child2,modifier=modifier,&
-                &requested=.false.)
+            call hsd_get(child2, "#text", ctrl%BarostatStrength, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
+            call hsd_get_table(child, "Timescale", child2, stat, auto_wrap=.true.)
             if (associated(child2)) call error("Only Coupling strength OR &
                 &Timescale can be set for Barostatting.")
           else
-            call getChild(child, "Timescale",child=child2,modifier=modifier,&
-                &requested=.false.)
+            call hsd_get_table(child, "Timescale", child2, stat, auto_wrap=.true.)
             if (associated(child2)) then
-              call getChildValue(child2, "", ctrl%BarostatStrength, &
-                  & modifier=modifier, child=child3)
-              call convertUnitHsd(modifier, timeUnits, child3, &
+              call hsd_get(child2, "#text", ctrl%BarostatStrength, stat=stat)
+              if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
+              if (allocated(child2%attrib)) then
+                modifier = child2%attrib
+              else
+                modifier = ""
+              end if
+              call convertUnitHsd(modifier, timeUnits, child2, &
                   & ctrl%BarostatStrength)
               ctrl%BarostatStrength = ctrl%deltaT / ctrl%BarostatStrength
             else
@@ -337,8 +354,8 @@ contains
     #:if WITH_SOCKETS
       ctrl%tForces = .true.
       allocate(ctrl%socketInput)
-      call getChild(node, 'File', child=child2, requested=.false.)
-      call getChild(node, 'Host', child=child3, requested=.false.)
+      call hsd_get_table(node, 'File', child2, stat, auto_wrap=.true.)
+      call hsd_get_table(node, 'Host', child3, stat, auto_wrap=.true.)
       if (associated(child2) .eqv. associated(child3)) then
         call error('Either Host or File (but not both) must be set for socket&
             & communication')
@@ -346,21 +363,25 @@ contains
 
       ! File communication
       if (associated(child2)) then
-        call getChildValue(child2, "", buffer2)
+        call hsd_get(child2, "#text", buffer2, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
         ctrl%socketInput%host = unquote(buffer2)
         ! zero it to signal to initprogram to use a unix file
         ctrl%socketInput%port = 0
       else
-        call getChildValue(child3, "", buffer2)
+        call hsd_get(child3, "#text", buffer2, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child3, "Missing required value")
         ctrl%socketInput%host = unquote(buffer2)
-        call getChildValue(node, "Port", ctrl%socketInput%port, child=field)
+        call hsd_get(node, "Port", ctrl%socketInput%port, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'Port'")
         if (ctrl%socketInput%port <= 0) then
-          call dftbp_error(field, "Invalid port number")
+          call dftbp_error(node, "Invalid port number")
         end if
       end if
 
-      call getChildValue(node, "Protocol", value1, "i-PI", child=child)
-      call getNodeName(value1, buffer)
+      call hsd_get_choice(node, "Protocol", buffer, value1, stat)
+      if (stat /= HSD_STAT_OK) buffer = "i-PI"
+      buffer = tolower(buffer)
       select case(buffer)
       case("i-pi")
         ctrl%socketInput%protocol = IPI_PROTOCOLS%IPI_1
@@ -372,7 +393,7 @@ contains
         end if
 
       case default
-        call dftbp_error(child, "Invalid protocol '" // buffer // "'")
+        call dftbp_error(node, "Invalid protocol '" // buffer // "'")
       end select
       call hsd_get_or_set(node, "Verbosity", ctrl%socketInput%verbosity, 0)
       call hsd_get_or_set(node, "MaxSteps", ctrl%maxRun, 200)
@@ -455,6 +476,7 @@ contains
     type(hsd_table), pointer :: child, field
     character(len=:), allocatable :: buffer2, modifier
     logical :: isMaxStep
+    integer :: stat
 
     if (present(isMaxStepNeeded)) then
       isMaxStep = isMaxStepNeeded
@@ -471,11 +493,17 @@ contains
         call dftbp_error(node, "Lattice optimisation not currently implemented for hybrid&
             & functionals")
       end if
-      call getChildValue(node, "Pressure", ctrl%pressure, 0.0_dp, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, pressureUnits, child, ctrl%pressure)
+      call hsd_get_or_set(node, "Pressure", ctrl%pressure, 0.0_dp)
+      call hsd_get_attrib(node, "Pressure", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, pressureUnits, node, ctrl%pressure)
       call hsd_get_or_set(node, "FixAngles", ctrl%tLatOptFixAng, .false.)
       if (ctrl%tLatOptFixAng) then
-        call getChildValue(node, "FixLengths", ctrl%tLatOptFixLen, [.false.,.false.,.false.])
+        block
+          logical, allocatable :: tmpLogArr(:)
+          call hsd_get_or_set(node, "FixLengths", tmpLogArr, [.false.,.false.,.false.])
+          ctrl%tLatOptFixLen = tmpLogArr
+        end block
       else
         call hsd_get_or_set(node, "Isotropic", ctrl%tLatOptIsotropic, .false.)
       end if
@@ -483,7 +511,9 @@ contains
         call hsd_get_or_set(node, "MaxLatticeStep", ctrl%maxLatDisp, 0.2_dp)
       end if
     end if
-    call getChildValue(node, "MovedAtoms", buffer2, trim(atomsRange), child=child, multiple=.true.)
+    call hsd_get_or_set(node, "MovedAtoms", buffer2, trim(atomsRange))
+    call hsd_get_table(node, "MovedAtoms", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) child => node
     call getSelectedAtomIndices(child, buffer2, geom%speciesNames, geom%species,&
         & ctrl%indMovedAtom)
 
@@ -494,12 +524,15 @@ contains
         call hsd_get_or_set(node, "MaxAtomStep", ctrl%maxAtomDisp, 0.2_dp)
       end if
     end if
-    call getChildValue(node, "MaxForceComponent", ctrl%maxForce, 1e-4_dp, modifier=modifier,&
-        & child=field)
-    call convertUnitHsd(modifier, forceUnits, field, ctrl%maxForce)
+    call hsd_get_or_set(node, "MaxForceComponent", ctrl%maxForce, 1e-4_dp)
+    call hsd_get_attrib(node, "MaxForceComponent", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call convertUnitHsd(modifier, forceUnits, node, ctrl%maxForce)
     call hsd_get_or_set(node, "MaxSteps", ctrl%maxRun, 200)
-    call getChildValue(node, "StepSize", ctrl%deltaT, 100.0_dp, modifier=modifier, child=field)
-    call convertUnitHsd(modifier, timeUnits, field, ctrl%deltaT)
+    call hsd_get_or_set(node, "StepSize", ctrl%deltaT, 100.0_dp)
+    call hsd_get_attrib(node, "StepSize", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call convertUnitHsd(modifier, timeUnits, node, ctrl%deltaT)
     call hsd_get_or_set(node, "OutputPrefix", buffer2, "geo_end")
     ctrl%outFile = unquote(buffer2)
     call hsd_get_or_set(node, "AppendGeometries", ctrl%tAppendGeo, .false.)
@@ -528,9 +561,10 @@ contains
 
     type(hsd_table), pointer :: pXlbomd, pXlbomdFast, pRoot, pChild
     logical :: tXlbomdFast
+    integer :: stat
 
-    call getChild(node, 'Xlbomd', pXlbomd, requested=.false.)
-    call getChild(node, 'XlbomdFast', pXlbomdFast, requested=.false.)
+    call hsd_get_table(node, 'Xlbomd', pXlbomd, stat, auto_wrap=.true.)
+    call hsd_get_table(node, 'XlbomdFast', pXlbomdFast, stat, auto_wrap=.true.)
     if (.not. (associated(pXlbomd) .or. associated(pXlbomdFast))) then
       return
     end if
@@ -600,26 +634,31 @@ contains
     real(dp), allocatable :: constraintMatrix(:,:)
     integer :: nMatRows, nMatCols, ii, stat
 
-    call getChildValue(node, "Constraints", value1, "", child=child, allowEmptyValue=.true.)
-    call getNodeName2(value1, buffer)
-    if (buffer == "" .and. .not. hasInlineData(child)) then
+    call hsd_get_table(node, "Constraints", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
       ctrl%nrConstr = 0
     else
-      call hsd_get_matrix(node, "Constraints", constraintMatrix, nMatRows, nMatCols, &
-          & stat=stat, order="column-major")
-      if (stat /= 0 .or. nMatRows /= 4) then
-        call dftbp_error(child, "Invalid constraint data (expected rows of 1 int + 3 reals)")
+      call hsd_get_choice(child, "", buffer, value1, stat)
+      if (stat /= HSD_STAT_OK) buffer = ""
+      if (buffer == "" .and. .not. hasInlineData(child)) then
+        ctrl%nrConstr = 0
+      else
+        call hsd_get_matrix(node, "Constraints", constraintMatrix, nMatRows, nMatCols, &
+            & stat=stat, order="column-major")
+        if (stat /= 0 .or. nMatRows /= 4) then
+          call dftbp_error(child, "Invalid constraint data (expected rows of 1 int + 3 reals)")
+        end if
+        ctrl%nrConstr = nMatCols
+        allocate(ctrl%conAtom(ctrl%nrConstr))
+        allocate(ctrl%conVec(3, ctrl%nrConstr))
+        do ii = 1, ctrl%nrConstr
+          ctrl%conAtom(ii) = nint(constraintMatrix(1, ii))
+        end do
+        if (.not.all(ctrl%conAtom<=nAtom)) then
+          call dftbp_error(node,"Non-existent atom specified in constraint")
+        end if
+        ctrl%conVec(:,:) = constraintMatrix(2:4, :)
       end if
-      ctrl%nrConstr = nMatCols
-      allocate(ctrl%conAtom(ctrl%nrConstr))
-      allocate(ctrl%conVec(3, ctrl%nrConstr))
-      do ii = 1, ctrl%nrConstr
-        ctrl%conAtom(ii) = nint(constraintMatrix(1, ii))
-      end do
-      if (.not.all(ctrl%conAtom<=nAtom)) then
-        call dftbp_error(node,"Non-existent atom specified in constraint")
-      end if
-      ctrl%conVec(:,:) = constraintMatrix(2:4, :)
     end if
 
   end subroutine readGeoConstraints
@@ -642,10 +681,15 @@ contains
     integer :: nVelocities, nMatRows, nMatCols, stat
     real(dp), allocatable :: tmpVelocities(:,:)
 
-    call getChildValue(node, "Velocities", value1, "", child=child, modifier=modifier,&
-        & allowEmptyValue=.true.)
-    call getNodeName2(value1, buffer)
-    if (buffer == "" .and. .not. hasInlineData(child)) then
+    call hsd_get_table(node, "Velocities", child, stat, auto_wrap=.true.)
+    modifier = ""
+    buffer = ""
+    if (associated(child)) then
+      if (allocated(child%attrib)) modifier = child%attrib
+      call hsd_get_choice(child, "", buffer, value1, stat)
+      if (stat /= HSD_STAT_OK) buffer = ""
+    end if
+    if (buffer == "" .and. (.not. associated(child) .or. .not. hasInlineData(child))) then
       ctrl%tReadMDVelocities = .false.
     else
       call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
@@ -681,8 +725,15 @@ contains
 
     character(len=:), allocatable :: modifier
     real(dp) :: temp
+    integer :: stat
 
-    call getChildValue(node, "", temp, modifier=modifier)
+    call hsd_get(node, "#text", temp, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required temperature value")
+    if (allocated(node%attrib)) then
+      modifier = node%attrib
+    else
+      modifier = ""
+    end if
     call convertUnitHsd(modifier, energyUnits, node, temp)
     if (temp < 0.0_dp) call dftbp_error(node, "Negative temperature.")
     temp = max(minTemp, temp)
@@ -797,10 +848,15 @@ contains
     logical :: ppRangeInvalid, tNeedFieldStrength
     real (dp) :: defPpRange(2)
     logical :: defaultWrite
+    integer :: stat
 
-    call getChildValue(node, "Steps", input%steps)
-    call getChildValue(node, "TimeStep", input%dt, modifier=modifier, child=child)
-    call convertUnitHsd(modifier, timeUnits, child, input%dt)
+    call hsd_get(node, "Steps", input%steps, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'Steps'")
+    call hsd_get(node, "TimeStep", input%dt, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'TimeStep'")
+    call hsd_get_attrib(node, "TimeStep", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call convertUnitHsd(modifier, timeUnits, node, input%dt)
 
     call hsd_get_or_set(node, "Populations", input%tPopulations, .false.)
     call hsd_get_or_set(node, "WriteFrequency", input%writeFreq, 50)
@@ -821,24 +877,30 @@ contains
     call hsd_get_or_set(node, "FillingsFromFile", input%tFillingsFromFile, .false.)
 
     if (input%tPump) then
-      call getChildValue(node, "PumpProbeFrames", input%tdPPFrames)
+      call hsd_get(node, "PumpProbeFrames", input%tdPPFrames, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'PumpProbeFrames'")
       defPpRange = [0.0_dp, input%steps * input%dt]
-      call getChildValue(node, "PumpProbeRange", input%tdPpRange, defPprange, modifier=modifier,&
-          & child=child)
-      call convertUnitHsd(modifier, timeUnits, child, input%tdPpRange)
+      block
+        real(dp), allocatable :: tmpPpRange(:)
+        call hsd_get_or_set(node, "PumpProbeRange", tmpPpRange, defPprange)
+        input%tdPpRange = tmpPpRange
+      end block
+      call hsd_get_attrib(node, "PumpProbeRange", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, node, input%tdPpRange)
 
       ppRangeInvalid = (input%tdPpRange(2) <= input%tdPpRange(1))&
           & .or. (input%tdPprange(1) < defPpRange(1))&
           & .or. (input%tdPpRange(2) > defPpRange(2))
       if (ppRangeInvalid) then
-        call dftbp_error(child, "Wrong definition of PumpProbeRange, either incorrect order&
+        call dftbp_error(node, "Wrong definition of PumpProbeRange, either incorrect order&
             & or outside of simulation time range")
       end if
     end if
 
     call hsd_get_or_set(node, "Probe", input%tProbe, .false.)
     if (input%tPump .and. input%tProbe) then
-      call dftbp_error(child, "Pump and probe cannot be simultaneously true.")
+      call dftbp_error(node, "Pump and probe cannot be simultaneously true.")
     end if
 
     call hsd_get_or_set(node, "EulerFrequency", input%eulerFreq, 0)
@@ -846,7 +908,7 @@ contains
     call hsd_get_or_set(node, "VerboseDynamics", input%tVerboseDyn, .true.)
 
     if ((input%eulerFreq < 50) .and. (input%eulerFreq > 0)) then
-      call dftbp_error(child, "Wrong number of Euler steps, should be above 50")
+      call dftbp_error(node, "Wrong number of Euler steps, should be above 50")
     end if
     if (input%eulerFreq >= 50) then
       input%tEulers = .true.
@@ -860,14 +922,20 @@ contains
     defaultWrite = .true.
 
     !! Different perturbation types
-    call getChildValue(node, "Perturbation", value1, "None", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_choice(node, "Perturbation", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) then
+      buffer = "none"
+      value1 => null()
+    else
+      buffer = tolower(buffer)
+    end if
     select case(buffer)
 
     case ("kick")
       input%pertType = pertTypes%kick
       call hsd_rename_child(value1, "PolarizationDirection", "PolarisationDirection")
-      call getChildValue(value1, "PolarisationDirection", buffer2)
+      call hsd_get(value1, "PolarisationDirection", buffer2, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'PolarisationDirection'")
       input%polDir = directionConversion(unquote(buffer2), value1)
 
       call hsd_get_or_set(value1, "SpinType", buffer2, "Singlet")
@@ -885,15 +953,31 @@ contains
     case ("laser")
       input%pertType = pertTypes%laser
       call hsd_rename_child(value1, "PolarizationDirection", "PolarisationDirection")
-      call getChildValue(value1, "PolarisationDirection", input%reFieldPolVec)
+      block
+        real(dp), allocatable :: tmpArr(:)
+        call hsd_get(value1, "PolarisationDirection", tmpArr, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'PolarisationDirection'")
+        input%reFieldPolVec = tmpArr
+      end block
       call hsd_rename_child(value1, "ImagPolarizationDirection", "ImagPolarisationDirection")
-      call getChildValue(value1, "ImagPolarisationDirection", input%imFieldPolVec, &
-          & [0.0_dp, 0.0_dp, 0.0_dp])
-      call getChildValue(value1, "LaserEnergy", input%omega, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, energyUnits, child, input%omega)
-      call getChildValue(value1, "Phase", input%phase, 0.0_dp, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, angularUnits, child, input%phase)
-      call getChildValue(value1, "ExcitedAtoms", buffer, "1:-1", child=child, multiple=.true.)
+      block
+        real(dp), allocatable :: tmpArr(:)
+        call hsd_get_or_set(value1, "ImagPolarisationDirection", tmpArr, &
+            & [0.0_dp, 0.0_dp, 0.0_dp])
+        input%imFieldPolVec = tmpArr
+      end block
+      call hsd_get(value1, "LaserEnergy", input%omega, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'LaserEnergy'")
+      call hsd_get_attrib(value1, "LaserEnergy", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, energyUnits, value1, input%omega)
+      call hsd_get_or_set(value1, "Phase", input%phase, 0.0_dp)
+      call hsd_get_attrib(value1, "Phase", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, angularUnits, value1, input%phase)
+      call hsd_get_or_set(value1, "ExcitedAtoms", buffer, "1:-1")
+      call hsd_get_table(value1, "ExcitedAtoms", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) child => value1
       call getSelectedAtomIndices(child, buffer, geom%speciesNames, geom%species,&
           & input%indExcitedAtom)
 
@@ -906,20 +990,39 @@ contains
 
     case ("kickandlaser")
       input%pertType = pertTypes%kickAndLaser
-      call getChildValue(value1, "KickPolDir", buffer2)
+      call hsd_get(value1, "KickPolDir", buffer2, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'KickPolDir'")
       input%polDir = directionConversion(unquote(buffer2), value1)
       call hsd_get_or_set(value1, "SpinType", input%spType, tdSpinTypes%singlet)
-      call getChildValue(value1, "LaserPolDir", input%reFieldPolVec)
-      call getChildValue(value1, "LaserImagPolDir", input%imFieldPolVec, [0.0_dp, 0.0_dp, 0.0_dp])
-      call getChildValue(value1, "LaserEnergy", input%omega, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, energyUnits, child, input%omega)
-      call getChildValue(value1, "Phase", input%phase, 0.0_dp, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, angularUnits, child, input%phase)
-      call getChildValue(value1, "LaserStrength", input%tdLaserField, modifier=modifier,&
-          & child=child)
-      call convertUnitHsd(modifier, EFieldUnits, child, input%tdLaserField)
+      block
+        real(dp), allocatable :: tmpArr(:)
+        call hsd_get(value1, "LaserPolDir", tmpArr, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'LaserPolDir'")
+        input%reFieldPolVec = tmpArr
+      end block
+      block
+        real(dp), allocatable :: tmpArr(:)
+        call hsd_get_or_set(value1, "LaserImagPolDir", tmpArr, [0.0_dp, 0.0_dp, 0.0_dp])
+        input%imFieldPolVec = tmpArr
+      end block
+      call hsd_get(value1, "LaserEnergy", input%omega, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'LaserEnergy'")
+      call hsd_get_attrib(value1, "LaserEnergy", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, energyUnits, value1, input%omega)
+      call hsd_get_or_set(value1, "Phase", input%phase, 0.0_dp)
+      call hsd_get_attrib(value1, "Phase", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, angularUnits, value1, input%phase)
+      call hsd_get(value1, "LaserStrength", input%tdLaserField, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'LaserStrength'")
+      call hsd_get_attrib(value1, "LaserStrength", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, EFieldUnits, value1, input%tdLaserField)
 
-      call getChildValue(value1, "ExcitedAtoms", buffer, "1:-1", child=child, multiple=.true.)
+      call hsd_get_or_set(value1, "ExcitedAtoms", buffer, "1:-1")
+      call hsd_get_table(value1, "ExcitedAtoms", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) child => value1
       call getSelectedAtomIndices(child, buffer, geom%speciesNames, geom%species,&
           & input%indExcitedAtom)
       input%nExcitedAtom = size(input%indExcitedAtom)
@@ -936,19 +1039,27 @@ contains
       defaultWrite = .true.
 
     case default
-      call dftbp_error(child, "Unknown perturbation type " // buffer)
+      call dftbp_error(node, "Unknown perturbation type " // buffer)
     end select
 
     if (tNeedFieldStrength) then
-      call getChildValue(node, "FieldStrength", input%tdfield, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, EFieldUnits, child, input%tdfield)
+      call hsd_get(node, "FieldStrength", input%tdfield, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'FieldStrength'")
+      call hsd_get_attrib(node, "FieldStrength", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, EFieldUnits, node, input%tdfield)
     end if
 
     call hsd_get_or_set(node, "WriteEnergyAndCharges", input%tdWriteExtras, defaultWrite)
 
     !! Different envelope functions
-    call getChildValue(node, "EnvelopeShape", value1, "Constant")
-    call getNodeName(value1, buffer)
+    call hsd_get_choice(node, "EnvelopeShape", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) then
+      buffer = "constant"
+      value1 => null()
+    else
+      buffer = tolower(buffer)
+    end if
     select case(buffer)
 
     case("constant")
@@ -956,33 +1067,47 @@ contains
 
     case("gaussian")
       input%envType = envTypes%gaussian
-      call getChildValue(value1, "Time0", input%time0, 0.0_dp, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, timeUnits, child, input%Time0)
+      call hsd_get_or_set(value1, "Time0", input%time0, 0.0_dp)
+      call hsd_get_attrib(value1, "Time0", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, value1, input%Time0)
 
-      call getChildValue(value1, "Time1", input%time1, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, timeUnits, child, input%Time1)
+      call hsd_get(value1, "Time1", input%time1, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Time1'")
+      call hsd_get_attrib(value1, "Time1", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, value1, input%Time1)
 
     case("sin2")
       input%envType = envTypes%sin2
-      call getChildValue(value1, "Time0", input%time0, 0.0_dp, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, timeUnits, child, input%Time0)
+      call hsd_get_or_set(value1, "Time0", input%time0, 0.0_dp)
+      call hsd_get_attrib(value1, "Time0", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, value1, input%Time0)
 
-      call getChildValue(value1, "Time1", input%time1, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, timeUnits, child, input%Time1)
+      call hsd_get(value1, "Time1", input%time1, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Time1'")
+      call hsd_get_attrib(value1, "Time1", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, value1, input%Time1)
 
     case("fromfile")
       input%envType = envTypes%fromFile
-      call getChildValue(value1, "Time0", input%time0, 0.0_dp, modifier=modifier, child=child)
-      call convertUnitHsd(modifier, timeUnits, child, input%Time0)
+      call hsd_get_or_set(value1, "Time0", input%time0, 0.0_dp)
+      call hsd_get_attrib(value1, "Time0", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call convertUnitHsd(modifier, timeUnits, value1, input%Time0)
 
     case default
-      call dftbp_error(value1, "Unknown envelope shape " // buffer)
+      call dftbp_error(node, "Unknown envelope shape " // buffer)
     end select
 
     !! Non-adiabatic molecular dynamics
     call hsd_get_or_set(node, "IonDynamics", input%tIons, .false.)
     if (input%tIons) then
-      call getChildValue(node, "MovedAtoms", buffer, "1:-1", child=child, multiple=.true.)
+      call hsd_get_or_set(node, "MovedAtoms", buffer, "1:-1")
+      call hsd_get_table(node, "MovedAtoms", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) child => node
       call getSelectedAtomIndices(child, buffer, geom%speciesNames, geom%species,&
           & input%indMovedAtom)
 
@@ -1050,10 +1175,15 @@ contains
     integer :: nVelocities, nMatRows, nMatCols, stat
     real(dp), allocatable :: tmpVelocities(:,:)
 
-    call getChildValue(node, "Velocities", value1, "", child=child, modifier=modifier,&
-        & allowEmptyValue=.true.)
-    call getNodeName2(value1, buffer)
-    if (buffer == "" .and. .not. hasInlineData(child)) then
+    call hsd_get_table(node, "Velocities", child, stat, auto_wrap=.true.)
+    modifier = ""
+    buffer = ""
+    if (associated(child)) then
+      if (allocated(child%attrib)) modifier = child%attrib
+      call hsd_get_choice(child, "", buffer, value1, stat)
+      if (stat /= HSD_STAT_OK) buffer = ""
+    end if
+    if (buffer == "" .and. (.not. associated(child) .or. .not. hasInlineData(child))) then
        input%tReadMDVelocities = .false.
     else
        call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
@@ -1100,10 +1230,12 @@ contains
 
     type(hsd_table), pointer :: thermNode, child, child2, child3
     character(len=:), allocatable :: thermName, modifier
+    integer :: stat
 
     allocate(thermostatInp, tempProfileInp)
-    call getChildValue(node, "Thermostat", thermNode, child=child)
-    call getNodeName(thermNode, thermName)
+    call hsd_get_choice(node, "Thermostat", thermName, thermNode, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required block: 'Thermostat'")
+    thermName = tolower(thermName)
 
     select case(thermName)
 
@@ -1113,18 +1245,25 @@ contains
       allocate(thermostatInp%berendsen)
       associate (inp => thermostatInp%berendsen)
         call readTempOrTempProfile_(thermNode, maxRun, tempProfileInp)
-        call getChild(thermNode, "CouplingStrength", child=child2, requested=.false.)
+        call hsd_get_table(thermNode, "CouplingStrength", child2, stat, auto_wrap=.true.)
         if (associated(child2)) then
-          call getChildValue(child2, "", inp%coupling)
-          call getChild(thermNode, "Timescale", child=child2, modifier=modifier, requested=.false.)
+          call hsd_get(child2, "#text", inp%coupling, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
+          call hsd_get_table(thermNode, "Timescale", child2, stat, auto_wrap=.true.)
           if (associated(child2)) then
             call error("Only Coupling strength OR Timescale can be set for Berendsen thermostats.")
           end if
         else
-          call getChild(thermNode, "Timescale", child=child2, modifier=modifier, requested=.false.)
+          call hsd_get_table(thermNode, "Timescale", child2, stat, auto_wrap=.true.)
           if (associated(child2)) then
-            call getChildValue(child2, "", inp%coupling, modifier=modifier, child=child3)
-            call convertUnitHsd(modifier, timeUnits, child3, inp%coupling)
+            call hsd_get(child2, "#text", inp%coupling, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
+            if (allocated(child2%attrib)) then
+              modifier = child2%attrib
+            else
+              modifier = ""
+            end if
+            call convertUnitHsd(modifier, timeUnits, child2, inp%coupling)
             inp%coupling = deltaT / inp%coupling
           else
             call error("Either CouplingStrength or Timescale must be set for Berendsen thermostats.")
@@ -1138,9 +1277,11 @@ contains
       allocate(thermostatInp%nhc)
       associate (inp => thermostatInp%nhc)
         call readTempOrTempProfile_(thermNode, maxRun, tempProfileInp)
-        call getChildValue(thermNode, "CouplingStrength", inp%coupling, modifier=modifier,&
-            & child=child2)
-        call convertUnitHsd(modifier, freqUnits, child2, inp%coupling)
+        call hsd_get(thermNode, "CouplingStrength", inp%coupling, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(thermNode, "Missing required value: 'CouplingStrength'")
+        call hsd_get_attrib(thermNode, "CouplingStrength", modifier, stat)
+        if (stat /= HSD_STAT_OK) modifier = ""
+        call convertUnitHsd(modifier, freqUnits, thermNode, inp%coupling)
 
         call hsd_get_or_set(thermNode, "ChainLength", inp%chainLength, 3)
         call hsd_get_or_set(thermNode, "Order", inp%expOrder, 3, child=child2)
@@ -1148,14 +1289,17 @@ contains
           call dftbp_error(child2, "Order of Nose-Hoover thermostat must be either 3 or 5")
         end if
         call hsd_get_or_set(thermNode, "IntegratorSteps", inp%nExpSteps, 1)
-        call getChild(thermNode, "Restart",  child=child2, requested=.false.)
+        call hsd_get_table(thermNode, "Restart", child2, stat, auto_wrap=.true.)
         if (associated(child2)) then
           allocate(inp%xnose(inp%chainLength))
           allocate(inp%vnose(inp%chainLength))
           allocate(inp%gnose(inp%chainLength))
-          call getChildValue(child2,"x",inp%xnose)
-          call getChildValue(child2,"v",inp%vnose)
-          call getChildValue(child2,"g",inp%gnose)
+          call hsd_get(child2, "x", inp%xnose, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'x'")
+          call hsd_get(child2, "v", inp%vnose, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'v'")
+          call hsd_get(child2, "g", inp%gnose, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'g'")
         end if
       end associate
 
@@ -1165,11 +1309,13 @@ contains
       allocate(thermostatInp%andersen)
       associate (inp => thermostatInp%andersen)
         call readTempOrTempProfile_(thermNode, maxRun, tempProfileInp)
-        call getChildValue(thermNode, "ReselectProbability", inp%rescaleProb, child=child2)
+        call hsd_get(thermNode, "ReselectProbability", inp%rescaleProb, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(thermNode, "Missing required value: 'ReselectProbability'")
         if (inp%rescaleProb <= 0.0_dp .or. inp%rescaleProb > 1.0_dp) then
-          call dftbp_error(child2, "ReselectProbability must be in the range (0,1]!")
+          call dftbp_error(thermNode, "ReselectProbability must be in the range (0,1]!")
         end if
-        call getChildValue(thermNode, "ReselectIndividually", inp%rescaleIndiv)
+        call hsd_get(thermNode, "ReselectIndividually", inp%rescaleIndiv, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(thermNode, "Missing required value: 'ReselectIndividually'")
       end associate
 
     case ("none")
@@ -1188,7 +1334,7 @@ contains
 
     case default
       call getNodeHSDName(thermNode, thermName)
-      call dftbp_error(child, "Invalid thermostat '" // thermName // "'")
+      call dftbp_error(node, "Invalid thermostat '" // thermName // "'")
 
     end select
 
@@ -1202,9 +1348,29 @@ contains
 
       type(hsd_table), pointer :: value, child
       character(len=:), allocatable :: buffer, modifier
+      integer :: stat
 
-      call getChildValue(thermNode, "Temperature", value, modifier=modifier, child=child)
-      call getNodeName(value, buffer)
+      call hsd_get_table(thermNode, "Temperature", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) call dftbp_error(thermNode, "Missing required value: 'Temperature'")
+      call hsd_get_attrib(thermNode, "Temperature", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      ! Determine if this is a dispatch (table child) or plain value
+      value => null()
+      buffer = textNodeName
+      block
+        class(hsd_node), pointer :: tmpNode
+        integer :: ic
+        do ic = 1, child%num_children
+          call child%get_child(ic, tmpNode)
+          if (.not. associated(tmpNode)) cycle
+          select type(t => tmpNode)
+          type is (hsd_table)
+            value => t
+            call getNodeName(value, buffer)
+            exit
+          end select
+        end do
+      end block
       select case(buffer)
       case (textNodeName)
         call readTemperature(child, tempProfileInp)
@@ -1212,7 +1378,7 @@ contains
         call readTemperatureProfile(value, modifier, tempProfileInp)
         maxRun = sum(tempProfileInp%tempInts) - 1
       case default
-        call dftbp_error(value, "Invalid method name.")
+        call dftbp_error(child, "Invalid method name.")
       end select
 
     end subroutine readTempOrTempProfile_
