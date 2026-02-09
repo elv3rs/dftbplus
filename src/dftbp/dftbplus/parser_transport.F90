@@ -14,10 +14,9 @@ module dftbp_dftbplus_parser_transport
   use dftbp_poisson_boundaryconditions, only : poissonBCsEnum, bcPoissonNames
 #:endif
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : &
-      & getChild, getChildValue, setChild, setChildValue
-  use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables
+  use hsd_data, only : hsd_table, new_table
+  use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables, &
+      & hsd_get_table, hsd_set, hsd_get_choice, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -66,6 +65,7 @@ contains
     logical, allocatable :: atomInRegion(:)
     integer :: ii
     character(lc) :: strTmp
+    integer :: stat
 
     transpar%defined = .true.
     transpar%tPeriodic1D = .not. geom%tPeriodic
@@ -74,15 +74,27 @@ contains
     !! mandatory contact entries. On the other hand we need to wait that
     !! contacts are parsed to resolve the name of the contact for task =
     !! contacthamiltonian
-    call getChildValue(root, "Task", pTaskType, child=pTask, default='uploadcontacts')
-    call getNodeName(pTaskType, buffer)
+    call hsd_get_choice(root, "Task", buffer, pTaskType, stat)
+    if (stat /= HSD_STAT_OK) then
+      buffer = 'uploadcontacts'
+      pTaskType => null()
+      call hsd_set(root, "Task", 'uploadcontacts')
+    end if
+    call hsd_get_table(root, "Task", pTask, stat, auto_wrap=.true.)
+    if (.not. associated(pTask)) pTask => root
 
-    call getChild(root, "Device", pDevice)
-    call getChildValue(pDevice, "AtomRange", transpar%idxdevice)
-    call getChild(pDevice, "FirstLayerAtoms", pTmp, requested=.false.)
+    call hsd_get_table(root, "Device", pDevice, stat, auto_wrap=.true.)
+    if (.not. associated(pDevice)) call dftbp_error(root, "Missing required block: 'Device'")
+    block
+      integer, allocatable :: tmpArr(:)
+      call hsd_get(pDevice, "AtomRange", tmpArr, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pDevice, "Missing required array: 'AtomRange'")
+      transpar%idxdevice(1:2) = tmpArr(1:2)
+    end block
+    call hsd_get_table(pDevice, "FirstLayerAtoms", pTmp, stat, auto_wrap=.true.)
     call readFirstLayerAtoms(pTmp, transpar%PL, transpar%nPLs, transpar%idxdevice)
     if (.not.associated(pTmp)) then
-      call setChildValue(pDevice, "FirstLayerAtoms", transpar%PL)
+      call hsd_set(pDevice, "FirstLayerAtoms", transpar%PL)
     end if
 
     call hsd_get_child_tables(root, "Contact", pNodeList)
@@ -116,13 +128,17 @@ contains
     select case (buffer)
     case ("contacthamiltonian")
 
-      call getChildValue(pTaskType, "ContactId", buffer, child=pTmp)
+      call hsd_get(pTaskType, "ContactId", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pTaskType, "Missing required value: 'ContactId'")
+      call hsd_get_table(pTaskType, "ContactId", pTmp, stat, auto_wrap=.true.)
+      if (.not. associated(pTmp)) pTmp => pTaskType
       contact = getContactByName(transpar%contacts(:)%name, tolower(trim(unquote(buffer))),&
           & pTmp)
       transpar%taskContInd = contact
       if (.not. geom%tPeriodic) then
-        call getChildValue(pTaskType, "ContactSeparation", lateralContactSeparation, 1000.0_dp,&
-            & modifier=modifier, child=field)
+        call hsd_get_or_set(pTaskType, "ContactSeparation", lateralContactSeparation, 1000.0_dp,&
+            & child=field)
+        call hsd_get_attrib(pTaskType, "ContactSeparation", modifier)
         call convertUnitHsd(modifier,lengthUnits,field,lateralContactSeparation)
       end if
 
@@ -300,11 +316,11 @@ contains
       end if
       call convertUnitHsd(modifier, energyUnits, pNode, greendens%oneFermi)
 
-      call getChild(pNode, "FirstLayerAtoms", pTmp, requested=.false.)
+      call hsd_get_table(pNode, "FirstLayerAtoms", pTmp, stat, auto_wrap=.true.)
       call readFirstLayerAtoms(pTmp, greendens%PL, greendens%nPLs,&
                                 &transpar%idxdevice, check = .false.)
       if (.not.associated(pTmp)) then
-        call setChildValue(pNode, "FirstLayerAtoms", greendens%PL)
+        call hsd_set(pNode, "FirstLayerAtoms", greendens%PL)
       end if
       !call getChild(pNode, "ContactPLs", pTmp, requested=.false.)
       !if (associated(pTmp)) then
@@ -331,14 +347,19 @@ contains
 
     call hsd_get_or_set(pNode, "LocalCurrents", greendens%doLocalCurr, .false.)
     call hsd_get_or_set(pNode, "Verbosity", greendens%verbose, 51)
-    call getChildValue(pNode, "Delta", greendens%delta, 1.0e-5_dp, modifier=modifier, child=field)
+    call hsd_get_or_set(pNode, "Delta", greendens%delta, 1.0e-5_dp, child=field)
+    call hsd_get_attrib(pNode, "Delta", modifier)
     call convertUnitHsd(modifier, energyUnits, field, greendens%delta)
     call hsd_get_or_set(pNode, "ReadSurfaceGFs", greendens%readSGF, .false.)
     call hsd_get_or_set(pNode, "SaveSurfaceGFs", greendens%saveSGF, .not.greendens%readSGF)
-    call getChildValue(pNode, "ContourPoints", greendens%nP(1:2), [ 20, 20 ])
+    block
+      integer, allocatable :: tmpArr(:)
+      call hsd_get_or_set(pNode, "ContourPoints", tmpArr, [ 20, 20 ])
+      greendens%nP(1:2) = tmpArr(1:min(size(tmpArr),2))
+    end block
     call hsd_get_or_set(pNode, "EnclosedPoles",  greendens%nPoles, 3)
-    call getChildValue(pNode, "LowestEnergy", greendens%enLow, -2.0_dp, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(pNode, "LowestEnergy", greendens%enLow, -2.0_dp, child=field)
+    call hsd_get_attrib(pNode, "LowestEnergy", modifier)
     call convertUnitHsd(modifier, energyUnits, field, greendens%enLow)
     call hsd_get_or_set(pNode, "FermiCutoff", greendens%nkT, 10)
       ! Fermi energy had not been set by other means yet
@@ -350,9 +371,9 @@ contains
       ! bias and it scales flawlessy with increasing bias
       ! It is still allowed to directly set the number of points, if preferred
       ! libNEGF only wants the number of points in input
-      call getChild(pNode, "RealAxisPoints", child1, requested=.false.)
-      call getChild(pNode, "RealAxisStep", child2, requested=.false., &
-          & modifier=buffer)
+      call hsd_get_table(pNode, "RealAxisPoints", child1, stat, auto_wrap=.true.)
+      call hsd_get_table(pNode, "RealAxisStep", child2, stat, auto_wrap=.true.)
+      call hsd_get_attrib(pNode, "RealAxisStep", buffer)
       realAxisConv = .false.
       ! Set a bool to verify if all contacts are at the same potential (if so,
       ! no points are needed)
@@ -370,21 +391,22 @@ contains
                             &// " cannot be specified together.")
       ! If only one is specified, take it as valid value
       else if (associated(child1)) then
-        call getChildValue(pNode, "RealAxisPoints", greendens%nP(3))
+        call hsd_get(pNode, "RealAxisPoints", greendens%nP(3), stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'RealAxisPoints'")
       else if (associated(child2)) then
-        call getChildValue(pNode, "RealAxisStep", Estep, child=child2, &
-             & modifier=modifier)
+        call hsd_get(pNode, "RealAxisStep", Estep, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'RealAxisStep'")
+        call hsd_get_attrib(pNode, "RealAxisStep", modifier)
         call convertUnitHsd(modifier, energyUnits, child2, Estep)
         realAxisConv = .true.
       ! If the system is under equilibrium we set the number of
       ! points to zero
       else if (equilibrium) then
-        call getChildValue(pNode, "RealAxisPoints", greendens%nP(3), &
-          & 0, child=child1)
+        call hsd_get_or_set(pNode, "RealAxisPoints", greendens%nP(3), 0)
       else
         !Default is a point every 1500H
-        call getChildValue(pNode, "RealAxisStep", Estep, 6.65e-4_dp, &
-                          &modifier=modifier, child=child2)
+        call hsd_get_or_set(pNode, "RealAxisStep", Estep, 6.65e-4_dp, child=child2)
+        call hsd_get_attrib(pNode, "RealAxisStep", modifier)
         realAxisConv = .true.
       end if
       ! RealAxisConv means that we have a step and we convert it in a number
@@ -436,6 +458,7 @@ contains
     character(len=:), allocatable :: buffer, modifier
     real(dp) :: denstol, gatelength_l
     logical :: needsPoissonBox
+    integer :: stat
 
   #:if WITH_TRANSPORT
     integer :: ii
@@ -453,35 +476,62 @@ contains
         poisson%poissBox(:) = 0.0_dp
         do ii = 1, 3
           if (ii == transpar%contacts(1)%dir) then
-            call getChildValue(pNode, "PoissonThickness", poisson%poissBox(ii), modifier=modifier,&
-                & child=field)
+            call hsd_get(pNode, "PoissonThickness", poisson%poissBox(ii), stat=stat)
+            if (stat /= HSD_STAT_OK) &
+                & call dftbp_error(pNode, "Missing required value: 'PoissonThickness'")
+            call hsd_get_attrib(pNode, "PoissonThickness", modifier)
+            call hsd_get_table(pNode, "PoissonThickness", field, stat, auto_wrap=.true.)
+            if (.not. associated(field)) field => pNode
             call convertUnitHsd(modifier, lengthUnits, field, poisson%poissBox)
           else
             poisson%poissBox(ii) = sqrt(sum(latVecs(:,ii)**2))
           end if
         end do
       else
-        call getChildValue(pNode, "PoissonBox", poisson%poissBox, modifier=modifier, child=field)
+        block
+          real(dp), allocatable :: tmpRA(:)
+          call hsd_get(pNode, "PoissonBox", tmpRA, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required array: 'PoissonBox'")
+          poisson%poissBox(1:3) = tmpRA(1:3)
+        end block
+        call hsd_get_attrib(pNode, "PoissonBox", modifier)
+        call hsd_get_table(pNode, "PoissonBox", field, stat, auto_wrap=.true.)
+        if (.not. associated(field)) field => pNode
         call convertUnitHsd(modifier, lengthUnits, field, poisson%poissBox)
       end if
     #:else
-      call getChildValue(pNode, "PoissonBox", poisson%poissBox, modifier=modifier, child=field)
+      block
+        real(dp), allocatable :: tmpRA(:)
+        call hsd_get(pNode, "PoissonBox", tmpRA, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required array: 'PoissonBox'")
+        poisson%poissBox(1:3) = tmpRA(1:3)
+      end block
+      call hsd_get_attrib(pNode, "PoissonBox", modifier)
+      call hsd_get_table(pNode, "PoissonBox", field, stat, auto_wrap=.true.)
+      if (.not. associated(field)) field => pNode
       call convertUnitHsd(modifier, lengthUnits, field, poisson%poissBox)
     #:endif
     end if
 
     poisson%foundBox = needsPoissonBox
-    call getChildValue(pNode, "MinimalGrid", poisson%poissGrid, [ 0.3_dp, 0.3_dp, 0.3_dp ],&
-        & modifier=modifier, child=field)
+    block
+      real(dp), allocatable :: tmpRA(:)
+      call hsd_get_or_set(pNode, "MinimalGrid", tmpRA, [ 0.3_dp, 0.3_dp, 0.3_dp ])
+      poisson%poissGrid(1:3) = tmpRA(1:min(size(tmpRA),3))
+    end block
+    call hsd_get_attrib(pNode, "MinimalGrid", modifier)
+    call hsd_get_table(pNode, "MinimalGrid", field, stat, auto_wrap=.true.)
+    if (.not. associated(field)) field => pNode
     call convertUnitHsd(modifier, lengthUnits, field, poisson%poissGrid)
     call hsd_get_or_set(pNode, "NumericalNorm", poisson%numericNorm, .false.)
-    call getChild(pNode, "AtomDensityCutoff", pTmp, requested=.false., modifier=modifier)
-    call getChild(pNode, "AtomDensityTolerance", pTmp2, requested=.false.)
+    call hsd_get_table(pNode, "AtomDensityCutoff", pTmp, stat, auto_wrap=.true.)
+    if (associated(pTmp)) call hsd_get_attrib(pNode, "AtomDensityCutoff", modifier)
+    call hsd_get_table(pNode, "AtomDensityTolerance", pTmp2, stat, auto_wrap=.true.)
     if (associated(pTmp) .and. associated(pTmp2)) then
       call dftbp_error(pNode, "Only one of the tags AtomDensityCutoff or AtomDensityTolerance&
           & can be specified.")
     else if (associated(pTmp)) then
-      call getChildValue(pTmp, "", poisson%maxRadAtomDens, default=14.0_dp, modifier=modifier)
+      call hsd_get_or_set(pTmp, "#text", poisson%maxRadAtomDens, 14.0_dp)
       call convertUnitHsd(modifier, lengthUnits, pTmp, poisson%maxRadAtomDens)
       if (poisson%maxRadAtomDens <= 0.0_dp) then
         call dftbp_error(pTmp2, "Atom density cutoff must be > 0")
@@ -505,50 +555,60 @@ contains
     call hsd_get_or_set(pNode, "MaxPoissonIterations", poisson%maxPoissIter, 60)
 
     poisson%overrideBC(:) = poissonBCsEnum%periodic
-    call getChild(pNode, "OverrideDefaultBC", pTmp, requested=.false.)
+    call hsd_get_table(pNode, "OverrideDefaultBC", pTmp, stat, auto_wrap=.true.)
     if (associated(pTmp)) then
       call getPoissonBoundaryConditionOverrides(pTmp,&
           & [ poissonBCsEnum%dirichlet, poissonBCsEnum%neumann ], poisson%overrideBC)
     end if
 
     poisson%overrBulkBC(:) = poissonBCsEnum%unset
-    call getChild(pNode, "OverrideBulkBC", pTmp, requested=.false.)
+    call hsd_get_table(pNode, "OverrideBulkBC", pTmp, stat, auto_wrap=.true.)
     if (associated(pTmp)) then
       call getPoissonBoundaryConditionOverrides(pTmp,&
           & [ poissonBCsEnum%periodic, poissonBCsEnum%dirichlet, poissonBCsEnum%neumann ],&
           & poisson%overrBulkBC)
     end if
 
-    call getChildValue(pNode, "BoundaryRegion", pTmp, "global")
-    call getNodeName(pTmp, buffer)
+    call hsd_get_choice(pNode, "BoundaryRegion", buffer, pTmp, stat)
+    if (stat /= HSD_STAT_OK) then
+      buffer = "global"
+      pTmp => null()
+      call hsd_set(pNode, "BoundaryRegion", "global")
+    end if
     select case(buffer)
     case ("global")
       poisson%localBCType = "G"
     case ("square")
       poisson%localBCType = "S"
-      call getChildValue(pTmp, "BufferLength", poisson%bufferLocBC, 9.0_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp, "BufferLength", poisson%bufferLocBC, 9.0_dp, child=field)
+      call hsd_get_attrib(pTmp, "BufferLength", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferLocBC)
     case ("circle")
       poisson%localBCType = "C"
-      call getChildValue(pTmp, "BufferLength", poisson%bufferLocBC, 9.0_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp, "BufferLength", poisson%bufferLocBC, 9.0_dp, child=field)
+      call hsd_get_attrib(pTmp, "BufferLength", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferLocBC)
     case default
-      call getNodeHSDName(pTmp, buffer)
+      if (associated(pTmp)) call getNodeHSDName(pTmp, buffer)
       call dftbp_error(pTmp, "Invalid boundary region type '" // buffer // "'")
     end select
 
-    call getChildValue(pNode, "BoxExtension", poisson%bufferBox, 0.0_dp, modifier=modifier,&
-        & child=field)
+    call hsd_get_or_set(pNode, "BoxExtension", poisson%bufferBox, 0.0_dp, child=field)
+    call hsd_get_attrib(pNode, "BoxExtension", modifier)
     call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferBox)
     if (poisson%bufferBox.lt.0.0_dp) then
       call dftbp_error(pNode, "BoxExtension must be a positive number")
     endif
 
     ! PARSE GATE OPTIONS
-    call getChildValue(pNode,"Gate",pTmp2,"none",child=pChild)
-    call getNodeName(pTmp2, buffer)
+    call hsd_get_choice(pNode, "Gate", buffer, pTmp2, stat)
+    if (stat /= HSD_STAT_OK) then
+      buffer = "none"
+      pTmp2 => null()
+      call hsd_set(pNode, "Gate", "none")
+    end if
+    call hsd_get_table(pNode, "Gate", pChild, stat, auto_wrap=.true.)
+    if (.not. associated(pChild)) pChild => pNode
 
     poisson%insLength = 0.0_dp
     poisson%insRad = 0.0_dp
@@ -557,25 +617,26 @@ contains
       poisson%gateType = "N"
     case ("planar")
       poisson%gateType = "P"
-      call getChildValue(pTmp2, "GateLength", poisson%gateLength_l, 0.0_dp, modifier= modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp2, "GateLength", poisson%gateLength_l, 0.0_dp, child=field)
+      call hsd_get_attrib(pTmp2, "GateLength", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%gateLength_l)
 
       gatelength_l = poisson%gateLength_l !avoids a warning on intents
-      call getChildValue(pTmp2, "GateLength_l", poisson%gateLength_l, gateLength_l,&
-          & modifier=modifier, child=field)
+      call hsd_get_or_set(pTmp2, "GateLength_l", poisson%gateLength_l, gateLength_l, child=field)
+      call hsd_get_attrib(pTmp2, "GateLength_l", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%gateLength_l)
 
-      call getChildValue(pTmp2, "GateLength_t", poisson%gateLength_t, poisson%gateLength_l,&
-          & modifier=modifier, child=field)
+      call hsd_get_or_set(pTmp2, "GateLength_t", poisson%gateLength_t, poisson%gateLength_l,&
+          & child=field)
+      call hsd_get_attrib(pTmp2, "GateLength_t", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%gateLength_t)
 
-      call getChildValue(pTmp2, "GateDistance", poisson%gateRad, 0.0_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp2, "GateDistance", poisson%gateRad, 0.0_dp, child=field)
+      call hsd_get_attrib(pTmp2, "GateDistance", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%gateRad)
 
-      call getChildValue(pTmp2, "GatePotential", poisson%gatepot, 0.0_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp2, "GatePotential", poisson%gatepot, 0.0_dp, child=field)
+      call hsd_get_attrib(pTmp2, "GatePotential", modifier)
       call convertUnitHsd(modifier, energyUnits, field, poisson%gatepot)
 
       !call getChildValue(pTmp2, "GateDirection", poisson%gatedir, 2)
@@ -583,16 +644,16 @@ contains
 
     case ("cylindrical")
       poisson%gateType = "C"
-      call getChildValue(pTmp2, "GateLength",poisson%gateLength_l, 0.0_dp, modifier= modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp2, "GateLength", poisson%gateLength_l, 0.0_dp, child=field)
+      call hsd_get_attrib(pTmp2, "GateLength", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%gateLength_l)
 
-      call getChildValue(pTmp2, "GateRadius", poisson%gateRad, 0.0_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp2, "GateRadius", poisson%gateRad, 0.0_dp, child=field)
+      call hsd_get_attrib(pTmp2, "GateRadius", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%gateRad)
 
-      call getChildValue(pTmp2, "GatePotential", poisson%gatepot, 0.0_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pTmp2, "GatePotential", poisson%gatepot, 0.0_dp, child=field)
+      call hsd_get_attrib(pTmp2, "GatePotential", modifier)
       call convertUnitHsd(modifier, energyUnits, field, poisson%gatepot)
 
     case default
@@ -628,15 +689,16 @@ contains
     character(lc) :: strTmp
     character(1), parameter :: sDirs(3) = ['x','y','z']
 
-    call getChild(pNode, "none", pNode2, requested=.false.)
+    call hsd_get_table(pNode, "none", pNode2, stat, auto_wrap=.true.)
     if (associated(pNode2)) return
     do iBC = 1, size(availableConditions)
       bctype = availableConditions(iBC)
-      call getChild(pNode, trim(bcPoissonNames(bctype)), pNode2, requested=.false.)
+      call hsd_get_table(pNode, trim(bcPoissonNames(bctype)), pNode2, stat, auto_wrap=.true.)
       if (associated(pNode2)) then
         call hsd_get(pNode2, "boundaries", strArr, stat=stat)
         if (stat /= 0) call dftbp_error(pNode2, "Error reading boundaries")
-        call getChild(pNode2, "boundaries", pChild)
+        call hsd_get_table(pNode2, "boundaries", pChild, stat, auto_wrap=.true.)
+        if (.not. associated(pChild)) call dftbp_error(pNode2, "Missing required block: 'boundaries'")
         if (size(strArr) > 6) then
           call dftbp_error(pChild,"A maximum of 6 boundaries (or fewer) can be set")
         end if
@@ -792,15 +854,22 @@ contains
     type(TNEGFTunDos), intent(inout) :: tundos
 
     type(hsd_table), pointer :: value1, child
+    integer :: stat
+    character(len=:), allocatable :: tmpBuf
 
-    call getChild(node, "VibronicElastic", child, requested=.false.)
+    call hsd_get_table(node, "VibronicElastic", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       tp%tDephasingVE = .true.
       call readElPh(child, tundos%elph, geom, orb, tp)
     end if
 
-    call getChildValue(node, "BuettikerProbes", value1, "", child=child, allowEmptyValue=.true.,&
-       & dummyValue=.true.)
+    call hsd_get_table(node, "BuettikerProbes", child, stat, auto_wrap=.true.)
+    if (associated(child)) then
+      call hsd_get_choice(child, "", tmpBuf, value1, stat)
+      if (stat /= HSD_STAT_OK) value1 => null()
+    else
+      value1 => null()
+    end if
     if (associated(value1)) then
       tp%tDephasingBP = .true.
       call readDephasingBP(child, tundos%bp, geom, orb, tp)
@@ -838,20 +907,21 @@ contains
 
 
     logical :: block_model, semilocal_model
+    integer :: stat
 
     elph%defined = .true.
     !! Only local el-ph model is defined (elastic for now)
     elph%model = 1
 
-    call getChildValue(node, "MaxSCBAIterations", elph%scba_niter, default=100)
-    call getChildValue(node, "atomBlock", block_model, default=.false.)
+    call hsd_get_or_set(node, "MaxSCBAIterations", elph%scba_niter, 100)
+    call hsd_get_or_set(node, "atomBlock", block_model, .false.)
     if (block_model) then
       elph%model = 2
     endif
 
     !BUG: semilocal model crashes because of access of S before its allocation
     !     this because initDephasing was moved into initprogram
-    call getChildValue(node, "semiLocal", semilocal_model, default=.false.)
+    call hsd_get_or_set(node, "semiLocal", semilocal_model, .false.)
     if (semilocal_model) then
       call dftbp_error(node, "semilocal dephasing causes crash and has been "//&
            & "temporarily disabled")
@@ -884,12 +954,13 @@ contains
     logical :: block_model, semilocal_model
     character(len=:), allocatable :: model
     type(hsd_table), pointer :: dephModel
+    integer :: stat
 
     call dftbp_error(node,"Buettiker probes are still under development")
 
     elph%defined = .true.
-    call getChildValue(node, "", dephModel)
-    call getNodeName2(dephModel, model)
+    call hsd_get_choice(node, "", model, dephModel, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required block content")
 
     select case(model)
     case("dephasingprobes")
@@ -906,16 +977,16 @@ contains
 
     elph%model = 1
 
-    call getChildValue(dephModel, "MaxSCBAIterations", elph%scba_niter, default=100)
+    call hsd_get_or_set(dephModel, "MaxSCBAIterations", elph%scba_niter, 100)
 
-    call getChildValue(dephModel, "atomBlock", block_model, default=.false.)
+    call hsd_get_or_set(dephModel, "atomBlock", block_model, .false.)
     if (block_model) then
       elph%model = 2
     endif
 
     !BUG: semilocal model crashes because of access of S before its allocation
     !     this because initDephasing occurs in initprogram
-    call getChildValue(dephModel, "semiLocal", semilocal_model, default=.false.)
+    call hsd_get_or_set(dephModel, "semiLocal", semilocal_model, .false.)
     if (semilocal_model) then
       call dftbp_error(dephModel, "semilocal dephasing is not working yet")
       elph%model = 3
@@ -953,6 +1024,7 @@ contains
     real(dp) :: rTmp
     integer, allocatable :: tmpI1(:)
     real(dp), allocatable :: atmCoupling(:)
+    integer :: stat
 
     !! Allocate coupling array
     norbs = 0
@@ -971,10 +1043,11 @@ contains
 
     elph%orbsperatm = orb%nOrbAtom(atm_range(1):atm_range(2))
 
-    call getChildValue(node, "Coupling", val, "", child=child, allowEmptyValue=.true.,&
-        & modifier=modifier, dummyValue=.true., list=.false.)
-
-    call getNodeName(val, method)
+    call hsd_get_table(node, "Coupling", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'Coupling'")
+    call hsd_get_attrib(node, "Coupling", modifier)
+    call hsd_get_choice(child, "", method, val, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing coupling method")
 
     ! This reads also things like:  "Coupling [eV] = 0.34"
     !if (is_numeric(method)) then
@@ -986,20 +1059,30 @@ contains
 
     select case (method)
     case ("allorbitals")
-      call getChild(child, "AllOrbitals", child2, requested=.false.)
-      call getChildValue(child2, "", elph%coupling, child=field)
+      call hsd_get_table(child, "AllOrbitals", child2, stat, auto_wrap=.true.)
+      call hsd_get(child2, "#text", elph%coupling, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required array: coupling values")
+      call hsd_get_table(child2, "#text", field, stat, auto_wrap=.true.)
+      if (.not. associated(field)) field => child2
       call convertUnitHsd(modifier, energyUnits, field, elph%coupling)
 
     case ("atomcoupling")
-      call getChild(child, "AtomCoupling", child2, requested=.false.)
+      call hsd_get_table(child, "AtomCoupling", child2, stat, auto_wrap=.true.)
       allocate(atmCoupling(atm_range(2)-atm_range(1)+1))
       atmCoupling = 0.d0
       call hsd_get_child_tables(child2, "AtomList", children)
       do ii = 1, size(children)
         child3 => children(ii)%ptr
-        call getChildValue(child3, "Atoms", buffer, child=child4, multiple=.true.)
+        call hsd_get(child3, "Atoms", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child3, "Missing required value: 'Atoms'")
+        call hsd_get_table(child3, "Atoms", child4, stat, auto_wrap=.true.)
+        if (.not. associated(child4)) child4 => child3
         call getSelectedAtomIndices(child4, buffer, geom%speciesNames, geom%species, tmpI1)
-        call getChildValue(child3, "Value", rTmp, child=field, modifier=modifier2)
+        call hsd_get(child3, "Value", rTmp, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child3, "Missing required value: 'Value'")
+        call hsd_get_attrib(child3, "Value", modifier2)
+        call hsd_get_table(child3, "Value", field, stat, auto_wrap=.true.)
+        if (.not. associated(field)) field => child3
         ! If not defined, use common unit modifier defined after Coupling
         if (len(modifier2)==0) then
           call convertUnitHsd(modifier, energyUnits, field, rTmp)
@@ -1025,7 +1108,10 @@ contains
       deallocate(atmCoupling)
 
     case ("constant")
-      call getChildValue(child, "Constant", rtmp, child=field)
+      call hsd_get(child, "Constant", rtmp, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'Constant'")
+      call hsd_get_table(child, "Constant", field, stat, auto_wrap=.true.)
+      if (.not. associated(field)) field => child
       call convertUnitHsd(modifier, energyUnits, field, rTmp)
       elph%coupling = rTmp
 
@@ -1069,7 +1155,8 @@ contains
 
     ! Read Temperature. Can override contact definition
     allocate(tundos%kbT(ncont))
-    call getChild(root, "ContactTemperature", pTmp, modifier=modifier, requested=.false.)
+    call hsd_get_table(root, "ContactTemperature", pTmp, stat, auto_wrap=.true.)
+    if (associated(pTmp)) call hsd_get_attrib(root, "ContactTemperature", modifier)
     if (associated(pTmp)) then
       call hsd_get(pTmp, "#text", realArr, stat=stat)
       if (stat /= 0) call dftbp_error(root, "Error reading ContactTemperature")
@@ -1098,11 +1185,21 @@ contains
 
     if (all(transpar%contacts(:)%potential.eq.0.0)) then
       ! No default meaningful
-      call getChildValue(root, "EnergyRange", eRange, modifier=modifier,&
-      & child=field)
+      block
+        real(dp), allocatable :: tmpRA(:)
+        call hsd_get(root, "EnergyRange", tmpRA, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required array: 'EnergyRange'")
+        eRange(1:2) = tmpRA(1:2)
+      end block
+      call hsd_get_attrib(root, "EnergyRange", modifier)
+      call hsd_get_table(root, "EnergyRange", field, stat, auto_wrap=.true.)
+      if (.not. associated(field)) field => root
       call convertUnitHsd(modifier, energyUnits, field, eRange)
-      call getChildValue(root, "EnergyStep", tundos%estep,&
-      & modifier=modifier, child=field)
+      call hsd_get(root, "EnergyStep", tundos%estep, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'EnergyStep'")
+      call hsd_get_attrib(root, "EnergyStep", modifier)
+      call hsd_get_table(root, "EnergyStep", field, stat, auto_wrap=.true.)
+      if (.not. associated(field)) field => root
       call convertUnitHsd(modifier, energyUnits, field, tundos%estep)
     else
       ! Default meaningful
@@ -1119,18 +1216,24 @@ contains
       eRangeDefault(2) = maxval(-1.0*transpar%contacts(:)%potential) + &
                         & minval(transpar%contacts(:)%eFermi(1)) +   &
                         & nKT * maxval(tundos%kbT)
-      call getChildValue(root, "EnergyStep", tundos%estep, 6.65e-4_dp, &
-                          &modifier=modifier, child=field)
+      call hsd_get_or_set(root, "EnergyStep", tundos%estep, 6.65e-4_dp, child=field)
+      call hsd_get_attrib(root, "EnergyStep", modifier)
       call convertUnitHsd(modifier, energyUnits, field, tundos%estep)
-      call getChildValue(root, "EnergyRange", eRange, eRangeDefault, &
-                          modifier=modifier, child=field)
+      block
+        real(dp), allocatable :: tmpRA(:)
+        call hsd_get_or_set(root, "EnergyRange", tmpRA, eRangeDefault)
+        eRange(1:2) = tmpRA(1:min(size(tmpRA),2))
+      end block
+      call hsd_get_attrib(root, "EnergyRange", modifier)
+      call hsd_get_table(root, "EnergyRange", field, stat, auto_wrap=.true.)
+      if (.not. associated(field)) field => root
       call convertUnitHsd(modifier, energyUnits, field, eRange)
     end if
 
     tundos%emin = eRange(1)
     tundos%emax = eRange(2)
     ! Terminal currents
-    call getChild(root, "TerminalCurrents", pTmp, requested=.false.)
+    call hsd_get_table(root, "TerminalCurrents", pTmp, stat, auto_wrap=.true.)
       if (associated(pTmp)) then
         call hsd_get_child_tables(pTmp, "EmitterCollector", pNodeList)
         allocate(tundos%ni(size(pNodeList)))
@@ -1143,11 +1246,16 @@ contains
       else
         allocate(tundos%ni(ncont-1) )
         allocate(tundos%nf(ncont-1) )
-        call setChild(root, "TerminalCurrents", pTmp)
+        block
+          type(hsd_table) :: newTbl
+          call new_table(newTbl, name="TerminalCurrents")
+          call root%add_child(newTbl)
+        end block
+        call hsd_get_table(root, "TerminalCurrents", pTmp, stat)
         ind = 1
         do ii = 1, 1
           do jj = ii + 1, ncont
-            call setChildValue(pTmp, "EmitterCollector", &
+            call hsd_set(pTmp, "EmitterCollector", &
                 &(/ transpar%contacts(ii)%name, transpar%contacts(jj)%name /))
             tundos%ni(ind) = ii
             tundos%nf(ind) = jj
@@ -1155,12 +1263,12 @@ contains
           end do
         end do
       end if
-      call getChildValue(root, "Delta", tundos%delta, &
-          &1.0e-5_dp, modifier=modifier, child=field)
+      call hsd_get_or_set(root, "Delta", tundos%delta, 1.0e-5_dp, child=field)
+      call hsd_get_attrib(root, "Delta", modifier)
       call convertUnitHsd(modifier, energyUnits, field, &
           &tundos%delta)
-      call getChildValue(root, "BroadeningDelta", tundos%broadeningDelta, &
-          &0.0_dp, modifier=modifier, child=field)
+      call hsd_get_or_set(root, "BroadeningDelta", tundos%broadeningDelta, 0.0_dp, child=field)
+      call hsd_get_attrib(root, "BroadeningDelta", modifier)
       call convertUnitHsd(modifier, energyUnits, field, &
           &tundos%broadeningDelta)
 
@@ -1205,7 +1313,10 @@ contains
       contacts(ii)%wideBandDos = 0.0_dp
 
       pNode => pNodeList(ii)%ptr
-      call getChildValue(pNode, "Id", buffer, child=pTmp)
+      call hsd_get(pNode, "Id", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'Id'")
+      call hsd_get_table(pNode, "Id", pTmp, stat, auto_wrap=.true.)
+      if (.not. associated(pTmp)) pTmp => pNode
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
         call dftbp_error(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
@@ -1215,29 +1326,36 @@ contains
         call dftbp_error(pTmp, "Contact id '" // trim(contacts(ii)%name) //  "' already in use")
       end if
 
-      call getChildValue(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, modifier=modifier,&
-          & child=field)
+      call hsd_get_or_set(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, child=field)
+      call hsd_get_attrib(pNode, "PLShiftTolerance", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, contactLayerTol)
 
-      call getChildValue(pNode, "AtomRange", contacts(ii)%idxrange, child=pTmp)
+      block
+        integer, allocatable :: tmpArr(:)
+        call hsd_get(pNode, "AtomRange", tmpArr, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required array: 'AtomRange'")
+        contacts(ii)%idxrange(1:2) = tmpArr(1:2)
+      end block
+      call hsd_get_table(pNode, "AtomRange", pTmp, stat, auto_wrap=.true.)
+      if (.not. associated(pTmp)) pTmp => pNode
       call getContactVector(contacts(ii)%idxrange, geom, ii, contacts(ii)%name, pTmp,&
         & contactLayerTol, contacts(ii)%lattice, contacts(ii)%dir)
       contacts(ii)%length = sqrt(sum(contacts(ii)%lattice**2))
 
       ! Contact temperatures. A negative default is used so it is quite clear when the user sets a
       ! different value. In such a case this overrides values defined in the Filling block
-      call getChild(pNode,"Temperature", field, modifier=modifier, requested=.false.)
+      call hsd_get_table(pNode, "Temperature", field, stat, auto_wrap=.true.)
       if (associated(field)) then
-        call getChildValue(pNode, "Temperature", contacts(ii)%kbT, 0.0_dp, modifier=modifier,&
-            & child=field)
+        call hsd_get_attrib(pNode, "Temperature", modifier)
+        call hsd_get_or_set(pNode, "Temperature", contacts(ii)%kbT, 0.0_dp, child=field)
         call convertUnitHsd(modifier, energyUnits, field, contacts(ii)%kbT)
       else
         contacts(ii)%kbT = -1.0_dp ! -1.0 simply means 'not defined'
       end if
 
       if (task .eq. "uploadcontacts") then
-        call getChildValue(pNode, "Potential", contacts(ii)%potential, 0.0_dp, modifier=modifier,&
-            & child=field)
+        call hsd_get_or_set(pNode, "Potential", contacts(ii)%potential, 0.0_dp, child=field)
+        call hsd_get_attrib(pNode, "Potential", modifier)
         call convertUnitHsd(modifier, energyUnits, field, contacts(ii)%potential)
 
         call hsd_get_or_set(pNode, "WideBand", contacts(ii)%wideBand, .false.)
@@ -1247,8 +1365,9 @@ contains
           ! WideBandApproximation is defined as energy spacing between levels of the contact. In the
           ! code the inverse value (Density of states) is used. Convert the negf input
           ! value. Default is 20 / e eV.
-          call getChildValue(pNode, "LevelSpacing", contacts(ii)%wideBandDos, 0.735_dp,&
-              & modifier=modifier, child=field)
+          call hsd_get_or_set(pNode, "LevelSpacing", contacts(ii)%wideBandDos, 0.735_dp,&
+              & child=field)
+          call hsd_get_attrib(pNode, "LevelSpacing", modifier)
           call convertUnitHsd(modifier, energyUnits, field, contacts(ii)%wideBandDos)
           contacts(ii)%wideBandDos = 1.d0 / contacts(ii)%wideBandDos
 
@@ -1269,9 +1388,21 @@ contains
         ! call destruct(fermiBuffer)
 
 
-        call getChildValue(pNode, "FermiLevel", child1, "", child=child2, allowEmptyValue=.true.,&
-            & modifier=modifier)
-        call getNodeName2(child1, buffer)
+        call hsd_get_table(pNode, "FermiLevel", child2, stat, auto_wrap=.true.)
+        if (.not. associated(child2)) then
+          block
+            type(hsd_table) :: emptyTbl
+            call new_table(emptyTbl, name="fermilevel")
+            call pNode%add_child(emptyTbl)
+          end block
+          call hsd_get_table(pNode, "FermiLevel", child2, stat, auto_wrap=.true.)
+          buffer = ""
+          child1 => null()
+        else
+          call hsd_get_attrib(pNode, "FermiLevel", modifier)
+          call hsd_get_choice(child2, "", buffer, child1, stat)
+          if (stat /= HSD_STAT_OK) buffer = ""
+        end if
         if (buffer == "" .and. .not. hasInlineData(child2)) then
           contacts(ii)%tFermiSet = .false.
           call dftbp_warning(pNode, "Missing Fermi level - required to be set in solver block or&
@@ -1327,15 +1458,23 @@ contains
     real(dp) :: eFermi
     type(hsd_table), pointer :: pChild
     character(len=:), allocatable :: modifier
+    integer :: stat
 
-    call getChild(pNode, "SetForAll", pChild, requested=.false.)
+    call hsd_get_table(pNode, "SetForAll", pChild, stat, auto_wrap=.true.)
     if (associated(pChild)) then
-      call getChildValue(pChild, "", eFermi)
+      call hsd_get(pChild, "#text", eFermi, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pChild, "Missing required value in 'SetForAll'")
       call convertUnitHsd(nodeModifier, energyUnits, pNode, eFermi)
       eFermis(:) = eFermi
     else
-      call getChildValue(pNode, "", eFermis, modifier=modifier, child=pChild)
-      call convertUnitHsd(modifier, energyUnits, pChild, eFermis)
+      block
+        real(dp), allocatable :: tmpRA(:)
+        call hsd_get(pNode, "#text", tmpRA, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required array: Fermi levels")
+        eFermis(1:min(size(tmpRA),size(eFermis))) = tmpRA(1:min(size(tmpRA),size(eFermis)))
+      end block
+      call hsd_get_attrib(pNode, "#text", modifier)
+      call convertUnitHsd(modifier, energyUnits, pNode, eFermis)
     end if
 
   end subroutine getFermiLevels
@@ -1428,6 +1567,7 @@ contains
     character(len=:), allocatable :: buffer
     character(lc) :: strTmp
     logical :: do_ldos
+    integer :: stat
 
     call hsd_get_child_tables(node, "Region", children)
     nReg = size(children)
@@ -1436,9 +1576,14 @@ contains
       call hsd_get_or_set(node, "ComputeLDOS", do_ldos, .true.)
       if (do_ldos) then
         write(strTmp,"(I0, ':', I0)") idxdevice(1), idxdevice(2)
-        call setChild(node, "Region", child)
-        call setChildValue(child, "Atoms", trim(strTmp))
-        call setChildValue(child, "Label", "localDOS")
+        block
+          type(hsd_table) :: newTbl
+          call new_table(newTbl, name="Region")
+          call node%add_child(newTbl)
+        end block
+        call hsd_get_table(node, "Region", child, stat)
+        call hsd_set(child, "Atoms", trim(strTmp))
+        call hsd_set(child, "Label", "localDOS")
         call hsd_get_child_tables(node, "Region", children)
         nReg = size(children)
       else
@@ -1451,7 +1596,10 @@ contains
     allocate(iAtInRegion(nReg))
     do iReg = 1, nReg
       child => children(iReg)%ptr
-      call getChildValue(child, "Atoms", buffer, child=child2, multiple=.true.)
+      call hsd_get(child, "Atoms", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: 'Atoms'")
+      call hsd_get_table(child, "Atoms", child2, stat, auto_wrap=.true.)
+      if (.not. associated(child2)) child2 => child
       call getSelectedAtomIndices(child2, buffer, geo%speciesNames,&
           & geo%species(idxdevice(1) : idxdevice(2)), tmpI1,&
           & selectionRange=[idxdevice(1), idxdevice(2)], indexRange=[1, geo%nAtom])
