@@ -18,7 +18,7 @@ module dftbp_dftbplus_parser_transport
   use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables, &
       & hsd_get_table, hsd_set, hsd_get_choice, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+      & getNodeName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3
@@ -157,7 +157,7 @@ contains
 
     case default
 
-      call getNodeHSDName(pTaskType, buffer)
+      call getNodeName2(pTaskType, buffer)
       call dftbp_error(pTask, "Invalid task '" // buffer // "'")
 
    end select
@@ -589,7 +589,7 @@ contains
       call hsd_get_attrib(pTmp, "BufferLength", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferLocBC)
     case default
-      if (associated(pTmp)) call getNodeHSDName(pTmp, buffer)
+      if (associated(pTmp)) call getNodeName2(pTmp, buffer)
       call dftbp_error(pTmp, "Invalid boundary region type '" // buffer // "'")
     end select
 
@@ -657,7 +657,7 @@ contains
       call convertUnitHsd(modifier, energyUnits, field, poisson%gatepot)
 
     case default
-      call getNodeHSDName(pTmp2, buffer)
+      call getNodeName2(pTmp2, buffer)
       call dftbp_error(pTmp2, "Invalid gate type '" // buffer // "'")
 
     end select

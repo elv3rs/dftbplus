@@ -19,7 +19,7 @@ module dftbp_dftbplus_parser_hybrid
   use dftbp_io_charmanip, only : newline, tolower, unquote
   use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_get, &
       & HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeName2
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use hsd_data, only : hsd_table

@@ -18,8 +18,8 @@ module test_io_hsdcompat
   use dftbp_io_hsdutils, only : dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_table_ptr, hsd_get_child_tables
-  use dftbp_io_hsdutils, only : getNodeName, getNodeName2, getNodeHSDName,&
-      & splitModifier, textNodeName
+  use dftbp_io_hsdutils, only : getNodeName, getNodeName2,&
+      & splitModifier
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
 
@@ -315,7 +315,7 @@ contains
 
     nullPtr => null()
     call getNodeName(nullPtr, name)
-    @:ASSERT(name == textNodeName)
+    @:ASSERT(name == "#text")
     @:ASSERT(name == "#text")
   $:END_TEST()
 
@@ -333,16 +333,16 @@ contains
   $:END_TEST()
 
 
-  $:TEST("getNodeHSDName_works", label="hsdcompat")
-    !! getNodeHSDName returns the node name
+  $:TEST("getNodeName2_works", label="hsdcompat")
+    !! getNodeName2 returns the lowercased node name
     type(hsd_table), target :: root
     type(hsd_table), pointer :: rootPtr
     character(len=:), allocatable :: name
 
     call new_table(root, name="TestNode")
     rootPtr => root
-    call getNodeHSDName(rootPtr, name)
-    @:ASSERT(name == "TestNode")
+    call getNodeName2(rootPtr, name)
+    @:ASSERT(name == "testnode")
   $:END_TEST()
 
 

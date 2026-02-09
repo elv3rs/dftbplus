@@ -15,7 +15,7 @@ module dftbp_dftbplus_parser_reks
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeHSDName, getNodeName2,&
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeName2,&
       & hasInlineData
   use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice, &
       & HSD_STAT_OK, new_table
@@ -59,7 +59,7 @@ contains
       ctrl%reksInp%reksAlg = reksTypes%ssr44
       call dftbp_error(node, "SSR(4,4) is not implemented yet.")
     case default
-      call getNodeHSDName(dummy, buffer)
+      call getNodeName2(dummy, buffer)
       call dftbp_error(node, "Invalid Algorithm '" // buffer // "'")
     end select
 

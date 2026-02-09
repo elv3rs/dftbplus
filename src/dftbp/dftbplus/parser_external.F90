@@ -19,7 +19,7 @@ module dftbp_dftbplus_parser_external
   use dftbp_io_charmanip, only : unquote
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib, hsd_table_ptr, &
       & hsd_get_child_tables, hsd_get_table, hsd_get_choice, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, textNodeName, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
 
@@ -126,9 +126,9 @@ contains
           call hsd_get_attrib(child2, "CoordsAndCharges", modifier, stat)
           if (stat /= HSD_STAT_OK) modifier = ""
           call hsd_get_choice(child3, "", buffer, value1, stat)
-          if (.not. associated(value1)) buffer = textNodeName
+          if (.not. associated(value1)) buffer = "#text"
           select case(buffer)
-          case (textNodeName)
+          case ("#text")
             call hsd_get_matrix(child2, "CoordsAndCharges", tmpR2, nrows, ncols, stat=stat, &
                 & order="column-major")
             if (stat /= 0) call dftbp_error(child2, "Error reading CoordsAndCharges")

@@ -15,7 +15,7 @@ module dftbp_dftbplus_input_geoopt
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_get_choice,&
       & HSD_STAT_OK
   use dftbp_io_hsdutils, only : getSelectedAtomIndices
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table, new_table

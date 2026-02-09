@@ -22,7 +22,7 @@ module modes_initmodes
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getSelectedIndices, getNodeName, textNodeName, getNodeName2, hasInlineData,&
+      & getSelectedIndices, getNodeName, getNodeName2, hasInlineData,&
       & getModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump,&
@@ -373,7 +373,7 @@ contains
       end block
     end if
     call getNodeName2(value, buffer)
-    if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
+    if (buffer == "" .and. hasInlineData(child)) buffer = "#text"
     select case (buffer)
     case ("directread")
       call hsd_get(value, "File", buffer2, stat=stat)
@@ -391,7 +391,7 @@ contains
         call dftbp_error(child2, "Error during direct reading '" // hessianFile // "'.")
       end if
       call closeFile(file)
-    case (textNodeName)
+    case ("#text")
       call getNodeName2(value, buffer)
       block
         real(dp), allocatable :: flatArr(:)

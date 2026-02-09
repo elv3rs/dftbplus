@@ -19,7 +19,7 @@ module dftbp_dftbplus_parser_driver
       & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK
   use hsd_data, only : hsd_table, hsd_node
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData, &
+      & getNodeName, getNodeName2, hasInlineData, &
       & getFirstTextChild
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -404,7 +404,7 @@ contains
 
     case default
 
-      call getNodeHSDName(node, buffer)
+      call getNodeName2(node, buffer)
       call dftbp_error(parent, "Invalid driver '" // buffer // "'")
 
     end select driver
@@ -1333,7 +1333,7 @@ contains
       end if
 
     case default
-      call getNodeHSDName(thermNode, thermName)
+      call getNodeName2(thermNode, thermName)
       call dftbp_error(node, "Invalid thermostat '" // thermName // "'")
 
     end select
@@ -1356,7 +1356,7 @@ contains
       if (stat /= HSD_STAT_OK) modifier = ""
       ! Determine if this is a dispatch (table child) or plain value
       value => null()
-      buffer = textNodeName
+      buffer = "#text"
       block
         class(hsd_node), pointer :: tmpNode
         integer :: ic
@@ -1372,7 +1372,7 @@ contains
         end do
       end block
       select case(buffer)
-      case (textNodeName)
+      case ("#text")
         call readTemperature(child, tempProfileInp)
       case ("temperatureprofile")
         call readTemperatureProfile(value, modifier, tempProfileInp)

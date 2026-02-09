@@ -20,7 +20,7 @@ module phonons_initphonons
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
-      & getNodeName, textNodeName, getFirstTextChild, getModifier
+      & getNodeName, getFirstTextChild, getModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set,&
@@ -1039,7 +1039,7 @@ contains
         deallocate(tmpI1)
         deallocate(kpts)
 
-      case (textNodeName)
+      case ("#text")
 
         ! no idea, but assume user knows what they are doing
         tBadIntegratingKPoints = .false.

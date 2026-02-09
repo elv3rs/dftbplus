@@ -17,7 +17,7 @@ module dftbp_dftbplus_parser_sccoptions
   use dftbp_dftbplus_forcetypes, only : forceTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdutils, only : getNodeHSDName, dftbp_error
+  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
       & HSD_STAT_OK
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -185,7 +185,7 @@ contains
     case ("richardson")
       ctrl%iDerivMethod = diffTypes%richardson
     case default
-      call getNodeHSDName(val, buffer)
+      call getNodeName2(val, buffer)
       call dftbp_error(child, "Invalid derivative calculation '" &
           & // buffer // "'")
     end select
@@ -271,7 +271,7 @@ contains
       end associate
 
     case default
-      call getNodeHSDName(value1, buffer)
+      call getNodeName2(value1, buffer)
       call dftbp_error(child, "Invalid HCorrection '" // buffer // "'")
     end select
 

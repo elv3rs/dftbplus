@@ -17,7 +17,7 @@ module dftbp_dftbplus_parser_spin
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices, &
-      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+      & getNodeName, getNodeName2, hasInlineData
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_reks_reks, only : reksTypes
@@ -140,7 +140,7 @@ contains
       if (.not. associated(child2)) call dftbp_error(child, "Missing '" &
           & // trim(geo%speciesNames(iSp1)) // "'")
       call hsd_get_choice(child2, "", buffer, value1, stat)
-      if (.not. associated(value1)) buffer = textNodeName
+      if (.not. associated(value1)) buffer = "#text"
       select case(buffer)
       case("selectedshells")
         call hsd_get(value1, "#text", strArr, stat=stat)
@@ -177,7 +177,7 @@ contains
           call appendAngShellBlock(angShells(iSp1), angShell(1:nShell))
         end do
 
-      case(textNodeName)
+      case("#text")
         call hsd_get(child2, "#text", buffer, stat=stat)
         if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
         strTmp = unquote(buffer)
@@ -192,7 +192,7 @@ contains
         end if
 
       case default
-        call getNodeHSDName(value1, buffer)
+        call getNodeName2(value1, buffer)
         call dftbp_error(child2, "Invalid shell specification method '" //&
             & buffer // "'")
       end select
@@ -292,7 +292,7 @@ contains
     buffer = ""
     if (associated(child)) then
       call hsd_get_choice(child, "", buffer, value1, stat)
-      if (len_trim(buffer) == 0 .and. hasInlineData(child)) buffer = textNodeName
+      if (len_trim(buffer) == 0 .and. hasInlineData(child)) buffer = "#text"
     end if
     select case(tolower(buffer))
     case ("")

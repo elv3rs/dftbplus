@@ -19,7 +19,7 @@ module dftbp_dftbplus_parser_filling
   use dftbp_dftbplus_inputdata, only : TControl
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
       & HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeHSDName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName2
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -73,7 +73,7 @@ contains
       ! Set the order of the Methfessel-Paxton step function approximation, defaulting to 1st order
       call hsd_get_or_set(value1, "Order", ctrl%iDistribFn, 1)
       if (ctrl%iDistribFn < 1) then
-        call getNodeHSDName(value1, buffer)
+        call getNodeName2(value1, buffer)
         select case(ctrl%iDistribFn)
         case (0)
           write(errorStr, "(A)")"Methfessel-Paxton filling order 0 is equivalent to gaussian&
@@ -87,7 +87,7 @@ contains
       end if
       ctrl%iDistribFn = ctrl%iDistribFn + fillingTypes%Methfessel
     case default
-      call getNodeHSDName(value1, buffer)
+      call getNodeName2(value1, buffer)
       call dftbp_error(child, "Invalid filling method '" //buffer// "'")
     end select
 

@@ -22,7 +22,7 @@ module dftbp_solvation_solvparser
   use dftbp_io_charmanip, only : tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice,&
       & HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, textNodeName, getModifier
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table, new_table
   use dftbp_math_bisect, only : bisection

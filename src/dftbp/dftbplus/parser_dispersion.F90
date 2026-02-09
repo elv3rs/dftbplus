@@ -27,8 +27,7 @@ module dftbp_dftbplus_parser_dispersion
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, &
       & hsd_get_attrib, hsd_get_matrix, hsd_set, HSD_STAT_OK
   use hsd_data, only : hsd_table, new_table
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, textNodeName,&
-      & splitModifier
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, splitModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_type_typegeometry, only : TGeometry
@@ -140,9 +139,9 @@ contains
     call hsd_get_attrib(node, "PolarRadiusCharge", modifier, stat)
     if (stat /= HSD_STAT_OK) modifier = ""
     call hsd_get_choice(child, "", buffer, value1, stat)
-    if (.not. associated(value1)) buffer = textNodeName
+    if (.not. associated(value1)) buffer = "#text"
     select case (buffer)
-    case (textNodeName)
+    case ("#text")
       block
         real(dp), allocatable :: tmpMat(:,:)
         integer :: tmpNR, tmpNC
@@ -279,7 +278,7 @@ contains
     call hsd_get_table(node, "Parameters", child, stat, auto_wrap=.true.)
     if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'Parameters'")
     call hsd_get_choice(child, "", buffer, value1, stat)
-    if (.not. associated(value1)) buffer = textNodeName
+    if (.not. associated(value1)) buffer = "#text"
     allocate(input%distances(geo%nSpecies))
     allocate(input%energies(geo%nSpecies))
     select case(buffer)

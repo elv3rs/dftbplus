@@ -42,21 +42,17 @@ module dftbp_io_hsdutils
 
   ! --- Public: modifier / name helpers ---
   public :: splitModifier, getModifier
-  public :: getNodeName, getNodeName2, getNodeHSDName
+  public :: getNodeName, getNodeName2
 
   ! --- Public: processed flags ---
   public :: setProcessed
 
   ! --- Public: misc ---
   public :: checkError, hasInlineData, getFirstTextChild
-  public :: textNodeName
 
   ! ============================================================
   !  Constants
   ! ============================================================
-
-  !> Name used for inline text data nodes
-  character(len=*), parameter :: textNodeName = "#text"
 
   !> Separator character for splitting modifiers
   character, parameter :: sepModifier = ","
@@ -332,7 +328,7 @@ contains
     character(len=:), allocatable, intent(out) :: nodeName
 
     if (.not. associated(node)) then
-      nodeName = textNodeName
+      nodeName = "#text"
     else if (allocated(node%name)) then
       nodeName = tolower(node%name)
     else
@@ -356,22 +352,6 @@ contains
     end if
 
   end subroutine getNodeName2
-
-
-  !> Get the original-case name of a node. Null pointer → "".
-  subroutine getNodeHSDName(node, nodeName)
-    type(hsd_table), pointer, intent(in) :: node
-    character(len=:), allocatable, intent(out) :: nodeName
-
-    if (.not. associated(node)) then
-      nodeName = ""
-    else if (allocated(node%name)) then
-      nodeName = node%name
-    else
-      nodeName = ""
-    end if
-
-  end subroutine getNodeHSDName
 
 
   ! ============================================================

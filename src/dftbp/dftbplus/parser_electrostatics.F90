@@ -13,7 +13,7 @@ module dftbp_dftbplus_parser_electrostatics
   use dftbp_common_accuracy, only : dp
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_extlibs_poisson, only : TPoissonInfo, withPoisson
-  use dftbp_io_hsdutils, only : getNodeHSDName, dftbp_error
+  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error
   use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, HSD_STAT_OK
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table, new_table
@@ -100,7 +100,7 @@ contains
       #:endblock
 
     case default
-      call getNodeHSDName(value1, buffer)
+      call getNodeName2(value1, buffer)
       call dftbp_error(child, "Unknown electrostatics '" // buffer // "'")
     end select
 

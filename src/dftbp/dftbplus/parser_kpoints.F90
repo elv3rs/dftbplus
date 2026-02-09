@@ -12,7 +12,7 @@ module dftbp_dftbplus_parser_kpoints
   use hsd_data, only : hsd_table
   use hsd, only : hsd_get_or_set, hsd_get_matrix, HSD_STAT_OK, hsd_get, hsd_get_table, &
       & hsd_get_choice, hsd_get_attrib
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, textNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
   use dftbp_type_typegeometry, only : TGeometry
@@ -175,7 +175,7 @@ contains
     call hsd_get_attrib(node, "KPointsAndWeights", modifier, stat)
     if (stat /= HSD_STAT_OK) modifier = ""
     call hsd_get_choice(child, "", buffer, value1, stat)
-    if (.not. associated(value1)) buffer = textNodeName
+    if (.not. associated(value1)) buffer = "#text"
 
     select case(buffer)
 
@@ -261,7 +261,7 @@ contains
       deallocate(tmpI1)
       deallocate(kpts)
 
-    case (textNodeName)
+    case ("#text")
 
       ! no idea, but assume user knows what they are doing
       ctrl%poorKSampling = .false.
@@ -349,7 +349,7 @@ contains
     call hsd_get_table(node, "KPointsAndWeights", child, stat, auto_wrap=.true.)
     if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'KPointsAndWeights'")
     call hsd_get_choice(child, "", buffer, value1, stat)
-    if (.not. associated(value1)) buffer = textNodeName
+    if (.not. associated(value1)) buffer = "#text"
     select case(buffer)
     case ("helicaluniform")
       block
@@ -434,7 +434,7 @@ contains
         call error("Helical boundaries not yet added for spin-orbit")
       end if
 
-    case (textNodeName)
+    case ("#text")
 
       call hsd_get_matrix(node, "KPointsAndWeights", matrix, nMatRows, nMatCols, stat=stat)
       if (stat /= HSD_STAT_OK .or. nMatRows < 1 .or. nMatCols /= 3) then
