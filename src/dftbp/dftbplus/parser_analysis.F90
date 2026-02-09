@@ -224,7 +224,7 @@ contains
         end if
         if (isEtaNeeded) then
           allocate(ctrl%perturbInp%etaFreq)
-          call getChildValue(node, "PerturbEta", ctrl%perturbInp%etaFreq, 1.0E-8_dp, child=child)
+          call hsd_get_or_set(node, "PerturbEta", ctrl%perturbInp%etaFreq, 1.0E-8_dp, child=child)
           if (ctrl%perturbInp%etaFreq < epsilon(0.0_dp)) then
             call dftbp_error(child, "Imaginary constant for finite frequency perturbation too&
                 & small")

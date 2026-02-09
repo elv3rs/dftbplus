@@ -42,7 +42,7 @@ contains
             & support)")
       end if
       allocate(input%ctrl%parallelOpts)
-      call getChildValue(node, "Groups", input%ctrl%parallelOpts%nGroup, 1, child=pTmp)
+      call hsd_get_or_set(node, "Groups", input%ctrl%parallelOpts%nGroup, 1, child=pTmp)
       call hsd_get_or_set(node, "UseOmpThreads", input%ctrl%parallelOpts%tOmpThreads, .not. withMpi)
       call readBlacs(node, input%ctrl%parallelOpts%blacsOpts)
     end if

@@ -84,7 +84,7 @@ contains
     type(hsd_table), pointer :: child
     character(len=:), allocatable :: buffer
 
-    call getChildValue(node, "ForceEvaluation", buffer, "Traditional", child=child)
+    call hsd_get_or_set(node, "ForceEvaluation", buffer, "Traditional", child=child)
     select case (tolower(unquote(buffer)))
     case("traditional")
       ctrl%forceType = forceTypes%orig

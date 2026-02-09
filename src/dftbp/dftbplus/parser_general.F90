@@ -81,14 +81,14 @@ contains
         end if
       end if
     end if
-    call getChildValue(node, "RandomSeed", ctrl%iSeed, 0, child=child)
+    call hsd_get_or_set(node, "RandomSeed", ctrl%iSeed, 0, child=child)
     if (ctrl%iSeed < 0) then
       call dftbp_error(child, "Random seed must be greater or equal zero")
     end if
     call hsd_get_or_set(node, "WriteHS", ctrl%tWriteHS, .false.)
     call hsd_get_or_set(node, "WriteRealHS", ctrl%tWriteRealHS, .false.)
     call hsd_rename_child(node, "MinimizeMemoryUsage", "MinimiseMemoryUsage")
-    call getChildValue(node, "MinimiseMemoryUsage", ctrl%tMinMemory, .false., child=child)
+    call hsd_get_or_set(node, "MinimiseMemoryUsage", ctrl%tMinMemory, .false., child=child)
     if (ctrl%tMinMemory) then
       call dftbp_warning(child, "Memory minimisation is not working currently, normal calculation&
           & will be used instead")

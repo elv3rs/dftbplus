@@ -547,7 +547,7 @@ contains
       pRoot => pXlbomd
     end if
     allocate(input)
-    call getChildValue(pRoot, 'IntegrationSteps', input%nKappa, 5, child=pChild)
+    call hsd_get_or_set(pRoot, 'IntegrationSteps', input%nKappa, 5, child=pChild)
     if (all([5, 6, 7] /= input%nKappa)) then
       call dftbp_error(pChild, 'Invalid number of integration steps (must be&
           & 5, 6 or 7)')
@@ -564,7 +564,7 @@ contains
       input%maxSccIter = 1
       ! Dummy value as minSccIter and maxSccIter have been set to 1.
       input%sccTol = 1e-5_dp
-      call getChildValue(pRoot, 'Scale', input%scale, 1.0_dp, child=pChild)
+      call hsd_get_or_set(pRoot, 'Scale', input%scale, 1.0_dp, child=pChild)
       if (input%scale <= 0.0_dp .or. input%scale > 1.0_dp) then
         call dftbp_error(pChild, 'Scaling value must be in the interval&
             & (0.0, 1.0]')
@@ -1122,7 +1122,7 @@ contains
         call convertUnitHsd(modifier, freqUnits, child2, inp%coupling)
 
         call hsd_get_or_set(thermNode, "ChainLength", inp%chainLength, 3)
-        call getChildValue(thermNode, "Order", inp%expOrder, 3, child=child2)
+        call hsd_get_or_set(thermNode, "Order", inp%expOrder, 3, child=child2)
         if (.not. any(inp%expOrder == [3, 5])) then
           call dftbp_error(child2, "Order of Nose-Hoover thermostat must be either 3 or 5")
         end if

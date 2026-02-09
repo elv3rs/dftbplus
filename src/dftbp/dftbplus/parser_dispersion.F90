@@ -710,7 +710,7 @@ contains
     end if
     call getChildValue(node, "Damping", input%ts_d, default=(input%ts_d))
     call getChildValue(node, "RangeSeparation", input%ts_sr, default=(input%ts_sr))
-    call getChildValue(node, "ReferenceSet", buffer, 'ts', child=child)
+    call hsd_get_or_set(node, "ReferenceSet", buffer, 'ts', child=child)
     input%vdw_params_kind = tolower(unquote(buffer))
     call checkManyBodyDispRefName(input%vdw_params_kind, child)
     call getChildValue(node, "LogLevel", input%log_level, default=(input%log_level))
@@ -735,7 +735,7 @@ contains
     call getChildValue(node, "NOmegaGrid", input%n_omega_grid, default=(input%n_omega_grid))
     call getChildValue(node, "KGrid", input%k_grid)
     call getChildValue(node, "KGridShift", input%k_grid_shift, default=(input%k_grid_shift))
-    call getChildValue(node, "ReferenceSet", buffer, 'ts', child=child)
+    call hsd_get_or_set(node, "ReferenceSet", buffer, 'ts', child=child)
     input%vdw_params_kind = tolower(unquote(buffer))
     call checkManyBodyDispRefName(input%vdw_params_kind, child)
     call getChildValue(node, "LogLevel", input%log_level, default=(input%log_level))

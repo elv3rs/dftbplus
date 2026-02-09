@@ -104,7 +104,7 @@ contains
       ctrl%solver%elsi%iSolver = ctrl%solver%isolver
       call hsd_get_or_set(value1, "Mode", ctrl%solver%elsi%elpaSolver, 2)
       call hsd_get_or_set(value1, "Autotune", ctrl%solver%elsi%elpaAutotune, .false.)
-      call getChildValue(value1, "Gpu", ctrl%solver%elsi%elpaGpu, .false., child=child)
+      call hsd_get_or_set(value1, "Gpu", ctrl%solver%elsi%elpaGpu, .false., child=child)
       #:if not WITH_GPU
         if (ctrl%solver%elsi%elpaGpu) then
           call dftbp_error(child, "DFTB+ must be compiled with GPU support in order to enable&

@@ -492,7 +492,7 @@ contains
         call dftbp_error(pTmp2, "Atom density cutoff must be > 0")
       end if
     else
-      call getChildValue(pNode, "AtomDensityTolerance", denstol, 1e-6_dp, child=pTmp2)
+      call hsd_get_or_set(pNode, "AtomDensityTolerance", denstol, 1e-6_dp, child=pTmp2)
       if (denstol <= 0.0_dp) then
         call dftbp_error(pTmp2, "Atom density tolerance must be > 0")
       end if
@@ -1469,7 +1469,7 @@ contains
           & geo%species(idxdevice(1) : idxdevice(2)), tmpI1,&
           & selectionRange=[idxdevice(1), idxdevice(2)], indexRange=[1, geo%nAtom])
       iAtInRegion(iReg)%data = tmpI1
-      call getChildValue(child, "ShellResolved", tShellResInRegion(iReg), .false., child=child2)
+      call hsd_get_or_set(child, "ShellResolved", tShellResInRegion(iReg), .false., child=child2)
       if (tShellResInRegion(iReg)) then
         if (.not. all(geo%species(tmpI1) == geo%species(tmpI1(1)))) then
           call dftbp_error(child2, "Shell resolved PDOS can only summed up over atoms of the same&
