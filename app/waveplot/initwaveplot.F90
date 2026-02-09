@@ -26,7 +26,7 @@ module waveplot_initwaveplot
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName,&
       & getModifier
-  use dftbp_io_hsdutils_list, only : getChildValue
+  ! getChildValue removed: using hsd_get directly
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
       & hsd_dump, hsd_clear_children, hsd_table_ptr, hsd_get_child_tables, hsd_get,&
@@ -35,7 +35,7 @@ module waveplot_initwaveplot
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
-  use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1, TListReal
+  use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHSD, readTGeometryVasp,&
       & readTGeometryXyz, TGeometry, writeTGeometryHSD
   implicit none
@@ -939,9 +939,6 @@ contains
     !! Node list instance
     type(hsd_table_ptr), allocatable :: children(:)
 
-    !! Real-valued buffer lists
-    type(TListReal) :: bufferExps, bufferCoeffs
-
     !! Basis coefficients and exponents
     real(dp), allocatable :: coeffs(:), exps(:)
 
@@ -971,26 +968,17 @@ contains
       if (stat /= HSD_STAT_OK) call dftbp_error(tmpNode, "Occupation must be present")
       call hsd_get(tmpNode, "Cutoff", spBasis%cutoffs(ii), stat=stat)
       if (stat /= HSD_STAT_OK) call dftbp_error(tmpNode, "Cutoff must be present")
-      call init(bufferExps)
-
-      call getChildValue(tmpNode, "Exponents", bufferExps, child=child)
-      if (len(bufferExps) == 0) then
-        call dftbp_error(child, "Missing exponents")
+      call hsd_get(tmpNode, "Exponents", exps, stat=stat)
+      if (stat /= HSD_STAT_OK .or. size(exps) == 0) then
+        call dftbp_error(tmpNode, "Missing exponents")
       end if
-      call init(bufferCoeffs)
-      call getChildValue(tmpNode, "Coefficients", bufferCoeffs, child=child)
-      if (len(bufferCoeffs) == 0) then
-        call dftbp_error(child, "Missing coefficients")
+      call hsd_get(tmpNode, "Coefficients", coeffs, stat=stat)
+      if (stat /= HSD_STAT_OK .or. size(coeffs) == 0) then
+        call dftbp_error(tmpNode, "Missing coefficients")
       end if
-      if (mod(len(bufferCoeffs), len(bufferExps)) /= 0) then
-        call dftbp_error(child, "Number of coefficients incompatible with number of exponents")
+      if (mod(size(coeffs), size(exps)) /= 0) then
+        call dftbp_error(tmpNode, "Number of coefficients incompatible with number of exponents")
       end if
-      allocate(exps(len(bufferExps)))
-      call asArray(bufferExps, exps)
-      call destruct(bufferExps)
-      allocate(coeffs(len(bufferCoeffs)))
-      call asArray(bufferCoeffs, coeffs)
-      call destruct(bufferCoeffs)
       call TSlaterOrbital_init(spBasis%stos(ii), reshape(coeffs, [size(coeffs) / size(exps),&
           & size(exps)]), exps, ii - 1, basisResolution, spBasis%cutoffs(ii))
       deallocate(exps, coeffs)

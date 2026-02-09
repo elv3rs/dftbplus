@@ -24,15 +24,13 @@ module modes_initmodes
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getSelectedIndices, getNodeName, textNodeName, getNodeName2, hasInlineData,&
       & getModifier
-  use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set, hsd_get_table,&
       & hsd_get_attrib, HSD_STAT_OK, hsd_node
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
-  use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
-      & TListReal, TListRealR1, TListString
+  use dftbp_type_linkedlist, only : append, destruct, get, init, TListCharLc
   use dftbp_type_oldskdata, only : readFromFile, TOldSkData
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, readTGeometryVasp,&
       & readTGeometryXyz, TGeometry, writeTGeometryHsd
@@ -152,10 +150,7 @@ contains
     type(TOldSKData) :: skData
     type(hsd_table), pointer :: root, node, tmp, hsdTree
     type(hsd_table), pointer :: value, child, child2
-    type(TListRealR1) :: realBufferList
-    type(TListReal) :: realBuffer
     character(len=:), allocatable :: buffer, buffer2
-    type(TListString) :: lStr
     integer :: inputVersion
     integer :: ii, iSp1, iAt
     real(dp), allocatable :: speciesMass(:), replacementMasses(:)
@@ -313,24 +308,25 @@ contains
 
         do iSp1 = 1, geo%nSpecies
           strTmp = trim(geo%speciesNames(iSp1)) // "-" // trim(geo%speciesNames(iSp1))
-          call init(lStr)
-          call getChildValue(child, trim(strTmp), lStr, child=child2)
-          ! We can't handle selected shells here (also not needed)
-          if (len(lStr) /= 1) then
-            call dftbp_error(child2, "Incorrect number of Slater-Koster files")
-          end if
-          do ii = 1, len(lStr)
-            call get(lStr, str2Tmp, ii)
-            strTmp = trim(prefix) // str2Tmp
-            call findFile(searchPath, strTmp, strOut)
-            if (.not. allocated(strOut)) then
-              call dftbp_error(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
-                  & // "   (search path(s): " // strJoin // ").")
+          block
+            character(len=:), allocatable :: strArr(:)
+            call hsd_get(child, trim(strTmp), strArr, stat=stat)
+            call hsd_get_table(child, trim(strTmp), child2, stat, auto_wrap=.true.)
+            ! We can't handle selected shells here (also not needed)
+            if (size(strArr) /= 1) then
+              call dftbp_error(child2, "Incorrect number of Slater-Koster files")
             end if
-            strTmp = strOut
-            call append(skFiles(iSp1), strTmp)
-          end do
-          call destruct(lStr)
+            do ii = 1, size(strArr)
+              strTmp = trim(prefix) // trim(strArr(ii))
+              call findFile(searchPath, strTmp, strOut)
+              if (.not. allocated(strOut)) then
+                call dftbp_error(child2, "SK file '" // trim(strTmp) // "' not found." // newline&
+                    & // "   (search path(s): " // strJoin // ").")
+              end if
+              strTmp = strOut
+              call append(skFiles(iSp1), strTmp)
+            end do
+          end block
         end do
       end select
       do iSp1 = 1, geo%nSpecies
@@ -397,14 +393,15 @@ contains
       call closeFile(file)
     case (textNodeName)
       call getNodeName2(value, buffer)
-      call init(realBufferList)
-      call getChildValue(child, "", nDerivs, realBufferList)
-      if (len(realBufferList) /= nDerivs) then
-        call dftbp_error(root,"wrong number of derivatives supplied:"&
-            & // i2c(len(realBufferList)) // " supplied, " // i2c(nDerivs) // " required.")
-      end if
-      call asArray(realBufferList, dynMatrix)
-      call destruct(realBufferList)
+      block
+        real(dp), allocatable :: flatArr(:)
+        call hsd_get(child, "#text", flatArr, stat=stat)
+        if (size(flatArr) /= nDerivs * nDerivs) then
+          call dftbp_error(root,"wrong number of derivatives supplied:"&
+              & // i2c(size(flatArr) / nDerivs) // " rows supplied, " // i2c(nDerivs) // " required.")
+        end if
+        dynMatrix = reshape(flatArr, [nDerivs, nDerivs])
+      end block
       tDumpPHSD = .false.
     case default
       call dftbp_error(child, "Invalid Hessian scheme.")
@@ -413,30 +410,22 @@ contains
     call hsd_get_table(root, "BornCharges", child, stat, auto_wrap=.true.)
     call getNodeName2(child, buffer)
     if (buffer /= "") then
-      call init(realBuffer)
-      call getChildValue(child, "", realBuffer)
-      if (len(realBuffer) /= 3 * nDerivs) then
+      call hsd_get(child, "#text", bornMatrix, stat=stat)
+      if (size(bornMatrix) /= 3 * nDerivs) then
         call dftbp_error(root,"wrong number of Born charges supplied:"&
-            & // i2c(len(realBuffer)) // " supplied, " // i2c(3*nDerivs) // " required.")
+            & // i2c(size(bornMatrix)) // " supplied, " // i2c(3*nDerivs) // " required.")
       end if
-      allocate(bornMatrix(len(realBuffer)))
-      call asArray(realBuffer, bornMatrix)
-      call destruct(realBuffer)
       tDumpPHSD = .false.
     end if
 
     call hsd_get_table(root, "BornDerivs", child, stat, auto_wrap=.true.)
     call getNodeName2(child, buffer)
     if (buffer /= "") then
-      call init(realBuffer)
-      call getChildValue(child, "", realBuffer)
-      if (len(realBuffer) /= 9 * nDerivs) then
+      call hsd_get(child, "#text", bornDerivsMatrix, stat=stat)
+      if (size(bornDerivsMatrix) /= 9 * nDerivs) then
         call dftbp_error(root,"wrong number of Born charge derivatives supplied:"&
-            & // i2c(len(realBuffer)) // " supplied, " // i2c(9 * nDerivs) // " required.")
+            & // i2c(size(bornDerivsMatrix)) // " supplied, " // i2c(9 * nDerivs) // " required.")
       end if
-      allocate(bornDerivsMatrix(len(realBuffer)))
-      call asArray(realBuffer, bornDerivsMatrix)
-      call destruct(realBuffer)
       tDumpPHSD = .false.
     end if
 

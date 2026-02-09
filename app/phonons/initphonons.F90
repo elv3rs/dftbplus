@@ -21,18 +21,16 @@ module phonons_initphonons
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
       & getNodeName, textNodeName, getFirstTextChild, getModifier
-  use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set,&
       & hsd_get_table, HSD_STAT_OK, hsd_node, hsd_get_matrix
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
-  use dftbp_io_tokenreader, only : getNextToken
+  use dftbp_io_tokenreader, only : getNextToken, TOKEN_OK
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_transport_negfvars, only : ContactInfo, TNEGFtundos, TTransPar
-  use dftbp_type_linkedlist, only : append, asArray, asVector, destruct, get, init, len,&
-      & TListCharLc, TListInt, TListIntR1, TListReal, TListRealR1, TListString
+  use dftbp_type_linkedlist, only : append, destruct, get, init, TListCharLc
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHSD, TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
@@ -211,7 +209,6 @@ contains
     real(dp), allocatable :: speciesMass(:)
     integer :: nDerivs, nGroups
     type(TParserflags) :: parserFlags
-    type(TListIntR1) :: li1
 
     integer :: cubicType, quarticType
     integer :: stat
@@ -305,10 +302,12 @@ contains
     call hsd_get_table(root, "PhononDispersion", node)
     if  (associated(node))  then
       tPhonDispersion = .true.
-      call init(li1)
-      call getChildValue(node, "supercell", 3, li1)
-      call asVector(li1, nCells)
-      call destruct(li1)
+      block
+        integer, allocatable :: tmpCells(:)
+        call hsd_get(node, "supercell", tmpCells, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing supercell data")
+        nCells(:) = tmpCells
+      end block
       nAtomUnitCell = geo%nAtom/(nCells(1)*nCells(2)*nCells(3))
       call hsd_get_or_set(node, "outputUnits", buffer, "H")
       select case(trim(buffer))
@@ -596,19 +595,16 @@ contains
     logical, optional, intent(in) :: check
 
 
-    type(TListInt) :: li
+    integer :: stat
     logical :: checkidx
 
     checkidx = .true.
     if (present(check)) checkidx = check
 
     if (associated(pnode)) then
-        call init(li)
-        call getChildValue(pnode, "", li)
-        npl = len(li)
-        allocate(pls(npl))
-        call asArray(li, pls)
-        call destruct(li)
+        call hsd_get(pnode, "#text", pls, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pnode, "Missing first layer atom data")
+        npl = size(pls)
         if (checkidx) then
           if (any(pls < idxdevice(1) .or. &
                   pls > idxdevice(2))) then
@@ -636,7 +632,6 @@ contains
     integer :: ii, jj
     type(hsd_table), pointer :: field, pNode, pTmp, pWide
     character(len=:), allocatable :: buffer, modif
-    type(TListReal) :: fermiBuffer
     integer :: stat
 
     do ii = 1, size(contacts)
@@ -771,8 +766,7 @@ contains
     type(hsd_table), pointer :: value, child2
     character(len=:), allocatable :: buffer, buffer2
     character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp, filename
-    type(TListString) :: lStr
-    integer :: ii, iSp1
+    integer :: ii, iSp1, stat
     logical :: tLower, tExist
 
     write(stdOut, "(/, A)") "read atomic masses from sk files..."
@@ -827,23 +821,26 @@ contains
       do iSp1 = 1, geo%nSpecies
         strTmp = trim(geo%speciesNames(iSp1)) // "-" &
             &// trim(geo%speciesNames(iSp1))
-        call init(lStr)
-        call getChildValue(child, trim(strTmp), lStr, child=child2)
-        ! We can't handle selected shells here (also not needed I guess)
-        if (len(lStr) /= 1) then
-          call dftbp_error(child2, "Incorrect number of Slater-Koster &
-              &files")
-        end if
-        do ii = 1, len(lStr)
-          call get(lStr, strTmp, ii)
-          inquire(file=strTmp, exist=tExist)
-          if (.not. tExist) then
-            call dftbp_error(child2, "SK file '" // trim(strTmp) &
-                &// "' does not exist'")
+        call hsd_get_table(child, trim(strTmp), child2)
+        block
+          character(:), allocatable :: skStrArr(:)
+          call hsd_get(child, trim(strTmp), skStrArr, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing SK data for " // trim(strTmp))
+          ! We can't handle selected shells here (also not needed I guess)
+          if (size(skStrArr) /= 1) then
+            call dftbp_error(child2, "Incorrect number of Slater-Koster &
+                &files")
           end if
-          call append(skFiles(iSp1), strTmp)
-        end do
-        call destruct(lStr)
+          do ii = 1, size(skStrArr)
+            strTmp = skStrArr(ii)
+            inquire(file=strTmp, exist=tExist)
+            if (.not. tExist) then
+              call dftbp_error(child2, "SK file '" // trim(strTmp) &
+                  &// "' does not exist'")
+            end if
+            call append(skFiles(iSp1), strTmp)
+          end do
+        end block
       end do
     end select
 
@@ -905,8 +902,6 @@ contains
     integer :: ind, ii, jj, kk
     real(dp) :: coeffsAndShifts(3, 4)
     real(dp) :: rTmp3(3)
-    type(TListIntR1) :: li1
-    type(TListRealR1) :: lr1
     integer, allocatable :: tmpI1(:)
     real(dp), allocatable :: kpts(:,:)
     character(lc) :: errorStr
@@ -967,19 +962,42 @@ contains
       case ("klines")
         ! probably unable to integrate charge for SCC
         tBadIntegratingKPoints = .true.
-        call init(li1)
-        call init(lr1)
-        call getChildValue(value1, "", 1, li1, 3, lr1)
-        if (len(li1) < 1) then
-          call dftbp_error(value1, "At least one line must be specified.")
-        end if
-        allocate(tmpI1(len(li1)))
-        allocate(kpts(3, 0:len(lr1)))
-        call asVector(li1, tmpI1)
-        call asArray(lr1, kpts(:,1:len(lr1)))
-        kpts(:,0) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
-        call destruct(li1)
-        call destruct(lr1)
+        block
+          character(len=:), allocatable :: text
+          integer :: bufInt(1)
+          real(dp) :: bufReal(3)
+          integer :: iStart, iErr, nItem, nPairs
+
+          call hsd_get(value1, "#text", text, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing k-line data")
+
+          ! First pass: count entries
+          nPairs = 0
+          iStart = 1
+          iErr = TOKEN_OK
+          do while (iErr == TOKEN_OK)
+            call getNextToken(text, bufInt, iStart, iErr, nItem)
+            if (iErr /= TOKEN_OK) exit
+            nPairs = nPairs + 1
+            call getNextToken(text, bufReal, iStart, iErr, nItem)
+          end do
+
+          if (nPairs < 1) then
+            call dftbp_error(value1, "At least one line must be specified.")
+          end if
+
+          ! Second pass: read values
+          allocate(tmpI1(nPairs))
+          allocate(kpts(3, 0:nPairs))
+          iStart = 1
+          do ii = 1, nPairs
+            call getNextToken(text, bufInt, iStart, iErr, nItem)
+            tmpI1(ii) = bufInt(1)
+            call getNextToken(text, bufReal, iStart, iErr, nItem)
+            kpts(:, ii) = bufReal
+          end do
+          kpts(:,0) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+        end block
         if (any(tmpI1 < 0)) then
           call dftbp_error(value1, "Interval steps must be greater equal to &
               &zero.")
@@ -1026,15 +1044,20 @@ contains
         ! no idea, but assume user knows what they are doing
         tBadIntegratingKPoints = .false.
 
-        call init(lr1)
-        call getChildValue(child, "", 4, lr1, modifier=modifier)
-        if (len(lr1) < 1) then
-          call dftbp_error(child, "At least one k-point must be defined.")
-        end if
-        nKPoints = len(lr1)
-        allocate(kpts(4, nKPoints))
-        call asArray(lr1, kpts)
-        call destruct(lr1)
+        block
+          real(dp), allocatable :: flatArr(:)
+          call hsd_get(child, "#text", flatArr, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing k-point data")
+          if (mod(size(flatArr), 4) /= 0) then
+            call dftbp_error(child, "K-point data must have 4 values per point")
+          end if
+          nKPoints = size(flatArr) / 4
+          if (nKPoints < 1) then
+            call dftbp_error(child, "At least one k-point must be defined.")
+          end if
+          allocate(kpts(4, nKPoints))
+          kpts = reshape(flatArr, [4, nKPoints])
+        end block
         if (len(modifier) > 0) then
           select case (tolower(modifier))
           case ("relative")
@@ -1112,7 +1135,6 @@ contains
   subroutine readDftbHessian(child)
     type(hsd_table), pointer :: child
 
-    type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
     integer :: nDerivs
 
@@ -1168,9 +1190,7 @@ contains
   subroutine readDynMatrix(child)
     type(hsd_table), pointer :: child
 
-    type(TListRealR1) :: realBuffer
-    integer :: iCount, jCount, ii, kk, jj, ll
-    integer :: nDerivs
+    integer :: nDerivs, stat
 
     nDerivs = 3 * nMovedAtom
     allocate(dynMatrix(nDerivs,nDerivs))
@@ -1184,15 +1204,22 @@ contains
 
     write(stdOut, "(/, A)") "read dynamical matrix..."
 
-    call init(realBuffer)
-    call getChildValue(child, "", nDerivs, realBuffer)
-    if (len(realBuffer)/=nDerivs) then
-      call dftbp_error(child,"wrong number of derivatives supplied:" &
-          & // i2c(len(realBuffer)) // " supplied, " &
-          & // i2c(nDerivs) // " required.")
-    end if
-    call asArray(realBuffer, dynMatrix)
-    call destruct(realBuffer)
+    block
+      real(dp), allocatable :: flatArr(:)
+      integer :: nRows
+      call hsd_get(child, "#text", flatArr, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing derivatives data")
+      if (mod(size(flatArr), nDerivs) /= 0) then
+        call dftbp_error(child, "wrong number of derivatives supplied")
+      end if
+      nRows = size(flatArr) / nDerivs
+      if (nRows /= nDerivs) then
+        call dftbp_error(child, "wrong number of derivatives supplied:" &
+            & // i2c(nRows) // " supplied, " &
+            & // i2c(nDerivs) // " required.")
+      end if
+      dynMatrix = reshape(flatArr, [nDerivs, nDerivs])
+    end block
 
   end subroutine readDynMatrix
 
@@ -1200,7 +1227,6 @@ contains
   subroutine readCp2kHessian(child)
     type(hsd_table), pointer :: child
 
-    type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
     integer :: nDerivs, nBlocks
 
@@ -1550,21 +1576,20 @@ contains
     integer, intent(out) :: emitter, collector
     character(len=*), intent(in) :: contactNames(:)
 
-    type(TListString) :: lString
+    character(:), allocatable :: strArr(:)
     character(len=mc) :: buffer
-    integer :: ind
+    integer :: ind, stat
     logical :: tFound
 
-    call init(lString)
-    call getChildValue(pNode, "", lString)
-    if (len(lString) /= 2) then
+    call hsd_get(pNode, "#text", strArr, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing contact data")
+    if (size(strArr) /= 2) then
       call dftbp_error(pNode, "You must provide two contacts")
     end if
-    call get(lString, buffer, 1)
+    buffer = strArr(1)
     emitter = getContactByName(contactNames, buffer, pNode)
-    call get(lString, buffer, 2)
+    buffer = strArr(2)
     collector = getContactByName(contactNames, buffer, pNode)
-    call destruct(lString)
 
   end subroutine getEmitterCollectorByName
 

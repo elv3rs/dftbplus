@@ -6,7 +6,6 @@ set(sources-fpp
   ${curdir}/formatout.F90
   ${curdir}/hsderror.F90
   ${curdir}/hsdutils.F90
-  ${curdir}/hsdutils_list.F90
   ${curdir}/unitconv.F90
   ${curdir}/indexselection.F90
   ${curdir}/intrinsicpr.F90

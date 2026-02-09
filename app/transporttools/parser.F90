@@ -18,20 +18,16 @@ module transporttools_parser
   use dftbp_dftb_slakoeqgrid, only : skEqGridNew, skEqGridOld
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdutils, only :&
-      & getChild, &
-      & getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getNodeName, getNodeHSDName
-  use dftbp_io_hsdutils_list, only : getChildValue
+      & getNodeName, getNodeHSDName, getModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
-      & hsd_table_ptr, hsd_get_child_tables
+      & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_get_table,&
+      & hsd_get_choice, hsd_set, HSD_STAT_OK
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
-  use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
-      & TListReal, TListString
+  use dftbp_type_linkedlist, only : append, destruct, get, init, TListCharLc
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
@@ -94,8 +90,9 @@ contains
     type(TInputData), intent(out) :: input
 
     type(hsd_table), pointer :: hsdTree
-    type(hsd_table), pointer :: root, tmp, child, dummy
+    type(hsd_table), pointer :: root, tmp, child
     type(TParserflags) :: parserFlags
+    integer :: stat
 
     write(stdOut, "(/, A, /)") "***  Parsing and initializing"
 
@@ -114,24 +111,29 @@ contains
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
     end block
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) call dftbp_error(hsdTree, "Missing required block: '" // rootTag // "'")
 
     write(stdout, '(A,1X,I0,/)') 'Parser version:', parserVersion
     write(stdout, "(A)") "Interpreting input file '" // hsdInputName // "'"
     write(stdout, "(A)") repeat("-", 80)
 
     ! Handle parser options
-    call getChildValue(root, "ParserOptions", dummy, "", child=child, &
-        &list=.true., allowEmptyValue=.true., dummyValue=.true.)
+    call hsd_get_table(root, "ParserOptions", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      call hsd_set(root, "ParserOptions", "")
+      call hsd_get_table(root, "ParserOptions", child, stat, auto_wrap=.true.)
+    end if
     call readParserOptions(child, root, parserFlags)
 
     ! Read in the different blocks
 
     ! Atomic geometry and boundary conditions
-    call getChild(root, "Geometry", tmp)
+    call hsd_get_table(root, "Geometry", tmp, stat, auto_wrap=.true.)
+    if (.not. associated(tmp)) call dftbp_error(root, "Missing required block: 'Geometry'")
     call readGeometry(tmp, input)
 
-    call getChild(root, "Transport", child, requested=.false.)
+    call hsd_get_table(root, "Transport", child, stat, auto_wrap=.true.)
 
     ! Read in transport and modify geometry if it is only a contact calculation
     if (associated(child)) then
@@ -195,10 +197,11 @@ contains
     type(TParserFlags), intent(out) :: flags
 
     integer :: inputVersion
+    integer :: stat
     type(hsd_table), pointer :: child
 
     ! Check if input needs compatibility conversion.
-    call getChildValue(node, "ParserVersion", inputVersion, parserVersion, &
+    call hsd_get_or_set(node, "ParserVersion", inputVersion, parserVersion, &
         &child=child)
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
       call dftbp_error(child, "Invalid parser version (" // i2c(inputVersion)&
@@ -214,8 +217,8 @@ contains
       write(stdout, "(A,/)") "***  Done."
     end if
 
-    call getChildValue(node, "WriteHSDInput", flags%tWriteHSD, .true.)
-    call getChildValue(node, "WriteXMLInput", flags%tWriteXML, .false.)
+    call hsd_get_or_set(node, "WriteHSDInput", flags%tWriteHSD, .true.)
+    call hsd_get_or_set(node, "WriteXMLInput", flags%tWriteXML, .false.)
     if (.not. (flags%tWriteHSD .or. flags%tWriteXML)) then
       call dftbp_warning(node, &
           &"WriteHSDInput and WriteXMLInput both turned off. You are not&
@@ -224,9 +227,9 @@ contains
           &" to able to obtain the same results with a later version of the&
           & code!")
     end if
-    call getChildValue(node, "StopAfterParsing", flags%tStop, .false.)
+    call hsd_get_or_set(node, "StopAfterParsing", flags%tStop, .false.)
 
-    call getChildValue(node, "IgnoreUnprocessedNodes", &
+    call hsd_get_or_set(node, "IgnoreUnprocessedNodes", &
         &flags%tIgnoreUnprocessed, .false.)
 
   end subroutine readParserOptions
@@ -243,9 +246,11 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer
+    integer :: stat
 
-    call getChildValue(node, "", value1, child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_choice(node, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value in Geometry block")
+    child => node
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(value1, input%geom)
@@ -276,6 +281,7 @@ contains
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     integer, allocatable :: nPLs(:)
     logical :: printDebug
+    integer :: stat
 
     transpar%defined = .true.
     transpar%tPeriodic1D = .not. geom%tPeriodic
@@ -284,12 +290,25 @@ contains
     !! mandatory contact entries. On the other hand we need to wait that
     !! contacts are parsed to resolve the name of the contact for task =
     !! contacthamiltonian
-    call getChildValue(root, "Task", pTask, child=pTaskType, default='uploadcontacts')
-    call getNodeName(pTask, buffer)
+    call hsd_get_table(root, "Task", pTaskType, stat, auto_wrap=.true.)
+    if (associated(pTaskType)) then
+      call hsd_get_choice(root, "Task", buffer, pTask, stat)
+      if (.not. associated(pTask)) buffer = 'uploadcontacts'
+    else
+      buffer = 'uploadcontacts'
+      pTask => null()
+      pTaskType => root
+    end if
 
     if (buffer.ne."setupgeometry") then
-      call getChild(root, "Device", pDevice)
-      call getChildValue(pDevice, "AtomRange", transpar%idxdevice)
+      call hsd_get_table(root, "Device", pDevice, stat, auto_wrap=.true.)
+      if (.not. associated(pDevice)) call dftbp_error(root, "Missing required block: 'Device'")
+      block
+        integer, allocatable :: tmpRange(:)
+        call hsd_get(pDevice, "AtomRange", tmpRange, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pDevice, "Missing required value: 'AtomRange'")
+        transpar%idxdevice = tmpRange
+      end block
     end if
 
     call hsd_get_child_tables(root, "Contact", pNodeList)
@@ -305,7 +324,7 @@ contains
       call readContacts(pNodeList, transpar%contacts, geom, buffer, iAtInRegion, nPLs)
       call getSKcutoff(pTask, geom, skCutoff)
       write(stdOut,*) 'Maximum SK cutoff:', SKcutoff*Bohr__AA,'(A)'
-      call getChildValue(pTask, "printInfo", printDebug, .false.)
+      call hsd_get_or_set(pTask, "printInfo", printDebug, .false.)
       call setupGeometry(geom, iAtInRegion, transpar%contacts, skCutoff, nPLs, printDebug)
 
     case default
@@ -330,10 +349,9 @@ contains
 
     real(dp) :: contactLayerTol, vec(3)
     integer :: selectionRange(2)
-    integer :: ii, ishift
+    integer :: ii, ishift, stat
     type(hsd_table), pointer :: field, pNode, pTmp
     character(len=:), allocatable :: buffer, modif
-    type(TListReal) :: vecBuffer
 
     allocate(iAtInRegion(size(contacts)+1))
     allocate(nPLs(size(contacts)))
@@ -344,7 +362,9 @@ contains
       contacts(ii)%wideBandDos = 0.0_dp
 
       pNode => pNodeList(ii)%ptr
-      call getChildValue(pNode, "Id", buffer, child=pTmp)
+      call hsd_get(pNode, "Id", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'Id'")
+      call hsd_get_table(pNode, "Id", pTmp, stat, auto_wrap=.true.)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
         call dftbp_error(pTmp, "Contact id may not be longer than " // i2c(mc) // " characters.")
@@ -355,13 +375,17 @@ contains
             &//  "' already in use")
       end if
 
-      call getChildValue(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, modifier=modif,&
-          & child=field)
+      call hsd_get_or_set(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, child=field)
+      call getModifier(pNode, "PLShiftTolerance", modif)
       call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
       if (task .eq. "setupgeometry") then
-        call getChildValue(pNode, "PLsDefined", nPLs(ii))
-        call getChildValue(pNode, "Atoms", buffer, child=pTmp, modifier=modif, multiple=.true.)
+        call hsd_get(pNode, "PLsDefined", nPLs(ii), stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'PLsDefined'")
+        call hsd_get(pNode, "Atoms", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'Atoms'")
+        call hsd_get_table(pNode, "Atoms", pTmp, stat, auto_wrap=.true.)
+        call getModifier(pNode, "Atoms", modif)
         if (isZeroBased(modif)) then
           selectionRange(:) = [0, size(geom%species) - 1]
           ishift = 1
@@ -372,21 +396,25 @@ contains
         call getSelectedAtomIndices(pTmp, buffer, geom%speciesNames, geom%species, &
             & iAtInRegion(ii)%data, selectionRange=selectionRange)
         iAtInRegion(ii)%data = iAtInRegion(ii)%data + ishift
-        call init(vecBuffer)
-        call getChildValue(pNode, "ContactVector", vecBuffer, modifier=modif)
-        if (len(vecBuffer).eq.3) then
-           call asArray(vecBuffer, vec)
-           call convertUnitHsd(modif, lengthUnits, pNode, vec)
-           ! check vector is along x y or z
-           if (count(vec == 0.0_dp) < 2 ) then
-             call error("ContactVector must be along either x, y or z")
-           end if
-           contacts(ii)%lattice = vec
-           contacts(ii)%shiftAccuracy = contactLayerTol
-           call destruct(vecBuffer)
-        else
-           call error("ContactVector must define three entries")
-        end if
+        block
+          real(dp), allocatable :: vecArr(:)
+          call hsd_get(pNode, "ContactVector", vecArr, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(pNode, &
+              & "Missing required value: 'ContactVector'")
+          call getModifier(pNode, "ContactVector", modif)
+          if (size(vecArr) == 3) then
+             vec = vecArr
+             call convertUnitHsd(modif, lengthUnits, pNode, vec)
+             ! check vector is along x y or z
+             if (count(vec == 0.0_dp) < 2 ) then
+               call error("ContactVector must be along either x, y or z")
+             end if
+             contacts(ii)%lattice = vec
+             contacts(ii)%shiftAccuracy = contactLayerTol
+          else
+             call error("ContactVector must define three entries")
+          end if
+        end block
       else
         call error("Invalid task for setpugeometry tool")
       end if
@@ -424,17 +452,17 @@ contains
 
     ! Locals
     type(hsd_table), pointer :: child
-    integer :: skInterMeth
+    integer :: skInterMeth, stat
     logical :: oldSKInter
 
-    call getChildValue(node, "OldSKInterpolation", oldSKInter, .false.)
+    call hsd_get_or_set(node, "OldSKInterpolation", oldSKInter, .false.)
     if (oldSKInter) then
       skInterMeth = skEqGridOld
     else
       skInterMeth = skEqGridNew
     end if
 
-    call getChild(node, "TruncateSKRange", child, requested=.false.)
+    call hsd_get_table(node, "TruncateSKRange", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       call warning("Artificially truncating the SK table, this is normally a bad idea!")
       call SKTruncations(child, mSKCutOff, skInterMeth)
@@ -469,10 +497,9 @@ contains
 
     type(hsd_table), pointer :: value1, child, child2
     character(len=:), allocatable :: buffer, buffer2
-    type(TListString) :: lStr
     type(TListCharLc), allocatable :: skFiles(:,:)
     type(TOldSKData) :: skData
-    integer :: iSp1, iSp2, ii
+    integer :: iSp1, iSp2, ii, stat
     character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp
     character(lc) :: fileName
     logical :: tLower, tExist
@@ -484,17 +511,18 @@ contains
         call init(skFiles(iSp2, iSp1))
       end do
     end do
-    call getChildValue(node, "SlaterKosterFiles", value1, child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_choice(node, "SlaterKosterFiles", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'SlaterKosterFiles'")
+    call hsd_get_table(node, "SlaterKosterFiles", child, stat, auto_wrap=.true.)
     select case(buffer)
     case ("type2filenames")
-      call getChildValue(value1, "Prefix", buffer2, "")
+      call hsd_get_or_set(value1, "Prefix", buffer2, "")
       prefix = unquote(buffer2)
-      call getChildValue(value1, "Suffix", buffer2, "")
+      call hsd_get_or_set(value1, "Suffix", buffer2, "")
       suffix = unquote(buffer2)
-      call getChildValue(value1, "Separator", buffer2, "")
+      call hsd_get_or_set(value1, "Separator", buffer2, "")
       separator = unquote(buffer2)
-      call getChildValue(value1, "LowerCaseTypeName", tLower, .false.)
+      call hsd_get_or_set(value1, "LowerCaseTypeName", tLower, .false.)
       do iSp1 = 1, nSpecies
         if (tLower) then
           elem1 = tolower(speciesNames(iSp1))
@@ -523,22 +551,26 @@ contains
         do iSp2 = 1, nSpecies
           strTmp = trim(speciesNames(iSp1)) // "-" &
               &// trim(speciesNames(iSp2))
-          call init(lStr)
-          call getChildValue(child, trim(strTmp), lStr, child=child2)
-          !if (len(lStr) /= len(angShells(iSp1)) * len(angShells(iSp2))) then
-          !  call detailedError(child2, "Incorrect number of Slater-Koster &
-          !      &files")
-          !end if
-          do ii = 1, len(lStr)
-            call get(lStr, strTmp, ii)
-            inquire(file=strTmp, exist=tExist)
-            if (.not. tExist) then
-              call dftbp_error(child2, "SK file '" // trim(strTmp) &
-                  &// "' does not exist'")
-            end if
-            call append(skFiles(iSp2, iSp1), strTmp)
-          end do
-          call destruct(lStr)
+          block
+            character(len=:), allocatable :: strArr(:)
+            call hsd_get(child, trim(strTmp), strArr, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: '" &
+                & // trim(strTmp) // "'")
+            call hsd_get_table(child, trim(strTmp), child2, stat, auto_wrap=.true.)
+            !if (size(strArr) /= size(angShells(iSp1)) * size(angShells(iSp2))) then
+            !  call detailedError(child2, "Incorrect number of Slater-Koster &
+            !      &files")
+            !end if
+            do ii = 1, size(strArr)
+              strTmp = strArr(ii)
+              inquire(file=strTmp, exist=tExist)
+              if (.not. tExist) then
+                call dftbp_error(child2, "SK file '" // trim(strTmp) &
+                    &// "' does not exist'")
+              end if
+              call append(skFiles(iSp2, iSp1), strTmp)
+            end do
+          end block
         end do
       end do
     end select
@@ -578,14 +610,18 @@ contains
     integer, intent(in) :: skInterMeth
 
     logical :: tHardCutOff
+    integer :: stat
     type(hsd_table), pointer :: field
     character(len=:), allocatable :: modifier
 
     ! Artificially truncate the SK table
-    call getChildValue(node, "SKMaxDistance", truncationCutOff, modifier=modifier, child=field)
+    call hsd_get(node, "SKMaxDistance", truncationCutOff, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'SKMaxDistance'")
+    call getModifier(node, "SKMaxDistance", modifier)
+    call hsd_get_table(node, "SKMaxDistance", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, lengthUnits, field, truncationCutOff)
 
-    call getChildValue(node, "HardCutOff", tHardCutOff, .true.)
+    call hsd_get_or_set(node, "HardCutOff", tHardCutOff, .true.)
     if (tHardCutOff) then
       ! Adjust by the length of the tail appended to the cutoff
       select case(skInterMeth)

@@ -17,12 +17,12 @@ program skderivs
       & TSlakoEqGrid
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_hsdutils, only : dftbp_error
-  use dftbp_io_hsdutils_list, only : getChildValue
+  ! getChildValue removed: using hsd_get directly
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_get, hsd_get_or_set, &
       & hsd_get_table, HSD_STAT_OK
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_error_t, hsd_table, new_table
   use dftbp_io_message, only : error, warning
-  use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListInt, TListIntR1
+  use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListIntR1
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
 #:if WITH_MPI
   use dftbp_common_mpienv
@@ -173,7 +173,6 @@ contains
     character(len=:), allocatable :: buffer
     integer :: angShellOrdered(size(shellNames))
     type(TListIntR1) :: angShells(2)
-    type(TListInt), allocatable :: lIntTmp
     real(dp), allocatable :: skHam(:,:), skOver(:,:)
     integer :: skInterMeth, nInt, nSpecies
     integer :: ii, jj
@@ -298,21 +297,16 @@ contains
     if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'OutputPrefix'")
     inp%output = unquote(buffer)
 
-    allocate(lIntTmp)
-    call init(lIntTmp)
-    call getChildValue(root, "Hamiltonian", lIntTmp, child=child)
-    allocate(inp%iHam(len(lIntTmp)))
-    call asArray(lIntTmp, inp%iHam)
+    call hsd_get(root, "Hamiltonian", inp%iHam, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'Hamiltonian'")
+    call hsd_get_table(root, "Hamiltonian", child, stat, auto_wrap=.true.)
     if (any(inp%iHam < 1) .or. any(inp%iHam > nInt)) then
       call dftbp_error(child, "Integral index must be between 1 and " &
           &// i2c(nInt))
     end if
-    deallocate(lIntTmp)
-    allocate(lIntTmp)
-    call init(lIntTmp)
-    call getChildValue(root, "Overlap", lIntTmp)
-    allocate(inp%iOver(len(lIntTmp)))
-    call asArray(lIntTmp, inp%iOver)
+    call hsd_get(root, "Overlap", inp%iOver, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'Overlap'")
+    call hsd_get_table(root, "Overlap", child, stat, auto_wrap=.true.)
     if (any(inp%iOver < 1) .or. any(inp%iover > nInt)) then
       call dftbp_error(child, "Integral index must be between 1 and " &
           &// i2c(nInt))
