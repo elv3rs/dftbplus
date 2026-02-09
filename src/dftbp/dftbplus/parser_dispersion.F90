@@ -24,11 +24,11 @@ module dftbp_dftbplus_parser_dispersion
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_io_charmanip, only : tolower, unquote
-  use hsd, only : hsd_rename_child, hsd_get_or_set
-  use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : getChild, getChildValue
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, textNodeName, getNodeName,&
-      & getNodeHSDName, splitModifier
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, &
+      & hsd_get_attrib, hsd_get_matrix, hsd_set, HSD_STAT_OK
+  use hsd_data, only : hsd_table, new_table
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, textNodeName,&
+      & splitModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_type_typegeometry, only : TGeometry
@@ -63,9 +63,10 @@ contains
 
     type(hsd_table), pointer :: dispModel
     character(len=:), allocatable :: buffer
+    integer :: stat
 
-    call getChildValue(node, "", dispModel)
-    call getNodeName(dispModel, buffer)
+    call hsd_get_choice(node, "", buffer, dispModel, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Invalid dispersion model name.")
     select case (buffer)
     case ("slaterkirkwood")
       allocate(input%slakirk)
@@ -128,16 +129,27 @@ contains
     integer :: nAllAtom
     type(TNeighbourList) :: neighs
     type(TStatus) :: errStatus
+    integer :: stat
 
     allocate(tmpR2(3, geo%nAtom))
     allocate(input%polar(geo%nAtom))
     allocate(input%rWaals(geo%nAtom))
     allocate(input%charges(geo%nAtom))
-    call getChildValue(node, "PolarRadiusCharge", value1, child=child, modifier=modifier)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "PolarRadiusCharge", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'PolarRadiusCharge'")
+    call hsd_get_attrib(node, "PolarRadiusCharge", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (.not. associated(value1)) buffer = textNodeName
     select case (buffer)
     case (textNodeName)
-      call getChildValue(child, "", tmpR2, modifier=modifier)
+      block
+        real(dp), allocatable :: tmpMat(:,:)
+        integer :: tmpNR, tmpNC
+        call hsd_get_matrix(child, "#text", tmpMat, tmpNR, tmpNC, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required matrix data")
+        tmpR2(:,:) = transpose(tmpMat)
+      end block
       if (len(modifier) > 0) then
         call splitModifier(modifier, child, modifiers)
         call convertUnitHsd(modifiers(1), volumeUnits, child, tmpR2(1,:),&
@@ -156,15 +168,25 @@ contains
       allocate(rCutoffs(geo%nSpecies))
       allocate(tmp2R2(13, geo%nSpecies))
       do iSp1 = 1, geo%nSpecies
-        call getChildValue(value1, geo%speciesNames(iSp1), value2, &
-            &child=child2, dummyValue=.true.)
-        call getChildValue(child2, "CovalentRadius", rCutoffs(iSp1), &
-            &modifier=modifier2, child=child3)
+        call hsd_get_table(value1, geo%speciesNames(iSp1), child2, stat, auto_wrap=.true.)
+        if (.not. associated(child2)) call dftbp_error(value1, "Missing required block: '" // &
+            & trim(geo%speciesNames(iSp1)) // "'")
+        call hsd_get(child2, "CovalentRadius", rCutoffs(iSp1), stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'CovalentRadius'")
+        call hsd_get_attrib(child2, "CovalentRadius", modifier2, stat)
+        if (stat /= HSD_STAT_OK) modifier2 = ""
+        call hsd_get_table(child2, "CovalentRadius", child3, stat, auto_wrap=.true.)
         call convertUnitHsd(modifier2, lengthUnits, child3, &
             &rCutoffs(iSp1))
         call hsd_rename_child(child2, "HybridPolarizations", "HybridPolarisations")
-        call getChildValue(child2, "HybridPolarisations", tmp2R2(:, iSp1), &
-            &modifier=modifier2, child=child3)
+        block
+          real(dp), allocatable :: tmpArr(:)
+          call hsd_get(child2, "HybridPolarisations", tmpArr, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required array: 'HybridPolarisations'")
+          tmp2R2(:, iSp1) = tmpArr
+        end block
+        call hsd_get_attrib(child2, "HybridPolarisations", modifier2, stat)
+        if (stat /= HSD_STAT_OK) modifier2 = ""
         if (len(modifier2) > 0) then
           call splitModifier(modifier2, child, modifiers)
           call convertUnitHsd(modifiers(1), volumeUnits, child, &
@@ -252,11 +274,14 @@ contains
     type(hsd_table), pointer :: child, value1, child2
     integer :: iSp
     logical :: found
+    integer :: stat
 
-    call getChildValue(node, "Parameters", value1, child=child)
+    call hsd_get_table(node, "Parameters", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'Parameters'")
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (.not. associated(value1)) buffer = textNodeName
     allocate(input%distances(geo%nSpecies))
     allocate(input%energies(geo%nSpecies))
-    call getNodeName(value1, buffer)
     select case(buffer)
     case("uffparameters")
       do iSp = 1, geo%nSpecies
@@ -270,13 +295,19 @@ contains
     case default
       if (associated(value1)) value1%processed = .false.
       do iSp = 1, geo%nSpecies
-        call getChild(child, geo%speciesNames(iSp), child2)
-        call getChildValue(child2, "Distance", input%distances(iSp), &
-            &modifier=buffer)
+        call hsd_get_table(child, geo%speciesNames(iSp), child2, stat, auto_wrap=.true.)
+        if (.not. associated(child2)) call dftbp_error(child, "Missing required block: '" // &
+            & trim(geo%speciesNames(iSp)) // "'")
+        call hsd_get(child2, "Distance", input%distances(iSp), stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Distance'")
+        call hsd_get_attrib(child2, "Distance", buffer, stat)
+        if (stat /= HSD_STAT_OK) buffer = ""
         call convertUnitHsd(buffer, lengthUnits, child, &
             &input%distances(iSp))
-        call getChildValue(child2, "Energy", input%energies(iSp), &
-            &modifier=buffer)
+        call hsd_get(child2, "Energy", input%energies(iSp), stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Energy'")
+        call hsd_get_attrib(child2, "Energy", buffer, stat)
+        if (stat /= HSD_STAT_OK) buffer = ""
         call convertUnitHsd(buffer, energyUnits, child, &
             &input%energies(iSp))
       end do
@@ -303,39 +334,51 @@ contains
     character(len=:), allocatable :: buffer
     integer, parameter :: d3MaxNum = 94
     logical :: unknownSpecies, threebody
+    integer :: stat
 
-    call getChildValue(node, "Damping", childval, child=child)
-    call getNodeName(childval, buffer)
+    call hsd_get_table(node, "Damping", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'Damping'")
+    call hsd_get_choice(child, "", buffer, childval, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Damping'")
     select case (buffer)
     case ("beckejohnson")
       input%dampingFunction = dampingFunction%rational
-      call getChildValue(childval, "a1", input%a1)
-      call getChildValue(childval, "a2", input%a2)
+      call hsd_get(childval, "a1", input%a1, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(childval, "Missing required value: 'a1'")
+      call hsd_get(childval, "a2", input%a2, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(childval, "Missing required value: 'a2'")
     case ("zerodamping")
       input%dampingFunction = dampingFunction%zero
-      call getChildValue(childval, "sr6", input%sr6)
-      call getChildValue(childval, "alpha6", input%alpha6, default=14.0_dp)
+      call hsd_get(childval, "sr6", input%sr6, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(childval, "Missing required value: 'sr6'")
+      call hsd_get_or_set(childval, "alpha6", input%alpha6, 14.0_dp)
     case ("modifiedzerodamping")
       input%dampingFunction = dampingFunction%mzero
-      call getChildValue(childval, "sr6", input%sr6)
-      call getChildValue(childval, "beta", input%beta)
-      call getChildValue(childval, "alpha6", input%alpha6, default=14.0_dp)
+      call hsd_get(childval, "sr6", input%sr6, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(childval, "Missing required value: 'sr6'")
+      call hsd_get(childval, "beta", input%beta, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(childval, "Missing required value: 'beta'")
+      call hsd_get_or_set(childval, "alpha6", input%alpha6, 14.0_dp)
     case default
-      call getNodeHSDName(childval, buffer)
+      buffer = childval%name
       call dftbp_error(child, "Invalid damping method '" // buffer // "'")
     end select
-    call getChildValue(node, "s6", input%s6)
-    call getChildValue(node, "s8", input%s8)
-    call getChildValue(node, "cutoff", input%cutoff, default=sqrt(9000.0_dp), &
-        & modifier=buffer, child=child)
+    call hsd_get(node, "s6", input%s6, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 's6'")
+    call hsd_get(node, "s8", input%s8, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 's8'")
+    call hsd_get_or_set(node, "cutoff", input%cutoff, sqrt(9000.0_dp), child=child)
+    call hsd_get_attrib(node, "cutoff", buffer, stat)
+    if (stat /= HSD_STAT_OK) buffer = ""
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoff)
-    call getChildValue(node, "cutoffcn", input%cutoffCN, default=40.0_dp, &
-        & modifier=buffer, child=child)
+    call hsd_get_or_set(node, "cutoffcn", input%cutoffCN, 40.0_dp, child=child)
+    call hsd_get_attrib(node, "cutoffcn", buffer, stat)
+    if (stat /= HSD_STAT_OK) buffer = ""
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoffCN)
-    call getChildValue(node, "threebody", threebody, default=.false.)
+    call hsd_get_or_set(node, "threebody", threebody, .false.)
     input%s9 = merge(1.0_dp, 0.0_dp, threebody)
     ! D3H5 - additional H-H repulsion
-    call getChildValue(node, "hhrepulsion", input%hhrepulsion, default=.false.)
+    call hsd_get_or_set(node, "hhrepulsion", input%hhrepulsion, .false.)
 
     ! Initialize default atomic numbers
     allocate(izpDefault(size(geo%speciesNames)))
@@ -344,7 +387,7 @@ contains
     end do
 
     ! See if we find user specified overwrites for atomic numbers
-    call getChild(node, "AtomicNumbers", child, requested=.false.)
+    call hsd_get_table(node, "AtomicNumbers", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(input%izp(size(geo%speciesNames)))
       call readSpeciesList(child, geo%speciesNames, input%izp, default=izpDefault)
@@ -382,16 +425,21 @@ contains
 
     type(hsd_table), pointer :: child
     character(len=:), allocatable :: buffer
+    integer :: stat
 
-    call getChildValue(node, "s6", input%s6, default=1.0_dp)
-    call getChildValue(node, "s8", input%s8)
-    call getChildValue(node, "s10", input%s10, default=0.0_dp)
-    call getChildValue(node, "a1", input%a1)
-    call getChildValue(node, "a2", input%a2)
-    call getChildValue(node, "alpha", input%alpha, default=14.0_dp)
-    call getChildValue(node, "weightingFactor", input%weightingFactor, default=4.0_dp)
-    call getChildValue(node, "cutoffInter", input%cutoffInter, default=64.0_dp, modifier=buffer,&
-        & child=child)
+    call hsd_get_or_set(node, "s6", input%s6, 1.0_dp)
+    call hsd_get(node, "s8", input%s8, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 's8'")
+    call hsd_get_or_set(node, "s10", input%s10, 0.0_dp)
+    call hsd_get(node, "a1", input%a1, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'a1'")
+    call hsd_get(node, "a2", input%a2, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'a2'")
+    call hsd_get_or_set(node, "alpha", input%alpha, 14.0_dp)
+    call hsd_get_or_set(node, "weightingFactor", input%weightingFactor, 4.0_dp)
+    call hsd_get_or_set(node, "cutoffInter", input%cutoffInter, 64.0_dp, child=child)
+    call hsd_get_attrib(node, "cutoffInter", buffer, stat)
+    if (stat /= HSD_STAT_OK) buffer = ""
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoffInter)
 
     call readCoordinationNumber(node, input%cnInput, geo, "exp", 0.0_dp)
@@ -427,26 +475,44 @@ contains
     real(dp), allocatable :: d4Chi(:), d4Gam(:), d4Kcn(:), d4Rad(:)
     integer, parameter :: d4MaxNum = 86
     logical :: unknownSpecies
+    integer :: stat
 
-    call getChildValue(node, "s6", input%s6, default=1.0_dp)
-    call getChildValue(node, "s8", input%s8)
-    call getChildValue(node, "s9", input%s9)
-    call getChildValue(node, "s10", input%s10, default=0.0_dp)
-    call getChildValue(node, "a1", input%a1)
-    call getChildValue(node, "a2", input%a2)
-    call getChildValue(node, "alpha", input%alpha, default=16.0_dp)
-    call getChildValue(node, "WeightingFactor", input%weightingFactor, default=6.0_dp)
-    call getChildValue(node, "ChargeSteepness", input%chargeSteepness, default=2.0_dp)
-    call getChildValue(node, "ChargeScale", input%chargeScale, default=3.0_dp)
-    call getChildValue(node, "CutoffInter", input%cutoffInter, default=64.0_dp, modifier=buffer,&
-        & child=child)
+    call hsd_get_or_set(node, "s6", input%s6, 1.0_dp)
+    call hsd_get(node, "s8", input%s8, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 's8'")
+    call hsd_get(node, "s9", input%s9, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 's9'")
+    call hsd_get_or_set(node, "s10", input%s10, 0.0_dp)
+    call hsd_get(node, "a1", input%a1, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'a1'")
+    call hsd_get(node, "a2", input%a2, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'a2'")
+    call hsd_get_or_set(node, "alpha", input%alpha, 16.0_dp)
+    call hsd_get_or_set(node, "WeightingFactor", input%weightingFactor, 6.0_dp)
+    call hsd_get_or_set(node, "ChargeSteepness", input%chargeSteepness, 2.0_dp)
+    call hsd_get_or_set(node, "ChargeScale", input%chargeScale, 3.0_dp)
+    call hsd_get_or_set(node, "CutoffInter", input%cutoffInter, 64.0_dp, child=child)
+    call hsd_get_attrib(node, "CutoffInter", buffer, stat)
+    if (stat /= HSD_STAT_OK) buffer = ""
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoffInter)
-    call getChildValue(node, "CutoffThree", input%cutoffThree, default=40.0_dp, modifier=buffer,&
-        & child=child)
+    call hsd_get_or_set(node, "CutoffThree", input%cutoffThree, 40.0_dp, child=child)
+    call hsd_get_attrib(node, "CutoffThree", buffer, stat)
+    if (stat /= HSD_STAT_OK) buffer = ""
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoffThree)
 
-    call getChildValue(node, "ChargeModel", value1, "EEQ", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "ChargeModel", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="chargemodel")
+        call new_table(defChild, name="eeq")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "ChargeModel", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'ChargeModel'")
     select case(buffer)
     case default
       call dftbp_error(value1, "Unknown method '"//buffer//"' for ChargeModel")
@@ -472,7 +538,7 @@ contains
     end do
 
     ! See if we find user specified overwrites for atomic numbers
-    call getChild(node, "AtomicNumbers", child, requested=.false.)
+    call hsd_get_table(node, "AtomicNumbers", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       allocate(input%izp(size(geo%speciesNames)))
       call readSpeciesList(child, geo%speciesNames, input%izp, default=izpDefault)
@@ -528,6 +594,7 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer
+    integer :: stat
 
     input%nrChrg = nrChrg
 
@@ -536,8 +603,19 @@ contains
     allocate(input%kcn(geo%nSpecies))
     allocate(input%rad(geo%nSpecies))
 
-    call getChildValue(node, "Chi", value1, "Defaults", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Chi", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="chi")
+        call new_table(defChild, name="defaults")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Chi", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Chi'")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' for chi")
@@ -547,8 +625,19 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%chi)
     end select
 
-    call getChildValue(node, "Gam", value1, "Defaults", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Gam", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="gam")
+        call new_table(defChild, name="defaults")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Gam", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Gam'")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' for gam")
@@ -558,8 +647,19 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%gam)
     end select
 
-    call getChildValue(node, "Kcn", value1, "Defaults", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Kcn", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="kcn")
+        call new_table(defChild, name="defaults")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Kcn", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Kcn'")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' for kcn")
@@ -569,8 +669,19 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%kcn)
     end select
 
-    call getChildValue(node, "Rad", value1, "Defaults", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Rad", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="rad")
+        call new_table(defChild, name="defaults")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Rad", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Rad'")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' for rad")
@@ -580,8 +691,9 @@ contains
       call readSpeciesList(value1, geo%speciesNames, input%rad)
     end select
 
-    call getChildValue(node, "Cutoff", input%cutoff, default=40.0_dp, modifier=buffer,&
-        & child=child)
+    call hsd_get_or_set(node, "Cutoff", input%cutoff, 40.0_dp, child=child)
+    call hsd_get_attrib(node, "Cutoff", buffer, stat)
+    if (stat /= HSD_STAT_OK) buffer = ""
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoff)
 
     call hsd_get_or_set(node, "EwaldParameter", input%parEwald, 0.0_dp)
@@ -613,9 +725,21 @@ contains
     type(hsd_table), pointer :: value1, value2, child, child2, field
     character(len=:), allocatable :: buffer, modifier
     real(dp), allocatable :: kENDefault(:), kRadDefault(:)
+    integer :: stat
 
-    call getChildValue(node, "CoordinationNumber", value1, cnDefault, child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "CoordinationNumber", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="coordinationnumber")
+        call new_table(defChild, name=tolower(cnDefault))
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "CoordinationNumber", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'CoordinationNumber'")
 
     select case(buffer)
     case default
@@ -630,17 +754,28 @@ contains
       input%cnType = cnType%gfn
     end select
 
-    call getChildValue(value1, "CutCN", input%maxCN, cutDefault, &
-        & child=child2)
+    call hsd_get_or_set(value1, "CutCN", input%maxCN, cutDefault)
 
-    call getChildValue(value1, "Cutoff", input%rCutoff, 40.0_dp, &
-        & modifier=modifier, child=field)
+    call hsd_get_or_set(value1, "Cutoff", input%rCutoff, 40.0_dp, child=field)
+    call hsd_get_attrib(value1, "Cutoff", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
     call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
     allocate(input%en(geo%nSpecies))
     if (input%cnType == cnType%cov) then
-      call getChildValue(value1, "Electronegativities", value2, "PaulingEN", child=child2)
-      call getNodeName(value2, buffer)
+      call hsd_get_table(value1, "Electronegativities", child2, stat, auto_wrap=.true.)
+      if (.not. associated(child2)) then
+        block
+          type(hsd_table) :: defTbl, defChild
+          call new_table(defTbl, name="electronegativities")
+          call new_table(defChild, name="paulingen")
+          call defTbl%add_child(defChild)
+          call value1%add_child(defTbl)
+        end block
+        call hsd_get_table(value1, "Electronegativities", child2, stat, auto_wrap=.true.)
+      end if
+      call hsd_get_choice(child2, "", buffer, value2, stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Invalid or missing choice in 'Electronegativities'")
       select case(buffer)
       case default
         call dftbp_error(child2, "Unknown method '" // buffer //&
@@ -662,8 +797,19 @@ contains
     end if
 
     allocate(input%covRad(geo%nSpecies))
-    call getChildValue(value1, "Radii", value2, "CovalentRadiiD3", child=child2)
-    call getNodeName(value2, buffer)
+    call hsd_get_table(value1, "Radii", child2, stat, auto_wrap=.true.)
+    if (.not. associated(child2)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="radii")
+        call new_table(defChild, name="covalentradiid3")
+        call defTbl%add_child(defChild)
+        call value1%add_child(defTbl)
+      end block
+      call hsd_get_table(value1, "Radii", child2, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child2, "", buffer, value2, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Invalid or missing choice in 'Radii'")
     select case(buffer)
     case default
       call dftbp_error(child2, "Unknown method '"//buffer//"' to generate radii")
@@ -696,24 +842,25 @@ contains
 
     character(len=:), allocatable :: buffer
     type(hsd_table), pointer :: child
+    integer :: stat
 
     input%method = 'ts'
-    call getChild(node, "EnergyAccuracy", child, requested=.false.)
+    call hsd_get_table(node, "EnergyAccuracy", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       call dftbp_warning(child, "The energy accuracy setting will be ignored as it is not&
           & supported/need by libMBD any more")
     end if
-    call getChild(node, "ForceAccuracy", child, requested=.false.)
+    call hsd_get_table(node, "ForceAccuracy", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       call dftbp_warning(child, "The force accuracy setting will be ignored as it is not&
           & supported/need by libMBD any more")
     end if
-    call getChildValue(node, "Damping", input%ts_d, default=(input%ts_d))
-    call getChildValue(node, "RangeSeparation", input%ts_sr, default=(input%ts_sr))
+    call hsd_get_or_set(node, "Damping", input%ts_d, (input%ts_d))
+    call hsd_get_or_set(node, "RangeSeparation", input%ts_sr, (input%ts_sr))
     call hsd_get_or_set(node, "ReferenceSet", buffer, 'ts', child=child)
     input%vdw_params_kind = tolower(unquote(buffer))
     call checkManyBodyDispRefName(input%vdw_params_kind, child)
-    call getChildValue(node, "LogLevel", input%log_level, default=(input%log_level))
+    call hsd_get_or_set(node, "LogLevel", input%log_level, (input%log_level))
 
   end subroutine readDispTs
 
@@ -729,16 +876,28 @@ contains
 
     character(len=:), allocatable :: buffer
     type(hsd_table), pointer :: child
+    integer :: stat
 
     input%method = 'mbd-rsscs'
     call hsd_get_or_set(node, "Beta", input%mbd_beta, input%mbd_beta)
-    call getChildValue(node, "NOmegaGrid", input%n_omega_grid, default=(input%n_omega_grid))
-    call getChildValue(node, "KGrid", input%k_grid)
-    call getChildValue(node, "KGridShift", input%k_grid_shift, default=(input%k_grid_shift))
+    call hsd_get_or_set(node, "NOmegaGrid", input%n_omega_grid, (input%n_omega_grid))
+    block
+      integer, allocatable :: tmpGrid(:)
+      call hsd_get(node, "KGrid", tmpGrid, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required array: 'KGrid'")
+      input%k_grid(:min(size(tmpGrid), size(input%k_grid))) = &
+          & tmpGrid(:min(size(tmpGrid), size(input%k_grid)))
+    end block
+    block
+      real(dp), allocatable :: tmpShift(:)
+      call hsd_get_or_set(node, "KGridShift", tmpShift, input%k_grid_shift)
+      input%k_grid_shift(:min(size(tmpShift), size(input%k_grid_shift))) = &
+          & tmpShift(:min(size(tmpShift), size(input%k_grid_shift)))
+    end block
     call hsd_get_or_set(node, "ReferenceSet", buffer, 'ts', child=child)
     input%vdw_params_kind = tolower(unquote(buffer))
     call checkManyBodyDispRefName(input%vdw_params_kind, child)
-    call getChildValue(node, "LogLevel", input%log_level, default=(input%log_level))
+    call hsd_get_or_set(node, "LogLevel", input%log_level, (input%log_level))
 
   end subroutine readDispMbd
 

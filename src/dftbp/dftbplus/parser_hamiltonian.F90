@@ -27,13 +27,13 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_extlibs_poisson, only : TPoissonInfo
   use dftbp_extlibs_tblite, only : tbliteMethod
   use dftbp_io_charmanip, only : newline, tolower, unquote
-  use dftbp_io_hsdutils, only : getChild, getChildValue, &
-      & setChild, setChildValue, removeChild
-  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables
+  use dftbp_io_hsdutils, only : removeChild
+  use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables, &
+      & hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_set, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning,&
-      & textNodeName, getNodeName, getNodeHSDName, getNodeName2, hasInlineData
+      & textNodeName, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_md_thermostats, only : thermostatTypes
   use dftbp_reks_reks, only : reksTypes
@@ -101,8 +101,9 @@ contains
 
     character(len=:), allocatable :: buffer
     type(hsd_table), pointer :: child
+    integer :: stat
 
-    call getNodeName(node, buffer)
+    buffer = node%name
     select case (buffer)
     case ("dftb")
   #:if WITH_TRANSPORT
@@ -123,7 +124,7 @@ contains
     end select
 
   #:if WITH_API
-    call getChild(node, "ASI", child, requested=.false.)
+    call hsd_get_table(node, "ASI", child, stat, auto_wrap=.true.)
     if (associated(child)) then
       ctrl%isASICallbackEnabled = .true.
     else
@@ -187,6 +188,7 @@ contains
     character(len=:), allocatable :: searchPath(:)
     character(len=:), allocatable :: strOut, strJoin
     logical :: isHalogenXCorr
+    integer :: stat
 
     !> For hybrid functional calculations
     type(THybridXcSKTag) :: hybridXcSK
@@ -209,8 +211,10 @@ contains
         call init(skFiles(iSp2, iSp1))
       end do
     end do
-    call getChildValue(node, "SlaterKosterFiles", value1, child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "SlaterKosterFiles", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'SlaterKosterFiles'")
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (.not. associated(value1)) buffer = textNodeName
     select case(buffer)
     case ("type2filenames")
       call hsd_get_or_set(value1, "Prefix", buffer2, "")
@@ -246,15 +250,15 @@ contains
       if (associated(value1)) value1%processed = .false.
       call hsd_get_or_set(child, "Prefix", buffer2, "")
       prefix = unquote(buffer2)
-      call getChild(child, "Suffix", child2, requested=.false.)
+      call hsd_get_table(child, "Suffix", child2, stat, auto_wrap=.true.)
       if (associated(child2)) then
         call dftbp_error(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
       end if
-      call getChild(child, "Separator", child2, requested=.false.)
+      call hsd_get_table(child, "Separator", child2, stat, auto_wrap=.true.)
       if (associated(child2)) then
         call dftbp_error(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
       end if
-      call getChild(child, "LowerCaseTypeName", child2, requested=.false.)
+      call hsd_get_table(child, "LowerCaseTypeName", child2, stat, auto_wrap=.true.)
       if (associated(child2)) then
         call dftbp_error(child2, "Keyword requires SlaterKosterFiles = Type2Filenames {")
       end if
@@ -262,7 +266,9 @@ contains
         do iSp2 = 1, geo%nSpecies
           strTmp = trim(geo%speciesNames(iSp1)) // "-" // trim(geo%speciesNames(iSp2))
           call hsd_get(child, trim(strTmp), strArr)
-          call getChild(child, trim(strTmp), child2)
+          call hsd_get_table(child, trim(strTmp), child2, stat, auto_wrap=.true.)
+          if (.not. associated(child2)) call dftbp_error(child, "Missing required block: '" // &
+              & trim(strTmp) // "'")
           if (size(strArr) /= angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks) then
             write(errorStr, "(A,I0,A,I0)") "Incorrect number of Slater-Koster files for " //&
                 & trim(strTmp) // ", expected ", angShells(iSp1)%nBlocks * angShells(iSp2)%nBlocks,&
@@ -285,15 +291,29 @@ contains
 
     ! Which repulsive is defined by polynomial? (Default: None)
     allocate(repPoly(geo%nSpecies, geo%nSpecies))
-    call getChildValue(node, "PolynomialRepulsive", value1, "", child=child, list=.true.,&
-        & allowEmptyValue=.true., dummyValue=.true.)
-    call getNodeName2(value1, buffer)
-    if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
+    call hsd_get_table(node, "PolynomialRepulsive", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl
+        call new_table(defTbl, name="polynomialrepulsive")
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "PolynomialRepulsive", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (.not. associated(value1)) then
+      if (hasInlineData(child)) then
+        buffer = textNodeName
+      else
+        buffer = ""
+      end if
+    end if
     select case (buffer)
     case ("")
       repPoly(:,:) = .false.
     case("setforall")
-      call getChildValue(value1, "", repPoly(1,1))
+      call hsd_get(value1, "#text", repPoly(1,1), stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing value for SetForAll")
       repPoly(:,:) = repPoly(1,1)
     case default
       do iSp1 = 1, geo%nSpecies
@@ -336,7 +356,7 @@ contains
     end if
 
     if (.not. allocated(ctrl%hybridXcInp)) then
-      call getChild(node, "TruncateSKRange", child, requested=.false.)
+      call hsd_get_table(node, "TruncateSKRange", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         call warning("Artificially truncating the SK table, this is normally a bad idea!")
         call SKTruncations(child, rSKCutOff, skInterMeth)
@@ -374,7 +394,7 @@ contains
       call readHCorrection(node, geo, ctrl)
 
       !> TI-DFTB varibles for Delta DFTB
-      call getChild(node, "NonAufbau", child, requested=.false.)
+      call hsd_get_table(node, "NonAufbau", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         ctrl%isNonAufbau = .true.
         call hsd_get_or_set(child, "SpinPurify", ctrl%isSpinPurify, .true.)
@@ -440,7 +460,7 @@ contains
 
     if (ctrl%tscc) then
 
-      call getChild(node, "OrbitalPotential", child, requested=.false.)
+      call hsd_get_table(node, "OrbitalPotential", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         allocate(ctrl%dftbUInp)
         call hsd_get_or_set(child, "Functional", buffer, "fll")
@@ -477,8 +497,9 @@ contains
             ctrl%dftbUInp%niUJ(ii, iSp1) = size(shellsTmp)
             deallocate(shellsTmp)
 
-            call getChildValue(child2, "uj", rTmp, 0.0_dp, modifier=modifier, &
-                & child=child3)
+            call hsd_get_or_set(child2, "uj", rTmp, 0.0_dp, child=child3)
+            call hsd_get_attrib(child2, "uj", modifier, stat)
+            if (stat /= HSD_STAT_OK) modifier = ""
             call convertUnitHsd(modifier, energyUnits, child3, rTmp)
             if (rTmp < 0.0_dp) then
               write(errorStr,"(F12.8)")rTmp
@@ -531,31 +552,48 @@ contains
       end if
 
       ! On-site
-      call getChildValue(node, "OnSiteCorrection", value1, "", child=child, allowEmptyValue=.true.,&
-          & dummyValue=.true.)
+      call hsd_get_table(node, "OnSiteCorrection", child, stat, auto_wrap=.true.)
+      value1 => null()
+      if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
       if (associated(value1)) then
         allocate(ctrl%onSiteElements(slako%orb%mShell, slako%orb%mShell, 2, geo%nSpecies))
         do iSp1 = 1, geo%nSpecies
-          call getChildValue(child, trim(geo%speciesNames(iSp1))//"uu",&
-              & ctrl%onSiteElements(:slako%orb%nShell(iSp1), :slako%orb%nShell(iSp1), 1, iSp1))
-          call getChildValue(child, trim(geo%speciesNames(iSp1))//"ud",&
-              & ctrl%onSiteElements(:slako%orb%nShell(iSp1), :slako%orb%nShell(iSp1), 2, iSp1))
+          block
+            real(dp), allocatable :: tmpMat(:,:)
+            integer :: nr, nc
+            call hsd_get_matrix(child, trim(geo%speciesNames(iSp1))//"uu", tmpMat, nr, nc, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required matrix: '" // &
+                & trim(geo%speciesNames(iSp1)) // "uu'")
+            ctrl%onSiteElements(:slako%orb%nShell(iSp1), :slako%orb%nShell(iSp1), 1, iSp1) = &
+                & transpose(tmpMat)
+          end block
+          block
+            real(dp), allocatable :: tmpMat(:,:)
+            integer :: nr, nc
+            call hsd_get_matrix(child, trim(geo%speciesNames(iSp1))//"ud", tmpMat, nr, nc, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required matrix: '" // &
+                & trim(geo%speciesNames(iSp1)) // "ud'")
+            ctrl%onSiteElements(:slako%orb%nShell(iSp1), :slako%orb%nShell(iSp1), 2, iSp1) = &
+                & transpose(tmpMat)
+          end block
         end do
       end if
 
     end if
 
     ! Dispersion
-    call getChildValue(node, "Dispersion", value1, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true.)
+    call hsd_get_table(node, "Dispersion", child, stat, auto_wrap=.true.)
+    value1 => null()
+    if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
     if (associated(value1)) then
       allocate(ctrl%dispInp)
       call readDispersion(child, geo, ctrl%dispInp, ctrl%nrChrg, ctrl%tSCC)
     end if
 
     ! Solvation
-    call getChildValue(node, "Solvation", value1, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true.)
+    call hsd_get_table(node, "Solvation", child, stat, auto_wrap=.true.)
+    value1 => null()
+    if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
     if (associated(value1)) then
       allocate(ctrl%solvInp)
       call readSolvation(child, geo, ctrl%solvInp)
@@ -563,8 +601,9 @@ contains
     end if
 
     ! Electronic constraints
-    call getChildValue(node, "ElectronicConstraints", value1, "", child=child,&
-        & allowEmptyValue=.true., dummyValue=.true., list=.true.)
+    call hsd_get_table(node, "ElectronicConstraints", child, stat, auto_wrap=.true.)
+    value1 => null()
+    if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
     if (associated(value1)) then
       allocate(ctrl%elecConstraintInp)
       call readElecConstraintInput(child, geo, ctrl%tSpin, ctrl%t2Component, ctrl%elecConstraintInp)
@@ -605,17 +644,24 @@ contains
             & resolved SCC")
       end if
       if (ctrl%t3rd .or. ctrl%t3rdFull) then
-        call getChild(node, 'HubbardDerivs', child, requested=.true.)
+        call hsd_get_table(node, 'HubbardDerivs', child, stat, auto_wrap=.true.)
+        if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'HubbardDerivs'")
         allocate(ctrl%HubDerivs(slako%orb%mShell, geo%nSpecies))
         ctrl%hubDerivs(:,:) = 0.0_dp
         do iSp1 = 1, geo%nSpecies
           nShell = slako%orb%nShell(iSp1)
           if (ctrl%tShellResolved) then
-            call getChildValue(child, geo%speciesNames(iSp1),&
-                & ctrl%hubDerivs(1:nShell, iSp1))
+            block
+              real(dp), allocatable :: tmpArr(:)
+              call hsd_get(child, geo%speciesNames(iSp1), tmpArr, stat=stat)
+              if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: '" // &
+                  & trim(geo%speciesNames(iSp1)) // "'")
+              ctrl%hubDerivs(1:min(size(tmpArr),nShell), iSp1) = tmpArr(1:min(size(tmpArr),nShell))
+            end block
           else
-            call getChildValue(child, geo%speciesNames(iSp1),&
-                & ctrl%hubDerivs(1, iSp1))
+            call hsd_get(child, geo%speciesNames(iSp1), ctrl%hubDerivs(1, iSp1), stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: '" // &
+                & trim(geo%speciesNames(iSp1)) // "'")
             ctrl%hubDerivs(2:nShell, iSp1) = ctrl%hubDerivs(1, iSp1)
           end if
         end do
@@ -689,6 +735,7 @@ contains
     integer :: method
     character(len=:), allocatable :: paramFile, paramTmp
     type(TOrbitals) :: orb
+    integer :: stat
 
     ctrl%hamiltonian = hamiltonianTypes%xtb
 
@@ -696,9 +743,10 @@ contains
     call ctrl%tbliteInp%setupGeometry(geo%nAtom, geo%species, geo%coords, geo%speciesNames,&
         & geo%latVecs)
 
-    call getChild(node, "Method", child, requested=.false.)
+    call hsd_get_table(node, "Method", child, stat, auto_wrap=.true.)
     if (associated(child)) then
-      call getChildValue(child, "", buffer)
+      call hsd_get(child, "#text", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing value in 'Method'")
       select case(unquote(buffer))
       case default
         call dftbp_error(child, "Unknown method "//buffer//" for xTB Hamiltonian")
@@ -712,10 +760,12 @@ contains
       call ctrl%tbliteInp%setupCalculator(method)
       ctrl%tbliteInp%info%name = trim(unquote(buffer))
     else
-      call getChildValue(node, "ParameterFile", value1, "", child=child, allowEmptyValue=.true.,&
-          & dummyValue=.true.)
+      call hsd_get_table(node, "ParameterFile", child, stat, auto_wrap=.true.)
+      value1 => null()
+      if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
       if (associated(value1)) then
-        call getChildValue(child, "", buffer)
+        call hsd_get(child, "#text", buffer, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing parameter file path")
         paramFile = trim(unquote(buffer))
         call getParamSearchPaths(searchPath)
         call findFile(searchPath, paramFile, paramTmp)
@@ -737,7 +787,7 @@ contains
       call readSccOptions(node, ctrl, geo)
 
       !> TI-DFTB varibles for Delta DFTB
-      call getChild(node, "NonAufbau", child, requested=.false.)
+      call hsd_get_table(node, "NonAufbau", child, stat, auto_wrap=.true.)
       if (associated(child)) then
         ctrl%isNonAufbau = .true.
         call hsd_get_or_set(child, "SpinPurify", ctrl%isSpinPurify, .true.)
@@ -799,16 +849,18 @@ contains
     @:PROPAGATE_ERROR(errStatus)
 
     ! Dispersion
-    call getChildValue(node, "Dispersion", value1, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true.)
+    call hsd_get_table(node, "Dispersion", child, stat, auto_wrap=.true.)
+    value1 => null()
+    if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
     if (associated(value1)) then
       allocate(ctrl%dispInp)
       call readDispersion(child, geo, ctrl%dispInp, ctrl%nrChrg, ctrl%tSCC)
     end if
 
     ! Solvation
-    call getChildValue(node, "Solvation", value1, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true.)
+    call hsd_get_table(node, "Solvation", child, stat, auto_wrap=.true.)
+    value1 => null()
+    if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
     if (associated(value1)) then
       allocate(ctrl%solvInp)
       call readSolvation(child, geo, ctrl%solvInp)
@@ -839,8 +891,9 @@ contains
     end if
 
     ! Electronic constraints
-    call getChildValue(node, "ElectronicConstraints", value1, "", child=child,&
-        & allowEmptyValue=.true., dummyValue=.true., list=.true.)
+    call hsd_get_table(node, "ElectronicConstraints", child, stat, auto_wrap=.true.)
+    value1 => null()
+    if (associated(child)) call hsd_get_choice(child, "", buffer, value1, stat)
     if (associated(value1)) then
       allocate(ctrl%elecConstraintInp)
       call readElecConstraintInput(child, geo, ctrl%tSpin, ctrl%t2Component, ctrl%elecConstraintInp)
@@ -868,13 +921,25 @@ contains
     character(len=:), allocatable :: buffer, buffer2
     real(dp), allocatable :: dynMixMatrix(:,:)
     integer :: dynMixNRows, dynMixNCols
+    integer :: stat
 
     if (ctrl%reksInp%reksAlg == reksTypes%noReks) then
 
       if (ctrl%tSCC) then
 
-        call getChildValue(hamNode, "Mixer", value1, "Broyden", child=child)
-        call getNodeName(value1, buffer)
+        call hsd_get_table(hamNode, "Mixer", child, stat, auto_wrap=.true.)
+        if (.not. associated(child)) then
+          block
+            type(hsd_table) :: defTbl, defChild
+            call new_table(defTbl, name="mixer")
+            call new_table(defChild, name="broyden")
+            call defTbl%add_child(defChild)
+            call hamNode%add_child(defTbl)
+          end block
+          call hsd_get_table(hamNode, "Mixer", child, stat, auto_wrap=.true.)
+        end if
+        call hsd_get_choice(child, "", buffer, value1, stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Mixer'")
         select case(buffer)
 
         case ("broyden")
@@ -895,9 +960,21 @@ contains
             call hsd_get_or_set(value1, "MixingParameter", inp%mixParam, 0.05_dp)
             call hsd_get_or_set(value1, "Generations", inp%iGenerations, 4)
             call hsd_get_or_set(value1, "InitMixingParameter", inp%initMixParam, 0.01_dp)
-            call getChildValue(value1, "DynMixingParameters", value2, "", child=child,&
-                & allowEmptyValue=.true.)
-            call getNodeName2(value2, buffer2)
+            call hsd_get_table(value1, "DynMixingParameters", child, stat, auto_wrap=.true.)
+            if (.not. associated(child)) then
+              block
+                type(hsd_table) :: defTbl
+                call new_table(defTbl, name="dynmixingparameters")
+                call value1%add_child(defTbl)
+              end block
+              call hsd_get_table(value1, "DynMixingParameters", child, stat, auto_wrap=.true.)
+            end if
+            call hsd_get_choice(child, "", buffer2, value2, stat)
+            if (.not. associated(value2)) then
+              if (.not. hasInlineData(child)) then
+                buffer2 = ""
+              end if
+            end if
             if (buffer2 == "" .and. .not. hasInlineData(child)) then
               inp%nConvMixParam = 0
             else
@@ -931,7 +1008,7 @@ contains
 
         case default
 
-          call getNodeHSDName(value1, buffer)
+          buffer = value1%name
           call dftbp_error(child, "Invalid mixer '" // buffer // "'")
 
         end select
@@ -940,7 +1017,10 @@ contains
 
       if (ctrl%tMD) then
         if (ctrl%thermostatInp%thermostatType /= thermostatTypes%dummy) then
-          call getChildValue(driverNode, "Thermostat", child, child=child2)
+          call hsd_get_table(driverNode, "Thermostat", child2, stat, auto_wrap=.true.)
+          if (.not. associated(child2)) call dftbp_error(driverNode, "Missing required block: 'Thermostat'")
+          call hsd_get_choice(child2, "", buffer, child, stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Invalid or missing choice in 'Thermostat'")
           if (ctrl%reksInp%reksAlg == reksTypes%noReks) then
             call hsd_get_or_set(child, "AdaptFillingTemp", ctrl%tSetFillingTemp, .false.)
           end if
