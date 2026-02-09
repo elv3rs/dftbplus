@@ -154,7 +154,7 @@ contains
         &"ReselectIndividually", &
         &"Keyword renamed to 'ReselectIndividually'.")
 
-    call hsd_get_table(root, "Hamiltonian/DFTB/Variational", ch1)
+    call getDescendant(root, "Hamiltonian/DFTB/Variational", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tValue)
       if (associated(ch1)) ch1%processed = .false.
@@ -480,14 +480,14 @@ contains
 
     ! If this is an electron dynamics restart, then remove keywords for the (un-needed) ground state
     ! calculation (unless the eigenvectors are required)
-    call hsd_get_table(root, "ElectronDynamics/Restart", ch1)
+    call getDescendant(root, "ElectronDynamics/Restart", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tVal1)
       if (associated(ch1)) ch1%processed = .false.
       tVal2 = .false.
       ! Population projection requires eigenvectors, which are not currently stored in the restart
       ! file.
-      call hsd_get_table(root, "ElectronDynamics/Populations", ch2)
+      call getDescendant(root, "ElectronDynamics/Populations", ch2)
       if (associated(ch2)) then
         call getChildValue(ch2, "", tVal2)
         if (associated(ch2)) ch2%processed = .false.
@@ -566,7 +566,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -581,7 +581,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -596,7 +596,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -611,7 +611,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -626,7 +626,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -641,7 +641,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -656,7 +656,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -671,7 +671,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -686,7 +686,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
@@ -742,7 +742,7 @@ contains
       call getNodeName(ch1, buffer)
       if (buffer /= "contacthamiltonian") then
       #:for LABEL in [("xTB"), ("DFTB")]
-        call hsd_get_table(root, "Hamiltonian/${LABEL}$/Charge", ch1)
+        call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1)
         if (associated(ch1)) then
           if (associated(ch1)) ch1%processed = .false.
           call dftbp_warning(ch1, "Device region charge cannot be set if contacts are present.")
