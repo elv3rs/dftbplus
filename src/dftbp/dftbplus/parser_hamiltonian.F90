@@ -27,7 +27,6 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_extlibs_poisson, only : TPoissonInfo
   use dftbp_extlibs_tblite, only : tbliteMethod
   use dftbp_io_charmanip, only : newline, tolower, unquote
-  use dftbp_io_hsdutils, only : removeChild
   use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables, &
       & hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_set, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning,&

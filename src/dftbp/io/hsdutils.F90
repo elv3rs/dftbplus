@@ -12,7 +12,7 @@
 !>
 !>   - dftbp_error / dftbp_warning — formatted error/warning with node context
 !>   - getChild — child table lookup with error reporting and modifier extraction
-!>   - getDescendant / renameDescendant / setNodeName / removeChild — tree manipulation
+!>   - setNodeName — node renaming
 !>   - Atom/index selection helpers
 !>   - Node name and modifier extraction helpers
 !>   - Processed-flag management (setProcessed / setUnprocessed)
@@ -25,7 +25,6 @@ module dftbp_io_hsdutils
   use hsd, only : hsd_table, hsd_value, hsd_node, hsd_iterator, &
       & hsd_format_error, hsd_format_warning, hsd_get, &
       & hsd_get_child, hsd_get_table, hsd_get_attrib, &
-      & hsd_remove_child, hsd_rename_child, &
       & HSD_STAT_OK
   use hsd_data, only : new_table
   use dftbp_io_charmanip, only : i2c, tolower
@@ -43,7 +42,7 @@ module dftbp_io_hsdutils
   public :: getChild
 
   ! --- Public: tree manipulation ---
-  public :: getDescendant, renameDescendant, setNodeName, removeChild
+  public :: setNodeName
 
   ! --- Public: atom / index selection ---
   public :: getSelectedAtomIndices, getSelectedIndices
@@ -529,54 +528,7 @@ contains
   end subroutine getChild
 
 
-  ! ============================================================
-  !  getDescendant — path-based child lookup
-  ! ============================================================
 
-  !> Navigate to a descendant node along a "/" separated path.
-  subroutine getDescendant(root, path, child, requested, processed, parent)
-    type(hsd_table), intent(inout), target :: root
-    character(len=*), intent(in) :: path
-    type(hsd_table), pointer, intent(out) :: child
-    logical, intent(in), optional :: requested
-    logical, intent(in), optional :: processed
-    type(hsd_table), pointer, intent(out), optional :: parent
-
-    integer :: iSlash
-    logical :: isRequired
-    type(hsd_table), pointer :: cur
-    character(len=:), allocatable :: remaining, segment
-
-    isRequired = .false.
-    if (present(requested)) isRequired = requested
-
-    cur => root
-    remaining = path
-    child => null()
-
-    do while (len_trim(remaining) > 0)
-      iSlash = index(remaining, "/")
-      if (iSlash > 0) then
-        segment = remaining(:iSlash - 1)
-        remaining = remaining(iSlash + 1:)
-      else
-        segment = remaining
-        remaining = ""
-      end if
-
-      if (present(parent)) parent => cur
-
-      call getChild(cur, segment, child, requested=.false.)
-      if (.not. associated(child)) then
-        if (isRequired) then
-          call dftbp_error(root, "Required path not found: '" // path // "'")
-        end if
-        return
-      end if
-      cur => child
-    end do
-
-  end subroutine getDescendant
 
 
   ! ============================================================
@@ -596,44 +548,7 @@ contains
   end subroutine setNodeName
 
 
-  ! ============================================================
-  !  renameDescendant — rename a child by path
-  ! ============================================================
 
-  !> Rename a descendant node by path, handling both table and value nodes.
-  subroutine renameDescendant(root, path, newName, warningMsg)
-    type(hsd_table), intent(inout), target :: root
-    character(len=*), intent(in) :: path
-    character(len=*), intent(in) :: newName
-    character(len=*), intent(in), optional :: warningMsg
-
-    integer :: stat
-
-    call hsd_rename_child(root, path, newName, stat, case_insensitive=.true.)
-    if (stat == HSD_STAT_OK) then
-      if (present(warningMsg)) then
-        call dftbp_warning(root, warningMsg)
-      end if
-    end if
-
-  end subroutine renameDescendant
-
-
-  ! ============================================================
-  !  removeChild — remove a specific child from its parent
-  ! ============================================================
-
-  !> Removes a specific child node from its parent.
-  function removeChild(parent, child) result(removed)
-    type(hsd_table), pointer, intent(inout) :: parent
-    type(hsd_table), pointer, intent(inout) :: child
-    type(hsd_table), pointer :: removed
-
-    call hsd_remove_child(parent, child%name)
-    child => null()
-    removed => null()
-
-  end function removeChild
 
 
 end module dftbp_io_hsdutils
