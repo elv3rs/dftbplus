@@ -154,7 +154,7 @@ contains
         &"ReselectIndividually", &
         &"Keyword renamed to 'ReselectIndividually'.")
 
-    call getDescendant(root, "Hamiltonian/DFTB/Variational", ch1)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Variational", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tValue)
       if (associated(ch1)) ch1%processed = .false.
@@ -204,15 +204,15 @@ contains
     integer :: ii
 
     ! Replace range operator with short start:end syntax
-    call getDescendant(root, "Driver/SteepestDescent/MovedAtoms", node)
+    call hsd_get_table(root, "Driver/SteepestDescent/MovedAtoms", node)
     call replaceRange(node)
-    call getDescendant(root, "Driver/ConjugateGradient/MovedAtoms", node)
+    call hsd_get_table(root, "Driver/ConjugateGradient/MovedAtoms", node)
     call replaceRange(node)
-    call getDescendant(root, "Driver/SecondDerivatives/Atoms", node)
+    call hsd_get_table(root, "Driver/SecondDerivatives/Atoms", node)
     call replaceRange(node)
-    call getDescendant(root, "Driver/VelocityVerlet/MovedAtoms", node)
+    call hsd_get_table(root, "Driver/VelocityVerlet/MovedAtoms", node)
     call replaceRange(node)
-    call getDescendant(root, "Hamiltonian/DFTB/SpinPolarisation/Colinear&
+    call hsd_get_table(root, "Hamiltonian/DFTB/SpinPolarisation/Colinear&
         &/InitialSpin", node)
     if (associated(node)) then
       call getChildren(node, "AtomSpin", children)
@@ -439,7 +439,7 @@ contains
 
     call getDescendant(root, "Transport", ch1, parent=par)
     if (associated(ch1)) then
-      call getDescendant(ch1, "Task", ch2)
+      call hsd_get_table(ch1, "Task", ch2)
       if (.not. associated(ch2)) then
         call setChildValue(ch1, "readBinaryContact", .false., child=ch2, replace=.true.)
       else
@@ -454,7 +454,7 @@ contains
       end if
     end if
 
-    call getDescendant(root, "ParserOptions", ch1)
+    call hsd_get_table(root, "ParserOptions", ch1)
     if (associated(ch1) .and. hsd_has_child(ch1, "WriteXMLInput", .true.)) then
       call hsd_get(ch1, "WriteXMLInput", tVal, stat=stat)
       if (stat == HSD_STAT_OK .and. tVal) then
@@ -480,26 +480,26 @@ contains
 
     ! If this is an electron dynamics restart, then remove keywords for the (un-needed) ground state
     ! calculation (unless the eigenvectors are required)
-    call getDescendant(root, "ElectronDynamics/Restart", ch1)
+    call hsd_get_table(root, "ElectronDynamics/Restart", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tVal1)
       if (associated(ch1)) ch1%processed = .false.
       tVal2 = .false.
       ! Population projection requires eigenvectors, which are not currently stored in the restart
       ! file.
-      call getDescendant(root, "ElectronDynamics/Populations", ch2)
+      call hsd_get_table(root, "ElectronDynamics/Populations", ch2)
       if (associated(ch2)) then
         call getChildValue(ch2, "", tVal2)
         if (associated(ch2)) ch2%processed = .false.
       end if
       if (tVal1 .and. .not.tVal2) then
-        call getDescendant(root, "Hamiltonian/DFTB/Filling", ch1)
+        call hsd_get_table(root, "Hamiltonian/DFTB/Filling", ch1)
         if (associated(ch1)) then
           call dftbp_warning(ch1, "Restarted electronDynamics does not require Filling{}&
               & settings unless projected onto ground state")
           ch1 => null()
         end if
-        call getDescendant(root, "Analysis", ch1)
+        call hsd_get_table(root, "Analysis", ch1)
         if (associated(ch1)) then
           call dftbp_warning(ch1, "Restarted electronDynamics does not use the Analysis{} block")
           ch1 => null()
@@ -507,7 +507,7 @@ contains
       end if
     end if
 
-    call getDescendant(root, "Driver/lBFGS", ch1)
+    call hsd_get_table(root, "Driver/lBFGS", ch1)
     if (associated(ch1)) then
       call setChildValue(ch1, "LineSearch", .true., child=ch2)
       if (associated(ch2)) ch2%processed = .false.
@@ -529,7 +529,7 @@ contains
     type(hsd_table), pointer :: ch1, ch2, ch3, ch4, par, dummy
     logical :: tVal1, tVal2
 
-    call getDescendant(root, "ExcitedState/Casida", ch1)
+    call hsd_get_table(root, "ExcitedState/Casida", ch1)
     if (associated(ch1)) then
       call getChildValue(ch1, "WriteStatusArnoldi", tVal1, default=.false., child=ch2)
       dummy => removeChild(ch1, ch2)
@@ -555,7 +555,7 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -566,11 +566,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -581,11 +581,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -596,11 +596,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -611,11 +611,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -626,11 +626,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -641,11 +641,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -656,11 +656,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -671,11 +671,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -686,11 +686,11 @@ contains
       call dftbp_warning(ch1, "Keyword Moved to Hamiltonian {}.")
       dummy => removeChild(par, ch1)
       ch1 => null()
-      call getDescendant(root, "Hamiltonian/ConvergentSCCOnly", ch3)
+      call hsd_get_table(root, "Hamiltonian/ConvergentSCCOnly", ch3)
       if (associated(ch3)) then
         call dftbp_error(ch3, "ConvergentSCCOnly already present.")
       end if
-      call getDescendant(root, "Hamiltonian", ch1)
+      call hsd_get_table(root, "Hamiltonian", ch1)
       call setChildValue(ch1, "ConvergentSCCOnly", tVal1, child=ch2)
       if (associated(ch2)) ch2%processed = .false.
     end if
@@ -706,19 +706,19 @@ contains
 
     type(hsd_table), pointer :: ch1, ch2
 
-    call getDescendant(root, "Hamiltonian/DFTB/Solvation/GeneralizedBorn", ch1)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Solvation/GeneralizedBorn", ch1)
     if (associated(ch1)) then
       call dftbp_warning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
       call setChildValue(ch1, "RescaleSolvatedFields", .false., child=ch2, replace=.true.)
     end if
 
-    call getDescendant(root, "Hamiltonian/DFTB/Solvation/Cosmo", ch1)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Solvation/Cosmo", ch1)
     if (associated(ch1)) then
       call dftbp_warning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
       call setChildValue(ch1, "RescaleSolvatedFields", .false., child=ch2, replace=.true.)
     end if
 
-    call getDescendant(root, "Hamiltonian/DFTB/Solvation/Sasa", ch1)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Solvation/Sasa", ch1)
     if (associated(ch1)) then
       call dftbp_warning(ch1, "Set solvated field scaling (RescaleSolvatedFields) to No.")
       call setChildValue(ch1, "RescaleSolvatedFields", .false., child=ch2, replace=.true.)
@@ -736,13 +736,13 @@ contains
     type(hsd_table), pointer :: ch1, ch2
     character(len=:), allocatable :: buffer
 
-    call getDescendant(root, "Transport", ch1)
+    call hsd_get_table(root, "Transport", ch1)
     if (associated(ch1)) then
       call getChildValue(root, "Transport/Task", ch1, child=ch2, default='uploadcontacts')
       call getNodeName(ch1, buffer)
       if (buffer /= "contacthamiltonian") then
       #:for LABEL in [("xTB"), ("DFTB")]
-        call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1)
+        call hsd_get_table(root, "Hamiltonian/${LABEL}$/Charge", ch1)
         if (associated(ch1)) then
           if (associated(ch1)) ch1%processed = .false.
           call dftbp_warning(ch1, "Device region charge cannot be set if contacts are present.")
@@ -766,10 +766,10 @@ contains
     logical :: isPerturb, isConvRequired
     real(dp) :: sccTol
 
-    call getDescendant(root, "Analysis/Polarisability", ch1)
+    call hsd_get_table(root, "Analysis/Polarisability", ch1)
     isPerturb = associated(ch1)
     if (.not.isPerturb) then
-      call getDescendant(root, "Analysis/ResponseKernel", ch1)
+      call hsd_get_table(root, "Analysis/ResponseKernel", ch1)
       isPerturb = associated(ch1)
     end if
 
@@ -784,7 +784,7 @@ contains
       call getDescendant(root, "Hamiltonian/DFTB/MaxSCCIterations", ch1, parent=par1)
       if (associated(ch1)) then
         call getChildValue(par1, "MaxSCCIterations", maxIter)
-        call getDescendant(root, "Analysis", ch1)
+        call hsd_get_table(root, "Analysis", ch1)
         call setChildValue(ch1, "MaxPerturbIter", maxIter, child=ch2)
         if (associated(ch2)) ch2%processed = .false.
       end if
@@ -792,7 +792,7 @@ contains
       call getDescendant(root, "Hamiltonian/DFTB/ConvergentSCCOnly", ch1, parent=par1)
       if (associated(ch1)) then
         call getChildValue(par1, "ConvergentSCCOnly", isConvRequired)
-        call getDescendant(root, "Analysis", ch1)
+        call hsd_get_table(root, "Analysis", ch1)
         call setChildValue(ch1, "ConvergedPerturb", isConvRequired, child=ch2)
         if (associated(ch2)) ch2%processed = .false.
       end if
@@ -800,7 +800,7 @@ contains
       call getDescendant(root, "Hamiltonian/DFTB/SccTolerance", ch1, parent=par1)
       if (associated(ch1)) then
         call getChildValue(par1, "SccTolerance", sccTol)
-        call getDescendant(root, "Analysis", ch1)
+        call hsd_get_table(root, "Analysis", ch1)
         call setChildValue(ch1, "PerturbSccTol", sccTol, child=ch2)
         if (associated(ch2)) ch2%processed = .false.
       end if
@@ -829,9 +829,9 @@ contains
     call renameDescendant(root, "Hamiltonian/DFTB/Rangeseparated", "Hybrid", &
         &"'Hamiltonian/DFTB/Rangeseparated' block renamed to 'Hamiltonian/DFTB/Hybrid'.")
 
-    call getDescendant(root, "Hamiltonian/DFTB/Filling/MethfesselPaxton", ch1)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Filling/MethfesselPaxton", ch1)
     if (.not.associated(ch1)) then
-      call getDescendant(root, "Hamiltonian/xTB/Filling/MethfesselPaxton", ch1)
+      call hsd_get_table(root, "Hamiltonian/xTB/Filling/MethfesselPaxton", ch1)
     end if
     if (associated(ch1)) then
       call getDescendant(ch1, "Order", ch2, parent=par)
@@ -865,9 +865,9 @@ contains
 
     end if
 
-    call getDescendant(root, "Hamiltonian/DFTB/Hybrid/LC", ch1)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Hybrid/LC", ch1)
     if (associated(ch1)) then
-      call getDescendant(ch1, "Screening", ch2)
+      call hsd_get_table(ch1, "Screening", ch2)
       if (.not. associated(ch2)) then
         call setChild(ch1, "Screening", ch2)
         call setChild(ch2, "Thresholded", ch3)
@@ -900,7 +900,7 @@ contains
     type(hsd_table), pointer :: pD3, pDampMethod, pChild
     character(len=:), allocatable :: buffer
 
-    call getDescendant(root, "Hamiltonian/DFTB/Dispersion/DftD3", pD3)
+    call hsd_get_table(root, "Hamiltonian/DFTB/Dispersion/DftD3", pD3)
     if (.not. associated(pD3)) then
       return
     end if
