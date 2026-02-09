@@ -19,15 +19,13 @@ module phonons_initphonons
   use dftbp_dftb_periodic, only : getCellTranslations, getNrOfNeighboursForAll, getSuperSampling,&
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdutils, only :&
-      & getChild, getChildValue, &
-      & setChild, setChildValue
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
-      & setUnprocessed, getNodeName, textNodeName, getFirstTextChild
+      & setUnprocessed, getNodeName, textNodeName, getFirstTextChild, getModifier
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
-      & hsd_table_ptr, hsd_get_child_tables
+      & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set,&
+      & hsd_get_table, HSD_STAT_OK, hsd_node, hsd_get_matrix
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_io_tokenreader, only : getNextToken
@@ -216,6 +214,7 @@ contains
     type(TListIntR1) :: li1
 
     integer :: cubicType, quarticType
+    integer :: stat
 
     write(stdOut, "(/, A)") "Starting initialization..."
     write(stdOut, "(A80)") repeat("-", 80)
@@ -241,46 +240,57 @@ contains
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
     end block
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat=stat)
+    if (stat /= HSD_STAT_OK) call error("Missing root tag '" // rootTag // "'")
 
     !! Check if input version is the one, which we can handle
     !! Handle parser options
-    call getChildValue(root, "Options", tmp, "", child=child, &
-        &list=.true., allowEmptyValue=.true.)
+    call hsd_get_table(root, "Options", child)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: opt_table
+        call new_table(opt_table, "Options")
+        call root%add_child(opt_table)
+      end block
+      call hsd_get_table(root, "Options", child)
+    end if
     call readOptions(child, root, parserFlags)
 
-    call getChild(root, "Geometry", tmp)
+    call hsd_get_table(root, "Geometry", tmp, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Geometry must be present")
     call readGeometry(tmp, geo)
 
     ! Read Transport block
     ! This defines system partitioning
     tTransport = .false.
-    call getChild(root, "Transport", child, requested=.false.)
+    call hsd_get_table(root, "Transport", child)
     if (associated(child)) then
       tTransport = .true.
       call readTransportGeometry(child, geo, transpar)
     end if
 
-    call getChildValue(root, "Atoms", buffer2, "1:-1", child=child)
+    call hsd_get_or_set(root, "Atoms", buffer2, "1:-1")
+    call hsd_get_table(root, "Atoms", child)
     call getSelectedAtomIndices(child, buffer2, geo%speciesNames, geo%species, iMovedAtoms)
     nMovedAtom = size(iMovedAtoms)
 
     tCompModes = .false.
-    call getChild(root, "ComputeModes",child=node,requested=.false.)
+    call hsd_get_table(root, "ComputeModes", node)
     if (associated(node)) then
       tCompModes = .true.
       tPlotModes = .false.
       nModesToPlot = 0
       tAnimateModes = .false.
       tXmakeMol = .false.
-      call getChild(root, "DisplayModes",child=node,requested=.false.)
+      call hsd_get_table(root, "DisplayModes", node)
       if (associated(node)) then
         tPlotModes = .true.
-        call getChildValue(node, "PlotModes", buffer2, "1:-1", child=child, multiple=.true.)
+        call hsd_get_or_set(node, "PlotModes", buffer2, "1:-1")
+        call hsd_get_table(node, "PlotModes", child)
         call getSelectedIndices(child, buffer2, [1, 3 * nMovedAtom], modesToPlot)
         nModesToPlot = size(modesToPlot)
-        call getChildValue(node, "Animate", tAnimateModes, .true.)
-        call getChildValue(node, "XMakeMol", tXmakeMol, .true.)
+        call hsd_get_or_set(node, "Animate", tAnimateModes, .true.)
+        call hsd_get_or_set(node, "XMakeMol", tXmakeMol, .true.)
       end if
     end if
 
@@ -292,7 +302,7 @@ contains
 
     ! Reading K-points for Phonon Dispersion calculation
     tPhonDispersion = .false.
-    call getChild(root, "PhononDispersion", child=node, requested=.false.)
+    call hsd_get_table(root, "PhononDispersion", node)
     if  (associated(node))  then
       tPhonDispersion = .true.
       call init(li1)
@@ -300,7 +310,7 @@ contains
       call asVector(li1, nCells)
       call destruct(li1)
       nAtomUnitCell = geo%nAtom/(nCells(1)*nCells(2)*nCells(3))
-      call getChildValue(node, "outputUnits", buffer, "H")
+      call hsd_get_or_set(node, "outputUnits", buffer, "H")
       select case(trim(buffer))
       case("H", "eV" , "meV", "THz", "cm")
         outputUnits=trim(buffer)
@@ -312,9 +322,10 @@ contains
 
     ! Read the atomic masses from SlaterKosterFiles or Masses
     allocate(speciesMass(geo%nSpecies))
-    call getChild(root,"Masses",child=node, requested=.true.)
+    call hsd_get_table(root, "Masses", node, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Masses must be present")
     if ( associated(node) ) then
-      call getChild(node, "SlaterKosterFiles", child=value,requested=.false.)
+      call hsd_get_table(node, "SlaterKosterFiles", value)
       if ( associated(value) ) then
         call readSKfiles(value, geo, speciesMass)
       else
@@ -330,13 +341,31 @@ contains
     ! --------------------------------------------------------------------------------------
     ! Reading Hessian block parameters
     ! --------------------------------------------------------------------------------------
-    call getChild(root, "Hessian", child=node, requested=.true.)
+    call hsd_get_table(root, "Hessian", node, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Hessian must be present")
     ! cutoff used to cut out interactions
-    call getChildValue(node, "Cutoff", cutoff, 9.45_dp, modifier=modif, child=value)
+    call hsd_get_or_set(node, "Cutoff", cutoff, 9.45_dp)
+    call hsd_get_table(node, "Cutoff", value)
+    call getModifier(value, "", modif)
     call convertUnitHsd(modif, lengthUnits, value, cutoff)
 
     ! Reading the actual Hessian matrix
-    call getChildValue(node, "Matrix", value, child=child)
+    call hsd_get_table(node, "Matrix", child, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Matrix must be present")
+    ! Get first table child for dispatch
+    value => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: jj
+      do jj = 1, child%num_children
+        call child%get_child(jj, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          value => t
+          exit
+        end select
+      end do
+    end block
     call getNodeName(value, buffer)
     select case(trim(buffer))
     case ("dftb")
@@ -355,10 +384,11 @@ contains
     ! Reading cubic forces
     ! --------------------------------------------------------------------------------------
     order = 2
-    call getChild(root, "Cubic", child=child, requested=.false.)
+    call hsd_get_table(root, "Cubic", child)
     if (associated(child)) then
       order = 3
-      call getChildValue(child, "Matrix", buffer, child=child)
+      call hsd_get(child, "Matrix", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Matrix must be present")
       select case(trim(buffer))
       case ("gaussian")
         cubicType = 1
@@ -369,10 +399,9 @@ contains
 
     call buildNeighbourList()
 
-    call getChildValue(root, "Analysis", tmp, "", child=child, list=.true., &
-        &allowEmptyValue=.true., dummyValue=.true.)
+    call hsd_get_table(root, "Analysis", child)
 
-    if (associated(tmp)) then
+    if (associated(child)) then
       if (tPhonDispersion) then
          call dftbp_error(root, "Analysis and PhononDispersion cannot coexist")
       end if
@@ -439,9 +468,11 @@ contains
 
     integer :: inputVersion
     type(hsd_table), pointer :: child
+    integer :: stat
 
     !! Check if input needs compatibility conversion.
-    call getChildValue(node, "ParserVersion", inputVersion, parserVersion, child=child)
+    call hsd_get_or_set(node, "ParserVersion", inputVersion, parserVersion)
+    call hsd_get_table(node, "ParserVersion", child)
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
       call dftbp_error(child, "Invalid parser version (" // i2c(inputVersion) // ")")
     elseif (inputVersion < minVersion) then
@@ -449,12 +480,12 @@ contains
           & // i2c(inputVersion) // " (too old)")
     end if
 
-    call getChildValue(node, "WriteAutotestTag", tWriteTagged, .false.)
+    call hsd_get_or_set(node, "WriteAutotestTag", tWriteTagged, .false.)
     tWriteTagged = tWriteTagged .and. tIoProc
-    call getChildValue(node, "WriteHSDInput", flags%tWriteHSD, .true.)
-    call getChildValue(node, "StopAfterParsing", flags%tStop, .false.)
+    call hsd_get_or_set(node, "WriteHSDInput", flags%tWriteHSD, .true.)
+    call hsd_get_or_set(node, "StopAfterParsing", flags%tStop, .false.)
 
-    call getChildValue(node, "IgnoreUnprocessedNodes", &
+    call hsd_get_or_set(node, "IgnoreUnprocessedNodes", &
         &flags%tIgnoreUnprocessed, .false.)
 
   end subroutine readOptions
@@ -472,7 +503,21 @@ contains
     type(hsd_table), pointer :: child, value
     character(len=:), allocatable :: buffer
 
-    call getChildValue(geonode, "", value, child=child)
+    ! Get first table child for dispatch
+    child => geonode
+    value => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: jj
+      do jj = 1, geonode%num_children
+        call geonode%get_child(jj, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          value => t
+          exit
+        end select
+      end do
+    end block
     call getNodeName(value, buffer)
     select case (buffer)
     case ("genformat")
@@ -504,15 +549,22 @@ contains
     type(hsd_table_ptr), allocatable :: pNodeList(:)
     integer :: ii, contact
     real(dp) :: acc, contactRange(2), sep
+    integer :: stat
 
     tp%defined = .true.
     tp%tPeriodic1D = .not. geom%tPeriodic
-    call getChild(root, "Device", pDevice)
-    call getChildValue(pDevice, "AtomRange", tp%idxdevice)
-    call getChild(pDevice, "FirstLayerAtoms", pTmp, requested=.false.)
+    call hsd_get_table(root, "Device", pDevice, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Device must be present")
+    block
+      integer, allocatable :: tmp_idx(:)
+      call hsd_get(pDevice, "AtomRange", tmp_idx, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pDevice, "AtomRange must be present")
+      tp%idxdevice(:) = tmp_idx
+    end block
+    call hsd_get_table(pDevice, "FirstLayerAtoms", pTmp)
     call readFirstLayerAtoms(pTmp, tp%PL, tp%nPLs, tp%idxdevice)
     if (.not.associated(pTmp)) then
-      call setChildValue(pDevice, "FirstLayerAtoms", tp%PL)
+      call hsd_set(pDevice, "FirstLayerAtoms", tp%PL)
     end if
     call hsd_get_child_tables(root, "Contact", pNodeList)
     tp%ncont = size(pNodeList)
@@ -585,6 +637,7 @@ contains
     type(hsd_table), pointer :: field, pNode, pTmp, pWide
     character(len=:), allocatable :: buffer, modif
     type(TListReal) :: fermiBuffer
+    integer :: stat
 
     do ii = 1, size(contacts)
 
@@ -592,7 +645,9 @@ contains
       contacts(ii)%wideBandDos = 0.0
 
       pNode => pNodeList(ii)%ptr
-      call getChildValue(pNode, "Id", buffer, child=pTmp)
+      call hsd_get(pNode, "Id", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Id must be present")
+      call hsd_get_table(pNode, "Id", pTmp)
       buffer = tolower(trim(unquote(buffer)))
       if (len(buffer) > mc) then
         call dftbp_error(pTmp, "Contact id may not be longer than " &
@@ -604,27 +659,36 @@ contains
             &//  "' already in use")
       end if
 
-      call getChildValue(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, modifier=modif,&
-          & child=field)
+      call hsd_get_or_set(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp)
+      call hsd_get_table(pNode, "PLShiftTolerance", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
-      call getChildValue(pNode, "AtomRange", contacts(ii)%idxrange, child=pTmp)
+      block
+        integer, allocatable :: tmp_range(:)
+        call hsd_get(pNode, "AtomRange", tmp_range, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "AtomRange must be present")
+        contacts(ii)%idxrange(:) = tmp_range
+      end block
+      call hsd_get_table(pNode, "AtomRange", pTmp)
       call getContactVectorII(contacts(ii)%idxrange, geom, ii, pTmp, contactLayerTol, &
                               & contacts(ii)%lattice, contacts(ii)%dir)
       contacts(ii)%length = sqrt(sum(contacts(ii)%lattice**2))
 
       ! Contact temperatures. Needed
-      call getChildValue(pNode, "Temperature", contacts(ii)%kbT,&
-                         &0.0_dp, modifier=modif, child=field)
+      call hsd_get_or_set(pNode, "Temperature", contacts(ii)%kbT, 0.0_dp)
+      call hsd_get_table(pNode, "Temperature", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, energyUnits, field, contacts(ii)%kbT)
 
       if (upload) then
         contacts(ii)%potential = 0.d0
 
-        call getChildValue(pNode, "wideBand", contacts(ii)%wideBand, .false.)
+        call hsd_get_or_set(pNode, "wideBand", contacts(ii)%wideBand, .false.)
         if (contacts(ii)%wideBand) then
-          call getChildValue(pNode, 'LevelSpacing', contacts(ii)%wideBandDos, &
-                             &0.735_dp, modifier=modif, child=field)
+          call hsd_get_or_set(pNode, 'LevelSpacing', contacts(ii)%wideBandDos, 0.735_dp)
+          call hsd_get_table(pNode, 'LevelSpacing', field)
+          call getModifier(field, "", modif)
           call convertUnitHsd(modif, energyUnits, field,&
                               &contacts(ii)%wideBandDos)
           !WideBandApproximation is defined as energy spacing between levels
@@ -718,18 +782,31 @@ contains
         call init(skFiles(iSp1))
     end do
 
-    call getChildValue(child, "", value)
+    ! Get first table child for dispatch
+    value => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: jj
+      do jj = 1, child%num_children
+        call child%get_child(jj, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          value => t
+          exit
+        end select
+      end do
+    end block
     call getNodeName(value, buffer)
 
     select case(buffer)
     case ("type2filenames")
-      call getChildValue(value, "Prefix", buffer2, "")
+      call hsd_get_or_set(value, "Prefix", buffer2, "")
       prefix = unquote(buffer2)
-      call getChildValue(value, "Suffix", buffer2, "")
+      call hsd_get_or_set(value, "Suffix", buffer2, "")
       suffix = unquote(buffer2)
-      call getChildValue(value, "Separator", buffer2, "")
+      call hsd_get_or_set(value, "Separator", buffer2, "")
       separator = unquote(buffer2)
-      call getChildValue(value, "LowerCaseTypeName", tLower, .false.)
+      call hsd_get_or_set(value, "LowerCaseTypeName", tLower, .false.)
       do iSp1 = 1, geo%nSpecies
         if (tLower) then
           elem1 = tolower(geo%speciesNames(iSp1))
@@ -800,8 +877,9 @@ contains
 
     do iSp = 1, geo%nSpecies
       defmass = getAtomicMass(trim(geo%speciesNames(iSp)))
-      call getChildValue(value, geo%speciesNames(iSp), mass, defmass,&
-               &modifier=modif, child= child2)
+      call hsd_get_or_set(value, geo%speciesNames(iSp), mass, defmass)
+      call hsd_get_table(value, geo%speciesNames(iSp), child2)
+      call getModifier(child2, "", modif)
       speciesMass(iSp) = mass
       write(stdOut,*) trim(geo%speciesNames(iSp)),": ", mass/amu__au, "amu", &
             &SpeciesMass(iSp),"a.u."
@@ -832,14 +910,30 @@ contains
     integer, allocatable :: tmpI1(:)
     real(dp), allocatable :: kpts(:,:)
     character(lc) :: errorStr
+    integer :: stat
 
     ! Assume SCC can has usual default number of steps if needed
     tBadIntegratingKPoints = .false.
 
     ! K-Points
     if (geo%tPeriodic) then
-      call getChildValue(node, "KPointsAndWeights", value1, child=child, &
-          &modifier=modifier)
+      call hsd_get_table(node, "KPointsAndWeights", child, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "KPointsAndWeights must be present")
+      call getModifier(child, "", modifier)
+      ! Get first table child for dispatch
+      value1 => null()
+      block
+        class(hsd_node), pointer :: ch
+        integer :: jjj
+        do jjj = 1, child%num_children
+          call child%get_child(jjj, ch)
+          select type (t => ch)
+          type is (hsd_table)
+            value1 => t
+            exit
+          end select
+        end do
+      end block
       call getNodeName(value1, buffer)
       select case(buffer)
 
@@ -849,7 +943,13 @@ contains
           call dftbp_error(child, "No modifier is allowed, if the &
               &SupercellFolding scheme is used.")
         end if
-        call getChildValue(value1, "", coeffsAndShifts)
+        block
+          real(dp), allocatable :: tmp_cs(:,:)
+          integer :: nrows, ncols
+          call hsd_get_matrix(value1, "", tmp_cs, nrows, ncols, stat=stat)
+          if (stat /= HSD_STAT_OK) call dftbp_error(value1, "SupercellFolding data must be present")
+          coeffsAndShifts(:,:) = tmp_cs
+        end block
         if (abs(determinant33(coeffsAndShifts(:,1:3))) - 1.0_dp < -1e-6_dp) then
           call dftbp_error(value1, "Determinant of the supercell matrix must &
               &be greater than 1")
@@ -1023,7 +1123,7 @@ contains
     logical :: texist
     character(lc) :: strTmp
 
-    call getChildValue(child, "Filename", filename, "hessian.out")
+    call hsd_get_or_set(child, "Filename", filename, "hessian.out")
 
     ! workaround for NAG7.1 Build 7148 in Debug build
     strTmp = filename
@@ -1114,7 +1214,7 @@ contains
     nDerivs = 3 * nMovedAtom
     allocate(dynMatrix(nDerivs,nDerivs))
 
-    call getChildValue(child, "Filename", filename, "hessian.cp2k")
+    call hsd_get_or_set(child, "Filename", filename, "hessian.cp2k")
     ! workaround for NAG7.1 Build 7148 in Debug build
     strTmp = filename
     inquire(file=strTmp, exist=texist )
@@ -1224,8 +1324,9 @@ contains
     type(hsd_table), pointer :: val, child, field
     character(len=:), allocatable :: modif
     logical :: tBadKpoints
+    integer :: stat
 
-    call getChild(node, "TunnelingAndDOS", child, requested=.false.)
+    call hsd_get_table(node, "TunnelingAndDOS", child)
     if (associated(child)) then
       if (.not.tTransport) then
         call dftbp_error(node, "Tunneling requires Transport block")
@@ -1234,17 +1335,25 @@ contains
     endif
 
     !call readKPoints(node, geo, tBadKpoints)
-    call getChild(node, "Conductance", child, requested=.false.)
+    call hsd_get_table(node, "Conductance", child)
     if (associated(child)) then
       if (.not.tTransport) then
         call dftbp_error(node, "Conductance requires Transport block")
       end if
-      call getChildValue(child, "TempRange", TempRange, modifier=modif,&
-      & child=field)
+      block
+        real(dp), allocatable :: tmp_range(:)
+        call hsd_get(child, "TempRange", tmp_range, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(child, "TempRange must be present")
+        TempRange(:) = tmp_range
+      end block
+      call hsd_get_table(child, "TempRange", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, energyUnits, field, TempRange)
 
-      call getChildValue(child, "TempStep", TempStep, modifier=modif,&
-      & child=field)
+      call hsd_get(child, "TempStep", TempStep, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "TempStep must be present")
+      call hsd_get_table(child, "TempStep", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, energyUnits, field, TempStep)
 
        TempMin = TempRange(1)
@@ -1269,18 +1378,20 @@ contains
     type(hsd_table), pointer :: child, child2
     character(len=:), allocatable :: buffer
     character(lc) :: strTmp
+    integer :: stat
 
     nReg = size(children)
     allocate(regionLabels(nReg))
     allocate(iAtInRegion(nReg))
     do iReg = 1, nReg
       child => children(iReg)%ptr
-      call getChildValue(child, "Atoms", buffer, child=child2, &
-          & multiple=.true.)
+      call hsd_get(child, "Atoms", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Atoms must be present")
+      call hsd_get_table(child, "Atoms", child2)
       call getSelectedAtomIndices(child2, buffer, geo%speciesNames, geo%species, tmpI1)
       iAtInRegion(iReg)%data = tmpI1
       write(strTmp, "('region',I0)") iReg
-      call getChildValue(child, "Label", buffer, trim(strTmp))
+      call hsd_get_or_set(child, "Label", buffer, trim(strTmp))
       regionLabels(iReg) = unquote(buffer)
     end do
 
@@ -1305,12 +1416,13 @@ contains
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     logical, allocatable :: tDirectionResInRegion(:)
     character(lc), allocatable :: regionLabelPrefixes(:)
+    integer :: stat
 
     tundos%defined = .true.
     ncont = transpar%ncont
-    call getChildValue(root, "Verbosity", tundos%verbose, 51)
-    call getChildValue(root, "WriteLDOS", tundos%writeLDOS, .true.)
-    call getChildValue(root, "WriteTunn", tundos%writeTunn, .true.)
+    call hsd_get_or_set(root, "Verbosity", tundos%verbose, 51)
+    call hsd_get_or_set(root, "WriteLDOS", tundos%writeLDOS, .true.)
+    call hsd_get_or_set(root, "WriteTunn", tundos%writeTunn, .true.)
 
     ! Default meaningful: eRange= (0..10*kT]
     ! nKT is set to GreensFunction default, i.e. 10
@@ -1321,8 +1433,13 @@ contains
     eRangeDefault(1) = 0.0001_dp
     eRangeDefault(2) = nKT * temperature
 
-    call getChildValue(root, "FreqRange", eRange, eRangeDefault, &
-         & modifier=modif, child=field)
+    block
+      real(dp), allocatable :: tmp_eRange(:)
+      call hsd_get_or_set(root, "FreqRange", tmp_eRange, eRangeDefault)
+      eRange(:) = tmp_eRange
+    end block
+    call hsd_get_table(root, "FreqRange", field)
+    call getModifier(field, "", modif)
     call convertUnitHsd(modif, energyUnits, field, eRange)
     tundos%emin = eRange(1)
     tundos%emax = eRange(2)
@@ -1334,13 +1451,14 @@ contains
        call dftbp_error(root, "Emax < Emin")
     end if
 
-    call getChildValue(root, "FreqStep", tundos%estep, 1.0e-5_dp,  &
-       & modifier=modif, child=field)
+    call hsd_get_or_set(root, "FreqStep", tundos%estep, 1.0e-5_dp)
+    call hsd_get_table(root, "FreqStep", field)
+    call getModifier(field, "", modif)
 
     call convertUnitHsd(modif, energyUnits, field, tundos%estep)
 
     ! Terminal currents
-    call getChild(root, "TerminalCurrents", pTmp, requested=.false.)
+    call hsd_get_table(root, "TerminalCurrents", pTmp)
 
     if (associated(pTmp)) then
       call hsd_get_child_tables(pTmp, "EmitterCollector", pNodeList)
@@ -1354,12 +1472,17 @@ contains
     else
       allocate(tundos%ni(ncont-1) )
       allocate(tundos%nf(ncont-1) )
-      call setChild(root, "TerminalCurrents", pTmp)
+      block
+        type(hsd_table) :: tc_table
+        call new_table(tc_table, "TerminalCurrents")
+        call root%add_child(tc_table)
+      end block
+      call hsd_get_table(root, "TerminalCurrents", pTmp)
       ind = 1
       do ii = 1, 1
         do jj = ii + 1, ncont
-          call setChildValue(pTmp, "EmitterCollector", &
-              &(/ transpar%contacts(ii)%name, transpar%contacts(jj)%name /))
+          call hsd_set(pTmp, "EmitterCollector", &
+              &[character(mc) :: transpar%contacts(ii)%name, transpar%contacts(jj)%name])
           tundos%ni(ind) = ii
           tundos%nf(ind) = jj
           ind = ind + 1
@@ -1367,11 +1490,13 @@ contains
       end do
     end if
 
-    call getChild(root, "DeltaModel", pNode)
+    call hsd_get_table(root, "DeltaModel", pNode, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "DeltaModel must be present")
     call readDeltaModel(pNode, tundos)
 
-    call getChildValue(root, "BroadeningDelta", tundos%broadeningDelta, &
-        &0.0_dp, modifier=modif, child=field)
+    call hsd_get_or_set(root, "BroadeningDelta", tundos%broadeningDelta, 0.0_dp)
+    call hsd_get_table(root, "BroadeningDelta", field)
+    call getModifier(field, "", modif)
     call convertUnitHsd(modif, energyUnits, field, &
         &tundos%broadeningDelta)
 
@@ -1475,28 +1600,46 @@ contains
 
     type(hsd_table), pointer :: pValue, pChild, field
     character(len=:), allocatable :: buffer, modif
+    integer :: stat
 
-    call getChildValue(root, "", pValue, child=pChild)
+    ! Get first table child for dispatch
+    pValue => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: jj
+      do jj = 1, root%num_children
+        call root%get_child(jj, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          pValue => t
+          exit
+        end select
+      end do
+    end block
+    pChild => root
     call getNodeName(pValue, buffer)
     ! Delta is repeated to allow different defaults if needed
     select case (trim(buffer))
     case("deltasquared")
-      call getChildValue(pValue, "Delta", tundos%delta, &
-          &0.0001_dp, modifier=modif, child=field)
+      call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
+      call hsd_get_table(pValue, "Delta", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=0
     case("deltaomega")
-      call getChildValue(pValue, "Delta", tundos%delta, &
-          &0.0001_dp, modifier=modif, child=field)
+      call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
+      call hsd_get_table(pValue, "Delta", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=1
     case("mingo")
       ! As in Numerical Heat transfer, Part B, 51:333, 2007, Taylor&Francis.
       ! Here Delta is just a dimensionless scaling factor
-      call getChildValue(pValue, "Delta", tundos%delta, 0.0001_dp)
+      call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
       ! We set a cutoff frequency of 2000 cm^-1.
-      call getChildValue(pValue, "Wmax", tundos%wmax, &
-          &0.009_dp, modifier=modif, child=field)
+      call hsd_get_or_set(pValue, "Wmax", tundos%wmax, 0.009_dp)
+      call hsd_get_table(pValue, "Wmax", field)
+      call getModifier(field, "", modif)
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=2
       ! If Emax >> Wmax delta becomes negative
@@ -1630,7 +1773,7 @@ contains
     character(len=:), allocatable :: buffer
 
     !selecting the type of modes you want to analyze
-    call getchildValue(root, "ModeType", buffer, "all")
+    call hsd_get_or_set(root, "ModeType", buffer, "all")
     select case(trim(buffer))
     case("all")
       selTypeModes = modeEnum%ALLMODES

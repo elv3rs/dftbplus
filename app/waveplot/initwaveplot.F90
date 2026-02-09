@@ -24,14 +24,14 @@ module waveplot_initwaveplot
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdutils, only :&
-      & getChild,&
-      & getChildValue, setChild, setChildValue
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName,&
+      & getModifier
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
-      & hsd_dump, hsd_clear_children, hsd_table_ptr, hsd_get_child_tables
+      & hsd_dump, hsd_clear_children, hsd_table_ptr, hsd_get_child_tables, hsd_get,&
+      & hsd_get_or_set, hsd_set, hsd_get_table, hsd_get_attrib, HSD_STAT_OK, hsd_node,&
+      & hsd_remove_child, hsd_get_matrix
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
@@ -293,6 +293,8 @@ contains
     !! HSD parse error
     type(hsd_error_t), allocatable :: hsdError
 
+    integer :: stat
+
     ! Write header
     call printDftbHeader('(WAVEPLOT '// version //')', releaseYear)
 
@@ -309,28 +311,31 @@ contains
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
     end block
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) call error("Missing root block: '" // rootTag // "'")
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"
 
     ! Check if input version is the one, which we can handle
-    call getChildValue(root, "InputVersion", inputVersion, parserVersion)
+    call hsd_get_or_set(root, "InputVersion", inputVersion, parserVersion)
     if (inputVersion /= parserVersion) then
       call error("Version of input (" // i2c(inputVersion) // ") and parser (" &
           &// i2c(parserVersion) // ") do not match")
     end if
 
-    call getChildValue(root, "GroundState", tGroundState, .true.)
+    call hsd_get_or_set(root, "GroundState", tGroundState, .true.)
 
     ! Read data from detailed output (supports .xml, .hsd, .json)
-    call getChildValue(root, "DetailedXML", strBuffer)
+    call hsd_get(root, "DetailedXML", strBuffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'DetailedXML'")
     allocate(tmp)
     call data_load(unquote(strBuffer), tmp, hsdError, fmt=DATA_FMT_AUTO)
     if (allocated(hsdError)) then
       call error("Error loading detailed output file '" // unquote(strBuffer) // "': "&
           & // trim(hsdError%message))
     end if
-    call getChild(tmp, "detailedout", detailed)
+    call hsd_get_table(tmp, "detailedout", detailed, stat, auto_wrap=.true.)
+    if (.not. associated(detailed)) call error("Missing 'detailedout' block in detailed output")
     call readDetailed(this, detailed, tGroundState, kPointsWeights)
     tmp => null()
 
@@ -339,13 +344,16 @@ contains
     this%eig%nState = size(this%input%occupations, dim=1)
 
     ! Read basis
-    call getChild(root, "Basis", tmp)
+    call hsd_get_table(root, "Basis", tmp, stat, auto_wrap=.true.)
+    if (.not. associated(tmp)) call dftbp_error(root, "Missing required block: 'Basis'")
     call readBasis(this, tmp, this%input%geo%speciesNames)
-    call getChildValue(root, "EigenvecBin", strBuffer)
+    call hsd_get(root, "EigenvecBin", strBuffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'EigenvecBin'")
     eigVecBin = unquote(strBuffer)
 
     ! Read options
-    call getChild(root, "Options", tmp)
+    call hsd_get_table(root, "Options", tmp, stat, auto_wrap=.true.)
+    if (.not. associated(tmp)) call dftbp_error(root, "Missing required block: 'Options'")
     call readOptions(this, tmp, this%eig%nState, nKPoint, nSpin, nCached, tShiftGrid)
 
     ! Issue warning about unprocessed nodes
@@ -445,28 +453,47 @@ contains
 
     !! Auxiliary variables
     integer :: iSpin, iKpoint
+    integer :: stat
 
-    call getChildValue(detailed, "Identity", this%input%identity)
-    call getChild(detailed, "Geometry", tmp)
+    call hsd_get(detailed, "Identity", this%input%identity, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'Identity'")
+    call hsd_get_table(detailed, "Geometry", tmp, stat, auto_wrap=.true.)
+    if (.not. associated(tmp)) call dftbp_error(detailed, "Missing required block: 'Geometry'")
     call readGeometry(this%input%geo, tmp)
 
-    call getChildValue(detailed, "Real", this%input%tRealHam)
-    call getChildValue(detailed, "NrOfKPoints", nKPoint)
-    call getChildValue(detailed, "NrOfSpins", nSpin)
-    call getChildValue(detailed, "NrOfStates", nState)
-    call getChildValue(detailed, "NrOfOrbitals", this%input%nOrb)
+    call hsd_get(detailed, "Real", this%input%tRealHam, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'Real'")
+    call hsd_get(detailed, "NrOfKPoints", nKPoint, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'NrOfKPoints'")
+    call hsd_get(detailed, "NrOfSpins", nSpin, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'NrOfSpins'")
+    call hsd_get(detailed, "NrOfStates", nState, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'NrOfStates'")
+    call hsd_get(detailed, "NrOfOrbitals", this%input%nOrb, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'NrOfOrbitals'")
 
     allocate(kPointsWeights(4, nKPoint))
     allocate(this%input%occupations(nState, nKPoint, nSpin))
 
-    call getChildValue(detailed, "KPointsAndWeights", kPointsWeights)
+    block
+      integer :: nrows, ncols
+      call hsd_get_matrix(detailed, "KPointsAndWeights", kPointsWeights, nrows, ncols, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(detailed, "Missing required value: 'KPointsAndWeights'")
+    end block
 
     if (tGroundState) then
-      call getChild(detailed, "Occupations", occ)
+      call hsd_get_table(detailed, "Occupations", occ, stat, auto_wrap=.true.)
+      if (.not. associated(occ)) call dftbp_error(detailed, "Missing required block: 'Occupations'")
       do iSpin = 1, nSpin
-        call getChild(occ, "spin" // i2c(iSpin), spin)
+        call hsd_get_table(occ, "spin" // i2c(iSpin), spin, stat, auto_wrap=.true.)
+        if (.not. associated(spin)) call dftbp_error(occ, "Missing spin block")
         do iKpoint = 1, nKPoint
-          call getChildValue(spin, "k" // i2c(iKpoint), this%input%occupations(:, iKpoint, iSpin))
+          block
+            real(dp), allocatable :: tmp_occ(:)
+            call hsd_get(spin, "k" // i2c(iKpoint), tmp_occ, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(spin, "Missing k-point occupations")
+            this%input%occupations(:, iKpoint, iSpin) = tmp_occ
+          end block
         end do
       end do
       do iKpoint = 1, nKPoint
@@ -474,11 +501,18 @@ contains
             & * kPointsWeights(4, iKpoint)
       end do
     else
-      call getChild(detailed, "ExcitedOccupations", occ)
+      call hsd_get_table(detailed, "ExcitedOccupations", occ, stat, auto_wrap=.true.)
+      if (.not. associated(occ)) call dftbp_error(detailed, "Missing required block: 'ExcitedOccupations'")
       do iSpin = 1, nSpin
-        call getChild(occ, "spin" // i2c(iSpin), spin)
+        call hsd_get_table(occ, "spin" // i2c(iSpin), spin, stat, auto_wrap=.true.)
+        if (.not. associated(spin)) call dftbp_error(occ, "Missing spin block")
         do iKpoint = 1, nKPoint
-          call getChildValue(spin, "k" // i2c(iKpoint), this%input%occupations(:, iKpoint, iSpin))
+          block
+            real(dp), allocatable :: tmp_occ(:)
+            call hsd_get(spin, "k" // i2c(iKpoint), tmp_occ, stat=stat)
+            if (stat /= HSD_STAT_OK) call dftbp_error(spin, "Missing k-point occupations")
+            this%input%occupations(:, iKpoint, iSpin) = tmp_occ
+          end block
         end do
       end do
       do iKpoint = 1, nKPoint
@@ -504,8 +538,22 @@ contains
 
     !! String buffer instance
     character(len=:), allocatable :: buffer
+    integer :: stat
 
-    call getChildValue(geonode, "", child)
+    ! Get first table child for dispatch
+    child => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: ii
+      do ii = 1, geonode%num_children
+        call geonode%get_child(ii, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          child => t
+          exit
+        end select
+      end do
+    end block
     call getNodeName(child, buffer)
 
     select case (buffer)
@@ -578,52 +626,57 @@ contains
     real(dp) :: tmpvec(3), minvals(3), maxvals(3)
     real(dp), allocatable :: mcutoffs(:)
     real(dp) :: minEdge
+    integer :: stat
 
     ! Warning, if processed input is read in, but eigenvectors are different
-    call getChildValue(node, "Identity", curId, this%input%identity)
+    call hsd_get_or_set(node, "Identity", curId, this%input%identity)
     if (curId /= this%input%identity) then
       call warning(warnId)
     end if
 
-    call getChildValue(node, "TotalChargeDensity", this%opt%tPlotTotChrg, .false.)
+    call hsd_get_or_set(node, "TotalChargeDensity", this%opt%tPlotTotChrg, .false.)
 
     if (nSpin == 2) then
       call hsd_rename_child(node, "TotalSpinPolarization", "TotalSpinPolarisation")
-      call getChildValue(node, "TotalSpinPolarisation", this%opt%tPlotTotSpin, .false.)
+      call hsd_get_or_set(node, "TotalSpinPolarisation", this%opt%tPlotTotSpin, .false.)
     else
       this%opt%tPlotTotSpin = .false.
     end if
 
-    call getChildValue(node, "TotalChargeDifference", this%opt%tPlotTotDiff, .false., child=field)
-    call getChildValue(node, "TotalAtomicDensity", this%opt%tPlotAtomDens, .false.)
-    call getChildValue(node, "ChargeDensity", this%opt%tPlotChrg, .false.)
-    call getChildValue(node, "ChargeDifference", this%opt%tPlotChrgDiff, .false.)
+    call hsd_get_or_set(node, "TotalChargeDifference", this%opt%tPlotTotDiff, .false.)
+    call hsd_get_or_set(node, "TotalAtomicDensity", this%opt%tPlotAtomDens, .false.)
+    call hsd_get_or_set(node, "ChargeDensity", this%opt%tPlotChrg, .false.)
+    call hsd_get_or_set(node, "ChargeDifference", this%opt%tPlotChrgDiff, .false.)
 
     this%opt%tCalcTotChrg = this%opt%tPlotTotChrg .or. this%opt%tPlotTotSpin&
         & .or. this%opt%tPlotTotDiff .or. this%opt%tPlotChrgDiff
     this%opt%tCalcAtomDens = this%opt%tPlotTotDiff .or. this%opt%tPlotChrgDiff&
         & .or. this%opt%tPlotAtomDens
 
-    call getChildValue(node, "RealComponent", this%opt%tPlotReal, .false.)
-    call getChildValue(node, "ImagComponent", this%opt%tPlotImag, .false., child=field)
+    call hsd_get_or_set(node, "RealComponent", this%opt%tPlotReal, .false.)
+    call hsd_get_or_set(node, "ImagComponent", this%opt%tPlotImag, .false.)
+    call hsd_get_table(node, "ImagComponent", field)
 
     if (this%opt%tPlotImag .and. this%input%tRealHam) then
       call dftbp_warning(field, "Wave functions are real, no imaginary part will be plotted")
       this%opt%tPlotImag = .false.
     end if
 
-    call getChildValue(node, "PlottedLevels", buffer, child=field, multiple=.true.)
+    call hsd_get(node, "PlottedLevels", buffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "PlottedLevels must be present")
     call getSelectedIndices(node, buffer, [1, nLevel], this%opt%plottedLevels)
 
     if (this%input%geo%tPeriodic) then
-      call getChildValue(node, "PlottedKPoints", buffer, child=field, multiple=.true.)
+      call hsd_get(node, "PlottedKPoints", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "PlottedKPoints must be present")
       call getSelectedIndices(node, buffer, [1, nKPoint], this%opt%plottedKPoints)
     else
       allocate(this%opt%plottedKPoints(1))
       this%opt%plottedKPoints(1) = 1
     end if
 
-    call getChildValue(node, "PlottedSpins", buffer, child=field, multiple=.true.)
+    call hsd_get(node, "PlottedSpins", buffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "PlottedSpins must be present")
     call getSelectedIndices(node, buffer, [1, nSpin], this%opt%plottedSpins)
 
     ! Create the list of the levels, which must be calculated explicitely
@@ -652,7 +705,8 @@ contains
     call asArray(indexBuffer, this%loc%levelIndex)
     call destruct(indexBuffer)
 
-    call getChildValue(node, "NrOfCachedGrids", nCached, 1, child=field)
+    call hsd_get_or_set(node, "NrOfCachedGrids", nCached, 1)
+    call hsd_get_table(node, "NrOfCachedGrids", field)
 
     if (nCached < 1 .and. nCached /= -1) then
       call dftbp_error(field, "Value must be -1 or greater than zero.")
@@ -664,7 +718,22 @@ contains
 
     ! Plotted region: if last (and hopefully only) childnode is not an allowed method -> assume
     ! explicit setting, parse the node "PlottedRegion" for the appropriate children.
-    call getChildValue(node, "PlottedRegion", value, child=subnode)
+    call hsd_get_table(node, "PlottedRegion", subnode, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "PlottedRegion must be present")
+    ! Get first table child for dispatch
+    value => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: jj
+      do jj = 1, subnode%num_children
+        call subnode%get_child(jj, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          value => t
+          exit
+        end select
+      end do
+    end block
     call getNodeName(value, buffer)
 
     select case (buffer)
@@ -674,7 +743,8 @@ contains
         this%opt%origin(:) = [0.0_dp, 0.0_dp, 0.0_dp]
         this%opt%boxVecs(:,:) = this%input%geo%latVecs(:,:)
       else
-        call getChildValue(value, "MinEdgeLength", minEdge, child=field, default=1.0_dp)
+        call hsd_get_or_set(value, "MinEdgeLength", minEdge, 1.0_dp)
+        call hsd_get_table(value, "MinEdgeLength", field)
         if (minEdge < 0.0_dp) then
           call dftbp_error(field, "Minimal edge length must be positive")
         end if
@@ -694,7 +764,8 @@ contains
 
     case ("optimalcuboid")
       ! Determine optimal cuboid, so that no basis function leaks out
-      call getChildValue(value, "MinEdgeLength", minEdge, child=field, default=1.0_dp)
+      call hsd_get_or_set(value, "MinEdgeLength", minEdge, 1.0_dp)
+      call hsd_get_table(value, "MinEdgeLength", field)
       if (minEdge < 0.0_dp) then
         call dftbp_error(field, "Minimal edge length must be positive")
       end if
@@ -724,12 +795,27 @@ contains
 
     case ("origin","box")
       ! Those nodes are part of an explicit specification -> explitic specif
-      call getChildValue(subnode, "Box", this%opt%boxVecs, modifier=modifier, child=field)
+      block
+        real(dp), allocatable :: tmp_boxVecs(:,:)
+        integer :: nrows, ncols
+        call hsd_get_matrix(subnode, "Box", tmp_boxVecs, nrows, ncols, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(subnode, "Box must be present")
+        this%opt%boxVecs(:,:) = tmp_boxVecs
+      end block
+      call hsd_get_table(subnode, "Box", field)
+      call getModifier(field, "", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%boxVecs)
       if (abs(determinant33(this%opt%boxVecs)) < 1e-08_dp) then
         call dftbp_error(field, "Vectors are linearly dependent")
       end if
-      call getChildValue(subnode, "Origin", this%opt%origin, modifier=modifier, child=field)
+      block
+        real(dp), allocatable :: tmp_origin(:)
+        call hsd_get(subnode, "Origin", tmp_origin, stat=stat)
+        if (stat /= HSD_STAT_OK) call dftbp_error(subnode, "Origin must be present")
+        this%opt%origin(:) = tmp_origin
+      end block
+      call hsd_get_table(subnode, "Origin", field)
+      call getModifier(field, "", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%origin)
 
     case default
@@ -738,34 +824,51 @@ contains
     end select
 
     ! Replace existing PlottedRegion definition
-    call setChild(node, "PlottedRegion", field, replace=.true.)
-    call setChildValue(field, "Origin", this%opt%origin, replace=.true.)
-    call setChildValue(field, "Box", this%opt%boxVecs, replace=.true.)
+    call hsd_remove_child(node, "PlottedRegion")
+    block
+      type(hsd_table) :: pr_table
+      call new_table(pr_table, "PlottedRegion")
+      call node%add_child(pr_table)
+    end block
+    call hsd_get_table(node, "PlottedRegion", field)
+    call hsd_set(field, "Origin", this%opt%origin)
+    call hsd_set(field, "Box", this%opt%boxVecs)
 
-    call getChildValue(node, "NrOfPoints", this%opt%nPoints, child=field)
+    block
+      integer, allocatable :: tmp_nPoints(:)
+      call hsd_get(node, "NrOfPoints", tmp_nPoints, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "NrOfPoints must be present")
+      this%opt%nPoints(:) = tmp_nPoints
+    end block
+    call hsd_get_table(node, "NrOfPoints", field)
 
     if (any(this%opt%nPoints <= 0)) then
       call dftbp_error(field, "Specified numbers must be greater than zero")
     end if
 
-    call getChildValue(node, "ShiftGrid", tShiftGrid, default=.true.)
+    call hsd_get_or_set(node, "ShiftGrid", tShiftGrid, .true.)
 
     if (this%input%geo%tPeriodic) then
-      call getChildValue(node, "FoldAtomsToUnitCell", this%opt%tFoldCoords, default=.false.)
-      call getChildValue(node, "FillBoxWithAtoms", this%opt%tFillBox, default=.false.)
+      call hsd_get_or_set(node, "FoldAtomsToUnitCell", this%opt%tFoldCoords, .false.)
+      call hsd_get_or_set(node, "FillBoxWithAtoms", this%opt%tFillBox, .false.)
       this%opt%tFoldCoords = this%opt%tFoldCoords .or. this%opt%tFillBox
     else
       this%opt%tFillBox = .false.
       this%opt%tFoldCoords = .false.
     end if
 
-    call getChildValue(node, "RepeatBox", this%opt%repeatBox, default=[1, 1, 1], child=field)
+    block
+      integer, allocatable :: tmp_repeatBox(:)
+      call hsd_get_or_set(node, "RepeatBox", tmp_repeatBox, [1, 1, 1])
+      this%opt%repeatBox(:) = tmp_repeatBox
+    end block
+    call hsd_get_table(node, "RepeatBox", field)
 
     if (.not. all(this%opt%repeatBox > 0)) then
       call dftbp_error(field, "Indexes must be greater than zero")
     end if
 
-    call getChildValue(node, "Verbose", this%opt%tVerbose, default=.false.)
+    call hsd_get_or_set(node, "Verbose", this%opt%tVerbose, .false.)
 
     call readBinaryAccessTypes(node, this%opt%binaryAccessTypes)
 
@@ -795,19 +898,22 @@ contains
 
     !! Auxiliary variable
     integer :: ii
+    integer :: stat
 
     nSpecies = size(speciesNames)
 
     @:ASSERT(nSpecies > 0)
 
-    call getChildValue(node, "Resolution", this%basis%basisResolution)
+    call hsd_get(node, "Resolution", this%basis%basisResolution, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Resolution must be present")
 
     allocate(this%basis%basis(nSpecies))
     allocate(this%aNr%atomicNumbers(nSpecies))
 
     do ii = 1, nSpecies
       speciesName = speciesNames(ii)
-      call getChild(node, speciesName, speciesNode)
+      call hsd_get_table(node, speciesName, speciesNode, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(node, "Species " // trim(speciesName) // " must be present")
       call readSpeciesBasis(speciesNode, this%basis%basisResolution, this%basis%basis(ii))
       this%aNr%atomicNumbers(ii) = this%basis%basis(ii)%atomicNumber
     end do
@@ -841,8 +947,10 @@ contains
 
     !! Auxiliary variable
     integer :: ii
+    integer :: stat
 
-    call getChildValue(node, "AtomicNumber", spBasis%atomicNumber)
+    call hsd_get(node, "AtomicNumber", spBasis%atomicNumber, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "AtomicNumber must be present")
     call hsd_get_child_tables(node, "Orbital", children)
     spBasis%nOrb = size(children)
 
@@ -857,9 +965,12 @@ contains
 
     do ii = 1, spBasis%nOrb
       tmpNode => children(ii)%ptr
-      call getChildValue(tmpNode, "AngularMomentum", spBasis%angMoms(ii))
-      call getChildValue(tmpNode, "Occupation", spBasis%occupations(ii))
-      call getChildValue(tmpNode, "Cutoff", spBasis%cutoffs(ii))
+      call hsd_get(tmpNode, "AngularMomentum", spBasis%angMoms(ii), stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(tmpNode, "AngularMomentum must be present")
+      call hsd_get(tmpNode, "Occupation", spBasis%occupations(ii), stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(tmpNode, "Occupation must be present")
+      call hsd_get(tmpNode, "Cutoff", spBasis%cutoffs(ii), stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(tmpNode, "Cutoff must be present")
       call init(bufferExps)
 
       call getChildValue(tmpNode, "Exponents", bufferExps, child=child)

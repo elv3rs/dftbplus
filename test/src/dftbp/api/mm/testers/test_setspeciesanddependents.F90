@@ -32,7 +32,8 @@ program test_setSpeciesAndDependents
 #:endif
   use testhelpers, only : writeAutotestTag
   use dftbp_hsdapi, only : hsd_table
-  use dftbp_io_hsdutils, only : setChild, setChildValue
+  use hsd, only : hsd_set, hsd_node
+  use hsd_data, only : new_table
   use dftbp_mmapi, only : TDftbPlus, TDftbPlus_destruct, TDftbPlus_init, TDftbPlusInput
   implicit none
 
@@ -234,8 +235,7 @@ contains
     ! Pointers to the parts of the input tree that will be set
     type(hsd_table), pointer :: pRoot, pGeo, pAnalysis
 
-    ! "Does geometry already exist in DTFB+ input?" (== "replace geometry in HSD tree?")
-    logical :: replace_geometry
+    ! (geometry is always created fresh in the HSD tree)
 
     if(present(input_fname)) Then
       fname = input_fname
@@ -249,23 +249,66 @@ contains
     ! Set structure data, retain rest
     call hsd_tree%getRootNode(pRoot)
 
-    call setChild(pRoot, "Geometry", pGeo, replace=replace_geometry)
+    block
+      type(hsd_table) :: newTbl
+      class(hsd_node), pointer :: stored
+      call new_table(newTbl, name="Geometry")
+      call pRoot%add_child(newTbl)
+      call pRoot%get_child(pRoot%num_children, stored)
+      select type (t => stored)
+      type is (hsd_table)
+        pGeo => t
+      end select
+    end block
 
-    call setChildValue(pGeo, "Periodic", geo%tPeriodic)
+    call hsd_set(pGeo, "Periodic", geo%tPeriodic)
 
     if (geo%tPeriodic) then
-      call setChildValue(pGeo, "LatticeVectors", geo%latVecs)
+      call hsd_set(pGeo, "LatticeVectors", geo%latVecs)
     end if
 
-    call setChildValue(pGeo, "TypeNames", geo%speciesNames)
+    block
+      character(len=:), allocatable :: combined
+      integer :: ii
+      combined = ""
+      do ii = 1, size(geo%speciesNames)
+        if (ii > 1) combined = combined // " "
+        combined = combined // trim(geo%speciesNames(ii))
+      end do
+      call hsd_set(pGeo, "TypeNames", combined)
+    end block
 
     ! See DFTB+ subroutine in lib_type/typegeometryhsd.F90
-    call setChildValue(pGeo, "TypesAndCoordinates",&
-        & reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords)
+    block
+      character(len=100) :: buffer
+      character(len=:), allocatable :: strBuf
+      integer :: ii, jj
+      strBuf = ""
+      do ii = 1, size(geo%species)
+        write(buffer, *) geo%species(ii)
+        if (ii > 1) strBuf = strBuf // new_line('a')
+        strBuf = strBuf // " " // trim(adjustl(buffer))
+        do jj = 1, 3
+          write(buffer, *) geo%coords(jj, ii)
+          strBuf = strBuf // " " // trim(adjustl(buffer))
+        end do
+      end do
+      call hsd_set(pGeo, "TypesAndCoordinates", trim(adjustl(strBuf)))
+    end block
 
     ! Always compute forces
-    call setChild(pRoot, "Analysis", pAnalysis, replace=.True.)
-    call setChildValue(pAnalysis, "CalculateForces", .True.)
+    block
+      type(hsd_table) :: newTbl
+      class(hsd_node), pointer :: stored
+      call new_table(newTbl, name="Analysis")
+      call pRoot%add_child(newTbl)
+      call pRoot%get_child(pRoot%num_children, stored)
+      select type (t => stored)
+      type is (hsd_table)
+        pAnalysis => t
+      end select
+    end block
+    call hsd_set(pAnalysis, "CalculateForces", .True.)
 
   end subroutine initialise_dftbplus_tree
 

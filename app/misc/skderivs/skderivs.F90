@@ -16,10 +16,10 @@ program skderivs
   use dftbp_dftb_slakoeqgrid, only : getNIntegrals, getSKIntegrals, init, skEqGridNew, skEqGridOld,&
       & TSlakoEqGrid
   use dftbp_io_charmanip, only : i2c, unquote
-  use dftbp_io_hsdutils, only : getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error
   use dftbp_io_hsdutils_list, only : getChildValue
-  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN
+  use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_get, hsd_get_or_set, &
+      & hsd_get_table, HSD_STAT_OK
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_error_t, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListInt, TListIntR1
@@ -177,6 +177,7 @@ contains
     real(dp), allocatable :: skHam(:,:), skOver(:,:)
     integer :: skInterMeth, nInt, nSpecies
     integer :: ii, jj
+    integer :: stat
 
     do ii = 1, maxL+1
       angShellOrdered(ii) = ii - 1
@@ -200,12 +201,17 @@ contains
     write(stdout, "(A)") repeat("-", 80)
     write(stdout, "(A)") "Interpreting input file '" // hsdInputName // "'"
 
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) call error("Missing root block: '" // rootTag // "'")
 
     !! First interaction
-    call getChildValue(root, "File1", buffer)
+    call hsd_get(root, "File1", buffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'File1'")
     call readFromFile(skData12(1,1), unquote(buffer), .false.)
-    call getChildValue(root, "MaxAngularMomentum1", buffer, child=child)
+    call hsd_get(root, "MaxAngularMomentum1", buffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'MaxAngularMomentum1'")
+    call hsd_get_table(root, "MaxAngularMomentum1", child, stat)
+    if (.not. associated(child)) child => root
     strTmp = unquote(buffer)
     call init(angShells(1))
     do jj = 1, size(shellNames)
@@ -218,13 +224,16 @@ contains
           &trim(strTmp) // "'")
     end if
 
-    call getChildValue(root, "File2", buffer, "")
+    call hsd_get_or_set(root, "File2", buffer, "")
     if (buffer == "") then
       nSpecies = 1
     else
       nSpecies = 2
       call readFromFile(skData21(1,1), unquote(buffer), .false.)
-      call getChildValue(root, "MaxAngularMomentum2", buffer, child=child)
+      call hsd_get(root, "MaxAngularMomentum2", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'MaxAngularMomentum2'")
+      call hsd_get_table(root, "MaxAngularMomentum2", child, stat)
+      if (.not. associated(child)) child => root
       strTmp = unquote(buffer)
       call init(angShells(2))
       do jj = 1, size(shellNames)
@@ -238,7 +247,8 @@ contains
       end if
     end if
 
-    call getChildValue(root, "OldSKInterpolation", useOldInter)
+    call hsd_get(root, "OldSKInterpolation", useOldInter, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'OldSKInterpolation'")
     if (useOldInter) then
       skInterMeth = skEqGridOld
     else
@@ -261,19 +271,31 @@ contains
     call init(inp%skHam, skData12(1,1)%dist, skHam, skInterMeth)
     call init(inp%skOver, skData12(1,1)%dist, skOver, skInterMeth)
 
-    call getChildValue(root, "Step", inp%step)
-    call getChildValue(root, "Value", inp%value)
-    call getChildValue(root, "FirstDerivative", inp%first)
-    call getChildValue(root, "SecondDerivative", inp%second)
-    call getChildValue(root, "Displacement", inp%displ)
-    call getChildValue(root, "Start", inp%from, child=child)
+    call hsd_get(root, "Step", inp%step, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'Step'")
+    call hsd_get(root, "Value", inp%value, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'Value'")
+    call hsd_get(root, "FirstDerivative", inp%first, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'FirstDerivative'")
+    call hsd_get(root, "SecondDerivative", inp%second, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'SecondDerivative'")
+    call hsd_get(root, "Displacement", inp%displ, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'Displacement'")
+    call hsd_get(root, "Start", inp%from, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'Start'")
+    call hsd_get_table(root, "Start", child, stat)
+    if (.not. associated(child)) child => root
     if (inp%from - inp%displ < skData12(1, 1)%dist) then
       write(strTmp, "(A, F8.4)") "With given displacement, start point must be larger than ",&
           & skData12(1, 1)%dist + inp%displ
       call dftbp_error(child, trim(strTmp))
     end if
-    call getChildValue(root, "End", inp%to, child=child)
-    call getChildValue(root, "OutputPrefix", buffer)
+    call hsd_get(root, "End", inp%to, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'End'")
+    call hsd_get_table(root, "End", child, stat)
+    if (.not. associated(child)) child => root
+    call hsd_get(root, "OutputPrefix", buffer, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(root, "Missing required value: 'OutputPrefix'")
     inp%output = unquote(buffer)
 
     allocate(lIntTmp)

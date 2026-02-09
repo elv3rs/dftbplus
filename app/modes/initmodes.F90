@@ -21,14 +21,14 @@ module modes_initmodes
   use dftbp_common_unitconversion, only : massUnits
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdutils, only :&
-      & getChild, getChildValue
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getSelectedIndices, getNodeName, textNodeName, getNodeName2, setUnprocessed, hasInlineData
+      & getSelectedIndices, getNodeName, textNodeName, getNodeName2, setUnprocessed, hasInlineData,&
+      & getModifier
   use dftbp_io_hsdutils_list, only : getChildValue
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump,&
-      & hsd_table_ptr, hsd_get_child_tables
+      & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set, hsd_get_table,&
+      & hsd_get_attrib, HSD_STAT_OK, hsd_node
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -167,6 +167,7 @@ contains
     character(len=:), allocatable :: strOut, strJoin, hessianFile
     type(TFileDescr) :: file
     integer :: iErr
+    integer :: stat
 
     !! Write header
     call printDftbHeader('(MODES '// version //')', releaseYear)
@@ -185,25 +186,29 @@ contains
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
     end block
-    call getChild(hsdTree, rootTag, root)
+    call hsd_get_table(hsdTree, rootTag, root, stat, auto_wrap=.true.)
+    if (.not. associated(root)) call error("Missing root block: '" // rootTag // "'")
 
     write(stdout, "(A)") "Interpreting input file '" // hsdInput // "'"
     write(stdout, "(A)") repeat("-", 80)
 
     !! Check if input version is the one, which we can handle
-    call getChildValue(root, "InputVersion", inputVersion, parserVersion)
+    call hsd_get_or_set(root, "InputVersion", inputVersion, parserVersion)
     if (inputVersion /= parserVersion) then
       call error("Version of input (" // i2c(inputVersion) // ") and parser ("&
           & // i2c(parserVersion) // ") do not match")
     end if
 
-    call getChild(root, "Geometry", tmp)
+    call hsd_get_table(root, "Geometry", tmp, stat, auto_wrap=.true.)
+    if (.not. associated(tmp)) call dftbp_error(root, "Missing required block: 'Geometry'")
     call readGeometry(tmp, geo)
 
-    call getChildValue(root, "RemoveTranslation", tRemoveTranslate, .false.)
-    call getChildValue(root, "RemoveRotation", tRemoveRotate, .false.)
+    call hsd_get_or_set(root, "RemoveTranslation", tRemoveTranslate, .false.)
+    call hsd_get_or_set(root, "RemoveRotation", tRemoveRotate, .false.)
 
-    call getChildValue(root, "Atoms", buffer2, "1:-1", child=child, multiple=.true.)
+    call hsd_get_or_set(root, "Atoms", buffer2, "1:-1")
+    call hsd_get_table(root, "Atoms", child, stat)
+    if (.not. associated(child)) child => root
     call getSelectedAtomIndices(child, buffer2, geo%speciesNames, geo%species, iMovedAtoms)
     nMovedAtom = size(iMovedAtoms)
     nDerivs = 3 * nMovedAtom
@@ -211,20 +216,22 @@ contains
     tPlotModes = .false.
     nModesToPlot = 0
     tAnimateModes = .false.
-    call getChild(root, "DisplayModes",child=node,requested=.false.)
+    call hsd_get_table(root, "DisplayModes", node, stat, auto_wrap=.true.)
     if (associated(node)) then
       tPlotModes = .true.
-      call getChildValue(node, "PlotModes", buffer2, "1:-1", child=child, multiple=.true.)
+      call hsd_get_or_set(node, "PlotModes", buffer2, "1:-1")
+      call hsd_get_table(node, "PlotModes", child, stat)
+      if (.not. associated(child)) child => node
       call getSelectedIndices(child, buffer2, [1, 3 * nMovedAtom], modesToPlot)
       nModesToPlot = size(modesToPlot)
-      call getChildValue(node, "Animate", tAnimateModes, .true.)
+      call hsd_get_or_set(node, "Animate", tAnimateModes, .true.)
     end if
 
     ! oscillation cycles in an animation
     nCycles = 3
 
     ! Eigensolver
-    call getChildValue(root, "EigenSolver", buffer2, "qr")
+    call hsd_get_or_set(root, "EigenSolver", buffer2, "qr")
     select case(tolower(buffer2))
     case ("qr")
       iSolver = solverTypes%qr
@@ -252,8 +259,23 @@ contains
       speciesMass(iSp1) = getAtomicMass(geo%speciesNames(iSp1))
     end do
 
-    call getChildValue(root, "SlaterKosterFiles", value, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true.)
+    call hsd_get_table(root, "SlaterKosterFiles", child, stat)
+    ! Get first table child for dispatch
+    value => null()
+    if (associated(child)) then
+      block
+        class(hsd_node), pointer :: ch
+        integer :: ii_ch
+        do ii_ch = 1, child%num_children
+          call child%get_child(ii_ch, ch)
+          select type (t => ch)
+          type is (hsd_table)
+            value => t
+            exit
+          end select
+        end do
+      end block
+    end if
     if (associated(value)) then
       allocate(skFiles(geo%nSpecies))
       do iSp1 = 1, geo%nSpecies
@@ -262,13 +284,13 @@ contains
       call getNodeName(value, buffer)
       select case(buffer)
       case ("type2filenames")
-        call getChildValue(value, "Prefix", buffer2, "")
+        call hsd_get_or_set(value, "Prefix", buffer2, "")
         prefix = unquote(buffer2)
-        call getChildValue(value, "Suffix", buffer2, "")
+        call hsd_get_or_set(value, "Suffix", buffer2, "")
         suffix = unquote(buffer2)
-        call getChildValue(value, "Separator", buffer2, "")
+        call hsd_get_or_set(value, "Separator", buffer2, "")
         separator = unquote(buffer2)
-        call getChildValue(value, "LowerCaseTypeName", tLower, .false.)
+        call hsd_get_or_set(value, "LowerCaseTypeName", tLower, .false.)
         do iSp1 = 1, geo%nSpecies
           if (tLower) then
             elem1 = tolower(geo%speciesNames(iSp1))
@@ -286,7 +308,7 @@ contains
         end do
       case default
         call setUnprocessed(value)
-        call getChildValue(child, "Prefix", buffer2, "")
+        call hsd_get_or_set(child, "Prefix", buffer2, "")
         prefix = unquote(buffer2)
 
         do iSp1 = 1, geo%nSpecies
@@ -336,12 +358,32 @@ contains
 
     tDumpPHSD = .true.
 
-    call getChildValue(root, "Hessian", value, "", child=child, allowEmptyValue=.true.)
+    call hsd_get_table(root, "Hessian", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) call dftbp_error(root, "Missing required block: 'Hessian'")
+    ! Get first table child for dispatch
+    value => null()
+    if (associated(child)) then
+      block
+        class(hsd_node), pointer :: ch
+        integer :: ii_ch
+        do ii_ch = 1, child%num_children
+          call child%get_child(ii_ch, ch)
+          select type (t => ch)
+          type is (hsd_table)
+            value => t
+            exit
+          end select
+        end do
+      end block
+    end if
     call getNodeName2(value, buffer)
     if (buffer == "" .and. hasInlineData(child)) buffer = textNodeName
     select case (buffer)
     case ("directread")
-      call getChildValue(value, "File", buffer2, child=child2)
+      call hsd_get(value, "File", buffer2, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value, "Missing required value: 'File'")
+      call hsd_get_table(value, "File", child2, stat)
+      if (.not. associated(child2)) child2 => value
       hessianFile = trim(unquote(buffer2))
       call openFile(file, hessianFile, mode="r", iostat=iErr)
       if (iErr /= 0) then
@@ -368,7 +410,7 @@ contains
       call dftbp_error(child, "Invalid Hessian scheme.")
     end select
 
-    call getChild(root, "BornCharges", child, requested=.false.)
+    call hsd_get_table(root, "BornCharges", child, stat, auto_wrap=.true.)
     call getNodeName2(child, buffer)
     if (buffer /= "") then
       call init(realBuffer)
@@ -383,7 +425,7 @@ contains
       tDumpPHSD = .false.
     end if
 
-    call getChild(root, "BornDerivs", child, requested=.false.)
+    call hsd_get_table(root, "BornDerivs", child, stat, auto_wrap=.true.)
     call getNodeName2(child, buffer)
     if (buffer /= "") then
       call init(realBuffer)
@@ -398,7 +440,7 @@ contains
       tDumpPHSD = .false.
     end if
 
-    call getChildValue(root, "WriteHSDInput", tWriteHSD, tDumpPHSD)
+    call hsd_get_or_set(root, "WriteHSDInput", tWriteHSD, tDumpPHSD)
 
     tEigenVectors = tPlotModes .or. allocated(bornMatrix) .or. allocated(bornDerivsMatrix)
 
@@ -438,7 +480,20 @@ contains
     type(hsd_table), pointer :: child
     character(len=:), allocatable :: buffer
 
-    call getChildValue(geonode, "", child)
+    ! Get first table child for dispatch
+    child => null()
+    block
+      class(hsd_node), pointer :: ch
+      integer :: ii
+      do ii = 1, geonode%num_children
+        call geonode%get_child(ii, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          child => t
+          exit
+        end select
+      end do
+    end block
     call getNodeName(child, buffer)
     select case (buffer)
     case ("genformat")
@@ -478,9 +533,26 @@ contains
     character(len=:), allocatable :: buffer, modifier
     real(dp) :: rTmp
     integer :: ii, jj, iAt
+    integer :: stat
 
-    call getChildValue(node, "Masses", val, "", child=child, allowEmptyValue=.true.,&
-        & dummyValue=.true., list=.true.)
+    call hsd_get_table(node, "Masses", child, stat)
+    if (.not. associated(child)) return
+    ! Get first table child for dispatch
+    val => null()
+    if (associated(child)) then
+      block
+        class(hsd_node), pointer :: ch
+        integer :: ii_ch
+        do ii_ch = 1, child%num_children
+          call child%get_child(ii_ch, ch)
+          select type (t => ch)
+          type is (hsd_table)
+            val => t
+            exit
+          end select
+        end do
+      end block
+    end if
 
     ! Read individual atom specifications
     call hsd_get_child_tables(child, "Mass", children)
@@ -492,9 +564,17 @@ contains
     masses(:) = -1.0_dp
     do ii = 1, size(children)
       child2 => children(ii)%ptr
-      call getChildValue(child2, "Atoms", buffer, child=child3, multiple=.true.)
+      call hsd_get(child2, "Atoms", buffer, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'Atoms'")
+      call hsd_get_table(child2, "Atoms", child3, stat)
+      if (.not. associated(child3)) child3 => child2
       call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
-      call getChildValue(child2, "MassPerAtom", rTmp, modifier=modifier, child=child)
+      call hsd_get(child2, "MassPerAtom", rTmp, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value: 'MassPerAtom'")
+      call hsd_get_attrib(child2, "MassPerAtom", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(child2, "MassPerAtom", child, stat)
+      if (.not. associated(child)) child => child2
       call convertUnitHsd(modifier, massUnits, child, rTmp)
       do jj = 1, size(pTmpI1)
         iAt = pTmpI1(jj)

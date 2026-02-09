@@ -12,10 +12,10 @@ module test_io_hsdcompat
   use dftbp_common_accuracy, only : dp, mc
   use dftbp_common_unitconversion, only : TUnit
   use hsd, only : hsd_table, hsd_node, hsd_error_t, hsd_get, hsd_set, HSD_STAT_OK, &
-      & hsd_has_child, hsd_get_attrib, hsd_set_attrib, hsd_get_table, hsd_get_child
+      & hsd_has_child, hsd_get_attrib, hsd_set_attrib, hsd_get_table, hsd_get_child, &
+      & hsd_get_or_set
   use hsd_data, only : new_table, data_load_string, DATA_FMT_HSD
-  use dftbp_io_hsdutils, only : getChildValue, getChild, setChildValue, setChild, &
-      & dftbp_warning
+  use dftbp_io_hsdutils, only : dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_table_ptr, hsd_get_child_tables
   use dftbp_io_hsdutils, only : getNodeName, getNodeName2, getNodeHSDName, setUnprocessed,&
@@ -36,11 +36,12 @@ contains
     !! Get a required integer value
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
-    integer :: val
+    integer :: val, stat
 
     call data_load_string("NAtoms = 5", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "NAtoms", val)
+    call hsd_get(root, "NAtoms", val, stat=stat)
+    @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(val == 5)
   $:END_TEST()
 
@@ -54,7 +55,7 @@ contains
     call data_load_string("Existing = 10", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
     ! Key doesn't exist → should return default 42
-    call getChildValue(root, "Missing", val, 42)
+    call hsd_get_or_set(root, "Missing", val, 42)
     @:ASSERT(val == 42)
     ! The default should have been written back to the tree
     call hsd_get(root, "Missing", check, stat=val)
@@ -71,7 +72,7 @@ contains
 
     call data_load_string("NAtoms = 5", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "NAtoms", val, 99)
+    call hsd_get_or_set(root, "NAtoms", val, 99)
     @:ASSERT(val == 5)
   $:END_TEST()
 
@@ -81,10 +82,12 @@ contains
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
     real(dp) :: val
+    integer :: stat
 
     call data_load_string("Temp = 300.0", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "Temp", val)
+    call hsd_get(root, "Temp", val, stat=stat)
+    @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(abs(val - 300.0_dp) < 1.0e-10_dp)
   $:END_TEST()
 
@@ -97,7 +100,7 @@ contains
 
     call data_load_string("X = 1.0", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "MissingReal", val, 3.14_dp)
+    call hsd_get_or_set(root, "MissingReal", val, 3.14_dp)
     @:ASSERT(abs(val - 3.14_dp) < 1.0e-10_dp)
   $:END_TEST()
 
@@ -107,10 +110,12 @@ contains
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
     logical :: val
+    integer :: stat
 
     call data_load_string("Periodic = Yes", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "Periodic", val)
+    call hsd_get(root, "Periodic", val, stat=stat)
+    @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(val)
   $:END_TEST()
 
@@ -123,7 +128,7 @@ contains
 
     call data_load_string("X = 1", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "MissingLogical", val, .false.)
+    call hsd_get_or_set(root, "MissingLogical", val, .false.)
     @:ASSERT(.not. val)
   $:END_TEST()
 
@@ -133,10 +138,12 @@ contains
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
     character(len=:), allocatable :: val
+    integer :: stat
 
     call data_load_string('Name = "Hello"', root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "Name", val)
+    call hsd_get(root, "Name", val, stat=stat)
+    @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(val == "Hello")
   $:END_TEST()
 
@@ -149,7 +156,7 @@ contains
 
     call data_load_string("X = 1", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChildValue(root, "Name", val, "DefaultName")
+    call hsd_get_or_set(root, "Name", val, "DefaultName")
     @:ASSERT(val == "DefaultName")
   $:END_TEST()
 
@@ -159,6 +166,7 @@ contains
     type(hsd_table) :: root
     type(hsd_table), pointer :: child
     type(hsd_error_t), allocatable :: err
+    integer :: stat
     character(len=*), parameter :: input = &
         & "Options {" // new_line('a') // &
         & "  Debug = Yes" // new_line('a') // &
@@ -166,7 +174,7 @@ contains
 
     call data_load_string(input, root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChild(root, "Options", child)
+    call hsd_get_table(root, "Options", child, stat, auto_wrap=.true.)
     @:ASSERT(associated(child))
   $:END_TEST()
 
@@ -176,10 +184,11 @@ contains
     type(hsd_table) :: root
     type(hsd_table), pointer :: child
     type(hsd_error_t), allocatable :: err
+    integer :: stat
 
     call data_load_string("X = 1", root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChild(root, "Missing", child, requested=.false.)
+    call hsd_get_table(root, "Missing", child, stat, auto_wrap=.true.)
     @:ASSERT(.not. associated(child))
   $:END_TEST()
 
@@ -190,7 +199,7 @@ contains
     integer :: val, stat
 
     call new_table(root, "root")
-    call setChildValue(root, "Count", 42)
+    call hsd_set(root, "Count", 42)
     call hsd_get(root, "Count", val, stat=stat)
     @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(val == 42)
@@ -204,7 +213,7 @@ contains
     integer :: stat
 
     call new_table(root, "root")
-    call setChildValue(root, "Energy", -1.5_dp)
+    call hsd_set(root, "Energy", -1.5_dp)
     call hsd_get(root, "Energy", val, stat=stat)
     @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(abs(val + 1.5_dp) < 1.0e-10_dp)
@@ -218,7 +227,7 @@ contains
     integer :: stat
 
     call new_table(root, "root")
-    call setChildValue(root, "Method", "DFTB")
+    call hsd_set(root, "Method", "DFTB")
     call hsd_get(root, "Method", val, stat=stat)
     @:ASSERT(stat == HSD_STAT_OK)
     @:ASSERT(val == "DFTB")
@@ -244,6 +253,7 @@ contains
     type(hsd_table), pointer :: child
     type(hsd_error_t), allocatable :: err
     character(len=:), allocatable :: modifier
+    integer :: stat
     character(len=*), parameter :: input = &
         & 'Solver [ELPA] {' // new_line('a') // &
         & '  X = 1' // new_line('a') // &
@@ -251,8 +261,9 @@ contains
 
     call data_load_string(input, root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
-    call getChild(root, "Solver", child, modifier=modifier)
+    call hsd_get_table(root, "Solver", child, stat, auto_wrap=.true.)
     @:ASSERT(associated(child))
+    call hsd_get_attrib(root, "Solver", modifier, stat)
     @:ASSERT(modifier == "ELPA")
   $:END_TEST()
 
@@ -263,6 +274,7 @@ contains
     type(hsd_table), pointer :: child
     type(hsd_error_t), allocatable :: err
     character(len=:), allocatable :: name
+    integer :: stat
     character(len=*), parameter :: input = &
         & 'Driver {' // new_line('a') // &
         & '  ConjugateGradient {' // new_line('a') // &
@@ -273,12 +285,22 @@ contains
     call data_load_string(input, root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
     ! Get the Driver table first
-    call getChild(root, "Driver", child)
+    call hsd_get_table(root, "Driver", child, stat, auto_wrap=.true.)
     @:ASSERT(associated(child))
-    ! Now get the dispatch child (first table child, name = "" pattern)
+    ! Now get the dispatch child (first table child)
     block
       type(hsd_table), pointer :: dispatch
-      call getChildValue(child, "", dispatch)
+      class(hsd_node), pointer :: ch
+      integer :: ii
+      dispatch => null()
+      do ii = 1, child%num_children
+        call child%get_child(ii, ch)
+        select type (t => ch)
+        type is (hsd_table)
+          dispatch => t
+          exit
+        end select
+      end do
       @:ASSERT(associated(dispatch))
       call getNodeName2(dispatch, name)
       @:ASSERT(name == "conjugategradient")
@@ -329,16 +351,27 @@ contains
     type(hsd_table) :: root
     type(hsd_table), pointer :: child
     character(len=:), allocatable :: name
+    integer :: stat
 
     call new_table(root, name="root")
-    call setChild(root, "NewBlock", child)
+    block
+      type(hsd_table) :: newTbl
+      class(hsd_node), pointer :: stored
+      call new_table(newTbl, name="NewBlock")
+      call root%add_child(newTbl)
+      call root%get_child(root%num_children, stored)
+      select type (t => stored)
+      type is (hsd_table)
+        child => t
+      end select
+    end block
     @:ASSERT(associated(child))
     call getNodeName2(child, name)
     @:ASSERT(name == "newblock")
-    ! Verify the child is accessible via getChild
+    ! Verify the child is accessible via hsd_get_table
     block
       type(hsd_table), pointer :: found
-      call getChild(root, "NewBlock", found, requested=.false.)
+      call hsd_get_table(root, "NewBlock", found, stat, auto_wrap=.true.)
       @:ASSERT(associated(found))
     end block
   $:END_TEST()
@@ -439,13 +472,15 @@ contains
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
     real(dp) :: val
+    integer :: stat
 
     ! Create HSD with a value having Angstrom modifier
     call data_load_string('Distance [Angstrom] = 1.0', root, DATA_FMT_HSD, err)
     @:ASSERT(.not. allocated(err))
 
     ! Read with unit conversion
-    call getChildValue(root, "Distance", val)
+    call hsd_get(root, "Distance", val, stat=stat)
+    @:ASSERT(stat == HSD_STAT_OK)
     ! convertUnitHsd should detect the [Angstrom] modifier and convert
     ! For now just verify the value was read (modifier handling depends on caller)
     @:ASSERT(abs(val - 1.0_dp) < 1.0e-10_dp)
