@@ -10,16 +10,16 @@
 
 !> Reads the electronic filling settings from the HSD input.
 module dftbp_dftbplus_parser_filling
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_common_accuracy, only : dp, lc, minTemp
   use dftbp_common_constants, only : Boltzmann
   use dftbp_common_hamiltoniantypes, only : hamiltonianTypes
   use dftbp_common_unitconversion, only : energyUnits
   use dftbp_dftb_etemp, only : fillingTypes
   use dftbp_dftbplus_inputdata, only : TControl
-  use dftbp_io_hsdutils, only : getChild, getChildValue
-  use hsd, only : hsd_get_or_set
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getNodeHSDName
+  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
+      & HSD_STAT_OK
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeHSDName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -48,9 +48,21 @@ contains
     type(hsd_table), pointer :: value1, child, child2, child3, field
     character(len=:), allocatable :: buffer, modifier
     character(lc) :: errorStr
+    integer :: stat
 
-    call getChildValue(node, "Filling", value1, "Fermi", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Filling", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="filling")
+        call new_table(defChild, name="fermi")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Filling", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Filling'")
 
     select case (buffer)
     case ("fermi")
@@ -80,15 +92,17 @@ contains
     end select
 
     if (.not. ctrl%tSetFillingTemp) then
-      call getChildValue(value1, "Temperature", ctrl%tempElec, temperatureDefault, &
-          &modifier=modifier, child=field)
+      call hsd_get_or_set(value1, "Temperature", ctrl%tempElec, temperatureDefault)
+      call hsd_get_attrib(value1, "Temperature", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(value1, "Temperature", field, stat, auto_wrap=.true.)
       call convertUnitHsd(modifier, energyUnits, field, ctrl%tempElec)
       if (ctrl%tempElec < minTemp) then
         ctrl%tempElec = minTemp
       end if
     end if
 
-    call getChild(value1, "FixedFermiLevel", child=child2, modifier=modifier, requested=.false.)
+    call hsd_get_table(value1, "FixedFermiLevel", child2, stat, auto_wrap=.true.)
     ctrl%tFixEf = associated(child2)
     if (ctrl%tFixEf) then
       if (ctrl%tSpin .and. .not.ctrl%t2Component) then
@@ -96,7 +110,14 @@ contains
       else
         allocate(ctrl%Ef(1))
       end if
-      call getChildValue(child2, "", ctrl%Ef, modifier=modifier, child=child3)
+      call hsd_get(child2, "#text", ctrl%Ef, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value in 'FixedFermiLevel'")
+      if (allocated(child2%attrib)) then
+        modifier = child2%attrib
+      else
+        modifier = ""
+      end if
+      child3 => child2
       call convertUnitHsd(modifier, energyUnits, child3, ctrl%Ef)
     end if
 

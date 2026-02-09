@@ -17,12 +17,12 @@ module dftbp_dftbplus_parser_sccoptions
   use dftbp_dftbplus_forcetypes, only : forceTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdutils, only : getChild, getChildValue, getNodeName, getNodeHSDName
-  use hsd, only : hsd_get_or_set
-  use dftbp_io_hsdutils, only : dftbp_error
+  use dftbp_io_hsdutils, only : getNodeHSDName, dftbp_error
+  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
+      & HSD_STAT_OK
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_dftbplus_parser_spin, only : getInitialCharges
   implicit none
 
@@ -114,9 +114,14 @@ contains
     logical :: tHardCutOff
     type(hsd_table), pointer :: field
     character(len=:), allocatable :: modifier
+    integer :: stat
 
     ! Artificially truncate the SK table
-    call getChildValue(node, "SKMaxDistance", truncationCutOff, modifier=modifier, child=field)
+    call hsd_get(node, "SKMaxDistance", truncationCutOff, stat=stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'SKMaxDistance'")
+    call hsd_get_attrib(node, "SKMaxDistance", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
+    call hsd_get_table(node, "SKMaxDistance", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, lengthUnits, field, truncationCutOff)
 
     call hsd_get_or_set(node, "HardCutOff", tHardCutOff, .true.)
@@ -153,15 +158,28 @@ contains
 
     character(len=:), allocatable :: buffer, modifier
     type(hsd_table), pointer :: val, child
+    integer :: stat
 
-    call getChildValue(node, "Differentiation", val, "FiniteDiff",&
-        & child=child)
-    call getNodeName(val, buffer)
+    call hsd_get_table(node, "Differentiation", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="differentiation")
+        call new_table(defChild, name="finitediff")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Differentiation", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, val, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Differentiation'")
     select case (buffer)
     case ("finitediff")
       ctrl%iDerivMethod = diffTypes%finiteDiff
-      call getChildValue(val, "Delta", ctrl%deriv1stDelta, defDelta,&
-          & modifier=modifier, child=child)
+      call hsd_get_or_set(val, "Delta", ctrl%deriv1stDelta, defDelta)
+      call hsd_get_attrib(val, "Delta", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(val, "Delta", child, stat, auto_wrap=.true.)
       call convertUnitHsd(modifier, lengthUnits, child,&
           & ctrl%deriv1stDelta)
     case ("richardson")
@@ -190,12 +208,23 @@ contains
     type(hsd_table), pointer :: value1, child, child2
     character(len=:), allocatable :: buffer
     real(dp) :: h5ScalingDef
-    integer :: iSp
+    integer :: iSp, stat
 
     ! X-H interaction corrections including H5 and damping
     ctrl%tDampH = .false.
-    call getChildValue(node, "HCorrection", value1, "None", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "HCorrection", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="hcorrection")
+        call new_table(defChild, name="none")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "HCorrection", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'HCorrection'")
 
     select case (buffer)
 
@@ -205,7 +234,8 @@ contains
     case ("damping")
       ! Switch the correction on
       ctrl%tDampH = .true.
-      call getChildValue(value1, "Exponent", ctrl%dampExp)
+      call hsd_get(value1, "Exponent", ctrl%dampExp, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(value1, "Missing required value: 'Exponent'")
 
     case ("h5")
       allocate(ctrl%h5Input)
@@ -213,7 +243,15 @@ contains
         call hsd_get_or_set(value1, "RScaling", h5Input%rScale, 0.714_dp)
         call hsd_get_or_set(value1, "WScaling", h5Input%wScale, 0.25_dp)
         allocate(h5Input%elementParams(geo%nSpecies))
-        call getChild(value1, "H5Scaling", child2, requested=.false., emptyIfMissing=.true.)
+        call hsd_get_table(value1, "H5Scaling", child2, stat, auto_wrap=.true.)
+        if (.not. associated(child2)) then
+          block
+            type(hsd_table) :: emptyTbl
+            call new_table(emptyTbl, name="h5scaling")
+            call value1%add_child(emptyTbl)
+          end block
+          call hsd_get_table(value1, "H5Scaling", child2, stat, auto_wrap=.true.)
+        end if
         do iSp = 1, geo%nSpecies
           select case (geo%speciesNames(iSp))
           case ("O")

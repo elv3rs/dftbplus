@@ -6,8 +6,7 @@ module dftbp_dftbplus_parser_parseroptions
   use dftbp_common_globalenv, only : stdout
   use dftbp_dftbplus_oldcompat, only : convertOldHSD, minVersion, parserVersion, versionMaps
   use dftbp_io_charmanip, only : i2c, newline, unquote
-  use dftbp_io_hsdutils, only : getChild, getChildValue, setChildValue
-  use hsd, only : hsd_get_or_set
+  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_set, HSD_STAT_OK
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use hsd_data, only : hsd_table
   implicit none
@@ -44,10 +43,12 @@ contains
 
     type(hsd_table), pointer :: child, dummy
     character(len=:), allocatable :: versionString
+    integer :: stat
 
-    call getChild(root, "InputVersion", child, requested=.false.)
+    call hsd_get_table(root, "InputVersion", child, stat, auto_wrap=.true.)
     if (associated(child)) then
-      call getChildValue(child, "", versionString)
+      call hsd_get(child, "#text", versionString, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value in 'InputVersion'")
       implicitParserVersion = parserVersionFromInputVersion(trim(unquote(versionString)))
       if (implicitParserVersion == 0) then
         call dftbp_error(child, "Input version '" // trim(unquote(versionString))&
@@ -74,22 +75,24 @@ contains
     !> Parser version implied by version number
     integer, intent(in), optional :: implicitVersion
 
-    integer :: inputVersion
+    integer :: inputVersion, stat
     type(hsd_table), pointer :: child
 
-    call getChild(node, "ParserVersion", child, requested=.false.)
+    call hsd_get_table(node, "ParserVersion", child, stat, auto_wrap=.true.)
     if (.not. associated(child) .and. .not. present(implicitVersion)) then
       call dftbp_warning(root, "Input containing neither InputVersion nor ParserVersion is&
           & DEPRECATED!(!!) Specify the InputVersion keyword in your input to ensure that future&
           & versions of DFTB+ can also parse it.")
       inputVersion = parserVersion
-      call setChildValue(node, "ParserVersion", inputVersion)
+      call hsd_set(node, "ParserVersion", inputVersion)
     else if (.not. associated(child) .and. present(implicitVersion)) then
       inputVersion = implicitVersion
     else if (associated(child) .and. .not. present(implicitVersion)) then
-      call getChildValue(child, "", inputVersion)
+      call hsd_get(child, "#text", inputVersion, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value in 'ParserVersion'")
     else
-      call getChildValue(child, "", inputVersion)
+      call hsd_get(child, "#text", inputVersion, stat=stat)
+      if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value in 'ParserVersion'")
       if (inputVersion /= implicitVersion) then
         call dftbp_error(child, "Parser version deduced from InputVersion ("&
             & // i2c(implicitVersion) // ") differs from version explicitely set in&

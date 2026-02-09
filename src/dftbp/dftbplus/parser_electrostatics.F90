@@ -13,11 +13,10 @@ module dftbp_dftbplus_parser_electrostatics
   use dftbp_common_accuracy, only : dp
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_extlibs_poisson, only : TPoissonInfo, withPoisson
-  use dftbp_io_hsdutils, only : getChild, getChildValue, getNodeName, getNodeHSDName
-  use hsd, only : hsd_get_or_set
-  use dftbp_io_hsdutils, only : dftbp_error
+  use dftbp_io_hsdutils, only : getNodeHSDName, dftbp_error
+  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, HSD_STAT_OK
   use dftbp_type_typegeometry, only : TGeometry
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
 #:endif
@@ -57,12 +56,24 @@ contains
 
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer
+    integer :: stat
 
     ctrl%tPoisson = .false.
 
     ! Read in which kind of electrostatics method to use.
-    call getChildValue(node, "Electrostatics", value1, "GammaFunctional", child=child)
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Electrostatics", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="electrostatics")
+        call new_table(defChild, name="gammafunctional")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Electrostatics", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Invalid or missing choice in 'Electrostatics'")
 
     select case (buffer)
 
@@ -110,14 +121,23 @@ contains
 
     type(hsd_table), pointer :: value1, child, child2
     character(len=:), allocatable :: buffer
-    integer :: iSp1
+    integer :: iSp1, stat
 
     ctrl%isMdftb = .false.
     if (ctrl%tSCC) then
-      call getChildValue(node, "Mdftb", value1, "None", child=child, allowEmptyValue=.true.,&
-          & dummyValue=.false.)
+      call hsd_get_table(node, "Mdftb", child, stat, auto_wrap=.true.)
+      if (.not. associated(child)) then
+        block
+          type(hsd_table) :: defTbl, defChild
+          call new_table(defTbl, name="mdftb")
+          call new_table(defChild, name="none")
+          call defTbl%add_child(defChild)
+          call node%add_child(defTbl)
+        end block
+        call hsd_get_table(node, "Mdftb", child, stat, auto_wrap=.true.)
+      end if
+      call hsd_get_choice(child, "", buffer, value1, stat)
       if (associated(value1)) then
-        call getNodeName(value1, buffer)
         select case(buffer)
         case("onecenterapproximation")
           ctrl%isMdftb = .true.
@@ -145,7 +165,7 @@ contains
           allocate(ctrl%mdftbAtomicIntegrals%DxzXZDzz(geo%nSpecies), source=0.0_dp)
           allocate(ctrl%mdftbAtomicIntegrals%DyzYZDxxyy(geo%nSpecies), source=0.0_dp)
 
-          call getChild(value1, 'AtomDIntegralScalings', child2, requested=.false.)
+          call hsd_get_table(value1, "AtomDIntegralScalings", child2, stat, auto_wrap=.true.)
           if (associated(child2)) then
             do iSp1 = 1, geo%nSpecies
               call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1)),&
@@ -153,7 +173,7 @@ contains
             end do
           end if
 
-          call getChild(value1, 'AtomQIntegralScalings', child2, requested=.false.)
+          call hsd_get_table(value1, "AtomQIntegralScalings", child2, stat, auto_wrap=.true.)
           if (associated(child2)) then
             do iSp1 = 1, geo%nSpecies
               call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1)),&
@@ -161,7 +181,9 @@ contains
             end do
           end if
 
-          call getChild(value1, 'OneCenterAtomIntegrals', child2, requested=.true.)
+          call hsd_get_table(value1, "OneCenterAtomIntegrals", child2, stat, auto_wrap=.true.)
+          if (.not. associated(child2)) call dftbp_error(value1, &
+              & "Missing required block: 'OneCenterAtomIntegrals'")
           do iSp1 = 1, geo%nSpecies
             call hsd_get_or_set(child2, trim(geo%speciesNames(iSp1))//":S|X|Px",&
                 & ctrl%mdftbAtomicIntegrals%SXPx(iSp1), 0.0_dp)

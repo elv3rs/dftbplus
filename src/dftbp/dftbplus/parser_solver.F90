@@ -16,11 +16,11 @@ module dftbp_dftbplus_parser_solver
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes
   use dftbp_extlibs_elsiiface, only : withELSI, withPEXSI
   use dftbp_extlibs_poisson, only : TPoissonInfo
-  use dftbp_io_hsdutils, only : getChildValue, getNodeName, dftbp_error
-  use hsd, only : hsd_get_or_set
+  use dftbp_io_hsdutils, only : dftbp_error
+  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, new_table
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_dftbplus_parser_filling, only : readElectronicFilling
 #:if WITH_TRANSPORT
@@ -67,11 +67,22 @@ contains
     type(hsd_table), pointer :: value1, child
     character(len=:), allocatable :: buffer, modifier
 
-    integer :: iTmp
+    integer :: iTmp, stat
 
     ! Electronic solver
-    call getChildValue(node, "Solver", value1, "RelativelyRobust")
-    call getNodeName(value1, buffer)
+    call hsd_get_table(node, "Solver", child, stat, auto_wrap=.true.)
+    if (.not. associated(child)) then
+      block
+        type(hsd_table) :: defTbl, defChild
+        call new_table(defTbl, name="solver")
+        call new_table(defChild, name="relativelyrobust")
+        call defTbl%add_child(defChild)
+        call node%add_child(defTbl)
+      end block
+      call hsd_get_table(node, "Solver", child, stat, auto_wrap=.true.)
+    end if
+    call hsd_get_choice(child, "", buffer, value1, stat)
+    if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing choice in 'Solver'")
 
     select case(buffer)
 
@@ -154,8 +165,10 @@ contains
       call hsd_get_or_set(value1, "ProcsPerPole", ctrl%solver%elsi%pexsiNpPerPole, 1)
       call hsd_get_or_set(value1, "muPoints", ctrl%solver%elsi%pexsiNMu, 2)
       call hsd_get_or_set(value1, "SymbolicFactorProcs", ctrl%solver%elsi%pexsiNpSymbo, 1)
-      call getChildValue(value1, "SpectralRadius", ctrl%solver%elsi%pexsiDeltaE, 10.0_dp,&
-          & modifier=modifier, child=child)
+      call hsd_get_or_set(value1, "SpectralRadius", ctrl%solver%elsi%pexsiDeltaE, 10.0_dp)
+      call hsd_get_attrib(value1, "SpectralRadius", modifier, stat)
+      if (stat /= HSD_STAT_OK) modifier = ""
+      call hsd_get_table(value1, "SpectralRadius", child, stat, auto_wrap=.true.)
       call convertUnitHsd(modifier, energyUnits, child, ctrl%solver%elsi%pexsiDeltaE)
 
     case ("ntpoly")
