@@ -17,7 +17,6 @@ module dftbp_dftbplus_oldcompat
   use hsd, only : hsd_get, hsd_has_child, hsd_remove_child, hsd_get_table, HSD_STAT_OK,&
       & hsd_clear_children, hsd_table_ptr, hsd_get_child_tables, hsd_set, hsd_get_or_set,&
       & hsd_get_choice, hsd_rename_child
-  use dftbp_io_hsdutils, only : setNodeName
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_message, only : error
   implicit none
@@ -126,17 +125,13 @@ contains
     !> Root tag of the HSD-tree
     type(hsd_table), pointer :: root
 
-    type(hsd_table), pointer :: child1, child2
+    type(hsd_table), pointer :: child1
     integer :: stat
 
     call hsd_get_table(root, "Geometry", child1, stat, auto_wrap=.true.)
     if (associated(child1)) then
       if (associated(child1)) child1%processed = .false.
-      call hsd_get_table(child1, "SpeciesNames", child2, stat, auto_wrap=.true.)
-      if (associated(child2)) then
-        if (associated(child2)) child2%processed = .false.
-        call setNodeName(child2, "TypeNames", parent=child1)
-      end if
+      call hsd_rename_child(child1, "speciesnames", "typenames", stat, case_insensitive=.true.)
     end if
 
   end subroutine convert_1_2

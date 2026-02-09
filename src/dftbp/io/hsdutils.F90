@@ -11,7 +11,7 @@
 !> hsd-fortran's low-level tree API:
 !>
 !>   - dftbp_error / dftbp_warning — formatted error/warning with node context
-!>   - setNodeName — node renaming
+
 !>   - Atom/index selection helpers
 !>   - Node name and modifier extraction helpers
 !>   - Processed-flag management (setProcessed / setUnprocessed)
@@ -36,9 +36,6 @@ module dftbp_io_hsdutils
   ! --- Public: error / warning helpers ---
   public :: dftbp_error, dftbp_warning
 
-
-  ! --- Public: tree manipulation ---
-  public :: setNodeName
 
   ! --- Public: atom / index selection ---
   public :: getSelectedAtomIndices, getSelectedIndices
@@ -451,21 +448,7 @@ contains
 
 
 
-  ! ============================================================
-  !  setNodeName — rename a node directly
-  ! ============================================================
 
-  !> Rename a node.
-  subroutine setNodeName(node, name, updateHsdName, parent)
-    type(hsd_table), intent(inout), target :: node
-    character(len=*), intent(in) :: name
-    logical, intent(in), optional :: updateHsdName
-    type(hsd_table), intent(inout), optional :: parent
-
-    node%name = tolower(name)
-    if (present(parent)) call parent%invalidate_index()
-
-  end subroutine setNodeName
 
 
 
