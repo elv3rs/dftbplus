@@ -41,7 +41,7 @@ module dftbp_dftbplus_inputdata
   use dftbp_timedep_pprpa, only : TppRPAcal
   use dftbp_timedep_timeprop, only : TElecDynamicsInp
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : destruct, TListIntR1
+
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
 #:if WITH_SOCKETS
@@ -437,7 +437,7 @@ module dftbp_dftbplus_inputdata
     type(TAtomExtPotInput), allocatable :: atomicExtPotential
 
     !> Projection of eigenvectors
-    type(TListIntR1) :: iAtInRegion
+    type(TWrappedInt1), allocatable :: iAtInRegion(:)
     logical, allocatable :: tShellResInRegion(:)
     logical, allocatable :: tOrbResInRegion(:)
     character(lc), allocatable :: RegionLabel(:)
@@ -680,8 +680,8 @@ contains
     !> Instance
     type(TControl), intent(inout) :: this
 
-    if (allocated(this%tShellResInRegion)) then
-      call destruct(this%iAtInRegion)
+    if (allocated(this%iAtInRegion)) then
+      deallocate(this%iAtInRegion)
     end if
 
   end subroutine Control_destruct

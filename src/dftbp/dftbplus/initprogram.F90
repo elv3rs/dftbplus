@@ -122,8 +122,7 @@ module dftbp_dftbplus_initprogram
   use dftbp_type_densedescr, only : TDenseDescr
   use dftbp_type_eleccutoffs, only : TCutoffs
   use dftbp_type_integral, only : TIntegral, TIntegral_init
-  use dftbp_type_linkedlist, only : append, destruct, elemShape, init, intoArray, TListCharLc,&
-      & TListIntR1
+
   use dftbp_type_multipole, only : TMultipole, TMultipole_init
   use dftbp_type_orbitals, only : getShellNames
   use dftbp_type_wrappedintr, only : TWrappedInt1
@@ -747,10 +746,10 @@ module dftbp_dftbplus_initprogram
     logical :: isExtField
 
     !> Partial density of states (PDOS) projection regions
-    type(TListIntR1) :: iOrbRegion
+    type(TWrappedInt1), allocatable :: iOrbRegion(:)
 
     !> PDOS region labels
-    type(TListCharLc) :: regionLabels
+    character(lc), allocatable :: regionLabels(:)
 
     !> Third order DFTB
     logical :: t3rd = .false.
@@ -3145,13 +3144,12 @@ contains
     ! Projection of eigenstates onto specific regions of the system
     this%tProjEigenvecs = input%ctrl%tProjEigenvecs
     if (this%tProjEigenvecs) then
-      call init(this%iOrbRegion)
-      call init(this%regionLabels)
+      allocate(this%iOrbRegion(0))
+      allocate(this%regionLabels(0))
       do iReg = 1, size(input%ctrl%tShellResInRegion)
-        call elemShape(input%ctrl%iAtInRegion, valshape, iReg)
-        nAtomRegion = valshape(1)
+        nAtomRegion = size(input%ctrl%iAtInRegion(iReg)%data)
         allocate(iAtomRegion(nAtomRegion))
-        call intoArray(input%ctrl%iAtInRegion, iAtomRegion, iTmp, iReg)
+        iAtomRegion(:) = input%ctrl%iAtInRegion(iReg)%data
         if (input%ctrl%tOrbResInRegion(iReg) .or. input%ctrl%tShellResInRegion(iReg)) then
 
           if (input%ctrl%tOrbResInRegion(iReg)) then
@@ -3167,12 +3165,12 @@ contains
                 tmpir1(ind) = this%denseDesc%iAtomStart(iAtomRegion(iAt)) + iOrb - 1
                 ind = ind + 1
               end do
-              call append(this%iOrbRegion, tmpir1)
+              this%iOrbRegion = [this%iOrbRegion, TWrappedInt1(tmpir1)]
               write(tmpStr, "(A,'.',I0,'.',I0,'.out')")trim(input%ctrl%RegionLabel(iReg)),&
                   & this%orb%iShellOrb(iOrb,iSp), iOrb&
                   & - this%orb%posShell(this%orb%iShellOrb(iOrb,iSp),iSp)&
                   & - this%orb%angShell(this%orb%iShellOrb(iOrb,iSp),iSp)
-              call append(this%regionLabels, tmpStr)
+              this%regionLabels = [character(lc) :: this%regionLabels, tmpStr]
             end do
             deallocate(tmpir1)
           end if
@@ -3195,10 +3193,10 @@ contains
                   ind = ind + 1
                 end do
               end do
-              call append(this%iOrbRegion, tmpir1)
+              this%iOrbRegion = [this%iOrbRegion, TWrappedInt1(tmpir1)]
               deallocate(tmpir1)
               write(tmpStr, "(A,'.',I0,'.out')")trim(input%ctrl%RegionLabel(iReg)), iSh
-              call append(this%regionLabels, tmpStr)
+              this%regionLabels = [character(lc) :: this%regionLabels, tmpStr]
             end do
           end if
 
@@ -3218,10 +3216,10 @@ contains
               ind = ind + 1
             end do
           end do
-          call append(this%iOrbRegion, tmpir1)
+          this%iOrbRegion = [this%iOrbRegion, TWrappedInt1(tmpir1)]
           deallocate(tmpir1)
           write(tmpStr, "(A,'.out')") trim(input%ctrl%RegionLabel(iReg))
-          call append(this%regionLabels, tmpStr)
+          this%regionLabels = [character(lc) :: this%regionLabels, tmpStr]
         end if
         deallocate(iAtomRegion)
       end do
@@ -4978,8 +4976,8 @@ contains
     end if
 
     if (this%tProjEigenvecs) then
-      call destruct(this%iOrbRegion)
-      call destruct(this%regionLabels)
+      if (allocated(this%iOrbRegion)) deallocate(this%iOrbRegion)
+      if (allocated(this%regionLabels)) deallocate(this%regionLabels)
     end if
 
   end subroutine destructProgramVariables

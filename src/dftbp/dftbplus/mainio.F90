@@ -54,7 +54,7 @@ module dftbp_dftbplus_mainio
   use dftbp_solvation_solvation, only : TSolvation
   use dftbp_type_commontypes, only : TOrbitals, TParallelKS
   use dftbp_type_densedescr, only : TDenseDescr
-  use dftbp_type_linkedlist, only : elemShape, get, intoArray, len, TListCharLc, TListIntR1
+  use dftbp_type_wrappedintr, only : TWrappedInt1
   use dftbp_type_multipole, only : TMultipole
   use dftbp_type_orbitals, only : getShellNames, orbitalNames
 #:if WITH_MPI
@@ -1134,7 +1134,7 @@ contains
     type(TEnvironment), intent(in) :: env
 
     !> File name prefix for each region
-    type(TListCharLc), intent(inout) :: regionLabels
+    character(lc), intent(in) :: regionLabels(:)
 
     !> Eigenvalues
     real(dp), intent(in) :: eigen(:,:,:)
@@ -1173,7 +1173,7 @@ contains
     real(dp), intent(in) :: kWeight(:)
 
     !> Orbital regions to project
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     !> The k-points and spins to process
     type(TParallelKS), intent(in) :: parallelKS
@@ -1241,10 +1241,10 @@ contains
     type(TDenseDescr), intent(in) :: denseDesc
 
     !> List of region file names
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     !> orbital number in each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     !> Eigenvalues
     real(dp), intent(in) :: eigvals(:,:,:)
@@ -1276,7 +1276,7 @@ contains
     integer :: iKS, iS, iGroup, iEig
     type(TFileDescr), allocatable :: fd(:)
 
-    nReg = len(iOrbRegion)
+    nReg = size(iOrbRegion)
     allocate(fd(nReg))
     nOrb = denseDesc%fullSize
     allocate(globalS(size(eigvecs, dim=1), size(eigvecs, dim=2)))
@@ -1349,7 +1349,7 @@ contains
       & iPair, img2CentCell, over, parallelKS, eigvecs, work, iOrbRegion)
 
     !> List with fileNames for each region
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     !> eigenvalues
     real(dp), intent(in) :: eigvals(:,:,:)
@@ -1382,13 +1382,13 @@ contains
     real(dp), intent(out) :: work(:,:)
 
     !> orbital number in each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     integer :: iKS, iS, iEig
     real(dp), allocatable :: rVecTemp(:)
     type(TFileDescr), allocatable :: fd(:)
 
-    allocate(fd(len(iOrbRegion)))
+    allocate(fd(size(iOrbRegion)))
 
     call prepareProjEigvecFiles(fd, fileNames)
 
@@ -1427,10 +1427,10 @@ contains
     type(TDenseDescr), intent(in) :: denseDesc
 
     !> List of region file names
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     !> orbital number in each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     !> Eigenvalues
     real(dp), intent(in) :: eigvals(:,:,:)
@@ -1475,7 +1475,7 @@ contains
     integer :: iKS, iK, iS, iGroup, iEig
     type(TFileDescr), allocatable :: fd(:)
 
-    nReg = len(iOrbRegion)
+    nReg = size(iOrbRegion)
     allocate(fd(nReg))
     nOrb = denseDesc%fullSize
     allocate(globalS(size(eigvecs, dim=1), size(eigvecs, dim=2)))
@@ -1552,7 +1552,7 @@ contains
       & work, iOrbRegion)
 
     !> list of region names
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     !> eigenvalues
     real(dp), intent(in) :: eigvals(:,:,:)
@@ -1597,14 +1597,14 @@ contains
     complex(dp), intent(out) :: work(:,:)
 
     !> orbital number in each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     integer :: iKS, iS, iK, iEig, nOrb
     complex(dp), allocatable :: cVecTemp(:)
     type(TFileDescr), allocatable :: fd(:)
 
     nOrb = denseDesc%fullSize
-    allocate(fd(len(iOrbRegion)))
+    allocate(fd(size(iOrbRegion)))
 
     call prepareProjEigvecFiles(fd, fileNames)
 
@@ -1644,10 +1644,10 @@ contains
     type(TDenseDescr), intent(in) :: denseDesc
 
     !> List of region file names
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     !> orbital number in each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     !> Eigenvalues
     real(dp), intent(in) :: eigvals(:,:,:)
@@ -1696,7 +1696,7 @@ contains
     integer :: iKS, iK, iGroup, iEig
     type(TFileDescr), allocatable :: fd(:)
 
-    allocate(fd(len(iOrbRegion)))
+    allocate(fd(size(iOrbRegion)))
     nOrb = denseDesc%fullSize
     allocate(globalS(size(eigvecs, dim=1), size(eigvecs, dim=2)))
     allocate(globalSDotC(size(eigvecs, dim=1), size(eigvecs, dim=2)))
@@ -1782,7 +1782,7 @@ contains
       & work, iOrbRegion)
 
     !> list of region names
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     !> Eigenvalues
     real(dp), intent(in) :: eigvals(:,:,:)
@@ -1827,7 +1827,7 @@ contains
     complex(dp), intent(out) :: work(:,:)
 
     !> orbital number in each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     complex(dp), allocatable :: cVecTemp(:)
     real(dp), allocatable :: fracs(:,:)
@@ -1835,7 +1835,7 @@ contains
     integer :: iKS, iK, iEig
     type(TFileDescr), allocatable :: fd(:)
 
-    allocate(fd(len(iOrbRegion)))
+    allocate(fd(size(iOrbRegion)))
     nOrb = denseDesc%fullSize
 
     call prepareProjEigvecFiles(fd, fileNames)
@@ -5434,7 +5434,7 @@ contains
     type(TFileDescr), intent(in) :: fd(:)
 
     !> List of orbital for each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     !> Eigenvalue for current eigenvector
     real(dp), intent(in) :: eigval
@@ -5442,16 +5442,10 @@ contains
     !> Fraction of each orbital in the current eigenvector (c.S.c)
     real(dp), intent(in) :: fracs(:)
 
-    integer, allocatable :: iOrbs(:)
-    integer :: valShape(1)
-    integer :: iReg, dummy
+    integer :: iReg
 
     do iReg = 1, size(fd)
-      call elemShape(iOrbRegion, valshape, iReg)
-      allocate(iOrbs(valshape(1)))
-      call intoArray(iOrbRegion, iOrbs, dummy, iReg)
-      write(fd(iReg)%unit, "(f13.6,f10.6)") Hartree__eV * eigval, sum(fracs(iOrbs))
-      deallocate(iOrbs)
+      write(fd(iReg)%unit, "(f13.6,f10.6)") Hartree__eV * eigval, sum(fracs(iOrbRegion(iReg)%data))
     end do
 
   end subroutine writeProjEigvecData
@@ -5464,7 +5458,7 @@ contains
     type(TFileDescr), intent(in) :: fd(:)
 
     !> List of orbital for each region
-    type(TListIntR1), intent(inout) :: iOrbRegion
+    type(TWrappedInt1), intent(in) :: iOrbRegion(:)
 
     !> Eigenvalue for current eigenvector
     real(dp), intent(in) :: eigval
@@ -5472,16 +5466,11 @@ contains
     !> Fraction of each orbital in the eigenvector for the four Pauli components
     real(dp), intent(in) :: fracs(:,:)
 
-    integer, allocatable :: iOrbs(:)
-    integer :: valShape(1)
-    integer :: iReg, dummy
+    integer :: iReg
 
     do iReg = 1, size(fd)
-      call elemShape(iOrbRegion, valshape, iReg)
-      allocate(iOrbs(valshape(1)))
-      call intoArray(iOrbRegion, iOrbs, dummy, iReg)
-      write(fd(iReg)%unit, "(f13.6,4f10.6)") Hartree__eV * eigval, sum(fracs(:,iOrbs), dim=2)
-      deallocate(iOrbs)
+      write(fd(iReg)%unit, "(f13.6,4f10.6)") Hartree__eV * eigval,&
+          & sum(fracs(:,iOrbRegion(iReg)%data), dim=2)
     end do
 
   end subroutine writeProjPauliEigvecData
@@ -5570,14 +5559,12 @@ contains
     type(TFileDescr), intent(inout) :: fileItems(:)
 
     !> List of region file names
-    type(TListCharLc), intent(inout) :: fileNames
+    character(lc), intent(in) :: fileNames(:)
 
     integer :: iReg
-    character(lc) :: tmpStr
 
     do iReg = 1, size(fileItems)
-      call get(fileNames, tmpStr, iReg)
-      call openFile(fileItems(iReg), tmpStr, mode="w")
+      call openFile(fileItems(iReg), fileNames(iReg), mode="w")
     end do
 
   end subroutine prepareProjEigvecFiles

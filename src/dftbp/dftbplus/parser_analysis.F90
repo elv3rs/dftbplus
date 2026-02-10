@@ -6,6 +6,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_common_accuracy, only : dp, lc
   use dftbp_common_unitconversion, only : energyUnits, freqUnits, lengthUnits
   use dftbp_dftbplus_inputdata, only : TControl
+  use dftbp_type_wrappedintr, only : TWrappedInt1
   use dftbp_dftbplus_parser_kpoints, only : maxSelfConsIterations
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
@@ -19,7 +20,7 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_solvation_solvparser, only : readCM5
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : append, init
+
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_TRANSPORT
   use dftbp_dftbplus_parser_transport, only : readTunAndDos
@@ -90,7 +91,7 @@ contains
         allocate(ctrl%tShellResInRegion(nReg))
         allocate(ctrl%tOrbResInRegion(nReg))
         allocate(ctrl%RegionLabel(nReg))
-        call init(ctrl%iAtInRegion)
+        allocate(ctrl%iAtInRegion(0))
         do iReg = 1, nReg
           child2 => children(iReg)%ptr
           call hsd_get(child2, "Atoms", buffer, stat=stat)
@@ -98,7 +99,7 @@ contains
           call hsd_get_table(child2, "Atoms", child3, stat)
           if (.not. associated(child3)) child3 => child2
           call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
-          call append(ctrl%iAtInRegion, pTmpI1)
+          ctrl%iAtInRegion = [ctrl%iAtInRegion, TWrappedInt1(pTmpI1)]
           call hsd_get_or_set(child2, "ShellResolved", ctrl%tShellResInRegion(iReg), .false.,&
               & child=child3)
           if (ctrl%tShellResInRegion(iReg)) then
