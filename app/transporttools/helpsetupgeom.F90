@@ -14,13 +14,17 @@ module transporttools_helpsetupgeom
   use dftbp_math_simplealgebra, only : cross3
   use dftbp_math_sorting, only : index_heap_sort
   use dftbp_transport_negfvars, only : contactInfo
-  use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListInt, TListIntR1
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
   implicit none
 
   private
   public :: setupGeometry
+
+  !> Single variable-length integer array element (replaces TListIntR1)
+  type :: TIntArray
+    integer, allocatable :: data(:)
+  end type
 
 contains
 
@@ -46,7 +50,7 @@ contains
     logical, intent(in) :: printDebug
 
 
-    type(TListIntR1) :: PLlist
+    type(TIntArray), allocatable :: PLlist(:)
     integer, allocatable :: contdir(:)
     integer :: icont, ncont
     real(dp), allocatable :: contVec(:,:)
@@ -336,19 +340,19 @@ contains
     type(TWrappedInt1), intent(inout) :: iAtInRegion(:)
     real(dp), intent(in) :: plCutoff
     real(dp), intent(in) :: contVec(:,:)
-    type(TListIntR1), intent(out) :: PLlist
+    type(TIntArray), allocatable, intent(out) :: PLlist(:)
 
     integer :: ii, jj, kk, sizeL,  sizeD, ncont
     integer :: icx, icy, icz, nc(3)
     logical, allocatable :: mask(:)
-    type(TListInt) :: atomsInPL
+    integer, allocatable :: atomsInPL(:)
     integer, allocatable :: buffer(:)
     real(dp) :: vec(3)
     logical :: addAllR
 
     ! March from contact 1 in the device. Put atoms within cutoff
     ! in a list then restart from that list to the next
-    call init(PLlist)
+    allocate(PLlist(0))
     buffer = iAtInRegion(1)%data
     sizeL = size(buffer)
     ncont = size(iAtInRegion)-1
@@ -373,7 +377,7 @@ contains
 
     ! Loop until there are atoms to process
     do while (count(mask)>0)
-      call init(atomsInPL)
+      allocate(atomsInPL(0))
       ! Loop on atoms of current PL
       lpL: do ii = 1, sizeL
         ! Loop on all other atoms including periodic copies
@@ -386,7 +390,7 @@ contains
                   vec(:) = vec(:)+icx*geom%latVecs(:,1)+icy*geom%latVecs(:,2)+icz*geom%latVecs(:,3)
                 end if
                 if (norm2(vec)<plcutoff .and. mask(jj)) then
-                  call append(atomsInPL, dataD(jj))
+                  atomsInPL = [atomsInPL, dataD(jj)]
                   mask(jj) = .false.
                   ! check distance from contact 2. If d < cutoff all remaining atoms
                   ! will go in the last PL
@@ -407,17 +411,15 @@ contains
       if (addAllR) then
         do jj = 1, sizeD
           if (mask(jj)) then
-            call append(atomsInPL, dataD(jj))
+            atomsInPL = [atomsInPL, dataD(jj)]
             mask(jj) = .false.
           end if
         end do
       end if
       ! A. transform list to array and add the array to PLlist
-      deallocate(buffer)
-      allocate(buffer(len(atomsInPL)))
-      call asArray(atomsInPL, buffer)
-      call destruct(atomsInPL)
-      call append(PLlist, buffer)
+      buffer = atomsInPL
+      deallocate(atomsInPL)
+      PLlist = [PLlist, TIntArray(buffer)]
       sizeL = size(buffer)
       if (sizeL==0) then
         call error("Found layer of 0 size")
@@ -516,7 +518,7 @@ contains
     type(TGeometry), intent(in) :: geom
     type(contactInfo), intent(in) :: contacts(:)
     type(TWrappedInt1), intent(in) :: iAtInRegion(:)
-    type(TListIntR1), intent(inout) :: PLlist
+    type(TIntArray), intent(in) :: PLlist(:)
     real(dp), intent(in) :: plCutoff
 
 
@@ -534,12 +536,10 @@ contains
     write(fd2%unit,'(2x,A)') 'Device{'
     write(fd2%unit,'(4x,A)', advance='no') 'FirstLayerAtoms={ '
     kk = 0
-    do jj = 1, len(PLlist)
+    do jj = 1, size(PLlist)
       write(sindx,'(I10)') kk+1
       write(fd2%unit,'(A)', advance='no') ' '//trim(adjustl(sindx))
-      call get(PLlist, atomsInPL, jj)
-      kk = kk + size(atomsInPL)
-      deallocate(atomsInPL)
+      kk = kk + size(PLlist(jj)%data)
     end do
     write(fd2%unit,*) '}' !close FirstLayerAtoms
     write(sindx,'(I10)') kk
@@ -584,9 +584,9 @@ contains
 
     ! Write Device Atoms
     write(fd1%unit,"(4X,A)") '# device atoms'
-    do jj = 1, len(PLlist)
+    do jj = 1, size(PLlist)
       kk = 0
-      call get(PLlist, atomsInPL, jj)
+      atomsInPL = PLlist(jj)%data
       do ii = 1, size(atomsInPL)
         kk = kk + 1
         write(fd1%unit,102) kk, geom%species(atomsInPL(ii)), geom%coords(:,atomsInPL(ii))*Bohr__AA

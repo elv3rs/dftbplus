@@ -22,12 +22,17 @@ program skderivs
       & hsd_get_table, HSD_STAT_OK
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_error_t, hsd_table, new_table
   use dftbp_io_message, only : error, warning
-  use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListIntR1
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
 #:if WITH_MPI
   use dftbp_common_mpienv
 #:endif
   implicit none
+
+
+  !> Single variable-length integer array element (replaces TListIntR1)
+  type :: TIntArray
+    integer, allocatable :: data(:)
+  end type
 
 
   !> Contains the data necessary for the main program
@@ -172,7 +177,7 @@ contains
     logical :: useOldInter
     character(len=:), allocatable :: buffer
     integer :: angShellOrdered(size(shellNames))
-    type(TListIntR1) :: angShells(2)
+    type(TIntArray), allocatable :: angShells1(:), angShells2(:)
     real(dp), allocatable :: skHam(:,:), skOver(:,:)
     integer :: skInterMeth, nInt, nSpecies
     integer :: ii, jj
@@ -212,13 +217,13 @@ contains
     call hsd_get_table(root, "MaxAngularMomentum1", child, stat)
     if (.not. associated(child)) child => root
     strTmp = unquote(buffer)
-    call init(angShells(1))
+    allocate(angShells1(0))
     do jj = 1, size(shellNames)
       if (trim(strTmp) == trim(shellNames(jj))) then
-        call append(angShells(1), angShellOrdered(:jj))
+        angShells1 = [angShells1, TIntArray(angShellOrdered(:jj))]
       end if
     end do
-    if (len(angShells(1)) < 1) then
+    if (size(angShells1) < 1) then
       call dftbp_error(child, "Invalid orbital name '" // &
           &trim(strTmp) // "'")
     end if
@@ -234,13 +239,13 @@ contains
       call hsd_get_table(root, "MaxAngularMomentum2", child, stat)
       if (.not. associated(child)) child => root
       strTmp = unquote(buffer)
-      call init(angShells(2))
+      allocate(angShells2(0))
       do jj = 1, size(shellNames)
         if (trim(strTmp) == trim(shellNames(jj))) then
-          call append(angShells(2), angShellOrdered(:jj))
+          angShells2 = [angShells2, TIntArray(angShellOrdered(:jj))]
         end if
       end do
-      if (len(angShells(2)) < 1) then
+      if (size(angShells2) < 1) then
         call dftbp_error(child, "Invalid orbital name '" // &
             &trim(strTmp) // "'")
       end if
@@ -255,15 +260,19 @@ contains
     end if
 
     !! Create Slako tables
-    nInt = getNSKIntegrals(angShells(1), angShells(nSpecies))
+    if (nSpecies == 2) then
+      nInt = getNSKIntegrals(angShells1, angShells2)
+    else
+      nInt = getNSKIntegrals(angShells1, angShells1)
+    end if
     allocate(skHam(size(skData12(1,1)%skHam, dim=1), nInt))
     allocate(skOver(size(skData12(1,1)%skOver, dim=1), nInt))
     if (nSpecies == 1) then
-      call getFullTable(skHam, skOver, skData12, skData12, angShells(1), &
-          &angShells(1))
+      call getFullTable(skHam, skOver, skData12, skData12, angShells1, &
+          &angShells1)
     else
-      call getFullTable(skHam, skOver, skData21, skData21, angShells(1), &
-          &angShells(2))
+      call getFullTable(skHam, skOver, skData21, skData21, angShells1, &
+          &angShells2)
     end if
     allocate(inp%skHam)
     allocate(inp%skOver)
@@ -344,10 +353,10 @@ contains
     type(TOldSKData), intent(in), target :: skData21(:,:)
 
     !> Angular momenta to pick from the SK-files for species A
-    type(TListIntR1), intent(inout) :: angShells1
+    type(TIntArray), intent(in) :: angShells1(:)
 
     !> Angular momenta to pick from the SK-files for species B
-    type(TListIntR1), intent(inout) :: angShells2
+    type(TIntArray), intent(in) :: angShells2(:)
 
     integer :: ind, iSK1, iSK2, iSh1, iSh2, nSh1, nSh2, l1, l2, lMin, lMax, mm
     integer :: angShell1(maxL+1), angShell2(maxL+1)
@@ -364,12 +373,14 @@ contains
         &(/maxL + 1, maxL + 1, maxL + 1/))
 
     ind = 1
-    do iSK1 = 1, len(angShells1)
-      call intoArray(angShells1, angShell1, nSh1, iSK1)
+    do iSK1 = 1, size(angShells1)
+      nSh1 = size(angShells1(iSK1)%data)
+      angShell1(1:nSh1) = angShells1(iSK1)%data
       do iSh1 = 1, nSh1
         l1 = angShell1(iSh1)
-        do iSK2 = 1, len(angShells2)
-          call intoArray(angShells2, angShell2, nSh2, iSK2)
+        do iSK2 = 1, size(angShells2)
+          nSh2 = size(angShells2(iSK2)%data)
+          angShell2(1:nSh2) = angShells2(iSK2)%data
           do iSh2 = 1, nSh2
             l2 = angShell2(iSh2)
             if (l1 <= l2) then
@@ -405,10 +416,10 @@ contains
   function getNSKIntegrals(angShells1, angShells2) result(nInt)
 
     !> list of shells for species B
-    type(TListIntR1), intent(inout) :: angShells2
+    type(TIntArray), intent(in) :: angShells2(:)
 
     !> list of shells for species A
-    type(TListIntR1), intent(inout) :: angShells1
+    type(TIntArray), intent(in) :: angShells1(:)
 
     !> count of integrals
     integer :: nInt
@@ -416,8 +427,10 @@ contains
     integer :: iSh1, iSh2, nSh1, nSh2, ang1, ang2
     integer :: angs1(maxL+1), angs2(maxL+1)
 
-    call intoArray(angShells1, angs1, nSh1, 1)
-    call intoArray(angShells2, angs2, nSh2, 1)
+    nSh1 = size(angShells1(1)%data)
+    angs1(1:nSh1) = angShells1(1)%data
+    nSh2 = size(angShells2(1)%data)
+    angs2(1:nSh2) = angShells2(1)%data
     nInt = 0
     do iSh1 = 1, nSh1
       ang1 = angs1(iSh1)

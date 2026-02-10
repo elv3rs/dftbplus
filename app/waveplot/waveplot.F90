@@ -20,13 +20,17 @@ program waveplot
   use dftbp_io_charmanip, only : i2c
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : invert33
-  use dftbp_type_linkedlist, only : append, asArray, init, len, TListInt, TListRealR1
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_MPI
   use dftbp_extlibs_mpifx, only : MPI_LOR, MPI_SUM, mpifx_allreduceip, mpifx_bcast
 #:endif
 
   implicit none
+
+  !> Single variable-length real array element (replaces TListRealR1)
+  type :: TRealArray
+    real(dp), allocatable :: data(:)
+  end type
 
   !> Container of program variables
   type(TProgramVariables), target :: wp
@@ -59,10 +63,10 @@ program waveplot
   integer :: levelIndex(3)
 
   !> Onedimensional real-valued list of coordinate arrays
-  type(TListRealR1) :: coordList
+  type(TRealArray), allocatable :: coordList(:)
 
   !> Onedimensional integer-valued list of atomic species indices
-  type(TListInt) :: speciesList
+  integer, allocatable :: speciesList(:)
 
   !> Auxiliary variables
   integer :: i1, i2, i3, ioStat
@@ -217,25 +221,27 @@ program waveplot
     end do
     call getCellTranslations(cellVec, rCellVec, wp%input%geo%latVecs, recVecs2p, mDist)
     ! Check all atoms in the shifted cells, if they fall in the plotted region
-    call init(coordList)
-    call init(speciesList)
+    allocate(coordList(0))
+    allocate(speciesList(0))
     do iCell = 1, size(rCellVec, dim=2)
       do iAtom = 1, wp%input%geo%nAtom
         coord(:) = wp%input%geo%coords(:,iAtom) + rCellVec(:,iCell)
         frac(:) = matmul(invBoxVecs, coord - wp%opt%origin)
         if (all(frac > -1e-04_dp) .and. all(frac < 1.0_dp + 1e-04_dp)) then
-          call append(coordList, coord)
-          call append(speciesList, wp%input%geo%species(iAtom))
+          coordList = [coordList, TRealArray(coord)]
+          speciesList = [speciesList, wp%input%geo%species(iAtom)]
         end if
       end do
     end do
     deallocate(wp%input%geo%coords)
     deallocate(wp%input%geo%species)
-    wp%input%geo%nAtom = len(coordList)
+    wp%input%geo%nAtom = size(coordList)
     allocate(wp%input%geo%coords(3, wp%input%geo%nAtom))
     allocate(wp%input%geo%species(wp%input%geo%nAtom))
-    call asArray(coordList, wp%input%geo%coords)
-    call asArray(speciesList, wp%input%geo%species)
+    do iAtom = 1, wp%input%geo%nAtom
+      wp%input%geo%coords(:, iAtom) = coordList(iAtom)%data
+    end do
+    wp%input%geo%species(:) = speciesList
     deallocate(cellVec)
     deallocate(rCellVec)
   end if

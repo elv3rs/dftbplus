@@ -34,13 +34,18 @@ module waveplot_initwaveplot
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
-  use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListIntR1
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHSD, readTGeometryVasp,&
       & readTGeometryXyz, TGeometry, writeTGeometryHSD
   implicit none
 
   private
   public :: TProgramVariables, TProgramVariables_init
+
+
+  !> Single variable-length integer array element (replaces TListIntR1)
+  type :: TIntArray
+    integer, allocatable :: data(:)
+  end type
 
 
   !> Data type containing variables from detailed.xml.
@@ -606,7 +611,7 @@ contains
     character(len=:), allocatable :: buffer, modifier
 
     !! Onedimensional integer-valued index list
-    type(TListIntR1) :: indexBuffer
+    type(TIntArray), allocatable :: indexBuffer(:)
 
     !! Id of calculation at hand
     integer :: curId
@@ -679,7 +684,7 @@ contains
     call getSelectedIndices(node, buffer, [1, nSpin], this%opt%plottedSpins)
 
     ! Create the list of the levels, which must be calculated explicitely
-    call init(indexBuffer)
+    allocate(indexBuffer(0))
     do iSpin = 1, nSpin
       do iKPoint = 1, nKPoint
         do iLevel = 1, nLevel
@@ -690,19 +695,21 @@ contains
             tFound = this%input%occupations(iLevel, iKPoint, iSpin) > 1e-08_dp
           end if
           if (tFound) then
-            call append(indexBuffer, [iLevel, iKPoint, iSpin])
+            indexBuffer = [indexBuffer, TIntArray([iLevel, iKPoint, iSpin])]
           end if
         end do
       end do
     end do
 
-    if (len(indexBuffer) == 0) then
+    if (size(indexBuffer) == 0) then
       call error("No levels specified for plotting")
     end if
 
-    allocate(this%loc%levelIndex(3, len(indexBuffer)))
-    call asArray(indexBuffer, this%loc%levelIndex)
-    call destruct(indexBuffer)
+    allocate(this%loc%levelIndex(3, size(indexBuffer)))
+    do ii = 1, size(indexBuffer)
+      this%loc%levelIndex(:, ii) = indexBuffer(ii)%data
+    end do
+    deallocate(indexBuffer)
 
     call hsd_get_or_set(node, "NrOfCachedGrids", nCached, 1)
     call hsd_get_table(node, "NrOfCachedGrids", field)
