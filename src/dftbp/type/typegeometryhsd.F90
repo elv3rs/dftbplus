@@ -21,12 +21,20 @@ module dftbp_type_typegeometryhsd
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
   use dftbp_math_simplealgebra, only : determinant33, invert33
-  use dftbp_type_linkedlist, only : append, asArray, destruct, find, init, len, TListIntR1,&
-      & TListRealR1, TListString
   use dftbp_type_typegeometry, only : normalize, reduce, setlattice, TGeometry
   implicit none
 
   private
+
+  !> Single variable-length real array element (replaces TListRealR1)
+  type :: TRealArray
+    real(dp), allocatable :: data(:)
+  end type
+
+  !> Single variable-length integer array element (replaces TListIntR1)
+  type :: TIntArray
+    integer, allocatable :: data(:)
+  end type
   !> Types/subroutines from TypeGeometry
   public :: TGeometry, normalize
   !> Locally defined subroutines
@@ -90,20 +98,20 @@ contains
 
     character(len=:), allocatable :: modifier
     character(len=mc) :: modifs(2)
-    type(TListString) :: stringBuffer
-    type(TListRealR1) :: realBuffer
-    type(TListIntR1) :: intBuffer
+    character(mc), allocatable :: stringBuffer(:)
+    type(TRealArray), allocatable :: realBuffer(:)
+    type(TIntArray), allocatable :: intBuffer(:)
     type(hsd_table), pointer :: child, typesAndCoords
     integer, allocatable :: tmpInt(:,:)
     real(dp) :: latvec(9), det, helVec(3)
-    integer :: stat
+    integer :: stat, ii
 
     call hsd_get_or_set(node, "Periodic", geo%tPeriodic, .false.)
     call hsd_get_or_set(node, "Helical", geo%tHelical, .false.)
     if (geo%tPeriodic .and. geo%tHelical) then
       call error("Periodic and helical boundary conditions mutually exclusive.")
     end if
-    call init(stringBuffer)
+    allocate(stringBuffer(0))
     block
       character(len=:), allocatable :: txt, tok
       integer :: iSt, iEr
@@ -114,22 +122,22 @@ contains
       iSt = 1
       call getNextToken(txt, tok, iSt, iEr)
       do while (iEr == TOKEN_OK)
-        call append(stringBuffer, trim(unquote(tok)))
+        stringBuffer = [character(mc) :: stringBuffer, trim(unquote(tok))]
         call getNextToken(txt, tok, iSt, iEr)
       end do
       if (iEr == TOKEN_ERROR) then
         call dftbp_error(nameChild, "Invalid string value in 'TypeNames'")
       end if
     end block
-    geo%nSpecies = len(stringBuffer)
+    geo%nSpecies = size(stringBuffer)
     if (geo%nSpecies == 0) then
       call dftbp_error(node, "Missing species names.")
     end if
     allocate(geo%speciesNames(geo%nSpecies))
-    call asArray(stringBuffer, geo%speciesNames)
-    call destruct(stringBuffer)
-    call init(intBuffer)
-    call init(realBuffer)
+    geo%speciesNames(:) = stringBuffer
+    deallocate(stringBuffer)
+    allocate(intBuffer(0))
+    allocate(realBuffer(0))
     block
       character(len=:), allocatable :: txt
       integer, allocatable :: bufI(:)
@@ -154,7 +162,7 @@ contains
           call dftbp_error(typesAndCoords, "Unexpected end of data in 'TypesAndCoordinates'")
         end if
         if (iEr == TOKEN_OK) then
-          call append(intBuffer, bufI)
+          intBuffer = [intBuffer, TIntArray(bufI)]
           call getNextToken(txt, bufR, iSt, iEr, nIt)
           if (iEr == TOKEN_ERROR) then
             call dftbp_error(typesAndCoords, "Invalid real value in 'TypesAndCoordinates'")
@@ -163,23 +171,25 @@ contains
             call dftbp_error(typesAndCoords, "Unexpected end of data in 'TypesAndCoordinates'")
           end if
           if (iEr == TOKEN_OK) then
-            call append(realBuffer, bufR)
+            realBuffer = [realBuffer, TRealArray(bufR)]
           end if
         end if
       end do
-      if (len(intBuffer) /= len(realBuffer)) then
+      if (size(intBuffer) /= size(realBuffer)) then
         call dftbp_error(typesAndCoords, "Unexpected end of data in 'TypesAndCoordinates'")
       end if
     end block
-    geo%nAtom = len(intBuffer)
+    geo%nAtom = size(intBuffer)
     if (geo%nAtom == 0) then
       call dftbp_error(typesAndCoords, "Missing coordinates")
     end if
     allocate(geo%species(geo%nAtom))
     allocate(geo%coords(3, geo%nAtom))
     allocate(tmpInt(1, geo%nAtom))
-    call asArray(intBuffer, tmpInt)
-    call destruct(intBuffer)
+    do ii = 1, geo%nAtom
+      tmpInt(:, ii) = intBuffer(ii)%data
+    end do
+    deallocate(intBuffer)
     geo%species(:) = tmpInt(1,:)
     deallocate(tmpInt)
     !! Check validity of species
@@ -187,8 +197,10 @@ contains
       call dftbp_error(typesAndCoords, "Type index must be between 1 and " &
           &// i2c(geo%nSpecies) // ".")
     end if
-    call asArray(realBuffer, geo%coords)
-    call destruct(realBuffer)
+    do ii = 1, geo%nAtom
+      geo%coords(:, ii) = realBuffer(ii)%data
+    end do
+    deallocate(realBuffer)
     geo%tFracCoord = .false.
     if (len(modifier) > 0) then
       select case(tolower(modifier))
@@ -310,7 +322,7 @@ contains
     integer :: iStart, iErr, iEnd
     integer :: ii, iTmp, iSp
     real(dp) :: coords(3)
-    type(TListString) :: speciesNames
+    character(mc), allocatable :: speciesNames(:)
     character(lc) :: errorStr
 
     ! Read first line of the gen file: Number of atoms, boundary conditions
@@ -347,26 +359,26 @@ contains
 
     ! Reading the 2nd line of a gen file.
     iEnd = nextLine(text, iStart)
-    call init(speciesNames)
+    allocate(speciesNames(0))
     iErr = TOKEN_OK
     iSp = 0
     do while (iErr == TOKEN_OK)
       call getNextToken(text(:iEnd), txt, iStart, iErr)
       if (iErr == TOKEN_OK) then
-        if (find(speciesNames, txt) > 0) then
+        if (findStringInArray(speciesNames, txt) > 0) then
           call dftbp_error(node, "Species name '"//txt//"' is not unique, check species'//&
               &//' names in second line")
         end if
-        call append(speciesNames, txt)
+        speciesNames = [character(mc) :: speciesNames, txt]
       end if
     end do
-    geo%nSpecies = len(speciesNames)
+    geo%nSpecies = size(speciesNames)
     if (geo%nSpecies == 0) then
       call dftbp_error(node, "No species are given in second line of geometry.")
     end if
     allocate(geo%speciesNames(geo%nSpecies))
-    call asArray(speciesNames, geo%speciesNames)
-    call destruct(speciesNames)
+    geo%speciesNames(:) = speciesNames
+    deallocate(speciesNames)
     iStart = iEnd + 1
 
     ! Read in sequential and species indices.
@@ -490,7 +502,7 @@ contains
     integer :: iStart, iOldStart, iErr, iEnd
     integer :: ii, iSp
     real(dp) :: coords(3)
-    type(TListString) :: speciesNames
+    character(mc), allocatable :: speciesNames(:)
     character(lc) :: errorStr
 
     ! Read first line of the xyz file: Number of atoms
@@ -523,7 +535,7 @@ contains
     end if
 
     ! Read in sequential and species indices.
-    call init(speciesNames)
+    allocate(speciesNames(0))
     allocate(geo%species(geo%nAtom))
     allocate(geo%coords(3, geo%nAtom))
     iSp = 0
@@ -532,10 +544,10 @@ contains
       call getNextToken(text(:iEnd), txt, iStart, iErr)
       write(errorStr,"(A,1X,I0)")"Bad species name for atom", ii
       call checkError(node, iErr, trim(errorStr))
-      iSp = find(speciesNames, txt)
+      iSp = findStringInArray(speciesNames, txt)
       if (iSp == 0) then
-        call append(speciesNames, txt)
-        iSp = len(speciesNames)
+        speciesNames = [character(mc) :: speciesNames, txt]
+        iSp = size(speciesNames)
       end if
       geo%species(ii) = iSp
       call getNextToken(text(:iEnd), coords, iStart, iErr)
@@ -545,10 +557,10 @@ contains
       iStart = iEnd + 1
     end do
 
-    geo%nSpecies = len(speciesNames)
+    geo%nSpecies = size(speciesNames)
     allocate(geo%speciesNames(geo%nSpecies))
-    call asArray(speciesNames, geo%speciesNames)
-    call destruct(speciesNames)
+    geo%speciesNames(:) = speciesNames
+    deallocate(speciesNames)
 
     if (geo%nSpecies /= maxval(geo%species) .or. minval(geo%species) /= 1) then
       call dftbp_error(node, "Nr. of species and nr. of specified elements do not match.")
@@ -608,7 +620,7 @@ contains
     real(dp) :: coords(3), latVec(3), rScale
     integer, allocatable :: vaspSp(:)
     integer, allocatable :: countSp(:)
-    type(TListString) :: speciesNames
+    character(mc), allocatable :: speciesNames(:)
     logical :: hasComment
     character(lc) :: errorStr
 
@@ -630,12 +642,12 @@ contains
 
     if (hasComment) then
       iStart = 1
-      call init(speciesNames)
+      allocate(speciesNames(0))
       iErr = TOKEN_OK
       do while(iErr == TOKEN_OK)
         call getNextToken(text(:iEnd), txt, iStart, iErr)
         if (iErr == TOKEN_OK) then
-          call append(speciesNames, txt)
+          speciesNames = [character(mc) :: speciesNames, txt]
         end if
       end do
       iStart = iEnd + 1
@@ -670,14 +682,14 @@ contains
     ! Seems to be element symbols, so we prefer them over the ones from the comment line
     if (iErr /= TOKEN_OK) then
       if (hasComment) then
-        call destruct(speciesNames)
+        deallocate(speciesNames)
       end if
-      call init(speciesNames)
+      allocate(speciesNames(0))
       iErr = TOKEN_OK
       do while(iErr == TOKEN_OK)
         call getNextToken(text(:iEnd), txt, iStart, iErr)
         if (iErr == TOKEN_OK) then
-          call append(speciesNames, txt)
+          speciesNames = [character(mc) :: speciesNames, txt]
         end if
       end do
       iStart = iEnd + 1
@@ -685,30 +697,30 @@ contains
     end if
 
     ! Now we have to deal with repeating the same species in unsorted POSCARs
-    allocate(vaspNames(len(speciesNames)))
-    allocate(vaspSp(len(speciesNames)))
+    allocate(vaspNames(size(speciesNames)))
+    allocate(vaspSp(size(speciesNames)))
     ! convert to array of strings, otherwise we have no reliable way to access the elements
-    call asArray(speciesNames, vaspNames)
+    vaspNames(:) = speciesNames
     ! reset speciesNames to be populated with the unique species present
-    call destruct(speciesNames)
-    call init(speciesNames)
+    deallocate(speciesNames)
+    allocate(speciesNames(0))
     iSp = 0
     do ii = 1, size(vaspNames, dim=1)
-      iSp = find(speciesNames, trim(vaspNames(ii)))
+      iSp = findStringInArray(speciesNames, trim(vaspNames(ii)))
       if (iSp == 0) then
-        call append(speciesNames, trim(vaspNames(ii)))
-        iSp = len(speciesNames)
+        speciesNames = [character(mc) :: speciesNames, trim(vaspNames(ii))]
+        iSp = size(speciesNames)
       end if
       vaspSp(ii) = iSp
     end do
 
-    geo%nSpecies = len(speciesNames)
+    geo%nSpecies = size(speciesNames)
     if (geo%nSpecies == 0) then
       call dftbp_error(node, "Number of species in the VASP geometry equals zero.")
     end if
     allocate(geo%speciesNames(geo%nSpecies))
-    call asArray(speciesNames, geo%speciesNames)
-    call destruct(speciesNames)
+    geo%speciesNames(:) = speciesNames
+    deallocate(speciesNames)
     allocate(countSp(size(vaspSp, dim=1)))
     do iSp = 1, size(vaspSp, dim=1)
       call getNextToken(text(:iEnd), countSp(iSp), iStart, iErr)
@@ -1148,6 +1160,31 @@ contains
     end if
 
   end subroutine jumpToEndOfLine
+
+
+  !> Find a string in a character array, returning its 1-based index or 0 if not found.
+  pure function findStringInArray(arr, str) result(idx)
+
+    !> Array of strings to search
+    character(*), intent(in) :: arr(:)
+
+    !> String to search for
+    character(*), intent(in) :: str
+
+    !> Index of the string (0 if not found)
+    integer :: idx
+
+    integer :: ii
+
+    idx = 0
+    do ii = 1, size(arr)
+      if (trim(arr(ii)) == trim(str)) then
+        idx = ii
+        return
+      end if
+    end do
+
+  end function findStringInArray
 
 
 end module dftbp_type_typegeometryhsd
