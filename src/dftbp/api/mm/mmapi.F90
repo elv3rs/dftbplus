@@ -10,7 +10,7 @@
 !> Provides DFTB+ API for MM-type high level access
 module dftbp_mmapi
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbp_common_accuracy, only : dp
+  use dftbp_common_accuracy, only : dp, mc
   use dftbp_common_environment, only : TEnvironment, TEnvironment_init
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
   use dftbp_common_globalenv, only : destructGlobalEnv, initGlobalEnv, instanceSafeBuild, withMpi
@@ -31,7 +31,6 @@ module dftbp_mmapi
   use dftbp_io_message, only : error
   use hsd, only : hsd_get_table
   use hsd_data, only : hsd_table, new_table
-  use dftbp_type_linkedlist, only : append, asArray, get, init, len, TListString
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
   private
@@ -48,8 +47,8 @@ module dftbp_mmapi
   type :: TDftbPlusAtomList
     !> Number of atoms
     integer :: nAtom
-    !> Linked list of chemical symbols of elements (species names), size=nSpecies
-    type(TListString) :: speciesNames
+    !> Chemical symbols of elements (species names), size=nSpecies
+    character(mc), allocatable :: speciesNames(:)
     !> Array of species for each atom, size=nAtom
     integer, allocatable :: species(:)
   contains
@@ -276,22 +275,14 @@ contains
     !> Number of atoms
     integer, intent(in) :: nAtom
 
-    !> Linked list of chemical symbols of elements (species names), size=nSpecies
-    type(TListString), intent(inout) :: speciesNames
+    !> Chemical symbols of elements (species names), size=nSpecies
+    character(mc), intent(in) :: speciesNames(:)
 
     !> Array of species for each atom, size=nAtom
     integer, intent(in) :: species(:)
 
-    integer :: i
-    character(3) :: s
-
     instance%nAtom = nAtom
-
-    call init(instance%speciesNames)
-    do i=1,len(speciesNames)
-      call get(speciesNames, s, i)
-      call append(instance%speciesNames, s)
-    end do
+    instance%speciesNames = speciesNames
 
     allocate(instance%species(nAtom))
     instance%species(1:nAtom) = species(1:nAtom)
@@ -318,9 +309,8 @@ contains
     geo%tFracCoord = .false.
     geo%tHelical = .false.
 
-    geo%nSpecies = len(instance%speciesNames)
-    allocate(geo%speciesNames(geo%nSpecies))
-    call asArray(instance%speciesNames, geo%speciesNames)
+    geo%nSpecies = size(instance%speciesNames)
+    geo%speciesNames = instance%speciesNames
 
     ! Read in sequential and species indices.
     allocate(geo%species(geo%nAtom))
