@@ -28,7 +28,6 @@ module dftbp_io_hsdutils
   use dftbp_io_charmanip, only : i2c, tolower
   use dftbp_io_indexselection, only : getIndexSelection
   use dftbp_io_message, only : error, warning
-  use dftbp_io_tokenreader, only : TOKEN_EOS, TOKEN_ERROR
   implicit none
 
   private
@@ -48,7 +47,7 @@ module dftbp_io_hsdutils
   public :: setProcessed
 
   ! --- Public: misc ---
-  public :: checkError, hasInlineData, getFirstTextChild
+  public :: hasInlineData, getFirstTextChild
 
   ! ============================================================
   !  Constants
@@ -228,23 +227,6 @@ contains
   end subroutine getSelectedIndices
 
 
-  ! ============================================================
-  !  checkError — tokenizer error bridge
-  ! ============================================================
-
-  !> Check tokenization error flag and report detailed error if needed.
-  subroutine checkError(node, iErr, msg)
-    type(hsd_table), intent(in) :: node
-    integer, intent(in) :: iErr
-    character(len=*), intent(in) :: msg
-
-    if (iErr == TOKEN_ERROR) then
-      call dftbp_error(node, msg)
-    else if (iErr == TOKEN_EOS) then
-      call dftbp_error(node, "Unexpected end of data")
-    end if
-
-  end subroutine checkError
 
 
   ! ============================================================

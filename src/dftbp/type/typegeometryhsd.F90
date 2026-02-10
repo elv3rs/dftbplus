@@ -15,7 +15,7 @@ module dftbp_type_typegeometryhsd
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd_data, only : hsd_table
   use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_set, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, checkError, splitModifier,&
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, splitModifier,&
       & getNodeName, getFirstTextChild
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
@@ -41,6 +41,21 @@ module dftbp_type_typegeometryhsd
   end interface
 
 contains
+
+
+  !> Check tokenization error flag and report detailed error if needed.
+  subroutine checkError(node, iErr, msg)
+    type(hsd_table), intent(in) :: node
+    integer, intent(in) :: iErr
+    character(len=*), intent(in) :: msg
+
+    if (iErr == TOKEN_ERROR) then
+      call dftbp_error(node, msg)
+    else if (iErr == TOKEN_EOS) then
+      call dftbp_error(node, "Unexpected end of data")
+    end if
+
+  end subroutine checkError
 
 
   !> Write the geometry in HSD format to a specified node
