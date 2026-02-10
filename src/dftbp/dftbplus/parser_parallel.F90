@@ -13,7 +13,9 @@ module dftbp_dftbplus_parser_parallel
   use hsd_data, only : hsd_table, new_table
   use dftbp_common_globalenv, only : withMpi, withScalapack
   use dftbp_dftbplus_inputdata, only : TBlacsOpts, TInputData
-  use hsd, only : hsd_get_or_set, hsd_get_table
+  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_schema_t, hsd_error_t, schema_init, &
+      & schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE
   use dftbp_io_hsdutils, only : dftbp_warning
   implicit none
 
@@ -53,6 +55,25 @@ contains
       call hsd_get_or_set(node, "Groups", input%ctrl%parallelOpts%nGroup, 1, child=pTmp)
       call hsd_get_or_set(node, "UseOmpThreads", input%ctrl%parallelOpts%tOmpThreads, .not. withMpi)
       call readBlacs(node, input%ctrl%parallelOpts%blacsOpts)
+
+      ! -- Schema validation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="Parallel")
+        call schema_add_field(schema, "Groups", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_add_field(schema, "UseOmpThreads", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "Blacs", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, node, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
     end if
 
   end subroutine readParallel
@@ -85,6 +106,23 @@ contains
             & support)")
       end if
       call hsd_get_or_set(node, "BlockSize", blacsOpts%blockSize, 32)
+
+      ! -- Schema validation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="Blacs")
+        call schema_add_field(schema, "BlockSize", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_validate(schema, node, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
     end if
 
   end subroutine readBlacs

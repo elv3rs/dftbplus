@@ -21,7 +21,8 @@ module dftbp_solvation_solvparser
   use dftbp_extlibs_lebedev, only : gridSize
   use dftbp_io_charmanip, only : tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice,&
-      & HSD_STAT_OK
+      & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
+      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_TABLE
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table, new_table
@@ -557,6 +558,25 @@ contains
     call hsd_get_table(node, "Cutoff", field, stat, auto_wrap=.true.)
     if (allocated(field%attrib)) then; modifier = field%attrib; else; modifier = ""; end if
     call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="CM5")
+      call schema_add_field(schema, "Alpha", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Radii", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Cutoff", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readCM5
 

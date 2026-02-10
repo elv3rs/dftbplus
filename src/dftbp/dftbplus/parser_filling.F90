@@ -18,7 +18,9 @@ module dftbp_dftbplus_parser_filling
   use dftbp_dftb_etemp, only : fillingTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
-      & HSD_STAT_OK
+      & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
+      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName2
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
@@ -124,6 +126,26 @@ contains
     if (geo%tPeriodic .and. .not.ctrl%tFixEf) then
       call hsd_get_or_set(value1, "IndependentKFilling", ctrl%tFillKSep, .false.)
     end if
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Filling")
+      call schema_add_field(schema, "Order", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Temperature", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "FixedFermiLevel", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "IndependentKFilling", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, value1, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(value1, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readFilling
 
