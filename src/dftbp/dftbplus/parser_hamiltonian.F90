@@ -28,7 +28,10 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_extlibs_tblite, only : tbliteMethod
   use dftbp_io_charmanip, only : newline, tolower, unquote
   use hsd, only : hsd_get, hsd_get_matrix, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables, &
-      & hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_set, HSD_STAT_OK
+      & hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_set, HSD_STAT_OK, &
+      & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
+      & schema_destroy, FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table, new_table
@@ -692,6 +695,68 @@ contains
 
     call readCustomisedHubbards(node, geo, slako%orb, ctrl%tShellResolved, ctrl%hubbU)
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="DFTB")
+      ! Fields directly read in this subroutine
+      call schema_add_field(schema, "SlaterKosterFiles", FIELD_REQUIRED, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "PolynomialRepulsive", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SCC", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ShellResolvedSCC", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "OldSKInterpolation", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "TruncateSKRange", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "NonAufbau", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Charge", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "OrbitalPotential", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "OnSiteCorrection", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Dispersion", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Solvation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ElectronicConstraints", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ThirdOrder", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ThirdOrderFull", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "HubbardDerivs", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "HalogenXCorr", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      ! Fields read by delegate subroutines from this same node
+      call schema_add_field(schema, "MaxAngularMomentum", FIELD_REQUIRED, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Chimes", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Hybrid", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ReadInitialCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "InitialCharges", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SCCTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldParameter", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "HelicalSymmetryTol", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ConvergentSCCOnly", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "HCorrection", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "CustomisedOccupations", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SpinPolarisation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "InitialSpins", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SpinOrbit", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Solver", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "KPointsAndWeights", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "MaxSCCIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Electrostatics", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Mdftb", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Differentiation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ForceEvaluation", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "CustomisedHubbards", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ElectricField", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "AtomSitePotential", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Filling", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Mixer", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readDFTBHam
 
 
@@ -896,6 +961,53 @@ contains
       call readElecConstraintInput(child, geo, ctrl%tSpin, ctrl%t2Component, ctrl%elecConstraintInp)
     end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="xTB")
+      ! Fields directly read in this subroutine
+      call schema_add_field(schema, "Method", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ParameterFile", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ShellResolvedSCC", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "SCC", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "NonAufbau", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Charge", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Dispersion", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Solvation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ElectronicConstraints", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      ! Fields read by delegate subroutines from this same node
+      call schema_add_field(schema, "ReadInitialCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "InitialCharges", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SCCTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldParameter", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "HelicalSymmetryTol", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ConvergentSCCOnly", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "SpinPolarisation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "InitialSpins", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SpinOrbit", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Solver", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "KPointsAndWeights", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "MaxSCCIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Electrostatics", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Differentiation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ForceEvaluation", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "ElectricField", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "AtomSitePotential", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Filling", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Mixer", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readXTBHam
 
 
@@ -1039,6 +1151,24 @@ contains
       end if
 
     end if hamNeedsT
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="LaterHamiltonian")
+      call schema_add_field(schema, "Mixer", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Filling", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, hamNode, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(hamNode, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readLaterHamiltonian
 

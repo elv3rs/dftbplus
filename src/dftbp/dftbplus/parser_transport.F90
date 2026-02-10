@@ -16,7 +16,10 @@ module dftbp_dftbplus_parser_transport
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd_data, only : hsd_table, new_table
   use hsd, only : hsd_get, hsd_get_attrib, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables, &
-      & hsd_get_table, hsd_set, hsd_get_choice, HSD_STAT_OK
+      & hsd_get_table, hsd_set, hsd_get_choice, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
+      & schema_init, schema_add_field, schema_validate, schema_destroy, &
+      & FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getNodeName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -163,6 +166,27 @@ contains
    end select
 
    geom%areContactsPresent = transpar%nCont > 0 .and. transpar%taskUpload
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Transport")
+      call schema_add_field(schema, "Task", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Device", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Contact", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "writeBinaryContact", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "readBinaryContact", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, root, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(root, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readTransportGeometry
 
@@ -411,6 +435,35 @@ contains
         greendens%nP(3) = defvalue
       end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="GreensFunction")
+      call schema_add_field(schema, "FermiLevel", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "FirstLayerAtoms", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "LocalCurrents", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Verbosity", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Delta", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ReadSurfaceGFs", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "SaveSurfaceGFs", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ContourPoints", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "EnclosedPoles", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "LowestEnergy", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "FermiCutoff", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "RealAxisPoints", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "RealAxisStep", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, pNode, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(pNode, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readGreensFunction
 #:endif
 
@@ -655,6 +708,42 @@ contains
 
     poisson%scratch = "contacts"
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Poisson")
+      call schema_add_field(schema, "PoissonThickness", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "PoissonBox", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "MinimalGrid", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "NumericalNorm", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "AtomDensityCutoff", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "AtomDensityTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "CutoffCheck", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Verbosity", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "SavePotential", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "PoissonAccuracy", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "BuildBulkPotential", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ReadOldBulkPotential", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "RecomputeAfterDensity", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "MaxPoissonIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "OverrideDefaultBC", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "OverrideBulkBC", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "BoundaryRegion", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "BoxExtension", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Gate", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "MaxParallelNodes", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_validate(schema, pNode, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(pNode, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readPoisson
 
 
@@ -871,6 +960,24 @@ contains
     tp%tNoGeometry = .false.
     tp%NumStates = 0
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Dephasing")
+      call schema_add_field(schema, "VibronicElastic", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "BuettikerProbes", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readDephasing
 
 
@@ -916,6 +1023,26 @@ contains
     endif
 
     call readCoupling(node, elph, geom, orb, tp)
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="VibronicElastic")
+      call schema_add_field(schema, "MaxSCBAIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "atomBlock", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "semiLocal", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Coupling", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readElPh
 
@@ -1260,6 +1387,33 @@ contains
             & tundos%dosLabels)
       end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="TunnelingAndDos")
+      call schema_add_field(schema, "Verbosity", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "WriteLDOS", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteTunn", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ContactTemperature", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EnergyRange", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EnergyStep", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "TerminalCurrents", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Delta", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "BroadeningDelta", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Region", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ComputeLDOS", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, root, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(root, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readTunAndDos
 
 
@@ -1399,6 +1553,30 @@ contains
         end if
 
       end if
+
+      ! -- Schema validation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="Contact")
+        call schema_add_field(schema, "Id", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+        call schema_add_field(schema, "PLShiftTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "AtomRange", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_add_field(schema, "Temperature", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "Potential", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "WideBand", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "LevelSpacing", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "FermiLevel", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, pNode, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(pNode, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
 
     end do
 

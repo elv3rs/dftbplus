@@ -16,7 +16,10 @@ module dftbp_dftbplus_parser_driver
   use dftbp_geoopt_geoopt, only : geoOptTypes
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_matrix, hsd_get_table, &
-      & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK
+      & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
+      & schema_init, schema_add_field, schema_validate, schema_destroy, &
+      & FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
   use hsd_data, only : hsd_table, hsd_node
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
       & getNodeName, getNodeName2, hasInlineData, &
@@ -547,6 +550,36 @@ contains
     end if
     ctrl%isGeoOpt = ctrl%tLatOpt .or. ctrl%tCoordOpt
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="CommonGeoOptions")
+      call schema_add_field(schema, "LatticeOpt", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Pressure", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "FixAngles", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "FixLengths", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Isotropic", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "MaxLatticeStep", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "MovedAtoms", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "MaxAtomStep", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "MaxForceComponent", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "MaxSteps", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "StepSize", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "OutputPrefix", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "AppendGeometries", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Constraints", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine commonGeoOptions
 
 
@@ -614,6 +647,29 @@ contains
       input%scale = 1.0_dp
     end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Xlbomd")
+      call schema_add_field(schema, "IntegrationSteps", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "PreSteps", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "TransientSteps", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Scale", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "MinSccIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "MaxSccIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "SccTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, pRoot, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(pRoot, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readXlbomdOptions
 
 
@@ -660,6 +716,23 @@ contains
         ctrl%conVec(:,:) = constraintMatrix(2:4, :)
       end if
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="GeoConstraints")
+      call schema_add_field(schema, "Constraints", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readGeoConstraints
 
@@ -711,6 +784,23 @@ contains
       ctrl%initialVelocities(:,:) = tmpVelocities(:,ctrl%indMovedAtom(:))
       ctrl%tReadMDVelocities = .true.
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="InitialVelocities")
+      call schema_add_field(schema, "Velocities", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readInitialVelocities
 
@@ -1126,6 +1216,51 @@ contains
       end if
     end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="ElecDynamics")
+      call schema_add_field(schema, "Steps", FIELD_REQUIRED, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "TimeStep", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Populations", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteFrequency", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Restart", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "RestartFromAscii", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteRestart", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteAsciiRestart", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "RestartFrequency", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Forces", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteBondEnergy", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteBondPopulation", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteAtomicEnergies", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Pump", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "FillingsFromFile", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "PumpProbeFrames", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "PumpProbeRange", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Probe", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "EulerFrequency", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "VerboseDynamics", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Perturbation", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "FieldStrength", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "WriteEnergyAndCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "EnvelopeShape", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "IonDynamics", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "MovedAtoms", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "Velocities", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Masses", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Temperature", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readElecDynamics
 
 
@@ -1205,6 +1340,23 @@ contains
        input%initialVelocities(:,:) = tmpVelocities(:, input%indMovedAtom(:))
        input%tReadMDVelocities = .true.
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="InitialVelocitiesNAMD")
+      call schema_add_field(schema, "Velocities", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readInitialVelocitiesNAMD
 
