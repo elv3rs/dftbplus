@@ -22,7 +22,7 @@ module dftbp_dftbplus_parser_excited
       & FIELD_OPTIONAL, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, &
       & FIELD_TYPE_TABLE, FIELD_TYPE_STRING
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_timedep_linresptypes, only : linRespSolverTypes
   use dftbp_type_typegeometry, only : TGeometry

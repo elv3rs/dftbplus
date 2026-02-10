@@ -19,12 +19,12 @@ module phonons_initphonons
   use dftbp_dftb_periodic, only : getCellTranslations, getNrOfNeighboursForAll, getSuperSampling,&
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
-      & getNodeName, getFirstTextChild
+  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set,&
-      & hsd_get_table, HSD_STAT_OK, hsd_node, hsd_get_matrix
+      & hsd_get_table, HSD_STAT_OK, hsd_node, hsd_get_matrix, &
+      & hsd_get_name, hsd_get_inline_text
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_OK
@@ -369,7 +369,7 @@ contains
         end select
       end do
     end block
-    call getNodeName(value, buffer)
+    call hsd_get_name(value, buffer, "#text")
     select case(trim(buffer))
     case ("dftb")
       call readDftbHessian(value)
@@ -521,7 +521,7 @@ contains
         end select
       end do
     end block
-    call getNodeName(value, buffer)
+    call hsd_get_name(value, buffer, "#text")
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(value, geo)
@@ -794,7 +794,7 @@ contains
         end select
       end do
     end block
-    call getNodeName(value, buffer)
+    call hsd_get_name(value, buffer, "#text")
 
     select case(buffer)
     case ("type2filenames")
@@ -933,7 +933,7 @@ contains
           end select
         end do
       end block
-      call getNodeName(value1, buffer)
+      call hsd_get_name(value1, buffer, "#text")
       select case(buffer)
 
       case ("supercellfolding")
@@ -1090,7 +1090,7 @@ contains
     type(hsd_table),  pointer ::  child
     character(len=:), allocatable :: text
 
-    call getFirstTextChild(child, text)
+    call hsd_get_inline_text(child, text)
     call readKPointsFile_help(child, text)
 
   end subroutine  readKPointsFile
@@ -1646,7 +1646,7 @@ contains
       end do
     end block
     pChild => root
-    call getNodeName(pValue, buffer)
+    call hsd_get_name(pValue, buffer, "#text")
     ! Delta is repeated to allow different defaults if needed
     select case (trim(buffer))
     case("deltasquared")

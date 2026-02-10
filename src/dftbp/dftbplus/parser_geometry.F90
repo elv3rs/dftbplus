@@ -5,7 +5,6 @@
 module dftbp_dftbplus_parser_geometry
   use dftbp_dftbplus_inputdata, only : TInputData
   use hsd, only : hsd_get_choice
-  use dftbp_io_hsdutils, only : getNodeName
   use hsd_data, only : hsd_table
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, readTGeometryLammps,&
       & readTGeometryVasp, readTGeometryXyz

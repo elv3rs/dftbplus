@@ -16,8 +16,8 @@ module dftbp_dftbplus_oldcompat
   use hsd_data, only : hsd_table, new_table
   use hsd, only : hsd_get, hsd_has_child, hsd_remove_child, hsd_get_table, HSD_STAT_OK,&
       & hsd_clear_children, hsd_table_ptr, hsd_get_child_tables, hsd_set, hsd_get_or_set,&
-      & hsd_get_choice, hsd_rename_child
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
+      & hsd_get_choice, hsd_rename_child, hsd_get_name
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_message, only : error
   implicit none
 
@@ -513,7 +513,7 @@ contains
         call hsd_get_table(ch1, "readBinaryContact", ch2, stat, auto_wrap=.true.)
       else
         call hsd_get_choice(ch2, "", buffer, pTaskType, stat)
-        call getNodeName(pTaskType, buffer)
+        call hsd_get_name(pTaskType, buffer, "#text")
         select case (buffer)
         case ("contacthamiltonian")
           call hsd_set(ch1, "writeBinaryContact", .false.)
@@ -866,7 +866,7 @@ contains
         call hsd_get_table(root, "Transport/Task", ch2, stat)
       end if
       call hsd_get_choice(ch2, "", buffer, ch1, stat)
-      call getNodeName(ch1, buffer)
+      call hsd_get_name(ch1, buffer, "#text")
       if (buffer /= "contacthamiltonian") then
       #:for LABEL in [("xtb"), ("dftb")]
         call hsd_get_table(root, "hamiltonian/${LABEL}$/charge", ch1, stat, auto_wrap=.true.)
@@ -1077,7 +1077,7 @@ contains
     if (associated(pChild)) pChild%processed = .false.
     call hsd_get_choice(pChild, "", buffer, pDampMethod, stat)
     if (associated(pDampMethod)) pDampMethod%processed = .false.
-    call getNodeName(pDampMethod, buffer)
+    call hsd_get_name(pDampMethod, buffer, "#text")
 
     select case (buffer)
     case ("beckejohnson")

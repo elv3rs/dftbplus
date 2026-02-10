@@ -14,7 +14,7 @@ module dftbp_dftbplus_parser_kpoints
       & hsd_get_choice, hsd_get_attrib, hsd_schema_t, hsd_error_t, schema_init, &
       & schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, &
       & FIELD_TYPE_INTEGER, FIELD_TYPE_TABLE
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
   use dftbp_type_typegeometry, only : TGeometry

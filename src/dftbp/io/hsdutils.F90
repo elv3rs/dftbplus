@@ -21,11 +21,9 @@
 module dftbp_io_hsdutils
   use dftbp_common_accuracy, only : mc
   use dftbp_common_status, only : TStatus
-  use hsd, only : hsd_table, hsd_value, hsd_node, hsd_iterator, &
-      & hsd_format_error, hsd_format_warning, hsd_get, &
-      & hsd_get_table, hsd_get_attrib, &
-      & HSD_STAT_OK
-  use dftbp_io_charmanip, only : i2c, tolower
+  use hsd, only : hsd_table, &
+      & hsd_format_error, hsd_format_warning
+  use dftbp_io_charmanip, only : i2c
   use dftbp_io_indexselection, only : getIndexSelection
   use dftbp_io_message, only : error, warning
   implicit none
@@ -41,11 +39,7 @@ module dftbp_io_hsdutils
 
   ! --- Public: modifier / name helpers ---
   public :: splitModifier
-  public :: getNodeName, getNodeName2
 
-
-  ! --- Public: misc ---
-  public :: hasInlineData, getFirstTextChild
 
   ! ============================================================
   !  Constants
@@ -223,130 +217,6 @@ contains
     selectedIndices = pack([(ii, ii = selectionRange(1), selectionRange(2))], selected)
 
   end subroutine getSelectedIndices
-
-
-
-
-  ! ============================================================
-  !  hasInlineData — check for text value children
-  ! ============================================================
-
-  !> Check whether a container table has any value children (inline data).
-  function hasInlineData(container) result(has)
-    type(hsd_table), pointer, intent(in) :: container
-    logical :: has
-
-    type(hsd_iterator) :: iter
-    class(hsd_node), pointer :: cur
-
-    if (.not. associated(container)) then
-      has = .false.
-      return
-    end if
-
-    has = .false.
-    call iter%init(container)
-    do while (iter%next(cur))
-      select type (cur)
-      type is (hsd_value)
-        has = .true.
-        return
-      end select
-    end do
-
-  end function hasInlineData
-
-
-  ! ============================================================
-  !  getFirstTextChild — concatenated text content
-  ! ============================================================
-
-  !> Get the concatenated text content of all unnamed/text value children.
-  subroutine getFirstTextChild(node, text)
-    type(hsd_table), intent(inout), target :: node
-    character(len=:), allocatable, intent(out) :: text
-
-    type(hsd_iterator) :: iter
-    class(hsd_node), pointer :: cur
-    character(len=:), allocatable :: piece
-    integer :: stat
-
-    text = ""
-    call iter%init(node)
-    do while (iter%next(cur))
-      select type (v => cur)
-      type is (hsd_value)
-        if (.not. allocated(v%name) .or. len_trim(v%name) == 0 &
-            & .or. v%name == "#text") then
-          call v%get_string(piece, stat)
-          if (stat == HSD_STAT_OK .and. allocated(piece)) then
-            if (len(text) > 0) then
-              text = text // " " // piece
-            else
-              text = piece
-            end if
-          end if
-        end if
-      end select
-    end do
-
-    if (len(text) == 0) then
-      call hsd_get(node, "#text", text, stat=stat)
-      if (stat /= HSD_STAT_OK) text = ""
-    end if
-
-  end subroutine getFirstTextChild
-
-
-  ! ============================================================
-  !  Node name helpers
-  ! ============================================================
-
-  !> Get the lowercased name of a node. Null pointer → "#text".
-  subroutine getNodeName(node, nodeName)
-    type(hsd_table), pointer, intent(in) :: node
-    character(len=:), allocatable, intent(out) :: nodeName
-
-    if (.not. associated(node)) then
-      nodeName = "#text"
-    else if (allocated(node%name)) then
-      nodeName = tolower(node%name)
-    else
-      nodeName = ""
-    end if
-
-  end subroutine getNodeName
-
-
-  !> Get the lowercased name of a node. Null pointer → "".
-  subroutine getNodeName2(node, nodeName)
-    type(hsd_table), pointer, intent(in) :: node
-    character(len=:), allocatable, intent(out) :: nodeName
-
-    if (.not. associated(node)) then
-      nodeName = ""
-    else if (allocated(node%name)) then
-      nodeName = tolower(node%name)
-    else
-      nodeName = ""
-    end if
-
-  end subroutine getNodeName2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

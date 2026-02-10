@@ -22,7 +22,7 @@ module dftbp_dftbplus_parser_external
       & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
       & schema_destroy, FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, &
       & FIELD_TYPE_INTEGER, FIELD_TYPE_TABLE
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
 

@@ -22,8 +22,9 @@ module dftbp_solvation_solvparser
   use dftbp_io_charmanip, only : tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice,&
       & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
-      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_TABLE
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
+      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_TABLE, &
+      & hsd_get_name
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table, new_table
   use dftbp_math_bisect, only : bisection
@@ -69,7 +70,7 @@ contains
     call hsd_rename_child(node, "GeneralizedBorn", "GeneralisedBorn")
     call hsd_get_choice(node, "", buffer, solvModel, stat)
     if (.not. associated(solvModel)) call dftbp_error(node, "Missing required solvation model")
-    call getNodeName(solvModel, buffer)
+    call hsd_get_name(solvModel, buffer, "#text")
 
     select case (buffer)
     case default
@@ -216,7 +217,7 @@ contains
           & "Missing required block: 'Descreening'")
     end if
     call hsd_get_choice(child, "", buffer, value1, stat)
-    call getNodeName(value1, buffer)
+    call hsd_get_name(value1, buffer, "#text")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//&
@@ -283,7 +284,7 @@ contains
               & "Missing required block: 'HBondStrength'")
         end if
         call hsd_get_choice(child, "", buffer, value1, stat)
-        call getNodeName(value1, buffer)
+        call hsd_get_name(value1, buffer, "#text")
         select case(buffer)
         case default
           call dftbp_error(child, "Unknown method '"//buffer//&
@@ -374,7 +375,7 @@ contains
       call hsd_get_table(node, "Solver", child, stat, auto_wrap=.true.)
     end if
     call hsd_get_choice(child, "", buffer, value1, stat)
-    call getNodeName(value1, buffer)
+    call hsd_get_name(value1, buffer, "#text")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' to solve COSMO equation")
@@ -480,7 +481,7 @@ contains
           & "Missing required block: 'SurfaceTension'")
     end if
     call hsd_get_choice(child, "", buffer, value1, stat)
-    call getNodeName(value1, buffer)
+    call hsd_get_name(value1, buffer, "#text")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' to generate surface tension")
@@ -537,7 +538,7 @@ contains
       call hsd_get_table(node, "Radii", child, stat, auto_wrap=.true.)
     end if
     call hsd_get_choice(child, "", buffer, value1, stat)
-    call getNodeName(value1, buffer)
+    call hsd_get_name(value1, buffer, "#text")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' to generate radii")
@@ -598,7 +599,7 @@ contains
     call hsd_get_table(node, "Solvent", child, stat, auto_wrap=.true.)
     if (.not. associated(child)) call dftbp_error(node, "Missing required block: 'Solvent'")
     call hsd_get_choice(child, "", buffer, value1, stat)
-    call getNodeName(value1, buffer)
+    call hsd_get_name(value1, buffer, "#text")
     select case(buffer)
     case default
       call dftbp_error(child, "Invalid solvent method '" // buffer // "'")
@@ -712,7 +713,7 @@ contains
       call hsd_get_table(node, "Radii", child, stat, auto_wrap=.true.)
     end if
     call hsd_get_choice(child, "", buffer, value1, stat)
-    call getNodeName(value1, buffer)
+    call hsd_get_name(value1, buffer, "#text")
     select case(buffer)
     case default
       call dftbp_error(child, "Unknown method '"//buffer//"' to generate radii")

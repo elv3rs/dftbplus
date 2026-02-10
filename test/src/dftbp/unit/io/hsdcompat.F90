@@ -13,13 +13,12 @@ module test_io_hsdcompat
   use dftbp_common_unitconversion, only : TUnit
   use hsd, only : hsd_table, hsd_node, hsd_error_t, hsd_get, hsd_set, HSD_STAT_OK, &
       & hsd_has_child, hsd_get_attrib, hsd_set_attrib, hsd_get_table, hsd_get_child, &
-      & hsd_get_or_set
+      & hsd_get_or_set, hsd_get_name
   use hsd_data, only : new_table, data_load_string, DATA_FMT_HSD
   use dftbp_io_hsdutils, only : dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_table_ptr, hsd_get_child_tables
-  use dftbp_io_hsdutils, only : getNodeName, getNodeName2,&
-      & splitModifier
+  use dftbp_io_hsdutils, only : splitModifier
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
 
@@ -242,7 +241,7 @@ contains
 
     call new_table(root, "MyTable")
     rootPtr => root
-    call getNodeName2(rootPtr, name)
+    call hsd_get_name(rootPtr, name)
     @:ASSERT(name == "mytable")
   $:END_TEST()
 
@@ -302,46 +301,42 @@ contains
         end select
       end do
       @:ASSERT(associated(dispatch))
-      call getNodeName2(dispatch, name)
+      call hsd_get_name(dispatch, name)
       @:ASSERT(name == "conjugategradient")
     end block
   $:END_TEST()
 
 
   $:TEST("getNodeName_null_returns_text", label="hsdcompat")
-    !! getNodeName with null pointer returns "#text"
-    type(hsd_table), pointer :: nullPtr
+    !! hsd_get_name with default "#text" returns "#text" for an empty-named table
+    type(hsd_table), target :: emptyTbl
     character(len=:), allocatable :: name
 
-    nullPtr => null()
-    call getNodeName(nullPtr, name)
+    call new_table(emptyTbl)
+    call hsd_get_name(emptyTbl, name, "#text")
     @:ASSERT(name == "#text")
     @:ASSERT(name == "#text")
   $:END_TEST()
 
 
   $:TEST("getNodeName_associated", label="hsdcompat")
-    !! getNodeName with an associated table returns the node name
+    !! hsd_get_name with an associated table returns the node name
     type(hsd_table), target :: tbl
-    type(hsd_table), pointer :: ptr
     character(len=:), allocatable :: name
 
     call new_table(tbl, name="MyBlock")
-    ptr => tbl
-    call getNodeName(ptr, name)
+    call hsd_get_name(tbl, name, "#text")
     @:ASSERT(name == "myblock")
   $:END_TEST()
 
 
   $:TEST("getNodeName2_works", label="hsdcompat")
-    !! getNodeName2 returns the lowercased node name
+    !! hsd_get_name returns the lowercased node name
     type(hsd_table), target :: root
-    type(hsd_table), pointer :: rootPtr
     character(len=:), allocatable :: name
 
     call new_table(root, name="TestNode")
-    rootPtr => root
-    call getNodeName2(rootPtr, name)
+    call hsd_get_name(root, name)
     @:ASSERT(name == "testnode")
   $:END_TEST()
 
@@ -366,7 +361,7 @@ contains
       end select
     end block
     @:ASSERT(associated(child))
-    call getNodeName2(child, name)
+    call hsd_get_name(child, name)
     @:ASSERT(name == "newblock")
     ! Verify the child is accessible via hsd_get_table
     block

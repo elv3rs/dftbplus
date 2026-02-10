@@ -16,8 +16,7 @@ module dftbp_dftbplus_parser_spin
   use dftbp_common_unitconversion, only : energyUnits
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower, unquote
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices, &
-      & getNodeName, getNodeName2, hasInlineData
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_reks_reks, only : reksTypes
@@ -27,7 +26,8 @@ module dftbp_dftbplus_parser_spin
   use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables,&
       & hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
       & schema_init, schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, &
-      & FIELD_REQUIRED, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE
+      & FIELD_REQUIRED, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE, &
+      & hsd_get_name, hsd_has_value_children
   use hsd_data, only : hsd_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
@@ -211,7 +211,7 @@ contains
         end if
 
       case default
-        call getNodeName2(value1, buffer)
+        call hsd_get_name(value1, buffer)
         call dftbp_error(child2, "Invalid shell specification method '" //&
             & buffer // "'")
       end select
@@ -311,7 +311,7 @@ contains
     buffer = ""
     if (associated(child)) then
       call hsd_get_choice(child, "", buffer, value1, stat)
-      if (len_trim(buffer) == 0 .and. hasInlineData(child)) buffer = "#text"
+      if (len_trim(buffer) == 0 .and. hsd_has_value_children(child)) buffer = "#text"
     end if
     select case(tolower(buffer))
     case ("")

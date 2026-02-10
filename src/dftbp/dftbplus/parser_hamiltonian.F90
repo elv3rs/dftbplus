@@ -31,8 +31,8 @@ module dftbp_dftbplus_parser_hamiltonian
       & hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_set, HSD_STAT_OK, &
       & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
       & schema_destroy, FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
-      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, hasInlineData
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE, hsd_has_value_children
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table, new_table
   use dftbp_io_message, only : error, warning
@@ -302,7 +302,7 @@ contains
     end if
     call hsd_get_choice(child, "", buffer, value1, stat)
     if (.not. associated(value1)) then
-      if (hasInlineData(child)) then
+      if (hsd_has_value_children(child)) then
         buffer = "#text"
       else
         buffer = ""
@@ -1080,11 +1080,11 @@ contains
             end if
             call hsd_get_choice(child, "", buffer2, value2, stat)
             if (.not. associated(value2)) then
-              if (.not. hasInlineData(child)) then
+              if (.not. hsd_has_value_children(child)) then
                 buffer2 = ""
               end if
             end if
-            if (buffer2 == "" .and. .not. hasInlineData(child)) then
+            if (buffer2 == "" .and. .not. hsd_has_value_children(child)) then
               inp%nConvMixParam = 0
             else
               call hsd_get_matrix(child, "", dynMixMatrix, dynMixNRows, dynMixNCols)

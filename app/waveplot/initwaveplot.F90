@@ -24,13 +24,14 @@ module waveplot_initwaveplot
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices
   ! getChildValue removed: using hsd_get directly
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
       & hsd_dump, hsd_clear_children, hsd_table_ptr, hsd_get_child_tables, hsd_get,&
       & hsd_get_or_set, hsd_set, hsd_get_table, hsd_get_attrib, HSD_STAT_OK, hsd_node,&
-      & hsd_remove_child, hsd_get_matrix
+      & hsd_remove_child, hsd_get_matrix, &
+      & hsd_get_name
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
@@ -558,7 +559,7 @@ contains
         end select
       end do
     end block
-    call getNodeName(child, buffer)
+    call hsd_get_name(child, buffer, "#text")
 
     select case (buffer)
     case ("genformat")
@@ -740,7 +741,7 @@ contains
         end select
       end do
     end block
-    call getNodeName(value, buffer)
+    call hsd_get_name(value, buffer, "#text")
 
     select case (buffer)
     case ("unitcell")

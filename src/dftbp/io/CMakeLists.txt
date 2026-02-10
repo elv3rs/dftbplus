@@ -4,7 +4,6 @@ set(sources-fpp
   ${curdir}/charmanip.F90
   ${curdir}/commonformats.F90
   ${curdir}/formatout.F90
-  ${curdir}/hsderror.F90
   ${curdir}/hsdutils.F90
   ${curdir}/unitconv.F90
   ${curdir}/indexselection.F90

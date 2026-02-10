@@ -14,9 +14,9 @@ module dftbp_type_typegeometryhsd
   use dftbp_common_unitconversion, only : angularUnits, lengthUnits
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use hsd_data, only : hsd_table
-  use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_set, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, splitModifier,&
-      & getNodeName, getFirstTextChild
+  use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_set, HSD_STAT_OK, &
+      & hsd_get_inline_text
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, splitModifier
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
@@ -118,7 +118,7 @@ contains
       type(hsd_table), pointer :: nameChild
       call hsd_get_table(node, "TypeNames", nameChild, stat, auto_wrap=.true.)
       if (.not. associated(nameChild)) call dftbp_error(node, "Missing required block: 'TypeNames'")
-      call getFirstTextChild(nameChild, txt)
+      call hsd_get_inline_text(nameChild, txt)
       iSt = 1
       call getNextToken(txt, tok, iSt, iEr)
       do while (iEr == TOKEN_OK)
@@ -150,7 +150,7 @@ contains
           & "Missing required block: 'TypesAndCoordinates'")
       call hsd_get_attrib(node, "TypesAndCoordinates", modifier, stat)
       if (stat /= HSD_STAT_OK) modifier = ""
-      call getFirstTextChild(typesAndCoords, txt)
+      call hsd_get_inline_text(typesAndCoords, txt)
       iSt = 1
       iEr = TOKEN_OK
       do while (iEr == TOKEN_OK)
@@ -300,7 +300,7 @@ contains
 
     character(len=:), allocatable :: text
 
-    call getFirstTextChild(node, text)
+    call hsd_get_inline_text(node, text)
     call readTGeometryGen_help(node, geo, text)
 
   end subroutine readTGeometryGen
@@ -480,7 +480,7 @@ contains
 
     character(len=:), allocatable :: text
 
-    call getFirstTextChild(node, text)
+    call hsd_get_inline_text(node, text)
     call readTGeometryXyz_help(node, geo, text)
 
   end subroutine readTGeometryXyz
@@ -595,7 +595,7 @@ contains
 
     character(len=:), allocatable :: text
 
-    call getFirstTextChild(node, text)
+    call hsd_get_inline_text(node, text)
     call readTGeometryVasp_help(node, geo, text)
 
   end subroutine readTGeometryVasp

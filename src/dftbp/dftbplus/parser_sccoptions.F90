@@ -17,11 +17,11 @@ module dftbp_dftbplus_parser_sccoptions
   use dftbp_dftbplus_forcetypes, only : forceTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error, dftbp_warning
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
       & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
       & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_REQUIRED, FIELD_TYPE_INTEGER, &
-      & FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE, FIELD_TYPE_STRING
+      & FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE, FIELD_TYPE_STRING, hsd_get_name
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table, new_table
@@ -245,7 +245,7 @@ contains
     case ("richardson")
       ctrl%iDerivMethod = diffTypes%richardson
     case default
-      call getNodeName2(val, buffer)
+      call hsd_get_name(val, buffer)
       call dftbp_error(child, "Invalid derivative calculation '" &
           & // buffer // "'")
     end select
@@ -350,7 +350,7 @@ contains
       end associate
 
     case default
-      call getNodeName2(value1, buffer)
+      call hsd_get_name(value1, buffer)
       call dftbp_error(child, "Invalid HCorrection '" // buffer // "'")
     end select
 

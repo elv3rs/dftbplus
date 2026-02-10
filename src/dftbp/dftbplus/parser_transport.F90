@@ -19,9 +19,9 @@ module dftbp_dftbplus_parser_transport
       & hsd_get_table, hsd_set, hsd_get_choice, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
       & schema_init, schema_add_field, schema_validate, schema_destroy, &
       & FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
-      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getNodeName, getNodeName2, hasInlineData
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE, &
+      & hsd_get_name, hsd_has_value_children
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : cross3
@@ -160,7 +160,7 @@ contains
 
     case default
 
-      call getNodeName2(pTaskType, buffer)
+      call hsd_get_name(pTaskType, buffer)
       call dftbp_error(pTask, "Invalid task '" // buffer // "'")
 
    end select
@@ -632,7 +632,7 @@ contains
       call hsd_get_attrib(pTmp, "BufferLength", modifier)
       call convertUnitHsd(modifier, lengthUnits, field, poisson%bufferLocBC)
     case default
-      if (associated(pTmp)) call getNodeName2(pTmp, buffer)
+      if (associated(pTmp)) call hsd_get_name(pTmp, buffer)
       call dftbp_error(pTmp, "Invalid boundary region type '" // buffer // "'")
     end select
 
@@ -699,7 +699,7 @@ contains
       call convertUnitHsd(modifier, energyUnits, field, poisson%gatepot)
 
     case default
-      call getNodeName2(pTmp2, buffer)
+      call hsd_get_name(pTmp2, buffer)
       call dftbp_error(pTmp2, "Invalid gate type '" // buffer // "'")
 
     end select
@@ -1523,7 +1523,7 @@ contains
           call hsd_get_choice(child2, "", buffer, child1, stat)
           if (stat /= HSD_STAT_OK) buffer = ""
         end if
-        if (buffer == "" .and. .not. hasInlineData(child2)) then
+        if (buffer == "" .and. .not. hsd_has_value_children(child2)) then
           contacts(ii)%tFermiSet = .false.
           call dftbp_warning(pNode, "Missing Fermi level - required to be set in solver block or&
               & read from a contact shift file")

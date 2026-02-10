@@ -18,12 +18,12 @@ module transporttools_parser
   use dftbp_dftb_slakoeqgrid, only : skEqGridNew, skEqGridOld
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getNodeName, getNodeName2
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_get_table,&
-      & hsd_get_choice, hsd_set, hsd_get_attrib, HSD_STAT_OK
+      & hsd_get_choice, hsd_set, hsd_get_attrib, HSD_STAT_OK, &
+      & hsd_get_name
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
@@ -333,7 +333,7 @@ contains
 
     case default
 
-      call getNodeName2(pTask, buffer)
+      call hsd_get_name(pTask, buffer)
       call dftbp_error(pTaskType, "Invalid task '" // buffer // "'")
 
    end select

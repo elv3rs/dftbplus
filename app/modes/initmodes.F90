@@ -22,11 +22,12 @@ module modes_initmodes
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getSelectedIndices, getNodeName, getNodeName2, hasInlineData
+      & getSelectedIndices
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set, hsd_get_table,&
-      & hsd_get_attrib, HSD_STAT_OK, hsd_node
+      & hsd_get_attrib, HSD_STAT_OK, hsd_node, &
+      & hsd_get_name, hsd_has_value_children
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_type_oldskdata, only : readFromFile, TOldSkData
@@ -279,7 +280,7 @@ contains
       do iSp1 = 1, geo%nSpecies
         allocate(skFiles(iSp1)%items(0))
       end do
-      call getNodeName(value, buffer)
+      call hsd_get_name(value, buffer, "#text")
       select case(buffer)
       case ("type2filenames")
         call hsd_get_or_set(value, "Prefix", buffer2, "")
@@ -375,8 +376,8 @@ contains
         end do
       end block
     end if
-    call getNodeName2(value, buffer)
-    if (buffer == "" .and. hasInlineData(child)) buffer = "#text"
+    call hsd_get_name(value, buffer)
+    if (buffer == "" .and. hsd_has_value_children(child)) buffer = "#text"
     select case (buffer)
     case ("directread")
       call hsd_get(value, "File", buffer2, stat=stat)
@@ -395,7 +396,7 @@ contains
       end if
       call closeFile(file)
     case ("#text")
-      call getNodeName2(value, buffer)
+      call hsd_get_name(value, buffer)
       block
         real(dp), allocatable :: flatArr(:)
         call hsd_get(child, "#text", flatArr, stat=stat)
@@ -411,7 +412,7 @@ contains
     end select
 
     call hsd_get_table(root, "BornCharges", child, stat, auto_wrap=.true.)
-    call getNodeName2(child, buffer)
+    call hsd_get_name(child, buffer)
     if (buffer /= "") then
       call hsd_get(child, "#text", bornMatrix, stat=stat)
       if (size(bornMatrix) /= 3 * nDerivs) then
@@ -422,7 +423,7 @@ contains
     end if
 
     call hsd_get_table(root, "BornDerivs", child, stat, auto_wrap=.true.)
-    call getNodeName2(child, buffer)
+    call hsd_get_name(child, buffer)
     if (buffer /= "") then
       call hsd_get(child, "#text", bornDerivsMatrix, stat=stat)
       if (size(bornDerivsMatrix) /= 9 * nDerivs) then
@@ -486,7 +487,7 @@ contains
         end select
       end do
     end block
-    call getNodeName(child, buffer)
+    call hsd_get_name(child, buffer, "#text")
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(child, geo)

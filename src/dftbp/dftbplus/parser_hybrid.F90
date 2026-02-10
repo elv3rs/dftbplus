@@ -20,7 +20,7 @@ module dftbp_dftbplus_parser_hybrid
   use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_get, &
       & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
       & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_TABLE, FIELD_TYPE_STRING
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getNodeName2
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use hsd_data, only : hsd_table

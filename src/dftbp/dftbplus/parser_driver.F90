@@ -19,11 +19,10 @@ module dftbp_dftbplus_parser_driver
       & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
       & schema_init, schema_add_field, schema_validate, schema_destroy, &
       & FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
-      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE, &
+      & hsd_get_name, hsd_has_value_children, hsd_get_inline_text
   use hsd_data, only : hsd_table, hsd_node
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getNodeName, getNodeName2, hasInlineData, &
-      & getFirstTextChild
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_EOS, TOKEN_ERROR, TOKEN_OK
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
@@ -100,7 +99,7 @@ contains
   #:endif
 
     call hsd_rename_child(parent, "GeometryOptimization", "GeometryOptimisation")
-    call getNodeName2(node, buffer)
+    call hsd_get_name(node, buffer)
     driver: select case (buffer)
     case ("")
       modeName = ""
@@ -407,7 +406,7 @@ contains
 
     case default
 
-      call getNodeName2(node, buffer)
+      call hsd_get_name(node, buffer)
       call dftbp_error(parent, "Invalid driver '" // buffer // "'")
 
     end select driver
@@ -696,7 +695,7 @@ contains
     else
       call hsd_get_choice(child, "", buffer, value1, stat)
       if (stat /= HSD_STAT_OK) buffer = ""
-      if (buffer == "" .and. .not. hasInlineData(child)) then
+      if (buffer == "" .and. .not. hsd_has_value_children(child)) then
         ctrl%nrConstr = 0
       else
         call hsd_get_matrix(node, "Constraints", constraintMatrix, nMatRows, nMatCols, &
@@ -762,7 +761,7 @@ contains
       call hsd_get_choice(child, "", buffer, value1, stat)
       if (stat /= HSD_STAT_OK) buffer = ""
     end if
-    if (buffer == "" .and. (.not. associated(child) .or. .not. hasInlineData(child))) then
+    if (buffer == "" .and. (.not. associated(child) .or. .not. hsd_has_value_children(child))) then
       ctrl%tReadMDVelocities = .false.
     else
       call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
@@ -854,7 +853,7 @@ contains
     logical :: success
 
     ! Read raw text content and parse (string, int, real) triplets
-    call getFirstTextChild(node, text)
+    call hsd_get_inline_text(node, text)
 
     ! First pass: count entries
     nEntries = 0
@@ -1318,7 +1317,7 @@ contains
       call hsd_get_choice(child, "", buffer, value1, stat)
       if (stat /= HSD_STAT_OK) buffer = ""
     end if
-    if (buffer == "" .and. (.not. associated(child) .or. .not. hasInlineData(child))) then
+    if (buffer == "" .and. (.not. associated(child) .or. .not. hsd_has_value_children(child))) then
        input%tReadMDVelocities = .false.
     else
        call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
@@ -1485,7 +1484,7 @@ contains
       end if
 
     case default
-      call getNodeName2(thermNode, thermName)
+      call hsd_get_name(thermNode, thermName)
       call dftbp_error(node, "Invalid thermostat '" // thermName // "'")
 
     end select
@@ -1518,7 +1517,7 @@ contains
           select type(t => tmpNode)
           type is (hsd_table)
             value => t
-            call getNodeName(value, buffer)
+            call hsd_get_name(value, buffer, "#text")
             exit
           end select
         end do

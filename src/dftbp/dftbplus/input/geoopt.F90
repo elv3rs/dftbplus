@@ -13,9 +13,8 @@ module dftbp_dftbplus_input_geoopt
       & TOptTolerance, TRationalFuncInput, TSteepdescInput
   use dftbp_io_charmanip, only : unquote
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_table, hsd_get_attrib, hsd_get_choice,&
-      & HSD_STAT_OK
-  use dftbp_io_hsdutils, only : getSelectedAtomIndices
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
+      & HSD_STAT_OK, hsd_get_name
+  use dftbp_io_hsdutils, only : getSelectedAtomIndices, dftbp_error
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table, new_table
@@ -118,7 +117,7 @@ contains
     type(TRationalFuncInput), allocatable :: rationalFuncInput
     character(len=:), allocatable :: buffer
 
-    call getNodeName(node, buffer)
+    call hsd_get_name(node, buffer, "#text")
     select case (buffer)
     case default
       call dftbp_error(node, "Invalid optimiser name.")

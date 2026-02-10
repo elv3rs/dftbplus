@@ -15,13 +15,12 @@ module dftbp_dftbplus_parser_reks
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getNodeName2,&
-      & hasInlineData
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice, &
       & HSD_STAT_OK, new_table, hsd_schema_t, hsd_error_t, schema_init, &
       & schema_add_field, schema_validate, schema_destroy, FIELD_REQUIRED, &
       & FIELD_OPTIONAL, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, &
-      & FIELD_TYPE_TABLE
+      & FIELD_TYPE_TABLE, hsd_get_name, hsd_has_value_children
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -50,7 +49,7 @@ contains
     character(len=:), allocatable :: buffer
 
     ! SSR(2,2) or SSR(4,4) stuff
-    call getNodeName(dummy, buffer)
+    call hsd_get_name(dummy, buffer, "#text")
 
     select case (buffer)
     case ("none")
@@ -62,7 +61,7 @@ contains
       ctrl%reksInp%reksAlg = reksTypes%ssr44
       call dftbp_error(node, "SSR(4,4) is not implemented yet.")
     case default
-      call getNodeName2(dummy, buffer)
+      call hsd_get_name(dummy, buffer)
       call dftbp_error(node, "Invalid Algorithm '" // buffer // "'")
     end select
 
@@ -254,7 +253,7 @@ contains
     real(dp), allocatable :: tmpTuning(:)
 
     call hsd_get_table(node, "SpinTuning", child, stat, auto_wrap=.true.)
-    if (.not. associated(child) .or. .not. hasInlineData(child)) then
+    if (.not. associated(child) .or. .not. hsd_has_value_children(child)) then
       ! no 'SpinTuning' block in REKS input
       allocate(ctrl%reksInp%Tuning(nType))
       do iType = 1, nType
