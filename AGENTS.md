@@ -110,8 +110,7 @@ Integration: `add_subdirectory(external/hsd-data)` →
 
 | Module | File | Purpose |
 |--------|------|---------|
-| `dftbp_io_hsdutils` | `hsdutils.F90` | DFTB+-specific convenience wrappers: `getChildValue` (22 overloads), `getChild`, `setChildValue`, `dftbp_error`/`dftbp_warning`, child-list iteration, atom/index selection, processed-flag management |
-| `dftbp_io_hsderror` | `hsderror.F90` | Error bridge: `hsd_fatal_error`, `hsd_warning`, `hsd_error_from_stat` |
+| `dftbp_io_hsdutils` | `hsdutils.F90` | DFTB+-specific utilities only: `dftbp_error`, `dftbp_warning`, `splitModifier`, `getSelectedAtomIndices`, `getSelectedIndices` |
 | `dftbp_io_unitconv` | `unitconv.F90` | Unit conversion: `convertUnitHsd` maps HSD modifier strings → DFTB+ `TUnit` system |
 | `dftbp_io_unitconvfuncs` | `unitconvfuncs.F90` | Per-category converter callbacks for `hsd_get_with_unit` |
 | `dftbp_io_taggedoutput` | `taggedoutput.F90` | Multi-format result output (tag/HSD/JSON/XML) from `hsd_table` trees |
@@ -143,7 +142,6 @@ hsd-data (external/hsd-data)
   └── hsd-fortran (transitive dependency)
         │
 dftbp_io_hsdutils  ← uses hsd + hsd_data types directly
-├── dftbp_io_hsderror       ← error formatting via hsd_format_error
 ├── dftbp_io_unitconv       ← unit conversion via TUnit + hsd_set
 ├── dftbp_io_taggedoutput   ← result serialization
 │
@@ -158,7 +156,9 @@ dftbp_io_hsdutils  ← uses hsd + hsd_data types directly
 - `dftbp_extlibs_xmlf90` — re-export wrapper (deleted)
 - `dftbp_extlibs_hsddata` — re-export wrapper (deleted)
 - `hsdcompat.F90` — transitional compat shim (deleted)
+- `hsderror.F90` — error bridge module (deleted; error formatting now handled directly via hsd-fortran)
 - `hsdutils2.F90` / `hsdparser.F90` / `xmlutils.F90` — replaced by hsd-fortran API
+- Former `hsdutils.F90` wrappers (`getNodeName`, `getNodeName2`, `hasInlineData`, `getFirstTextChild`) — replaced by hsd-fortran's `hsd_get_name`, `hsd_has_value_children`, `hsd_get_inline_text`
 - All `detailedError` / `detailedWarning` calls → `dftbp_error` / `dftbp_warning`
 
 ## Application Entry Point
