@@ -6,7 +6,9 @@ module dftbp_dftbplus_parser_general
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_elecsolvers_elecsolvers, only : providesEigenvalues
-  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_table
+  use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get_table, hsd_schema_t, hsd_error_t, &
+      & schema_init, schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, &
+      & FIELD_TYPE_INTEGER, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE, FIELD_TYPE_STRING
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use hsd_data, only : hsd_table, new_table
   use dftbp_type_typegeometry, only : TGeometry
@@ -126,6 +128,42 @@ contains
     end if
 
     call readBinaryAccessTypes(node, ctrl%binaryAccessTypes)
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Options")
+      call schema_add_field(schema, "WriteDetailedOut", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteAutotestTag", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteDetailedXML", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "DetailedOutputFormat", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "WriteResultsTag", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ResultsOutputFormat", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "RestartFrequency", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "MDOutput", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "RandomSeed", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "WriteHS", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteRealHS", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "MinimiseMemoryUsage", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ShowFoldedCoords", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "TimingVerbosity", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "ReadChargesAsText", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteChargesAsText", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "SkipChargeTest", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteAllAtomGeometry", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "BinaryAccessTypes", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readOptions
 

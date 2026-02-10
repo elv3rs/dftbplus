@@ -17,9 +17,11 @@ module dftbp_dftbplus_parser_sccoptions
   use dftbp_dftbplus_forcetypes, only : forceTypes
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error
+  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error, dftbp_warning
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, hsd_get_attrib, &
-      & HSD_STAT_OK
+      & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
+      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_REQUIRED, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE, FIELD_TYPE_STRING
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table, new_table
@@ -69,6 +71,29 @@ contains
     ! self consistency required or not to proceed
     call hsd_get_or_set(node, "ConvergentSCCOnly", ctrl%isSccConvRequired, .true.)
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="SccOptions")
+      call schema_add_field(schema, "ReadInitialCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "InitialCharges", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "SCCTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldParameter", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "HelicalSymmetryTol", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ConvergentSCCOnly", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readSccOptions
 
 
@@ -95,6 +120,23 @@ contains
     case default
       call dftbp_error(child, "Invalid force evaluation method.")
     end select
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="ForceOptions")
+      call schema_add_field(schema, "ForceEvaluation", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readForceOptions
 
@@ -138,6 +180,24 @@ contains
       call dftbp_error(field, "Truncation is shorter than the minimum distance over which SK data&
           & goes to 0")
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="SKTruncations")
+      call schema_add_field(schema, "SKMaxDistance", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "HardCutOff", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine SKTruncations
 
@@ -189,6 +249,25 @@ contains
       call dftbp_error(child, "Invalid derivative calculation '" &
           & // buffer // "'")
     end select
+
+    ! -- Schema validation for differentiation choice (warnings only) --
+    if (associated(val)) then
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="Differentiation")
+        call schema_add_field(schema, "Delta", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_validate(schema, val, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(val, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
+    end if
 
   end subroutine readDifferentiation
 
@@ -274,6 +353,28 @@ contains
       call getNodeName2(value1, buffer)
       call dftbp_error(child, "Invalid HCorrection '" // buffer // "'")
     end select
+
+    ! -- Schema validation for HCorrection choice (warnings only) --
+    if (associated(value1)) then
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="HCorrection")
+        call schema_add_field(schema, "Exponent", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "RScaling", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "WScaling", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "H5Scaling", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, value1, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(value1, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
+    end if
 
   end subroutine readHCorrection
 

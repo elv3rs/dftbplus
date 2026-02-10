@@ -11,9 +11,11 @@
 !> Subroutines for reading customised Hubbard and reference occupation parameters.
 module dftbp_dftbplus_parser_customisation
   use dftbp_common_accuracy, only : dp, sc
-  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices
   use hsd, only : hsd_rename_child, hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set,&
-      & hsd_get_table, HSD_STAT_OK
+      & hsd_get_table, HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
+      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_REQUIRED, FIELD_TYPE_REAL, &
+      & FIELD_TYPE_TABLE, FIELD_TYPE_STRING
   use hsd_data, only : hsd_table
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_orbitals, only : getShellnames
@@ -74,6 +76,22 @@ contains
           hubbU(:orb%nShell(iSp1), iSp1) = hubbU(1, iSp1)
         end if
       end do
+
+      ! -- Schema validation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="CustomisedHubbards")
+        call schema_validate(schema, child, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
     end if
 
   end subroutine readCustomisedHubbards
@@ -146,6 +164,23 @@ contains
             & referenceOcc(iShell, iSpecies))
       end do
       deallocate(shellNamesTmp)
+
+      ! -- Schema validation for ReferenceOccupation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="ReferenceOccupation")
+        call schema_add_field(schema, "Atoms", FIELD_REQUIRED, FIELD_TYPE_STRING)
+        call schema_validate(schema, node, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
     end do
 
   end subroutine readCustomReferenceOcc

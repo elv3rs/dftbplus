@@ -25,7 +25,9 @@ module dftbp_dftbplus_parser_spin
 
   use dftbp_type_typegeometry, only : TGeometry
   use hsd, only : hsd_get, hsd_rename_child, hsd_get_or_set, hsd_table_ptr, hsd_get_child_tables,&
-      & hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK
+      & hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
+      & schema_init, schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, &
+      & FIELD_REQUIRED, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE
   use hsd_data, only : hsd_table
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TTransPar
@@ -100,6 +102,23 @@ contains
         call convertUnitHsd(modifier, energyUnits, child2,&
             & ctrl%xi(:orb%nShell(iSp),iSp))
       end do
+
+      ! -- Schema validation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="SpinOrbit")
+        call schema_add_field(schema, "Dual", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_validate(schema, child, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
     end if
 
   end subroutine readSpinOrbit
@@ -321,6 +340,27 @@ contains
           & buffer // "'")
     end select
 
+    ! -- Schema validation for spin polarisation choice table (warnings only) --
+    if (associated(value1)) then
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="SpinPolarisation")
+        call schema_add_field(schema, "UnpairedElectrons", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "RelaxTotalSpin", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "InitialSpins", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, value1, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(value1, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
+    end if
+
   end subroutine readSpinPolarisation
 
 
@@ -541,6 +581,23 @@ contains
           end if
         end if
       end do
+
+      ! -- Schema validation (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="SpinConstants")
+        call schema_add_field(schema, "ShellResolvedSpin", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_validate(schema, child, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
     end if
 
   end subroutine readSpinConstants
