@@ -18,8 +18,9 @@ module dftbp_dftbplus_parser_hybrid
   use dftbp_dftbplus_inputdata, only : TControl, THybridXcInp
   use dftbp_io_charmanip, only : newline, tolower, unquote
   use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, hsd_get, &
-      & HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeName2
+      & HSD_STAT_OK, hsd_schema_t, hsd_error_t, schema_init, schema_add_field, &
+      & schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_TABLE, FIELD_TYPE_STRING
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getNodeName2
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use hsd_data, only : hsd_table
@@ -246,6 +247,26 @@ contains
 
     end if
 
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      if (isHybridInp .and. associated(hybridValue)) then
+        call schema_init(schema, name="Hybrid")
+        call schema_add_field(schema, "Screening", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "CoulombMatrix", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, hybridValue, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(hybridValue, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end if
+    end block
+
   end subroutine parseHybridBlock
 
 
@@ -279,6 +300,23 @@ contains
       call dftbp_error(chimes, "ChIMES repulsive correction requested, but code was compiled&
           & without ChIMES support")
     #:endif
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Chimes")
+      call schema_add_field(schema, "ParameterFile", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_validate(schema, chimes, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(chimes, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine parseChimes
 

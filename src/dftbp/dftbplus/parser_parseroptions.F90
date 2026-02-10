@@ -6,7 +6,9 @@ module dftbp_dftbplus_parser_parseroptions
   use dftbp_common_globalenv, only : stdout
   use dftbp_dftbplus_oldcompat, only : convertOldHSD, minVersion, parserVersion, versionMaps
   use dftbp_io_charmanip, only : i2c, newline, unquote
-  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_set, HSD_STAT_OK
+  use hsd, only : hsd_get_or_set, hsd_get, hsd_get_table, hsd_set, HSD_STAT_OK, &
+      & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
+      & schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
   use hsd_data, only : hsd_table
   implicit none
@@ -123,6 +125,26 @@ contains
 
     call hsd_get_or_set(node, "IgnoreUnprocessedNodes", &
         &flags%tIgnoreUnprocessed, .false.)
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="ParserOptions")
+      call schema_add_field(schema, "ParserVersion", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "WriteHSDInput", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "StopAfterParsing", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "IgnoreUnprocessedNodes", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readParserOptions
 

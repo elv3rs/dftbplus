@@ -15,10 +15,13 @@ module dftbp_dftbplus_parser_reks
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : i2c, tolower
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName, getNodeName2,&
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName, getNodeName2,&
       & hasInlineData
   use hsd, only : hsd_get, hsd_get_or_set, hsd_get_table, hsd_get_choice, &
-      & HSD_STAT_OK, new_table
+      & HSD_STAT_OK, new_table, hsd_schema_t, hsd_error_t, schema_init, &
+      & schema_add_field, schema_validate, schema_destroy, FIELD_REQUIRED, &
+      & FIELD_OPTIONAL, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, &
+      & FIELD_TYPE_TABLE
   use dftbp_reks_reks, only : reksTypes
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -201,6 +204,34 @@ contains
 
     !> Print level in standard output file
     call hsd_get_or_set(node, "VerbosityLevel", ctrl%reksInp%Plevel, 1)
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="SSR22")
+      call schema_add_field(schema, "Energy", FIELD_REQUIRED, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "TargetState", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "TargetMicrostate", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "ReadEigenvectors", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "FonMaxIter", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Shift", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "SpinTuning", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "TransitionDipole", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Gradient", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "RelaxedDensity", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "NonAdiabaticCoupling", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "VerbosityLevel", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readSSR22
 

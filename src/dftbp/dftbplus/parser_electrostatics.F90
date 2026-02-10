@@ -13,8 +13,10 @@ module dftbp_dftbplus_parser_electrostatics
   use dftbp_common_accuracy, only : dp
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_extlibs_poisson, only : TPoissonInfo, withPoisson
-  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error
-  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, HSD_STAT_OK
+  use dftbp_io_hsdutils, only : getNodeName2, dftbp_error, dftbp_warning
+  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, HSD_STAT_OK, &
+      & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
+      & schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_TABLE
   use dftbp_type_typegeometry, only : TGeometry
   use hsd_data, only : hsd_table, new_table
 #:if WITH_TRANSPORT
@@ -123,6 +125,7 @@ contains
     character(len=:), allocatable :: buffer
     integer :: iSp1, stat
 
+    value1 => null()
     ctrl%isMdftb = .false.
     if (ctrl%tSCC) then
       call hsd_get_table(node, "Mdftb", child, stat, auto_wrap=.true.)
@@ -233,6 +236,27 @@ contains
         end select
       end if
     end if
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      if (associated(value1)) then
+        call schema_init(schema, name="Mdftb")
+        call schema_add_field(schema, "AtomDIntegralScalings", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "AtomQIntegralScalings", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "OneCenterAtomIntegrals", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, value1, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(value1, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end if
+    end block
 
   end subroutine readMdftb
 

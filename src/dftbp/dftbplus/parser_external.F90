@@ -18,8 +18,11 @@ module dftbp_dftbplus_parser_external
   use dftbp_dftbplus_inputdata, only : TControl
   use dftbp_io_charmanip, only : unquote
   use hsd, only : hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib, hsd_table_ptr, &
-      & hsd_get_child_tables, hsd_get_table, hsd_get_choice, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
+      & hsd_get_child_tables, hsd_get_table, hsd_get_choice, HSD_STAT_OK, &
+      & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
+      & schema_destroy, FIELD_REQUIRED, FIELD_OPTIONAL, FIELD_TYPE_REAL, &
+      & FIELD_TYPE_INTEGER, FIELD_TYPE_TABLE
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
 
@@ -44,7 +47,7 @@ contains
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
 
-    type(hsd_table), pointer :: value1, child, child2, child3
+    type(hsd_table), pointer :: value1, child, child2, child3, externalChild
     type(hsd_table_ptr), allocatable :: children(:)
     character(len=:), allocatable :: modifier, buffer, buffer2
     real(dp) :: rTmp
@@ -53,6 +56,7 @@ contains
     real(dp), allocatable :: tmpR2(:,:)
     real(dp), allocatable :: allCharges(:,:), allBlurs(:)
 
+    externalChild => null()
     call hsd_get_table(node, "ElectricField", child, stat, auto_wrap=.true.)
 
     ! external applied field
@@ -60,6 +64,7 @@ contains
     if (associated(child)) then
       call hsd_get_table(child, "External", child2, stat, auto_wrap=.true.)
     end if
+    externalChild => child2
     if (associated(child2)) then
       allocate(ctrl%electricField)
       ctrl%tMulliken = .true.
@@ -240,6 +245,41 @@ contains
       end if
 
     end if
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      if (associated(externalChild)) then
+        call schema_init(schema, name="External")
+        call schema_add_field(schema, "Strength", FIELD_REQUIRED, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "Direction", FIELD_REQUIRED, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "Frequency", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "Phase", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_validate(schema, externalChild, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(externalChild, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end if
+
+      if (associated(child)) then
+        call schema_init(schema, name="AtomSitePotential")
+        call schema_add_field(schema, "Net", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "Gross", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_validate(schema, child, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end if
+    end block
 
   end subroutine readExternal
 

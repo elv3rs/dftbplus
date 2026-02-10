@@ -16,8 +16,11 @@ module dftbp_dftbplus_parser_solver
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes
   use dftbp_extlibs_elsiiface, only : withELSI, withPEXSI
   use dftbp_extlibs_poisson, only : TPoissonInfo
-  use dftbp_io_hsdutils, only : dftbp_error
-  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
+  use hsd, only : hsd_get_or_set, hsd_get_table, hsd_get_choice, hsd_get_attrib, HSD_STAT_OK, &
+      & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
+      & schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, &
+      & FIELD_TYPE_LOGICAL
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use hsd_data, only : hsd_table, new_table
@@ -241,6 +244,39 @@ contains
           & (GreensFunction or TransportOnly required)")
     end if
   #:endif
+
+    ! -- Schema validation (proof-of-concept, warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Solver")
+      call schema_add_field(schema, "DensityMatrixGPU", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Sparse", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Mode", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Autotune", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Gpu", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "nIterationsELPA", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Tolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Choleskii", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Method", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Poles", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "ProcsPerPole", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "muPoints", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "SymbolicFactorProcs", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "SpectralRadius", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "PurificationMethod", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Truncation", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Threshold", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, value1, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(value1, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readSolver
 
