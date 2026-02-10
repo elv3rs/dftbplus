@@ -564,10 +564,6 @@ contains
             if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing required value: '" &
                 & // trim(strTmp) // "'")
             call hsd_get_table(child, trim(strTmp), child2, stat, auto_wrap=.true.)
-            !if (size(strArr) /= size(angShells(iSp1)) * size(angShells(iSp2))) then
-            !  call detailedError(child2, "Incorrect number of Slater-Koster &
-            !      &files")
-            !end if
             do ii = 1, size(strArr)
               strTmp = strArr(ii)
               inquire(file=strTmp, exist=tExist)

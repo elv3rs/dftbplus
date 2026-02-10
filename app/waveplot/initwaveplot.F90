@@ -25,7 +25,6 @@ module waveplot_initwaveplot
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices
-  ! getChildValue removed: using hsd_get directly
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
       & hsd_dump, hsd_clear_children, hsd_table_ptr, hsd_get_child_tables, hsd_get,&

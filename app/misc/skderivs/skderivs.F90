@@ -17,7 +17,6 @@ program skderivs
       & TSlakoEqGrid
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_hsdutils, only : dftbp_error
-  ! getChildValue removed: using hsd_get directly
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_get, hsd_get_or_set, &
       & hsd_get_table, HSD_STAT_OK
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_error_t, hsd_table, new_table

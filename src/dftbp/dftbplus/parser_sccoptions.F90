@@ -54,8 +54,6 @@ contains
 
     call hsd_get_or_set(node, "SCCTolerance", ctrl%sccTol, 1.0e-5_dp)
 
-    ! temporarily removed until debugged
-    ! call getChildValue(node, "WriteShifts", ctrl%tWriteShifts, .false.)
     ctrl%tWriteShifts = .false.
 
     if (geo%tPeriodic) then

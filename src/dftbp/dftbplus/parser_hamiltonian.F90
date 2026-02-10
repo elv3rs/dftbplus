@@ -422,12 +422,6 @@ contains
     #:endif
     end if
 
-    ! temporararily removed until debugged
-    !if (.not. ctrl%tscc) then
-    !  !! In a non-SCC calculation it is possible to upload charge shifts
-    !  !! This is useful if the calculation can jump directly to the Analysis block
-    !  call getChildValue(node, "ReadShifts", ctrl%tReadShifts, .false.)
-    !end if
     ctrl%tReadShifts = .false.
 
     ! External fields and potentials
@@ -873,12 +867,6 @@ contains
     #:endif
     end if
 
-    ! temporararily removed until debugged
-    !if (.not. ctrl%tscc) then
-    !  !! In a non-SCC calculation it is possible to upload charge shifts
-    !  !! This is useful if the calculation can jump directly to the Analysis block
-    !  call getChildValue(node, "ReadShifts", ctrl%tReadShifts, .false.)
-    !end if
     ctrl%tReadShifts = .false.
 
     ! External fields and potentials

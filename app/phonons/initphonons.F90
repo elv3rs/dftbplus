@@ -695,8 +695,6 @@ contains
           !Convert the negf input value. Default is 20.e eV
           contacts(ii)%wideBandDos = 1.d0 / contacts(ii)%wideBandDos
         end if
-        !call getChildValue(pNode, "FermiLevel", contacts(ii)%eFermi,modifier=modif)
-        !call convertUnitHsd(modif, energyUnits, pNode, contacts(ii)%eFermi)
         contacts(ii)%eFermi=0.d0
       end if
 
