@@ -15,8 +15,9 @@ module dftbp_dftbplus_parser
   use dftbp_common_status, only : TStatus
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_oldcompat, only : parserVersion
-  use dftbp_io_hsdutils, only : dftbp_error
-  use hsd, only : hsd_error_t, hsd_get_table, hsd_get_choice
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning
+  use hsd, only : hsd_error_t, hsd_get_table, hsd_get_choice, hsd_schema_t, schema_init, &
+      & schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, FIELD_TYPE_TABLE
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error
   use dftbp_type_commontypes, only : TOrbitals
@@ -293,6 +294,34 @@ contains
 
     ! read parallel calculation settings
     call readParallel(root, input)
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="DftbPlusInput")
+      call schema_add_field(schema, "ParserOptions", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Geometry", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Reks", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Transport", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Dephasing", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Hamiltonian", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Driver", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ElectronDynamics", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Analysis", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ExcitedState", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Options", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Parallel", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, root, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(root, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
     ! input data strucutre has been initialised
     input%tInitialized = .true.
