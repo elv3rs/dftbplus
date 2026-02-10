@@ -11,9 +11,12 @@ module dftbp_dftbplus_parser_analysis
   use dftbp_elecsolvers_elecsolvers, only : electronicSolverTypes, providesEigenvalues
   use dftbp_io_charmanip, only : unquote
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_matrix, hsd_get_attrib,&
-      & hsd_table_ptr, hsd_get_child_tables, hsd_get_table, hsd_set, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getNodeName, getNodeName2,&
-      & hasInlineData
+      & hsd_table_ptr, hsd_get_child_tables, hsd_get_table, hsd_set, HSD_STAT_OK, &
+      & hsd_schema_t, hsd_error_t, schema_init, schema_add_field, schema_validate, &
+      & schema_destroy, FIELD_OPTIONAL, FIELD_REQUIRED, FIELD_TYPE_REAL, FIELD_TYPE_INTEGER, &
+      & FIELD_TYPE_LOGICAL, FIELD_TYPE_STRING, FIELD_TYPE_TABLE
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices, getNodeName,&
+      & getNodeName2, hasInlineData
   use dftbp_io_message, only : error
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd_data, only : hsd_table
@@ -304,6 +307,44 @@ contains
     endif
   #:endif
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Analysis")
+      call schema_add_field(schema, "ProjectStates", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Localise", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "WriteEigenvectors", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteBandOut", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Polarisability", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "ResponseKernel", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "CoordDerivatives", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "PerturbDegenTol", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "PerturbEta", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "MaxPerturbIter", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "PerturbSccTol", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ConvergedPerturb", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "ElectrostaticPotential", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "MullikenAnalysis", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "WriteNetCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "CM5", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "AtomResolvedEnergies", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "writeCosmoFile", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "PrintForces", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+    #:if WITH_TRANSPORT
+      call schema_add_field(schema, "TunnelingAndDOS", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+    #:endif
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readAnalysis
 
 
@@ -385,6 +426,25 @@ contains
       end if
     end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="FreqRanges")
+      call schema_add_field(schema, "Static", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Frequencies", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "FrequencyRange", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine freqRanges
 
 
@@ -432,6 +492,23 @@ contains
     if (tPrintEigVecs) then
       call hsd_get_or_set(node, "EigenvectorsAsText", ctrl%tPrintEigVecsTxt, .false.)
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="LaterAnalysis")
+      call schema_add_field(schema, "EigenvectorsAsText", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readLaterAnalysis
 
@@ -514,6 +591,27 @@ contains
     call hsd_get_attrib(child, "Softening", modifier, stat)
     if (stat /= HSD_STAT_OK) modifier = ""
     call convertUnitHsd(modifier, lengthUnits, child2, ctrl%elStatPotentialsInp%softenEsp)
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="ElectrostaticPotential")
+      call schema_add_field(schema, "OutputFile", FIELD_OPTIONAL, FIELD_TYPE_STRING)
+      call schema_add_field(schema, "AppendFile", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "Points", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Grid", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Softening", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, child, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readElectrostaticPotential
 
@@ -651,6 +749,26 @@ contains
         axes = latVecs * spread(r3Tmp,2,3)
       end if
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="Grid")
+      call schema_add_field(schema, "Spacing", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Origin", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "GridPoints", FIELD_REQUIRED, FIELD_TYPE_INTEGER)
+      call schema_add_field(schema, "Directions", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readGrid
 

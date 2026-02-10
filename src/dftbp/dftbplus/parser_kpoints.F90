@@ -11,8 +11,10 @@ module dftbp_dftbplus_parser_kpoints
   use dftbp_io_charmanip, only : tolower
   use hsd_data, only : hsd_table
   use hsd, only : hsd_get_or_set, hsd_get_matrix, HSD_STAT_OK, hsd_get, hsd_get_table, &
-      & hsd_get_choice, hsd_get_attrib
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
+      & hsd_get_choice, hsd_get_attrib, hsd_schema_t, hsd_error_t, schema_init, &
+      & schema_add_field, schema_validate, schema_destroy, FIELD_OPTIONAL, &
+      & FIELD_TYPE_INTEGER, FIELD_TYPE_TABLE
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33, diagonal
   use dftbp_type_typegeometry, only : TGeometry
@@ -71,6 +73,24 @@ contains
             & i.e. a single SCC iteration.")
       end if
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="KPoints")
+      call schema_add_field(schema, "KPointsAndWeights", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "MaxSCCIterations", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readKPoints
 
