@@ -761,7 +761,11 @@ contains
       call hsd_get_choice(child, "", buffer, value1, stat)
       if (stat /= HSD_STAT_OK) buffer = ""
     end if
-    if (buffer == "" .and. (.not. associated(child) .or. .not. hsd_has_value_children(child))) then
+    block
+      logical :: childHasValues
+      childHasValues = .false.
+      if (associated(child)) childHasValues = hsd_has_value_children(child)
+    if (buffer == "" .and. .not. childHasValues) then
       ctrl%tReadMDVelocities = .false.
     else
       call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
@@ -783,6 +787,7 @@ contains
       ctrl%initialVelocities(:,:) = tmpVelocities(:,ctrl%indMovedAtom(:))
       ctrl%tReadMDVelocities = .true.
     end if
+    end block
 
     ! -- Schema validation (warnings only) --
     block
@@ -1317,7 +1322,11 @@ contains
       call hsd_get_choice(child, "", buffer, value1, stat)
       if (stat /= HSD_STAT_OK) buffer = ""
     end if
-    if (buffer == "" .and. (.not. associated(child) .or. .not. hsd_has_value_children(child))) then
+    block
+      logical :: childHasValues
+      childHasValues = .false.
+      if (associated(child)) childHasValues = hsd_has_value_children(child)
+    if (buffer == "" .and. .not. childHasValues) then
        input%tReadMDVelocities = .false.
     else
        call hsd_get_matrix(node, "Velocities", tmpVelocities, nMatRows, nMatCols, &
@@ -1339,6 +1348,7 @@ contains
        input%initialVelocities(:,:) = tmpVelocities(:, input%indMovedAtom(:))
        input%tReadMDVelocities = .true.
     end if
+    end block
 
     ! -- Schema validation (warnings only) --
     block

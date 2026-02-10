@@ -253,7 +253,11 @@ contains
     real(dp), allocatable :: tmpTuning(:)
 
     call hsd_get_table(node, "SpinTuning", child, stat, auto_wrap=.true.)
-    if (.not. associated(child) .or. .not. hsd_has_value_children(child)) then
+    block
+      logical :: childHasValues
+      childHasValues = .false.
+      if (associated(child)) childHasValues = hsd_has_value_children(child)
+    if (.not. childHasValues) then
       ! no 'SpinTuning' block in REKS input
       allocate(ctrl%reksInp%Tuning(nType))
       do iType = 1, nType
@@ -271,6 +275,7 @@ contains
       allocate(ctrl%reksInp%Tuning(nType))
       ctrl%reksInp%Tuning(:) = tmpTuning(:)
     end if
+    end block
 
   end subroutine readSpinTuning
 

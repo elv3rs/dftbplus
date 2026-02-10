@@ -376,7 +376,11 @@ contains
         end do
       end block
     end if
-    call hsd_get_name(value, buffer)
+    if (associated(value)) then
+      call hsd_get_name(value, buffer)
+    else
+      buffer = ""
+    end if
     if (buffer == "" .and. hsd_has_value_children(child)) buffer = "#text"
     select case (buffer)
     case ("directread")
@@ -396,7 +400,7 @@ contains
       end if
       call closeFile(file)
     case ("#text")
-      call hsd_get_name(value, buffer)
+      if (associated(value)) call hsd_get_name(value, buffer)
       block
         real(dp), allocatable :: flatArr(:)
         call hsd_get(child, "#text", flatArr, stat=stat)
@@ -412,7 +416,11 @@ contains
     end select
 
     call hsd_get_table(root, "BornCharges", child, stat, auto_wrap=.true.)
-    call hsd_get_name(child, buffer)
+    if (associated(child)) then
+      call hsd_get_name(child, buffer)
+    else
+      buffer = ""
+    end if
     if (buffer /= "") then
       call hsd_get(child, "#text", bornMatrix, stat=stat)
       if (size(bornMatrix) /= 3 * nDerivs) then
@@ -423,7 +431,11 @@ contains
     end if
 
     call hsd_get_table(root, "BornDerivs", child, stat, auto_wrap=.true.)
-    call hsd_get_name(child, buffer)
+    if (associated(child)) then
+      call hsd_get_name(child, buffer)
+    else
+      buffer = ""
+    end if
     if (buffer /= "") then
       call hsd_get(child, "#text", bornDerivsMatrix, stat=stat)
       if (size(bornDerivsMatrix) /= 9 * nDerivs) then
@@ -487,7 +499,11 @@ contains
         end select
       end do
     end block
-    call hsd_get_name(child, buffer, "#text")
+    if (associated(child)) then
+      call hsd_get_name(child, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(child, geo)

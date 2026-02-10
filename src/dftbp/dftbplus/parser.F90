@@ -214,6 +214,14 @@ contains
       call hsd_get_table(root, "Driver", child, stat)
     end if
     call hsd_get_choice(child, "", choiceName, driverNode, stat)
+    if (.not. associated(driverNode)) then
+      block
+        type(hsd_table) :: defChild
+        call new_table(defChild, name="")
+        call child%add_child(defChild)
+      end block
+      call hsd_get_choice(child, "", choiceName, driverNode, stat)
+    end if
   #:if WITH_TRANSPORT
     call readDriver(driverNode, child, input%geom, input%ctrl, input%transpar)
   #:else
