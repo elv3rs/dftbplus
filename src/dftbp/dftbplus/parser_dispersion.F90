@@ -25,7 +25,9 @@ module dftbp_dftbplus_parser_dispersion
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_io_charmanip, only : tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_table, hsd_get_choice, &
-      & hsd_get_attrib, hsd_get_matrix, hsd_set, HSD_STAT_OK
+      & hsd_get_attrib, hsd_get_matrix, hsd_set, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
+      & schema_init, schema_add_field, schema_validate, schema_destroy, FIELD_REQUIRED, &
+      & FIELD_OPTIONAL, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, FIELD_TYPE_TABLE
   use hsd_data, only : hsd_table, new_table
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, splitModifier
   use dftbp_io_unitconv, only : convertUnitHsd
@@ -407,6 +409,30 @@ contains
       call dftbp_error(node, "DFT-D3 does not support all species present")
     end if
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="DFTD3")
+      call schema_add_field(schema, "Damping", FIELD_REQUIRED, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "s6", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "s8", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "cutoff", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "cutoffcn", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "threebody", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "hhrepulsion", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+      call schema_add_field(schema, "AtomicNumbers", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readDFTD3
 
 
@@ -442,6 +468,31 @@ contains
     call convertUnitHsd(buffer, lengthUnits, child, input%cutoffInter)
 
     call readCoordinationNumber(node, input%cnInput, geo, "exp", 0.0_dp)
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="SimpleDFTD3")
+      call schema_add_field(schema, "s6", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "s8", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "s10", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "a1", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "a2", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "alpha", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "weightingFactor", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "cutoffInter", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "CoordinationNumber", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readSimpleDFTD3
 
@@ -559,6 +610,37 @@ contains
     if (unknownSpecies) then
       call dftbp_error(node, "DFT-D4 does not support all species present")
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="DFTD4")
+      call schema_add_field(schema, "s6", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "s8", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "s9", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "s10", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "a1", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "a2", FIELD_REQUIRED, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "alpha", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "WeightingFactor", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ChargeSteepness", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ChargeScale", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "CutoffInter", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "CutoffThree", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "ChargeModel", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "AtomicNumbers", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "CoordinationNumber", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readDispDFTD4
 
@@ -700,6 +782,30 @@ contains
 
     call readCoordinationNumber(node, input%cnInput, geo, "Erf", 8.0_dp)
 
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="EeqModel")
+      call schema_add_field(schema, "Chi", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Gam", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Kcn", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Rad", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Cutoff", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldParameter", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "EwaldTolerance", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "CoordinationNumber", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, node, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(node, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
+
   end subroutine readEeqModel
 
 
@@ -824,6 +930,26 @@ contains
     if (any(input%covRad <= 0.0_dp)) then
       call dftbp_error(value1, "Covalent radii are not defined for all species")
     end if
+
+    ! -- Schema validation (warnings only) --
+    block
+      type(hsd_schema_t) :: schema
+      type(hsd_error_t), allocatable :: schemaErrors(:)
+      integer :: iErr
+
+      call schema_init(schema, name="CoordinationNumber")
+      call schema_add_field(schema, "CutCN", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Cutoff", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+      call schema_add_field(schema, "Electronegativities", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_add_field(schema, "Radii", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+      call schema_validate(schema, value1, schemaErrors)
+      if (size(schemaErrors) > 0) then
+        do iErr = 1, size(schemaErrors)
+          call dftbp_warning(value1, "[schema] " // schemaErrors(iErr)%message)
+        end do
+      end if
+      call schema_destroy(schema)
+    end block
 
   end subroutine readCoordinationNumber
 

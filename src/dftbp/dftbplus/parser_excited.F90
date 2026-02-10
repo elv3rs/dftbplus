@@ -17,9 +17,12 @@ module dftbp_dftbplus_parser_excited
   use dftbp_extlibs_arpack, only : withArpack
   use dftbp_io_charmanip, only : tolower, unquote
   use hsd, only : hsd_rename_child, hsd_get_or_set, hsd_get, hsd_get_table, hsd_set,&
-      & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK
+      & hsd_get_attrib, hsd_get_choice, HSD_STAT_OK, hsd_schema_t, hsd_error_t, &
+      & schema_init, schema_add_field, schema_validate, schema_destroy, FIELD_REQUIRED, &
+      & FIELD_OPTIONAL, FIELD_TYPE_INTEGER, FIELD_TYPE_REAL, FIELD_TYPE_LOGICAL, &
+      & FIELD_TYPE_TABLE, FIELD_TYPE_STRING
   use hsd_data, only : hsd_table
-  use dftbp_io_hsdutils, only : dftbp_error, getNodeName
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getNodeName
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_timedep_linresptypes, only : linRespSolverTypes
   use dftbp_type_typegeometry, only : TGeometry
@@ -190,6 +193,42 @@ contains
         call hsd_get_or_set(child, "ExcitedStateForces", ctrl%tCasidaForces, .true.)
       end if
 
+      ! -- Schema validation for Casida (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="Casida")
+        call schema_add_field(schema, "Symmetry", FIELD_REQUIRED, FIELD_TYPE_STRING)
+        call schema_add_field(schema, "NrOfExcitations", FIELD_REQUIRED, FIELD_TYPE_INTEGER)
+        call schema_add_field(schema, "StateOfInterest", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_add_field(schema, "EnergyWindow", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "OscillatorWindow", FIELD_OPTIONAL, FIELD_TYPE_REAL)
+        call schema_add_field(schema, "CacheCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteMulliken", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteCoefficients", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "TotalStateCoeffs", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteEigenvectors", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteDensityMatrix", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteXplusY", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "StateCouplings", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_add_field(schema, "WriteSPTransitions", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteTransitions", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteTransitionDipole", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "WriteTransitionCharges", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "Diagonaliser", FIELD_REQUIRED, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "OptimiserCI", FIELD_OPTIONAL, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "ExcitedStateForces", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_validate(schema, child, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
+
     end if
 
     !pp-RPA
@@ -239,6 +278,27 @@ contains
         if (stat /= HSD_STAT_OK) call dftbp_error(child2, "Missing required value")
         ctrl%pprpa%tConstVir = .true.
       end if
+
+      ! -- Schema validation for PP-RPA (warnings only) --
+      block
+        type(hsd_schema_t) :: schema
+        type(hsd_error_t), allocatable :: schemaErrors(:)
+        integer :: iErr
+
+        call schema_init(schema, name="PP-RPA")
+        call schema_add_field(schema, "Symmetry", FIELD_REQUIRED, FIELD_TYPE_STRING)
+        call schema_add_field(schema, "NrOfExcitations", FIELD_REQUIRED, FIELD_TYPE_INTEGER)
+        call schema_add_field(schema, "HHubbard", FIELD_REQUIRED, FIELD_TYPE_TABLE)
+        call schema_add_field(schema, "TammDancoff", FIELD_OPTIONAL, FIELD_TYPE_LOGICAL)
+        call schema_add_field(schema, "NrOfVirtualStates", FIELD_OPTIONAL, FIELD_TYPE_INTEGER)
+        call schema_validate(schema, child, schemaErrors)
+        if (size(schemaErrors) > 0) then
+          do iErr = 1, size(schemaErrors)
+            call dftbp_warning(child, "[schema] " // schemaErrors(iErr)%message)
+          end do
+        end if
+        call schema_destroy(schema)
+      end block
 
     end if
 
