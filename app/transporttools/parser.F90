@@ -27,7 +27,6 @@ module transporttools_parser
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
-  use dftbp_type_linkedlist, only : append, destruct, get, init, TListCharLc
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
@@ -53,6 +52,11 @@ module transporttools_parser
 
   !> Tag at the head of the input document tree
   character(len=*), parameter :: rootTag = "setup_in"
+
+  !> Wrapper type for an array of character(lc) strings
+  type :: TCharLcArray
+    character(lc), allocatable :: items(:)
+  end type TCharLcArray
 
 
   !> Version of the current parser
@@ -500,7 +504,7 @@ contains
 
     type(hsd_table), pointer :: value1, child, child2
     character(len=:), allocatable :: buffer, buffer2
-    type(TListCharLc), allocatable :: skFiles(:,:)
+    type(TCharLcArray), allocatable :: skFiles(:,:)
     type(TOldSKData) :: skData
     integer :: iSp1, iSp2, ii, stat
     character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp
@@ -511,7 +515,7 @@ contains
     allocate(skFiles(nSpecies, nSpecies))
     do iSp1 = 1, nSpecies
       do iSp2 = 1, nSpecies
-        call init(skFiles(iSp2, iSp1))
+        allocate(skFiles(iSp2, iSp1)%items(0))
       end do
     end do
     call hsd_get_choice(node, "SlaterKosterFiles", buffer, value1, stat)
@@ -540,7 +544,7 @@ contains
           end if
           strTmp = trim(prefix) // trim(elem1) // trim(separator) &
               &// trim(elem2) // trim(suffix)
-          call append(skFiles(iSp2, iSp1), strTmp)
+          skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
           inquire(file=strTmp, exist=tExist)
           if (.not. tExist) then
             call dftbp_error(value1, "SK file with generated name '" &
@@ -571,7 +575,7 @@ contains
                 call dftbp_error(child2, "SK file '" // trim(strTmp) &
                     &// "' does not exist'")
               end if
-              call append(skFiles(iSp2, iSp1), strTmp)
+              skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
             end do
           end block
         end do
@@ -581,7 +585,7 @@ contains
     write(stdout, "(A)") "Reading SK-files:"
     do iSp1 = 1, nSpecies
       do iSp2 = iSp1, nSpecies
-        call get(skFiles(iSp2, iSp1), fileName, 1)
+        fileName = skFiles(iSp2, iSp1)%items(1)
         write(stdout,*) trim(fileName)
         call readFromFile(skData, fileName, (iSp1 == iSp2))
         maxSKcutoff = max(maxSKcutoff, skData%dist * size(skData%skHam,1))
@@ -592,7 +596,7 @@ contains
 
     do iSp1 = 1, nSpecies
       do iSp2 = 1, nSpecies
-        call destruct(skFiles(iSp2, iSp1))
+        if (allocated(skFiles(iSp2, iSp1)%items)) deallocate(skFiles(iSp2, iSp1)%items)
       end do
     end do
     deallocate(skFiles)

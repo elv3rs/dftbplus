@@ -21,13 +21,17 @@ module dftbp_dftbplus_parser_skfiles
   use dftbp_dftbplus_inputdata, only : TSlater
   use dftbp_io_message, only : error
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : get, len, TListCharLc
   use dftbp_dftbplus_parser_spin, only : TAngShellBlocks, getAngShellBlock
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
   implicit none
 
   private
-  public :: readSKFiles
+  public :: readSKFiles, TCharLcArray
+
+  !> Wrapper type for an array of character(lc) strings
+  type :: TCharLcArray
+    character(lc), allocatable :: items(:)
+  end type TCharLcArray
 
 contains
 
@@ -39,7 +43,7 @@ contains
       & truncationCutOff, hybridXcSK)
 
     !> List of SK file names to read in for every interaction
-    type(TListCharLc), intent(inout) :: skFiles(:,:)
+    type(TCharLcArray), intent(inout) :: skFiles(:,:)
 
     !> Nr. of species in the system
     integer, intent(in) :: nSpecies
@@ -114,7 +118,7 @@ contains
           do iSK2 = 1, nSK2
             readRep = (iSK1 == 1 .and. iSK2 == 1)
             readAtomic = (iSp1 == iSp2 .and. iSK1 == iSK2)
-            call get(skFiles(iSp2, iSp1), fileName, ind)
+            fileName = skFiles(iSp2, iSp1)%items(ind)
             write(stdOut, "(a)") trim(fileName)
             if (.not. present(hybridXcSK)) then
               if (readRep .and. repPoly(iSp2, iSp1)) then
@@ -168,7 +172,7 @@ contains
           do iSK2 = 1, nSK2
             do iSK1 = 1, nSK1
               readRep = (iSK1 == 1 .and. iSK2 == 1)
-              call get(sKFiles(iSp1, iSp2), fileName, ind)
+              fileName = sKFiles(iSp1, iSp2)%items(ind)
               if (readRep .and. repPoly(iSp1, iSp2)) then
                 call readFromFile(skData21(iSK1,iSK2), fileName, readAtomic, &
                     &polyRepInp=repPolyIn2)

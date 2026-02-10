@@ -23,7 +23,7 @@ module dftbp_dftbplus_parser_hybrid
   use dftbp_io_unitconv, only : convertUnitHsd
   use dftbp_io_message, only : error
   use hsd_data, only : hsd_table
-  use dftbp_type_linkedlist, only : get, TListCharLc
+  use dftbp_dftbplus_parser_skfiles, only : TCharLcArray
   use dftbp_type_oldskdata, only : parseHybridXcTag
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
@@ -50,7 +50,7 @@ contains
     type(TControl), intent(in) :: ctrl
 
     !> List of SK file names to read in for every interaction
-    type(TListCharLc), intent(inout) :: skFiles(:,:)
+    type(TCharLcArray), intent(inout) :: skFiles(:,:)
 
     !! File name of representative SK-file to read
     character(lc) :: fileName
@@ -86,7 +86,7 @@ contains
 
     ! Extracting hybridXc tag from first SK-file only is a workaround and assumes that a set of
     ! given SK-files uses the same parameters (which should always be the case)!
-    call get(skFiles(1, 1), fileName, 1)
+    fileName = skFiles(1, 1)%items(1)
 
     ! Check if SK-files contain extra tag for hybrid xc-functionals
     call parseHybridXcTag(fileName, hybridXcTag=hybridXcSkTag, hybridXcType=hybridXcSkType)

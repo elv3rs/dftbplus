@@ -29,7 +29,6 @@ module modes_initmodes
       & hsd_get_attrib, HSD_STAT_OK, hsd_node
   use hsd_data, only : data_load, DATA_FMT_AUTO, hsd_table, new_table
   use dftbp_io_message, only : error, warning
-  use dftbp_type_linkedlist, only : append, destruct, get, init, TListCharLc
   use dftbp_type_oldskdata, only : readFromFile, TOldSkData
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHsd, readTGeometryVasp,&
       & readTGeometryXyz, TGeometry, writeTGeometryHsd
@@ -41,6 +40,11 @@ module modes_initmodes
   public :: nCycles, nSteps, nMovedAtom, iMovedAtoms, nDerivs, iSolver, solverTypes
   public :: tVerbose, tPlotModes, tEigenVectors, tAnimateModes, tRemoveTranslate, tRemoveRotate
   public :: setEigvecGauge
+
+  !> Wrapper type for an array of character(lc) strings
+  type :: TCharLcArray
+    character(lc), allocatable :: items(:)
+  end type TCharLcArray
 
 
   !> Program version
@@ -153,7 +157,7 @@ contains
     integer :: inputVersion
     integer :: ii, iSp1, iAt
     real(dp), allocatable :: speciesMass(:), replacementMasses(:)
-    type(TListCharLc), allocatable :: skFiles(:)
+    type(TCharLcArray), allocatable :: skFiles(:)
     character(lc) :: prefix, suffix, separator, elem1, strTmp, str2Tmp, filename
     logical :: tLower, tDumpPHSD
     logical :: tWriteHSD
@@ -273,7 +277,7 @@ contains
     if (associated(value)) then
       allocate(skFiles(geo%nSpecies))
       do iSp1 = 1, geo%nSpecies
-        call init(skFiles(iSp1))
+        allocate(skFiles(iSp1)%items(0))
       end do
       call getNodeName(value, buffer)
       select case(buffer)
@@ -298,7 +302,7 @@ contains
                 & // "' not found." // newline // "   (search path(s): " // strJoin // ").")
           end if
           strTmp = strOut
-          call append(skFiles(iSp1), strTmp)
+          skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
         end do
       case default
         value%processed = .false.
@@ -323,16 +327,16 @@ contains
                     & // "   (search path(s): " // strJoin // ").")
               end if
               strTmp = strOut
-              call append(skFiles(iSp1), strTmp)
+              skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
             end do
           end block
         end do
       end select
       do iSp1 = 1, geo%nSpecies
-        call get(skFiles(iSp1), fileName, 1)
+        fileName = skFiles(iSp1)%items(1)
         call readFromFile(skData, fileName, .true.)
         speciesMass(iSp1) = skData%mass
-        call destruct(skFiles(iSp1))
+        if (allocated(skFiles(iSp1)%items)) deallocate(skFiles(iSp1)%items)
       end do
     end if
 

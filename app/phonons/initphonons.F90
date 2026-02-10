@@ -30,7 +30,6 @@ module phonons_initphonons
   use dftbp_io_tokenreader, only : getNextToken, TOKEN_OK
   use dftbp_math_simplealgebra, only : determinant33
   use dftbp_transport_negfvars, only : ContactInfo, TNEGFtundos, TTransPar
-  use dftbp_type_linkedlist, only : append, destruct, get, init, TListCharLc
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
   use dftbp_type_typegeometryhsd, only : readTGeometryGen, readTGeometryHSD, TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1
@@ -51,6 +50,11 @@ module phonons_initphonons
     type(TWrappedInt1), allocatable :: iAtInRegion(:)
     character(lc), allocatable :: regionLabels(:)
   end type TPdos
+
+  !> Wrapper type for an array of character(lc) strings
+  type :: TCharLcArray
+    character(lc), allocatable :: items(:)
+  end type TCharLcArray
 
   !> Identity of the run
   integer, public :: identity
@@ -762,7 +766,7 @@ contains
     real(dp), dimension(:) :: speciesMass
 
     type(TOldSKData) :: skData
-    type(TListCharLc), allocatable :: skFiles(:)
+    type(TCharLcArray), allocatable :: skFiles(:)
     type(hsd_table), pointer :: value, child2
     character(len=:), allocatable :: buffer, buffer2
     character(lc) :: prefix, suffix, separator, elem1, elem2, strTmp, filename
@@ -773,7 +777,7 @@ contains
     !! Slater-Koster files
     allocate(skFiles(geo%nSpecies))
     do iSp1 = 1, geo%nSpecies
-        call init(skFiles(iSp1))
+        allocate(skFiles(iSp1)%items(0))
     end do
 
     ! Get first table child for dispatch
@@ -809,7 +813,7 @@ contains
         end if
         strTmp = trim(prefix) // trim(elem1) // trim(separator) &
             &// trim(elem1) // trim(suffix)
-        call append(skFiles(iSp1), strTmp)
+        skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
         inquire(file=strTmp, exist=tExist)
         if (.not. tExist) then
           call dftbp_error(value, "SK file with generated name '" &
@@ -838,14 +842,14 @@ contains
               call dftbp_error(child2, "SK file '" // trim(strTmp) &
                   &// "' does not exist'")
             end if
-            call append(skFiles(iSp1), strTmp)
+            skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
           end do
         end block
       end do
     end select
 
     do iSp1 = 1, geo%nSpecies
-      call get(skFiles(iSp1), fileName, 1)
+      fileName = skFiles(iSp1)%items(1)
       call readFromFile(skData, fileName, .true.)
       deallocate(skData%skHam)
       deallocate(skData%skOver)
@@ -853,7 +857,7 @@ contains
     end do
 
     do iSp1 = 1, geo%nSpecies
-      call destruct(skFiles(iSp1))
+      if (allocated(skFiles(iSp1)%items)) deallocate(skFiles(iSp1)%items)
     end do
     deallocate(skFiles)
 

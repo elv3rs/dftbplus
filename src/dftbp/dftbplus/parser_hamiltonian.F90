@@ -37,7 +37,6 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_reks_reks, only : reksTypes
   use dftbp_solvation_solvparser, only : readSolvation
   use dftbp_type_commontypes, only : TOrbitals
-  use dftbp_type_linkedlist, only : append, destruct, init, TListCharLc
   use dftbp_type_typegeometry, only : TGeometry
 #:if WITH_TRANSPORT
   use dftbp_transport_negfvars, only : TNEGFGreenDensInfo
@@ -46,7 +45,7 @@ module dftbp_dftbplus_parser_hamiltonian
   use dftbp_dftbplus_parser_dispersion, only : readDispersion
   use dftbp_dftbplus_parser_kpoints, only : readKPoints
   use dftbp_dftbplus_parser_hybrid, only : parseHybridBlock, parseChimes
-  use dftbp_dftbplus_parser_skfiles, only : readSKFiles
+  use dftbp_dftbplus_parser_skfiles, only : readSKFiles, TCharLcArray
   use dftbp_dftbplus_parser_spin, only : readSpinPolarisation, readSpinOrbit, &
       & readMaxAngularMomentum, setupOrbitals, TAngShellBlocks
   use dftbp_dftbplus_parser_electrostatics, only : readElectrostatics, readMdftb
@@ -170,7 +169,7 @@ contains
     type(hsd_table), pointer :: value1, child, child2, child3
     type(hsd_table_ptr), allocatable :: children(:)
     character(len=:), allocatable :: buffer, buffer2, modifier
-    type(TListCharLc), allocatable :: skFiles(:,:)
+    type(TCharLcArray), allocatable :: skFiles(:,:)
     integer, allocatable :: shellsTmp(:)
     character(len=:), allocatable :: strArr(:)
     type(TAngShellBlocks), allocatable :: angShells(:)
@@ -206,7 +205,7 @@ contains
     allocate(skFiles(geo%nSpecies, geo%nSpecies))
     do iSp1 = 1, geo%nSpecies
       do iSp2 = 1, geo%nSpecies
-        call init(skFiles(iSp2, iSp1))
+        allocate(skFiles(iSp2, iSp1)%items(0))
       end do
     end do
     call hsd_get_table(node, "SlaterKosterFiles", child, stat, auto_wrap=.true.)
@@ -241,7 +240,7 @@ contains
                 & // "' not found." // newline // "   (search path(s): " // strJoin // ").")
           end if
           strTmp = strOut
-          call append(skFiles(iSp2, iSp1), strTmp)
+          skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
         end do
       end do
     case default
@@ -281,7 +280,7 @@ contains
                   & // "   (search path(s): " // strJoin // ").")
             end if
             strTmp = strOut
-            call append(skFiles(iSp2, iSp1), strTmp)
+            skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
           end do
         end do
       end do
@@ -375,7 +374,7 @@ contains
 
     do iSp1 = 1, geo%nSpecies
       do iSp2 = 1, geo%nSpecies
-        call destruct(skFiles(iSp2, iSp1))
+        if (allocated(skFiles(iSp2, iSp1)%items)) deallocate(skFiles(iSp2, iSp1)%items)
       end do
     end do
     deallocate(angShells)
