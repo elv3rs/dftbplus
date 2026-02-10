@@ -43,8 +43,6 @@ module dftbp_io_hsdutils
   public :: splitModifier, getModifier
   public :: getNodeName, getNodeName2
 
-  ! --- Public: processed flags ---
-  public :: setProcessed
 
   ! --- Public: misc ---
   public :: hasInlineData, getFirstTextChild
@@ -336,41 +334,6 @@ contains
   end subroutine getNodeName2
 
 
-  ! ============================================================
-  !  Processed flag helpers
-  ! ============================================================
-
-  !> Mark a node (and optionally all descendants) as processed. Null-safe.
-  recursive subroutine setProcessed(node, recursive)
-    type(hsd_table), pointer, intent(in) :: node
-    logical, intent(in), optional :: recursive
-
-    logical :: doRecurse
-    integer :: ii
-    class(hsd_node), pointer :: childNode
-
-    if (.not. associated(node)) return
-    node%processed = .true.
-
-    doRecurse = .false.
-    if (present(recursive)) doRecurse = recursive
-    if (.not. doRecurse) return
-
-    do ii = 1, node%num_children
-      call node%get_child(ii, childNode)
-      if (.not. associated(childNode)) cycle
-      childNode%processed = .true.
-      select type (t => childNode)
-      type is (hsd_table)
-        block
-          type(hsd_table), pointer :: tPtr
-          tPtr => t
-          call setProcessed(tPtr, .true.)
-        end block
-      end select
-    end do
-
-  end subroutine setProcessed
 
 
   ! ============================================================

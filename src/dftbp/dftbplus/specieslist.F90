@@ -12,9 +12,9 @@ module dftbp_dftbplus_specieslist
   use dftbp_common_accuracy, only : dp
   use dftbp_common_unitconversion, only : TUnit
   use hsd, only : hsd_get, hsd_get_or_set, hsd_get_attrib, hsd_get_table, HSD_STAT_OK
-  use dftbp_io_hsdutils, only : setProcessed, dftbp_error
+  use dftbp_io_hsdutils, only : dftbp_error
   use dftbp_io_unitconv, only : convertUnitHsd
-  use hsd_data, only : hsd_table
+  use hsd_data, only : hsd_table, hsd_node
   implicit none
 
   private
@@ -29,6 +29,39 @@ module dftbp_dftbplus_specieslist
 
 
 contains
+
+
+  !> Mark a node (and optionally all descendants) as processed. Null-safe.
+  recursive subroutine setProcessed(node, recursive)
+    type(hsd_table), pointer, intent(in) :: node
+    logical, intent(in), optional :: recursive
+
+    logical :: doRecurse
+    integer :: ii
+    class(hsd_node), pointer :: childNode
+
+    if (.not. associated(node)) return
+    node%processed = .true.
+
+    doRecurse = .false.
+    if (present(recursive)) doRecurse = recursive
+    if (.not. doRecurse) return
+
+    do ii = 1, node%num_children
+      call node%get_child(ii, childNode)
+      if (.not. associated(childNode)) cycle
+      childNode%processed = .true.
+      select type (t => childNode)
+      type is (hsd_table)
+        block
+          type(hsd_table), pointer :: tPtr
+          tPtr => t
+          call setProcessed(tPtr, .true.)
+        end block
+      end select
+    end do
+
+  end subroutine setProcessed
 
 
   !> Read a list of real valued species data
