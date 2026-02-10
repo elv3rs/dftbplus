@@ -322,14 +322,6 @@ contains
       if (.not.associated(pTmp)) then
         call hsd_set(pNode, "FirstLayerAtoms", greendens%PL)
       end if
-      !call getChild(pNode, "ContactPLs", pTmp, requested=.false.)
-      !if (associated(pTmp)) then
-      !  call init(li)
-      !  call getChildValue(pTmp, "", li)
-      !  allocate(transpar%cblk(len(li)))
-      !  call asArray(li,transpar%cblk)
-      !  call destruct(li)
-      !end if
       allocate(greendens%kbT(1))
       greendens%kbT(:) = tempElec
     else
@@ -417,8 +409,6 @@ contains
           & - minval(transpar%contacts(:)%potential) + &
           & 2 * greendens%nKT * maxval(greendens%kbT)))
         greendens%nP(3) = defvalue
-        !call getChildValue(pNode, "RealAxisPoints", greendens%nP(3), &
-        !    & defvalue, child=child1)
       end if
 
   end subroutine readGreensFunction
@@ -639,7 +629,6 @@ contains
       call hsd_get_attrib(pTmp2, "GatePotential", modifier)
       call convertUnitHsd(modifier, energyUnits, field, poisson%gatepot)
 
-      !call getChildValue(pTmp2, "GateDirection", poisson%gatedir, 2)
       poisson%gatedir = 2
 
     case ("cylindrical")
@@ -879,8 +868,6 @@ contains
     ! For the dftb+ official release the options are disabled
     tp%tOrthonormal = .false.
     tp%tOrthonormalDevice = .false.
-    !call getChildValue(node, "Orthonormal", tp%tOrthonormal, .false.)
-    !call getChildValue(node, "OrthonormalDevice", tp%tOrthonormalDevice, .false.)
     tp%tNoGeometry = .false.
     tp%NumStates = 0
 
@@ -1048,14 +1035,6 @@ contains
     call hsd_get_attrib(node, "Coupling", modifier)
     call hsd_get_choice(child, "", method, val, stat)
     if (stat /= HSD_STAT_OK) call dftbp_error(child, "Missing coupling method")
-
-    ! This reads also things like:  "Coupling [eV] = 0.34"
-    !if (is_numeric(method)) then
-    !  call getChildValue(node, "Coupling", rTmp, child=field)
-    !  call convertUnitHsd(modifier, energyUnits, field, rTmp)
-    !  elph%coupling = rTmp
-    !  return
-    !end if
 
     select case (method)
     case ("allorbitals")
@@ -1375,19 +1354,6 @@ contains
 
 
         ! Fermi level: in case of collinear spin we accept two values (up and down)
-        ! call init(fermiBuffer)
-        ! call getChildValue(pNode, "FermiLevel", fermiBuffer, modifier=modifier)
-        ! if ( len(fermiBuffer) .eq. 1) then
-        !   call asArray(fermiBuffer, contacts(ii)%eFermi)
-        !   contacts(ii)%eFermi(2) = contacts(ii)%eFermi(1)
-        ! else if ( len(fermiBuffer) .eq. 2) then
-        !   call asArray(fermiBuffer, contacts(ii)%eFermi)
-        ! else
-        !   call dftbp_error(pNode, "FermiLevel accepts 1 or 2 (for collinear spin) values")
-        ! end if
-        ! call destruct(fermiBuffer)
-
-
         call hsd_get_table(pNode, "FermiLevel", child2, stat, auto_wrap=.true.)
         if (.not. associated(child2)) then
           block
@@ -1426,10 +1392,6 @@ contains
           ! NOTE: These options have been commented out: there is a problem in parallel execution
           ! since one single file is accessed by all processors causing rush conditions
           ! The options are therefore disabled for the official dftb+ release
-          !call getChildValue(pNode, "WriteSelfEnergy", contacts(ii)%tWriteSelfEnergy, .false.)
-          !call getChildValue(pNode, "WriteSurfaceGF", contacts(ii)%tWriteSurfaceGF, .false.)
-          !call getChildValue(pNode, "ReadSelfEnergy", contacts(ii)%tReadSelfEnergy, .false.)
-          !call getChildValue(pNode, "ReadSurfaceGF", contacts(ii)%tReadSurfaceGF, .false.)
           contacts(ii)%tWriteSelfEnergy = .false.
           contacts(ii)%tWriteSurfaceGF = .false.
           contacts(ii)%tReadSelfEnergy = .false.
