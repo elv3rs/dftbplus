@@ -22,8 +22,7 @@ module modes_initmodes
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_formatout, only : printDftbHeader
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getSelectedIndices, getNodeName, getNodeName2, hasInlineData,&
-      & getModifier
+      & getSelectedIndices, getNodeName, getNodeName2, hasInlineData
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_clear_children, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set, hsd_get_table,&

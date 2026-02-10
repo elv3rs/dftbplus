@@ -20,7 +20,7 @@ module phonons_initphonons
       & TNeighbourList, TNeighbourlist_init, updateNeighbourList
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_hsdutils, only : dftbp_error, getSelectedAtomIndices, getSelectedIndices,&
-      & getNodeName, getFirstTextChild, getModifier
+      & getNodeName, getFirstTextChild
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_set,&
@@ -345,7 +345,7 @@ contains
     ! cutoff used to cut out interactions
     call hsd_get_or_set(node, "Cutoff", cutoff, 9.45_dp)
     call hsd_get_table(node, "Cutoff", value)
-    call getModifier(value, "", modif)
+    if (allocated(value%attrib)) then; modif = value%attrib; else; modif = ""; end if
     call convertUnitHsd(modif, lengthUnits, value, cutoff)
 
     ! Reading the actual Hessian matrix
@@ -656,7 +656,7 @@ contains
 
       call hsd_get_or_set(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp)
       call hsd_get_table(pNode, "PLShiftTolerance", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
       block
@@ -673,7 +673,7 @@ contains
       ! Contact temperatures. Needed
       call hsd_get_or_set(pNode, "Temperature", contacts(ii)%kbT, 0.0_dp)
       call hsd_get_table(pNode, "Temperature", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, contacts(ii)%kbT)
 
       if (upload) then
@@ -683,7 +683,7 @@ contains
         if (contacts(ii)%wideBand) then
           call hsd_get_or_set(pNode, 'LevelSpacing', contacts(ii)%wideBandDos, 0.735_dp)
           call hsd_get_table(pNode, 'LevelSpacing', field)
-          call getModifier(field, "", modif)
+          if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
           call convertUnitHsd(modif, energyUnits, field,&
                               &contacts(ii)%wideBandDos)
           !WideBandApproximation is defined as energy spacing between levels
@@ -876,7 +876,7 @@ contains
       defmass = getAtomicMass(trim(geo%speciesNames(iSp)))
       call hsd_get_or_set(value, geo%speciesNames(iSp), mass, defmass)
       call hsd_get_table(value, geo%speciesNames(iSp), child2)
-      call getModifier(child2, "", modif)
+      if (allocated(child2%attrib)) then; modif = child2%attrib; else; modif = ""; end if
       speciesMass(iSp) = mass
       write(stdOut,*) trim(geo%speciesNames(iSp)),": ", mass/amu__au, "amu", &
             &SpeciesMass(iSp),"a.u."
@@ -914,7 +914,7 @@ contains
     if (geo%tPeriodic) then
       call hsd_get_table(node, "KPointsAndWeights", child, stat=stat)
       if (stat /= HSD_STAT_OK) call dftbp_error(node, "KPointsAndWeights must be present")
-      call getModifier(child, "", modifier)
+      if (allocated(child%attrib)) then; modifier = child%attrib; else; modifier = ""; end if
       ! Get first table child for dispatch
       value1 => null()
       block
@@ -1373,13 +1373,13 @@ contains
         TempRange(:) = tmp_range
       end block
       call hsd_get_table(child, "TempRange", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, TempRange)
 
       call hsd_get(child, "TempStep", TempStep, stat=stat)
       if (stat /= HSD_STAT_OK) call dftbp_error(child, "TempStep must be present")
       call hsd_get_table(child, "TempStep", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, TempStep)
 
        TempMin = TempRange(1)
@@ -1465,7 +1465,7 @@ contains
       eRange(:) = tmp_eRange
     end block
     call hsd_get_table(root, "FreqRange", field)
-    call getModifier(field, "", modif)
+    if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
     call convertUnitHsd(modif, energyUnits, field, eRange)
     tundos%emin = eRange(1)
     tundos%emax = eRange(2)
@@ -1479,7 +1479,7 @@ contains
 
     call hsd_get_or_set(root, "FreqStep", tundos%estep, 1.0e-5_dp)
     call hsd_get_table(root, "FreqStep", field)
-    call getModifier(field, "", modif)
+    if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
 
     call convertUnitHsd(modif, energyUnits, field, tundos%estep)
 
@@ -1522,7 +1522,7 @@ contains
 
     call hsd_get_or_set(root, "BroadeningDelta", tundos%broadeningDelta, 0.0_dp)
     call hsd_get_table(root, "BroadeningDelta", field)
-    call getModifier(field, "", modif)
+    if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
     call convertUnitHsd(modif, energyUnits, field, &
         &tundos%broadeningDelta)
 
@@ -1648,13 +1648,13 @@ contains
     case("deltasquared")
       call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
       call hsd_get_table(pValue, "Delta", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=0
     case("deltaomega")
       call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
       call hsd_get_table(pValue, "Delta", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=1
     case("mingo")
@@ -1664,7 +1664,7 @@ contains
       ! We set a cutoff frequency of 2000 cm^-1.
       call hsd_get_or_set(pValue, "Wmax", tundos%wmax, 0.009_dp)
       call hsd_get_table(pValue, "Wmax", field)
-      call getModifier(field, "", modif)
+      if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=2
       ! If Emax >> Wmax delta becomes negative

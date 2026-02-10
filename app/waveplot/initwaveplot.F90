@@ -24,8 +24,7 @@ module waveplot_initwaveplot
   use dftbp_dftbplus_input_fileaccess, only : readBinaryAccessTypes
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_formatout, only : printDftbHeader
-  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName,&
-      & getModifier
+  use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedIndices, getNodeName
   ! getChildValue removed: using hsd_get directly
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_rename_child,&
@@ -803,7 +802,7 @@ contains
         this%opt%boxVecs(:,:) = tmp_boxVecs
       end block
       call hsd_get_table(subnode, "Box", field)
-      call getModifier(field, "", modifier)
+      if (allocated(field%attrib)) then; modifier = field%attrib; else; modifier = ""; end if
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%boxVecs)
       if (abs(determinant33(this%opt%boxVecs)) < 1e-08_dp) then
         call dftbp_error(field, "Vectors are linearly dependent")
@@ -815,7 +814,7 @@ contains
         this%opt%origin(:) = tmp_origin
       end block
       call hsd_get_table(subnode, "Origin", field)
-      call getModifier(field, "", modifier)
+      if (allocated(field%attrib)) then; modifier = field%attrib; else; modifier = ""; end if
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%origin)
 
     case default

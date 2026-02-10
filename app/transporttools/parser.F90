@@ -19,11 +19,11 @@ module transporttools_parser
   use dftbp_dftbplus_oldcompat, only : convertOldHsd
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_hsdutils, only : dftbp_error, dftbp_warning, getSelectedAtomIndices,&
-      & getNodeName, getNodeName2, getModifier
+      & getNodeName, getNodeName2
   use dftbp_io_unitconv, only : convertUnitHsd
   use hsd, only : hsd_warn_unprocessed, MAX_WARNING_LEN, hsd_error_t, hsd_dump,&
       & hsd_table_ptr, hsd_get_child_tables, hsd_get, hsd_get_or_set, hsd_get_table,&
-      & hsd_get_choice, hsd_set, HSD_STAT_OK
+      & hsd_get_choice, hsd_set, hsd_get_attrib, HSD_STAT_OK
   use hsd_data, only : hsd_table, data_load, DATA_FMT_AUTO, new_table
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
@@ -376,7 +376,8 @@ contains
       end if
 
       call hsd_get_or_set(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp, child=field)
-      call getModifier(pNode, "PLShiftTolerance", modif)
+      call hsd_get_attrib(pNode, "PLShiftTolerance", modif, stat)
+      if (stat /= HSD_STAT_OK) modif = ""
       call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
       if (task .eq. "setupgeometry") then
@@ -385,7 +386,8 @@ contains
         call hsd_get(pNode, "Atoms", buffer, stat=stat)
         if (stat /= HSD_STAT_OK) call dftbp_error(pNode, "Missing required value: 'Atoms'")
         call hsd_get_table(pNode, "Atoms", pTmp, stat, auto_wrap=.true.)
-        call getModifier(pNode, "Atoms", modif)
+        call hsd_get_attrib(pNode, "Atoms", modif, stat)
+        if (stat /= HSD_STAT_OK) modif = ""
         if (isZeroBased(modif)) then
           selectionRange(:) = [0, size(geom%species) - 1]
           ishift = 1
@@ -401,7 +403,8 @@ contains
           call hsd_get(pNode, "ContactVector", vecArr, stat=stat)
           if (stat /= HSD_STAT_OK) call dftbp_error(pNode, &
               & "Missing required value: 'ContactVector'")
-          call getModifier(pNode, "ContactVector", modif)
+          call hsd_get_attrib(pNode, "ContactVector", modif, stat)
+          if (stat /= HSD_STAT_OK) modif = ""
           if (size(vecArr) == 3) then
              vec = vecArr
              call convertUnitHsd(modif, lengthUnits, pNode, vec)
@@ -617,7 +620,8 @@ contains
     ! Artificially truncate the SK table
     call hsd_get(node, "SKMaxDistance", truncationCutOff, stat=stat)
     if (stat /= HSD_STAT_OK) call dftbp_error(node, "Missing required value: 'SKMaxDistance'")
-    call getModifier(node, "SKMaxDistance", modifier)
+    call hsd_get_attrib(node, "SKMaxDistance", modifier, stat)
+    if (stat /= HSD_STAT_OK) modifier = ""
     call hsd_get_table(node, "SKMaxDistance", field, stat, auto_wrap=.true.)
     call convertUnitHsd(modifier, lengthUnits, field, truncationCutOff)
 

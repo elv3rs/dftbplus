@@ -40,7 +40,7 @@ module dftbp_io_hsdutils
   public :: getSelectedAtomIndices, getSelectedIndices
 
   ! --- Public: modifier / name helpers ---
-  public :: splitModifier, getModifier
+  public :: splitModifier
   public :: getNodeName, getNodeName2
 
 
@@ -336,35 +336,7 @@ contains
 
 
 
-  ! ============================================================
-  !  Modifier extraction helper
-  ! ============================================================
 
-  !> Extract the modifier (attrib) string for a child node.
-  !>
-  !> If name is empty, returns the attrib of the parent node itself.
-  !> Otherwise, uses hsd_get_attrib to find the named child's attrib.
-  subroutine getModifier(parent, name, modifier)
-    type(hsd_table), intent(in), target :: parent
-    character(len=*), intent(in) :: name
-    character(len=:), allocatable, intent(out) :: modifier
-
-    integer :: stat
-
-    if (len_trim(name) == 0) then
-      if (allocated(parent%attrib)) then
-        modifier = parent%attrib
-      else
-        modifier = ""
-      end if
-    else
-      call hsd_get_attrib(parent, name, modifier, stat)
-      if (stat /= HSD_STAT_OK) then
-        modifier = ""
-      end if
-    end if
-
-  end subroutine getModifier
 
 
 
