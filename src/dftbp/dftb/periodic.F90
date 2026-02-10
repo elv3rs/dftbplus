@@ -27,8 +27,6 @@ module dftbp_dftb_periodic
   use dftbp_math_simplealgebra, only : determinant33, invert33
   use dftbp_math_sorting, only : index_heap_sort
   use dftbp_type_latpointiter, only : TLatPointIter, TLatPointIter_init
-  use dftbp_type_linkedlist, only : append, asArray, destruct, init, len, TListRealR1
-
   implicit none
   private
 
@@ -44,6 +42,11 @@ module dftbp_dftb_periodic
   ! from the outside.
   public :: distributeAtoms, reallocateArrays2, allocateNeighbourArrays, fillNeighbourArrays
 #:endif
+
+  !> Single variable-length real array element (replaces TListRealR1)
+  type :: TRealArray
+    real(dp), allocatable :: data(:)
+  end type TRealArray
 
   !> Contains essential data for the neighbourlist
   type TNeighbourList
@@ -1178,7 +1181,7 @@ contains
     integer :: imgRange(2,3), itmp3(3)
     integer :: nAllKPoint, nKPoint
     integer :: i1, i2, i3
-    type(TListRealR1) :: lr1
+    type(TRealArray), allocatable :: lr1(:)
 
     real(dp), parameter :: tol = 1e-4_dp
     real(dp), parameter :: minLim = -tol, maxLim = 1.0_dp - tol
@@ -1213,7 +1216,7 @@ contains
     ! invCoeffs = (N^-1)^T
     call invert33(invCoeffs, coeffs)
     invCoeffs = transpose(invCoeffs)
-    call init(lr1)
+    allocate(lr1(0))
 
     do i1 = imgRange(1, 1), imgRange(2, 1)
       do i2 = imgRange(1, 2), imgRange(2, 2)
@@ -1222,21 +1225,23 @@ contains
           rr(:) = matmul(invCoeffs, real((/ i1, i2, i3 /), dp))
           if (all(rr >= minLim) .and. all(rr < maxLim)) then
             ! Add point + shift vector
-            call append(lr1, rr + matmul(invCoeffs, shifts))
+            lr1 = [lr1, TRealArray(rr + matmul(invCoeffs, shifts))]
           end if
         end do
       end do
     end do
 
-    nAllKPoint = len(lr1)
+    nAllKPoint = size(lr1)
     if (abs(real(nAllKPoint,dp) - abs(determinant33(coeffs))) > tol) then
       call error("Monkhorst-Pack routine failed to find all K-points.")
     end if
 
     allocate(allKPoints(3, nAllKPoint))
     allocate(allKWeights(nAllKPoint))
-    call asArray(lr1, allKPoints)
-    call destruct(lr1)
+    do i1 = 1, nAllKPoint
+      allKPoints(:, i1) = lr1(i1)%data
+    end do
+    deallocate(lr1)
     allKPoints = modulo(allKPoints, 1.0_dp)
     allKWeights = 1.0_dp / real(nAllKPoint, dp)
 
