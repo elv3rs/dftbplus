@@ -176,7 +176,7 @@ dftbp_config_hybrid_dependency(hsd hsd::hsd "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
 
 set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
-set(HSD_DATA_GIT_TAG "e296612110b31a0b5f504eeda7d1218c23d29a36")  # do not change manually!
+set(HSD_DATA_GIT_TAG "08576a210d45ca568ea094ee61cfa7a51ce2875d")  # do not change manually!
 dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 
