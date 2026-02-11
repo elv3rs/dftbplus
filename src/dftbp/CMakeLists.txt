@@ -75,7 +75,7 @@ endif()
 # External libraries
 
 # Link hsd-data (and transitively hsd-fortran)
-target_link_libraries(dftbplus PUBLIC hsd-data)
+target_link_libraries(dftbplus PUBLIC hsd-data::hsd-data)
 
 target_include_directories(dftbplus PUBLIC
   $<BUILD_INTERFACE:$<TARGET_PROPERTY:ddcosmo_objlib,INTERFACE_INCLUDE_DIRECTORIES>>)

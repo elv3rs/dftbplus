@@ -169,13 +169,16 @@ endif()
 # Follow GNU conventions for installing directories
 include(GNUInstallDirs)
 
-# Include hsd-data library (pulls in hsd-fortran automatically)
-set(HSD_DATA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(HSD_DATA_BUILD_APP OFF CACHE BOOL "" FORCE)
-set(HSD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(HSD_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(HSD_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
-add_subdirectory(external/hsd-data EXCLUDE_FROM_ALL)
+# Include hsd-fortran and hsd-data libraries
+set(HSD_FORTRAN_GIT_REPOSITORY "https://github.com/elv3rs/hsd-fortran.git")
+set(HSD_FORTRAN_GIT_TAG "0e413e4cc8af9d0a4207f86ef18a1b96bfc47fa9")  # do not change manually!
+dftbp_config_hybrid_dependency(hsd hsd::hsd "${HYBRID_CONFIG_METHODS}" "QUIET"
+  external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
+
+set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
+set(HSD_DATA_GIT_TAG "e296612110b31a0b5f504eeda7d1218c23d29a36")  # do not change manually!
+dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
+  external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 
 # Include ddCOSMO library
 add_subdirectory(external/ddcosmo EXCLUDE_FROM_ALL)

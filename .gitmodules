@@ -34,6 +34,12 @@
 [submodule "external/chimes/origin"]
 	path = external/chimes/origin
 	url = https://github.com/rk-lindsey/chimes_calculator.git
+[submodule "external/hsd-fortran/origin"]
+	path = external/hsd-fortran/origin
+	url = https://github.com/elv3rs/hsd-fortran.git
+[submodule "external/hsd-data/origin"]
+	path = external/hsd-data/origin
+	url = https://github.com/elv3rs/hsd-data.git
 [submodule "external/fortuno/origin"]
 	path = external/fortuno/origin
 	url = https://github.com/fortuno-repos/fortuno.git
