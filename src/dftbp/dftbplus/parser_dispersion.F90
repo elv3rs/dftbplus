@@ -1013,12 +1013,7 @@ contains
       input%k_grid(:min(size(tmpGrid), size(input%k_grid))) = &
           & tmpGrid(:min(size(tmpGrid), size(input%k_grid)))
     end block
-    block
-      real(dp), allocatable :: tmpShift(:)
-      call hsd_get_or_set(node, "KGridShift", tmpShift, input%k_grid_shift)
-      input%k_grid_shift(:min(size(tmpShift), size(input%k_grid_shift))) = &
-          & tmpShift(:min(size(tmpShift), size(input%k_grid_shift)))
-    end block
+    call hsd_get_or_set(node, "KGridShift", input%k_grid_shift, input%k_grid_shift)
     call hsd_get_or_set(node, "ReferenceSet", buffer, 'ts', child=child)
     input%vdw_params_kind = tolower(unquote(buffer))
     call checkManyBodyDispRefName(input%vdw_params_kind, child)
