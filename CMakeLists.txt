@@ -171,12 +171,12 @@ include(GNUInstallDirs)
 
 # Include hsd-fortran and hsd-data libraries
 set(HSD_FORTRAN_GIT_REPOSITORY "https://github.com/elv3rs/hsd-fortran.git")
-set(HSD_FORTRAN_GIT_TAG "0e413e4cc8af9d0a4207f86ef18a1b96bfc47fa9")  # do not change manually!
+set(HSD_FORTRAN_GIT_TAG "main")  # fetch latest from main branch
 dftbp_config_hybrid_dependency(hsd hsd::hsd "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
 
 set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
-set(HSD_DATA_GIT_TAG "08576a210d45ca568ea094ee61cfa7a51ce2875d")  # do not change manually!
+set(HSD_DATA_GIT_TAG "main")  # fetch latest from main branch
 dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 
