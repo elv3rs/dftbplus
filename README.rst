@@ -11,6 +11,13 @@ recent features are described in the (open access) `DFTB+ paper
 
 |DFTB+ logo|
 
+.. warning::
+
+   **Agentic Coding Proof of Concept** — This repository was developed as a
+   proof-of-concept for AI-assisted (agentic) coding workflows. All code and
+   documentation are **pending human review** and should not be used in
+   production without thorough independent verification.
+
 DFTB+ can be either used as a standalone program or integrated into other
 software packages as a library.
 
