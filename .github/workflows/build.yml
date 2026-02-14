@@ -40,6 +40,8 @@ env:
     -DWITH_UNIT_TESTS=true
     -DWITH_CHIMES=true
     -DWITH_PYTHON=true
+    -DHSD_DATA_WITH_HDF5=true
+    -DHSD_DATA_WITH_TOML=true
 
 jobs:
 
@@ -112,9 +114,9 @@ jobs:
     - name: Check submodule commits
       run: ./utils/test/check_submodule_commits
 
-    - name: Install LAPACK/BLAS
+    - name: Install LAPACK/BLAS/HDF5
       run: |
-        sudo apt-get install liblapack-dev libblas-dev
+        sudo apt-get install liblapack-dev libblas-dev libhdf5-dev
 
     - name: Install ARPACK
       if: contains(matrix.mpi, 'nompi')
@@ -228,6 +230,8 @@ jobs:
         -DWITH_MBD=true
         -DWITH_TRANSPORT=true
         -DFYPP_FLAGS='-DTRAVIS'
+        -DHSD_DATA_WITH_HDF5=true
+        -DHSD_DATA_WITH_TOML=true
 
     steps:
     - name: Checkout code
@@ -252,6 +256,9 @@ jobs:
         printenv >> ${GITHUB_ENV}
         echo "FC=${FC}" >> ${GITHUB_ENV}
         echo "CC=${CC}" >> ${GITHUB_ENV}
+
+    - name: Install HDF5
+      run: sudo apt-get update && sudo apt-get install -y libhdf5-dev
 
     - name: Install requirements (pip)
       run: pip3 install cmake ninja fypp numpy

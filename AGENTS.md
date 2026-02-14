@@ -56,6 +56,8 @@ Ideally, distill iterated upon behaviour into a unit test.
 | `WITH_UNIT_TESTS` | `FALSE` | Build Fortuno unit tests |
 | `WITH_SOCKETS` | `FALSE` | i-PI socket communication |
 | `WITH_TBLITE` | `FALSE` | xTB support |
+| `HSD_DATA_WITH_HDF5` | `ON` | Enable HDF5 backend in hsd-data (requires libhdf5-dev) |
+| `HSD_DATA_WITH_TOML` | `ON` | Enable TOML backend in hsd-data (auto-fetches toml-f) |
 
 ### External Dependency Management
 
