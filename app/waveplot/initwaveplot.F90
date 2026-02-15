@@ -558,7 +558,11 @@ contains
         end select
       end do
     end block
-    call hsd_get_name(child, buffer, "#text")
+    if (associated(child)) then
+      call hsd_get_name(child, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
 
     select case (buffer)
     case ("genformat")
@@ -740,7 +744,11 @@ contains
         end select
       end do
     end block
-    call hsd_get_name(value, buffer, "#text")
+    if (associated(value)) then
+      call hsd_get_name(value, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
 
     select case (buffer)
     case ("unitcell")

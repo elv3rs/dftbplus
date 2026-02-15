@@ -348,7 +348,7 @@ contains
     if (stat /= HSD_STAT_OK) call dftbp_error(root, "Hessian must be present")
     ! cutoff used to cut out interactions
     call hsd_get_or_set(node, "Cutoff", cutoff, 9.45_dp)
-    call hsd_get_table(node, "Cutoff", value)
+    call hsd_get_table(node, "Cutoff", value, auto_wrap=.true.)
     if (allocated(value%attrib)) then; modif = value%attrib; else; modif = ""; end if
     call convertUnitHsd(modif, lengthUnits, value, cutoff)
 
@@ -369,7 +369,11 @@ contains
         end select
       end do
     end block
-    call hsd_get_name(value, buffer, "#text")
+    if (associated(value)) then
+      call hsd_get_name(value, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
     select case(trim(buffer))
     case ("dftb")
       call readDftbHessian(value)
@@ -519,12 +523,16 @@ contains
         end select
       end do
     end block
-    call hsd_get_name(value, buffer, "#text")
+    if (associated(value)) then
+      call hsd_get_name(value, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
     select case (buffer)
     case ("genformat")
       call readTGeometryGen(value, geo)
     case default
-      value%processed = .false.
+      if (associated(value)) value%processed = .false.
       call readTGeometryHSD(child, geo)
     end select
 
@@ -790,7 +798,11 @@ contains
         end select
       end do
     end block
-    call hsd_get_name(value, buffer, "#text")
+    if (associated(value)) then
+      call hsd_get_name(value, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
 
     select case(buffer)
     case ("type2filenames")
@@ -817,7 +829,7 @@ contains
         end if
       end do
     case default
-      value%processed = .false.
+      if (associated(value)) value%processed = .false.
       do iSp1 = 1, geo%nSpecies
         strTmp = trim(geo%speciesNames(iSp1)) // "-" &
             &// trim(geo%speciesNames(iSp1))
@@ -875,7 +887,7 @@ contains
     do iSp = 1, geo%nSpecies
       defmass = getAtomicMass(trim(geo%speciesNames(iSp)))
       call hsd_get_or_set(value, geo%speciesNames(iSp), mass, defmass)
-      call hsd_get_table(value, geo%speciesNames(iSp), child2)
+      call hsd_get_table(value, geo%speciesNames(iSp), child2, auto_wrap=.true.)
       if (allocated(child2%attrib)) then; modif = child2%attrib; else; modif = ""; end if
       speciesMass(iSp) = mass
       write(stdOut,*) trim(geo%speciesNames(iSp)),": ", mass/amu__au, "amu", &
@@ -912,7 +924,7 @@ contains
 
     ! K-Points
     if (geo%tPeriodic) then
-      call hsd_get_table(node, "KPointsAndWeights", child, stat=stat)
+      call hsd_get_table(node, "KPointsAndWeights", child, stat=stat, auto_wrap=.true.)
       if (stat /= HSD_STAT_OK) call dftbp_error(node, "KPointsAndWeights must be present")
       if (allocated(child%attrib)) then; modifier = child%attrib; else; modifier = ""; end if
       ! Get first table child for dispatch
@@ -929,7 +941,11 @@ contains
           end select
         end do
       end block
-      call hsd_get_name(value1, buffer, "#text")
+      if (associated(value1)) then
+        call hsd_get_name(value1, buffer, "#text")
+      else
+        buffer = "#text"
+      end if
       select case(buffer)
 
       case ("supercellfolding")
@@ -1075,7 +1091,11 @@ contains
         kWeight(:) = kpts(4, :)
         deallocate(kpts)
       case default
-        call dftbp_error(value1, "Invalid K-point scheme")
+        if (associated(value1)) then
+          call dftbp_error(value1, "Invalid K-point scheme")
+        else
+          call dftbp_error(child, "Invalid K-point scheme")
+        end if
       end select
     end if
 
@@ -1642,7 +1662,11 @@ contains
       end do
     end block
     pChild => root
-    call hsd_get_name(pValue, buffer, "#text")
+    if (associated(pValue)) then
+      call hsd_get_name(pValue, buffer, "#text")
+    else
+      buffer = "#text"
+    end if
     ! Delta is repeated to allow different defaults if needed
     select case (trim(buffer))
     case("deltasquared")
