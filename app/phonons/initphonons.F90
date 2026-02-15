@@ -657,7 +657,7 @@ contains
       end if
 
       call hsd_get_or_set(pNode, "PLShiftTolerance", contactLayerTol, 1e-5_dp)
-      call hsd_get_table(pNode, "PLShiftTolerance", field)
+      call hsd_get_table(pNode, "PLShiftTolerance", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, lengthUnits, field, contactLayerTol)
 
@@ -674,7 +674,7 @@ contains
 
       ! Contact temperatures. Needed
       call hsd_get_or_set(pNode, "Temperature", contacts(ii)%kbT, 0.0_dp)
-      call hsd_get_table(pNode, "Temperature", field)
+      call hsd_get_table(pNode, "Temperature", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, contacts(ii)%kbT)
 
@@ -684,7 +684,7 @@ contains
         call hsd_get_or_set(pNode, "wideBand", contacts(ii)%wideBand, .false.)
         if (contacts(ii)%wideBand) then
           call hsd_get_or_set(pNode, 'LevelSpacing', contacts(ii)%wideBandDos, 0.735_dp)
-          call hsd_get_table(pNode, 'LevelSpacing', field)
+          call hsd_get_table(pNode, 'LevelSpacing', field, auto_wrap=.true.)
           if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
           call convertUnitHsd(modif, energyUnits, field,&
                               &contacts(ii)%wideBandDos)
@@ -809,7 +809,7 @@ contains
         end if
         strTmp = trim(prefix) // trim(elem1) // trim(separator) &
             &// trim(elem1) // trim(suffix)
-        skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
+        call appendCharLc(skFiles(iSp1)%items, strTmp)
         inquire(file=strTmp, exist=tExist)
         if (.not. tExist) then
           call dftbp_error(value, "SK file with generated name '" &
@@ -838,7 +838,7 @@ contains
               call dftbp_error(child2, "SK file '" // trim(strTmp) &
                   &// "' does not exist'")
             end if
-            skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
+            call appendCharLc(skFiles(iSp1)%items, strTmp)
           end do
         end block
       end do
@@ -1372,13 +1372,13 @@ contains
         if (stat /= HSD_STAT_OK) call dftbp_error(child, "TempRange must be present")
         TempRange(:) = tmp_range
       end block
-      call hsd_get_table(child, "TempRange", field)
+      call hsd_get_table(child, "TempRange", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, TempRange)
 
       call hsd_get(child, "TempStep", TempStep, stat=stat)
       if (stat /= HSD_STAT_OK) call dftbp_error(child, "TempStep must be present")
-      call hsd_get_table(child, "TempStep", field)
+      call hsd_get_table(child, "TempStep", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, TempStep)
 
@@ -1464,7 +1464,7 @@ contains
       call hsd_get_or_set(root, "FreqRange", tmp_eRange, eRangeDefault)
       eRange(:) = tmp_eRange
     end block
-    call hsd_get_table(root, "FreqRange", field)
+    call hsd_get_table(root, "FreqRange", field, auto_wrap=.true.)
     if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
     call convertUnitHsd(modif, energyUnits, field, eRange)
     tundos%emin = eRange(1)
@@ -1478,7 +1478,7 @@ contains
     end if
 
     call hsd_get_or_set(root, "FreqStep", tundos%estep, 1.0e-5_dp)
-    call hsd_get_table(root, "FreqStep", field)
+    call hsd_get_table(root, "FreqStep", field, auto_wrap=.true.)
     if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
 
     call convertUnitHsd(modif, energyUnits, field, tundos%estep)
@@ -1521,7 +1521,7 @@ contains
     call readDeltaModel(pNode, tundos)
 
     call hsd_get_or_set(root, "BroadeningDelta", tundos%broadeningDelta, 0.0_dp)
-    call hsd_get_table(root, "BroadeningDelta", field)
+    call hsd_get_table(root, "BroadeningDelta", field, auto_wrap=.true.)
     if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
     call convertUnitHsd(modif, energyUnits, field, &
         &tundos%broadeningDelta)
@@ -1647,13 +1647,13 @@ contains
     select case (trim(buffer))
     case("deltasquared")
       call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
-      call hsd_get_table(pValue, "Delta", field)
+      call hsd_get_table(pValue, "Delta", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=0
     case("deltaomega")
       call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
-      call hsd_get_table(pValue, "Delta", field)
+      call hsd_get_table(pValue, "Delta", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=1
@@ -1663,7 +1663,7 @@ contains
       call hsd_get_or_set(pValue, "Delta", tundos%delta, 0.0001_dp)
       ! We set a cutoff frequency of 2000 cm^-1.
       call hsd_get_or_set(pValue, "Wmax", tundos%wmax, 0.009_dp)
-      call hsd_get_table(pValue, "Wmax", field)
+      call hsd_get_table(pValue, "Wmax", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modif = field%attrib; else; modif = ""; end if
       call convertUnitHsd(modif, energyUnits, field, tundos%delta)
       tundos%deltaModel=2
@@ -1865,6 +1865,20 @@ contains
     end do
 
   end subroutine checkAlongZ
+
+
+  subroutine appendCharLc(arr, elem)
+    character(lc), allocatable, intent(inout) :: arr(:)
+    character(lc), intent(in) :: elem
+    character(lc), allocatable :: tmp(:)
+    integer :: nn
+
+    nn = size(arr)
+    allocate(tmp(nn + 1))
+    if (nn > 0) tmp(:nn) = arr(:nn)
+    tmp(nn + 1) = elem
+    call move_alloc(tmp, arr)
+  end subroutine appendCharLc
 
 
 end module phonons_initphonons

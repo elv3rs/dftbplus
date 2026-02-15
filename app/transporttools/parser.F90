@@ -544,7 +544,7 @@ contains
           end if
           strTmp = trim(prefix) // trim(elem1) // trim(separator) &
               &// trim(elem2) // trim(suffix)
-          skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
+          call appendCharLc(skFiles(iSp2, iSp1)%items, strTmp)
           inquire(file=strTmp, exist=tExist)
           if (.not. tExist) then
             call dftbp_error(value1, "SK file with generated name '" &
@@ -571,7 +571,7 @@ contains
                 call dftbp_error(child2, "SK file '" // trim(strTmp) &
                     &// "' does not exist'")
               end if
-              skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
+              call appendCharLc(skFiles(iSp2, iSp1)%items, strTmp)
             end do
           end block
         end do
@@ -641,5 +641,19 @@ contains
     end if
 
   end subroutine SKTruncations
+
+
+  subroutine appendCharLc(arr, elem)
+    character(lc), allocatable, intent(inout) :: arr(:)
+    character(lc), intent(in) :: elem
+    character(lc), allocatable :: tmp(:)
+    integer :: nn
+
+    nn = size(arr)
+    allocate(tmp(nn + 1))
+    if (nn > 0) tmp(:nn) = arr(:nn)
+    tmp(nn + 1) = elem
+    call move_alloc(tmp, arr)
+  end subroutine appendCharLc
 
 end module transporttools_parser

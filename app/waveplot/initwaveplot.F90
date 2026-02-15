@@ -808,7 +808,7 @@ contains
         if (stat /= HSD_STAT_OK) call dftbp_error(subnode, "Box must be present")
         this%opt%boxVecs(:,:) = tmp_boxVecs
       end block
-      call hsd_get_table(subnode, "Box", field)
+      call hsd_get_table(subnode, "Box", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modifier = field%attrib; else; modifier = ""; end if
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%boxVecs)
       if (abs(determinant33(this%opt%boxVecs)) < 1e-08_dp) then
@@ -820,7 +820,7 @@ contains
         if (stat /= HSD_STAT_OK) call dftbp_error(subnode, "Origin must be present")
         this%opt%origin(:) = tmp_origin
       end block
-      call hsd_get_table(subnode, "Origin", field)
+      call hsd_get_table(subnode, "Origin", field, auto_wrap=.true.)
       if (allocated(field%attrib)) then; modifier = field%attrib; else; modifier = ""; end if
       call convertUnitHsd(modifier, lengthUnits, field, this%opt%origin)
 

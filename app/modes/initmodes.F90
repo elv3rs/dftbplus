@@ -303,7 +303,7 @@ contains
                 & // "' not found." // newline // "   (search path(s): " // strJoin // ").")
           end if
           strTmp = strOut
-          skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
+          call appendCharLc(skFiles(iSp1)%items, strTmp)
         end do
       case default
         value%processed = .false.
@@ -328,7 +328,7 @@ contains
                     & // "   (search path(s): " // strJoin // ").")
               end if
               strTmp = strOut
-              skFiles(iSp1)%items = [skFiles(iSp1)%items, strTmp]
+              call appendCharLc(skFiles(iSp1)%items, strTmp)
             end do
           end block
         end do
@@ -621,5 +621,19 @@ contains
     end do
 
   end subroutine setEigvecGauge
+
+
+  subroutine appendCharLc(arr, elem)
+    character(lc), allocatable, intent(inout) :: arr(:)
+    character(lc), intent(in) :: elem
+    character(lc), allocatable :: tmp(:)
+    integer :: nn
+
+    nn = size(arr)
+    allocate(tmp(nn + 1))
+    if (nn > 0) tmp(:nn) = arr(:nn)
+    tmp(nn + 1) = elem
+    call move_alloc(tmp, arr)
+  end subroutine appendCharLc
 
 end module modes_initmodes
