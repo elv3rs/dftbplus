@@ -231,6 +231,7 @@ jobs:
         -DWITH_TRANSPORT=true
         -DFYPP_FLAGS='-DTRAVIS'
         -DHSD_DATA_WITH_TOML=true
+        -DHSD_DATA_WITH_HDF5=false
 
     steps:
     - name: Checkout code

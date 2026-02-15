@@ -171,7 +171,7 @@ include(GNUInstallDirs)
 
 # Include hsd-fortran and hsd-data libraries
 set(HSD_FORTRAN_GIT_REPOSITORY "https://github.com/elv3rs/hsd-fortran.git")
-set(HSD_FORTRAN_GIT_TAG "26105752bea535a459a9943033a17257e29b529d")
+set(HSD_FORTRAN_GIT_TAG "2030550a7f8604ed14837a801bbdb990d105e612")
 dftbp_config_hybrid_dependency(hsd hsd::hsd "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
 
@@ -312,7 +312,7 @@ endif()
 
 # Include hsd-data library (after toml-f is available from tblite/s-dftd3 deps above)
 set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
-set(HSD_DATA_GIT_TAG "b6cb18af3cade5124888080895119c16f61a04f1")
+set(HSD_DATA_GIT_TAG "f885b4fda83977f9a185c4463aa87794d6a2155f")
 dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 
