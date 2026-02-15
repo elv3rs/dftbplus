@@ -171,7 +171,7 @@ include(GNUInstallDirs)
 
 # Include hsd-fortran and hsd-data libraries
 set(HSD_FORTRAN_GIT_REPOSITORY "https://github.com/elv3rs/hsd-fortran.git")
-set(HSD_FORTRAN_GIT_TAG "2030550a7f8604ed14837a801bbdb990d105e612")
+set(HSD_FORTRAN_GIT_TAG "26105752bea535a459a9943033a17257e29b529d")
 dftbp_config_hybrid_dependency(hsd hsd::hsd "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
 
@@ -312,7 +312,13 @@ endif()
 
 # Include hsd-data library (after toml-f is available from tblite/s-dftd3 deps above)
 set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
-set(HSD_DATA_GIT_TAG "f885b4fda83977f9a185c4463aa87794d6a2155f")
+set(HSD_DATA_GIT_TAG "0867fc45bfec1cb17cf7305e8c9ee6f36d50f6e0")
+# Prevent hsd-data from fetching its own toml-f (it's already provided by dftbplus's dependency
+# chain via tblite/s-dftd3). The find_package() inside hsd-data fails because toml-f is added
+# via add_subdirectory, not installed, so we tell hsd-data it's already found.
+if(TARGET toml-f-lib)
+  set(toml-f_FOUND TRUE CACHE BOOL "" FORCE)
+endif()
 dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 
