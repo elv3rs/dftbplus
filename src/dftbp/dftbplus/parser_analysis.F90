@@ -101,7 +101,15 @@ contains
           call hsd_get_table(child2, "Atoms", child3, stat)
           if (.not. associated(child3)) child3 => child2
           call getSelectedAtomIndices(child3, buffer, geo%speciesNames, geo%species, pTmpI1)
-          ctrl%iAtInRegion = [ctrl%iAtInRegion, TWrappedInt1(pTmpI1)]
+          block
+            type(TWrappedInt1), allocatable :: tmpRegions(:)
+            integer :: nOld
+            nOld = size(ctrl%iAtInRegion)
+            allocate(tmpRegions(nOld + 1))
+            tmpRegions(:nOld) = ctrl%iAtInRegion(:nOld)
+            tmpRegions(nOld + 1) = TWrappedInt1(pTmpI1)
+            call move_alloc(tmpRegions, ctrl%iAtInRegion)
+          end block
           call hsd_get_or_set(child2, "ShellResolved", ctrl%tShellResInRegion(iReg), .false.,&
               & child=child3)
           if (ctrl%tShellResInRegion(iReg)) then

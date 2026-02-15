@@ -327,7 +327,7 @@ contains
 
     ! Read first line of the gen file: Number of atoms, boundary conditions
     iStart = 1
-    iEnd = nextLine(text, iStart)
+    call nextNonBlankLine(text, iStart, iEnd)
     call getNextToken(text(:iEnd), geo%nAtom, iStart, iErr)
     call checkError(node, iErr, "Bad number of atoms in the first line of geometry")
     call getNextToken(text(:iEnd), txt, iStart, iErr)
@@ -358,7 +358,7 @@ contains
     iStart = iEnd + 1
 
     ! Reading the 2nd line of a gen file.
-    iEnd = nextLine(text, iStart)
+    call nextNonBlankLine(text, iStart, iEnd)
     allocate(speciesNames(0))
     iErr = TOKEN_OK
     iSp = 0
@@ -387,7 +387,7 @@ contains
     do ii = 1, geo%nAtom
       ! save atom number as string for error printout
       write(errorStr, '(i0)') ii
-      iEnd = nextLine(text, iStart)
+      call nextNonBlankLine(text, iStart, iEnd)
       call getNextToken(text(:iEnd), iTmp, iStart, iErr)
       call checkError(node, iErr, "Bad sequential number for atom "//trim(errorStr))
       call getNextToken(text(:iEnd), geo%species(ii), iStart, iErr)
@@ -407,14 +407,14 @@ contains
 
     ! Read in origin an lattice vectors, if the structure is periodic
     if (geo%tPeriodic) then
-      iEnd = nextLine(text, iStart)
+      call nextNonBlankLine(text, iStart, iEnd)
       allocate(geo%origin(3))
       allocate(geo%latVecs(3, 3))
       call getNextToken(text(:iEnd), geo%origin, iStart, iErr)
       call checkError(node, iErr, "Invalid origin given in geometry.")
       iStart = iEnd + 1
       do ii = 1, 3
-        iEnd = nextLine(text, iStart)
+        call nextNonBlankLine(text, iStart, iEnd)
         call getNextToken(text(:iEnd), geo%latVecs(:, ii), iStart, iErr)
         call checkError(node, iErr, "Invalid lattice vectors in geometry.")
         iStart = iEnd + 1
@@ -423,12 +423,12 @@ contains
 
     if (geo%tHelical) then
       allocate(geo%origin(3))
-      iEnd = nextLine(text, iStart)
+      call nextNonBlankLine(text, iStart, iEnd)
       call getNextToken(text(:iEnd), geo%origin, iStart, iErr)
       call checkError(node, iErr, 'Invalid specified helical boundary conditions: origin.')
       geo%origin(:) = geo%origin * AA__Bohr
       allocate(geo%latVecs(3, 1))
-      iEnd = nextLine(text, iStart)
+      call nextNonBlankLine(text, iStart, iEnd)
       call getNextToken(text(:iEnd), geo%latVecs(:, 1), iStart, iErr)
       call checkError(node, iErr, 'Invalid specified helical boundary conditions: "translation,&
           & twist angle, rotation order" should be supplied).')
@@ -1142,6 +1142,59 @@ contains
     if (iEnd < iStart) iEnd = len(text)
 
   end function nextLine
+
+
+  !> Return index for next non-blank line ending within text after position iStart
+  !>
+  !> Skips blank lines (lines containing only whitespace) before returning.
+  !> Updates iStart to skip past any blank lines found.
+  pure subroutine nextNonBlankLine(text, iStart, iEnd)
+
+    !> Text content of the node
+    character(len=*), intent(in) :: text
+
+    !> Start of the text content to consider; updated to start of the non-blank line on exit
+    integer, intent(inout) :: iStart
+
+    !> End of the non-blank line, as delimited by a new-line character
+    integer, intent(out) :: iEnd
+
+    do while (iStart <= len(text))
+      iEnd = index(text(iStart:), new_line(text)) + iStart - 1
+      if (iEnd < iStart) iEnd = len(text)
+      if (hasNonWhitespace(text(iStart:iEnd))) return
+      iStart = iEnd + 1
+    end do
+    ! If we get here, only blank lines remain
+    iEnd = len(text)
+
+  end subroutine nextNonBlankLine
+
+
+  !> Check if a string contains any non-whitespace characters
+  pure function hasNonWhitespace(str) result(has)
+
+    !> String to check
+    character(len=*), intent(in) :: str
+
+    !> True if the string contains at least one non-whitespace character
+    logical :: has
+
+    integer :: ii
+
+    has = .false.
+    do ii = 1, len(str)
+      select case (str(ii:ii))
+      case (' ', achar(9), achar(10), achar(13))
+        ! whitespace: space, tab, newline, carriage return
+        continue
+      case default
+        has = .true.
+        return
+      end select
+    end do
+
+  end function hasNonWhitespace
 
 
   !> Advance iStart to the end of the line, but only if currently not at the beginning of the line

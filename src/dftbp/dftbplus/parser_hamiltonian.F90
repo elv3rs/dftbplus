@@ -243,7 +243,7 @@ contains
                 & // "' not found." // newline // "   (search path(s): " // strJoin // ").")
           end if
           strTmp = strOut
-          skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
+          call appendCharLc(skFiles(iSp2, iSp1)%items, strTmp)
         end do
       end do
     case default
@@ -283,7 +283,7 @@ contains
                   & // "   (search path(s): " // strJoin // ").")
             end if
             strTmp = strOut
-            skFiles(iSp2, iSp1)%items = [skFiles(iSp2, iSp1)%items, strTmp]
+            call appendCharLc(skFiles(iSp2, iSp1)%items, strTmp)
           end do
         end do
       end do
@@ -1159,6 +1159,23 @@ contains
     end block
 
   end subroutine readLaterHamiltonian
+
+
+  !> Appends a character(lc) element to an allocatable character(lc) array.
+  !> Avoids the array constructor [arr, elem] pattern which triggers a
+  !> CHARACTER length mismatch when arr has zero elements (GFortran bug/standard issue).
+  subroutine appendCharLc(arr, elem)
+    character(lc), allocatable, intent(inout) :: arr(:)
+    character(lc), intent(in) :: elem
+    character(lc), allocatable :: tmp(:)
+    integer :: nn
+
+    nn = size(arr)
+    allocate(tmp(nn + 1))
+    if (nn > 0) tmp(:nn) = arr(:nn)
+    tmp(nn + 1) = elem
+    call move_alloc(tmp, arr)
+  end subroutine appendCharLc
 
 
 end module dftbp_dftbplus_parser_hamiltonian

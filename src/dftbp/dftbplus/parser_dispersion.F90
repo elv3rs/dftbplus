@@ -1004,7 +1004,7 @@ contains
     integer :: stat
 
     input%method = 'mbd-rsscs'
-    call hsd_get_or_set(node, "Beta", input%mbd_beta, input%mbd_beta)
+    call hsd_get_or_set(node, "Beta", input%mbd_beta, (input%mbd_beta))
     call hsd_get_or_set(node, "NOmegaGrid", input%n_omega_grid, (input%n_omega_grid))
     block
       integer, allocatable :: tmpGrid(:)
@@ -1013,7 +1013,7 @@ contains
       input%k_grid(:min(size(tmpGrid), size(input%k_grid))) = &
           & tmpGrid(:min(size(tmpGrid), size(input%k_grid)))
     end block
-    call hsd_get_or_set(node, "KGridShift", input%k_grid_shift, input%k_grid_shift)
+    call hsd_get_or_set(node, "KGridShift", input%k_grid_shift, (input%k_grid_shift))
     call hsd_get_or_set(node, "ReferenceSet", buffer, 'ts', child=child)
     input%vdw_params_kind = tolower(unquote(buffer))
     call checkManyBodyDispRefName(input%vdw_params_kind, child)
