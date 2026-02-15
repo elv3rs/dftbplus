@@ -313,12 +313,6 @@ endif()
 # Include hsd-data library (after toml-f is available from tblite/s-dftd3 deps above)
 set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
 set(HSD_DATA_GIT_TAG "0867fc45bfec1cb17cf7305e8c9ee6f36d50f6e0")
-# Prevent hsd-data from fetching its own toml-f (it's already provided by dftbplus's dependency
-# chain via tblite/s-dftd3). The find_package() inside hsd-data fails because toml-f is added
-# via add_subdirectory, not installed, so we tell hsd-data it's already found.
-if(TARGET toml-f-lib)
-  set(toml-f_FOUND TRUE CACHE BOOL "" FORCE)
-endif()
 dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 

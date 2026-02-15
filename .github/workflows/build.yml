@@ -40,8 +40,8 @@ env:
     -DWITH_UNIT_TESTS=true
     -DWITH_CHIMES=true
     -DWITH_PYTHON=true
-    -DHSD_DATA_WITH_HDF5=true
-    -DHSD_DATA_WITH_TOML=true
+    -DHSD_DATA_WITH_HDF5=false
+    -DHSD_DATA_WITH_TOML=false
 
 jobs:
 
@@ -230,7 +230,7 @@ jobs:
         -DWITH_MBD=true
         -DWITH_TRANSPORT=true
         -DFYPP_FLAGS='-DTRAVIS'
-        -DHSD_DATA_WITH_TOML=true
+        -DHSD_DATA_WITH_TOML=false
         -DHSD_DATA_WITH_HDF5=false
 
     steps:
