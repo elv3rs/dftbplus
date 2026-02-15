@@ -413,18 +413,16 @@ contains
 
     !! Issue warning about unprocessed nodes
     write(stdOut, "(/, A)") "check unprocessed nodes..."
-    block
-      character(MAX_WARNING_LEN) :: warnBuffer
-      warnBuffer = ""
-      call hsd_warn_unprocessed(root, warnBuffer)
-      if (len_trim(warnBuffer) > 0) then
-        if (parserFlags%tIgnoreUnprocessed) then
-          call warning(warnBuffer)
-        else
-          call error(warnBuffer)
-        end if
-      end if
-    end block
+    if (.not. parserFlags%tIgnoreUnprocessed) then
+      block
+        character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+        integer :: ii
+        call hsd_warn_unprocessed(root, warnings)
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+      end block
+    end if
 
     !! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
