@@ -175,10 +175,7 @@ set(HSD_FORTRAN_GIT_TAG "main")  # fetch latest from main branch
 dftbp_config_hybrid_dependency(hsd hsd::hsd "${HYBRID_CONFIG_METHODS}" "QUIET"
   external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
 
-set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
-set(HSD_DATA_GIT_TAG "main")  # fetch latest from main branch
-dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
-  external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
+# NOTE: hsd-data is configured later, after toml-f is available (see below)
 
 # Include ddCOSMO library
 add_subdirectory(external/ddcosmo EXCLUDE_FROM_ALL)
@@ -312,6 +309,12 @@ if(NOT BUILD_EXPORTED_TARGETS_ONLY AND WITH_UNIT_TESTS)
   dftbp_config_hybrid_dependency(Fortuno Fortuno::fortuno_serial "Submodule" "QUIET"
   external/fortuno "${exclude}" "${FORTUNO_GIT_REPOSITORY}" "${FORTUNO_GIT_TAG}")
 endif()
+
+# Include hsd-data library (after toml-f is available from tblite/s-dftd3 deps above)
+set(HSD_DATA_GIT_REPOSITORY "https://github.com/elv3rs/hsd-data.git")
+set(HSD_DATA_GIT_TAG "main")  # fetch latest from main branch
+dftbp_config_hybrid_dependency(hsd-data hsd-data::hsd-data "${HYBRID_CONFIG_METHODS}" "QUIET"
+  external/hsd-data "${exclude}" "${HSD_DATA_GIT_REPOSITORY}" "${HSD_DATA_GIT_TAG}")
 
 #
 # Add internal components
