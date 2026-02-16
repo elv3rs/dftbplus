@@ -45,7 +45,6 @@ ignore = [
     # --- Scientific / domain idioms (false positives for scientific code) ---
     "C011",    # missing-default-case — 158 violations, many select cases by design
     "C021",    # no-real-suffix — 62 violations, scientific code uses bare literals
-    "C022",    # implicit-real-kind — 12 violations, overlaps with C021
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 
     # --- Legacy interfaces (cannot be changed without API breaks) ---

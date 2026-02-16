@@ -7917,7 +7917,7 @@ contains
     character(len=*), intent(in) :: string
     logical :: is
 
-    real :: x
+    real(dp) :: x
     integer :: err
 
     read(string,*,iostat=err) x

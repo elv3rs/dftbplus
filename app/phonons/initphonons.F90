@@ -1075,7 +1075,7 @@ contains
     integer :: nDerivs, nBlocks
 
     type(TFileDescr) :: fd
-    real, dimension(:,:), allocatable :: HessCp2k
+    real(dp), dimension(:,:), allocatable :: HessCp2k
     integer ::  n, j1, j2,  p,  q
     type(string) :: filename
     logical :: texist
@@ -1489,7 +1489,7 @@ contains
     integer ::  iAtom, jAtom, ii, jj, kk, PL1, PL2
     !* First guess for nr. of neighbors.
     integer, parameter :: nInitNeighbours = 100
-    real :: disAtom, dd(3)
+    real(dp) :: disAtom, dd(3)
     integer :: nAllAtom
     real(dp) :: mCutoff
     real(dp), allocatable :: coords(:,:), cellVec(:,:), rCellVec(:,:)

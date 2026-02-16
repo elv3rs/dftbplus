@@ -123,7 +123,7 @@ contains
     integer, intent(in), optional :: smallestBlock
 
     !> Smallest fraction of the matrix at which the dense algorithm should be used
-    real, intent(in), optional :: smallestFraction
+    real(dp), intent(in), optional :: smallestFraction
 
     !> Sub-range of states to consider, if needed, for example for metallic finite temperature in
     !! parallel gauge when only partially filed states would be included

@@ -7,6 +7,7 @@
 
 !> Time stages in the code
 module dftbp_common_timer
+  use dftbp_common_accuracy, only : dp
   use dftbp_common_globalenv, only : stdOut
   implicit none
 
@@ -16,8 +17,8 @@ module dftbp_common_timer
   !> Simple timer object
   type :: TTimer
     private
-    real :: startTime = 0.0
-    real :: endTime = -1.0
+    real(dp) :: startTime = 0.0_dp
+    real(dp) :: endTime = -1.0_dp
     integer :: startCount = 0
     integer :: endCount = -1
     integer :: countRate = 1
@@ -62,11 +63,11 @@ contains
     class(TTimer), intent(in) :: this
 
     !> Cpu time evolved between the last start() and stop() calls.
-    real :: cpuTime
+    real(dp) :: cpuTime
 
-    real :: endTime
+    real(dp) :: endTime
 
-    if (this%endTime < 0.0) then
+    if (this%endTime < 0.0_dp) then
       call cpu_time(endTime)
     else
       endTime = this%endTime
@@ -83,7 +84,7 @@ contains
     class(TTimer), intent(in) :: this
 
     !> Wall clock time evolved between the last start() and stop() calls.
-    real :: wallClockTime
+    real(dp) :: wallClockTime
 
     integer :: endCount
 
@@ -93,9 +94,9 @@ contains
       endCount = this%endCount
     end if
     if (this%countRate == 0) then
-      wallClockTime = 0.0
+      wallClockTime = 0.0_dp
     else
-      wallClockTime = real(endCount - this%startCount) / real(this%countRate)
+      wallClockTime = real(endCount - this%startCount, dp) / real(this%countRate, dp)
     end if
 
   end function getWallClockTime

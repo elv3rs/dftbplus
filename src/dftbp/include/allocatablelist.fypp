@@ -14,6 +14,7 @@
 
 #:def declare_allocatable_list(NAME, TYPE)
 
+! allow(C022)
 real, parameter :: ${NAME}$_scalingFactor = 1.5
 
 integer, parameter :: ${NAME}$_minSlots = 4
@@ -38,6 +39,7 @@ type :: ${NAME}$
   type(${NAME}$Item), pointer :: items(:) => null()
   integer :: nItem = 0
   integer :: minSlots = ${NAME}$_minSlots
+  ! allow(C022)
   real :: scalingFactor = ${NAME}$_scalingFactor
 contains
   procedure :: push => ${NAME}$_push
@@ -67,6 +69,7 @@ subroutine ${NAME}$_init(this, minSlots, scalingFactor)
   integer, optional, intent(in) :: minSlots
 
   !> Growth scaling factor to use when enlarging or shrinking the list
+  ! allow(C022)
   real, optional, intent(in) :: scalingFactor
 
   if (present(minSlots)) then
