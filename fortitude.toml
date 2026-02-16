@@ -32,30 +32,28 @@ extend-exclude = [
 select = ["ALL"]
 ignore = [
     # --- Formatting / style (not autofixable, too many) ---
-    "S001",    # line-too-long — 1100+ violations, manual reformatting needed
-    "S091",    # non-standard-file-extension — .F90 is the project standard for fypp
-    "S212",    # program-with-module — app programs use programs, by design
+    "S001",    # line-too-long — 1640 violations, manual reformatting needed
 
     # --- Coding conventions (too many violations to enforce yet) ---
-    "C003",    # implicit-external-procedures — 333 violations, widespread in fypp macros
-    "C002",    # interface-implicit-typing — 147 violations, tied to C003 patterns
-    "C061",    # missing-intent — 619 violations, would need gradual enforcement
+    "C003",    # implicit-external-procedures — 290 violations, widespread in fypp macros
+    "C002",    # interface-implicit-typing — 32 violations, tied to C003 patterns
+    "C061",    # missing-intent — 388 violations, would need gradual enforcement
 
     # --- Scientific / domain idioms (false positives for scientific code) ---
-    "C011",    # missing-default-case — 183 violations, many select cases by design
-    "C021",    # no-real-suffix — 86 violations, scientific code uses bare literals
-    "C022",    # implicit-real-kind — 13 violations, overlaps with C021
-    "C031",    # magic-number-in-array-size — 148 violations, 3 = spatial dims etc.
+    "C011",    # missing-default-case — 158 violations, many select cases by design
+    "C021",    # no-real-suffix — 62 violations, scientific code uses bare literals
+    "C022",    # implicit-real-kind — 12 violations, overlaps with C021
+    "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
     "C043",    # missing-action-specifier — 13 violations, minor
     "C141",    # missing-exit-or-cycle-label — 15 violations, style preference
 
     # --- Legacy interfaces (cannot be changed without API breaks) ---
-    "C071",    # assumed-size-array — legacy interfaces, not autofixable
-    "C072",    # assumed-size-character-intent — 11 violations, legacy C interop
+    "C071",    # assumed-size-array — 28 violations, legacy interfaces
+    "C072",    # assumed-size-character-intent — 9 violations, legacy C interop
 
     # --- Coding conventions (too many to fix now, track for gradual cleanup) ---
     "C101",    # missing-default-pointer-initialisation — 49 violations, needs careful review
     "C081",    # initialisation-in-declaration — 18 violations, context-dependent severity
-    "C131",    # missing-accessibility-statement — 10 violations, mostly in small utility modules
+    "C131",    # missing-accessibility-statement — 6 violations, mostly in small utility modules
     "C132",    # default-public-accessibility — 5 violations, paired with C131
 ]
