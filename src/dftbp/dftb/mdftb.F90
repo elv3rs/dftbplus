@@ -234,7 +234,7 @@ contains
     real(dp), parameter :: minIntgrl = 1.0e-9_dp
     integer :: nAtom, mOrb, nSpecies, nOrb1, iSp1, ii, jj, mm, nn
     integer :: ang1, ang2, iSh1, iSh2, iOrbAng1, iOrbAng2
-    real(dp) tmpIntgrl, tmpAvgTrace
+    real(dp) :: tmpIntgrl, tmpAvgTrace
 
     this%nAtom = size(inp%orb%nOrbAtom)
     this%nSpecies = inp%nSpecies
@@ -250,7 +250,7 @@ contains
 
     allocate(this%atomicDIntgrl(3, mOrb, mOrb, nSpecies), source=0.0_dp)
     allocate(this%atomicQIntgrl(3, 3, mOrb, mOrb, nSpecies), source=0.0_dp)
-    
+
     if (maxval(inp%orb%angShell) >= 3) then
       @:RAISE_ERROR(errStatus, -1, "DFTB multipole expansion currently unsupported for chemical&
           & elements having angular moments higher than 2")
@@ -840,12 +840,12 @@ contains
     do iAt1 = 1, nAtom
       ! Quadrupole components used (xx, xy, yy, xz, yz, zz)
       tmpM3x3(:,:) = this%deltaQAtom(:,:,iAt1)
-      multiExpanData%quadrupoleAtom(1, iAt1, iSpin) = tmpM3x3(1,1) 
-      multiExpanData%quadrupoleAtom(2, iAt1, iSpin) = tmpM3x3(2,1) 
-      multiExpanData%quadrupoleAtom(3, iAt1, iSpin) = tmpM3x3(2,2) 
-      multiExpanData%quadrupoleAtom(4, iAt1, iSpin) = tmpM3x3(3,1) 
-      multiExpanData%quadrupoleAtom(5, iAt1, iSpin) = tmpM3x3(3,2) 
-      multiExpanData%quadrupoleAtom(6, iAt1, iSpin) = tmpM3x3(3,3) 
+      multiExpanData%quadrupoleAtom(1, iAt1, iSpin) = tmpM3x3(1,1)
+      multiExpanData%quadrupoleAtom(2, iAt1, iSpin) = tmpM3x3(2,1)
+      multiExpanData%quadrupoleAtom(3, iAt1, iSpin) = tmpM3x3(2,2)
+      multiExpanData%quadrupoleAtom(4, iAt1, iSpin) = tmpM3x3(3,1)
+      multiExpanData%quadrupoleAtom(5, iAt1, iSpin) = tmpM3x3(3,2)
+      multiExpanData%quadrupoleAtom(6, iAt1, iSpin) = tmpM3x3(3,3)
     end do
 
   end subroutine pushDeltaDQAtom
@@ -1092,7 +1092,7 @@ contains
             ! Add Dipole-Dipole contribution
             sqrTmpHam(nu,mu) = sqrTmpHam(nu,mu) + sum(this%pot11x1Atom(:,iAtom1) * tmpadS) &
                 & + sum(this%pot11x1Atom(:,iAtom2f) * tmpSad)
- 
+
             ! Add Monopole-Quadrupole contribution
             sqrTmpHam(nu,mu) = sqrTmpHam(nu,mu) + (this%pot20x2Atom(iAtom1)&
                 & + this%pot20x2Atom(iAtom2f)) * sqrTmpOver(nu,mu)
@@ -1331,7 +1331,7 @@ contains
             tmpDerivMuNu = tmpDerivMuNu + sum(this%pot21x1Atom(:,:,iAt1) * tmpPaQ)
             ! Q-Q contribution
             tmpDerivMuNu = tmpDerivMuNu + sum(this%pot22x2Atom(:,:,iAt1) * tmpPaQ)
-            
+
             ! M-D contribution
             tmpDerivMuNu = tmpDerivMuNu + sum(this%pot10x0Atom(:,iAt2) * tmpadP)
             ! D-D contribution
@@ -1408,9 +1408,9 @@ contains
     @:ASSERT(size(B3) == 3)
     @:ASSERT(size(M3x3, dim=1) == 3)
     @:ASSERT(size(M3x3, dim=2) == 3)
-  
+
     M3x3(:,:) = spread(A3, 2, 3) * spread(B3, 1, 3)
-  
+
   end subroutine outerProductA3OB3
 
 
@@ -1434,24 +1434,24 @@ contains
     @:ASSERT(size(M3x3x3x3, dim=2) == 3)
     @:ASSERT(size(M3x3x3x3, dim=3) == 3)
     @:ASSERT(size(M3x3x3x3, dim=4) == 3)
-  
+
     M3x3x3x3 = spread(spread(A3x3, 3, 3), 4, 3) * spread(spread(B3x3, 1, 3), 1, 3)
-  
+
   end subroutine outerProductA3x3OB3x3
-  
-  
+
+
   !> Computes the outer product of two 3×3 matrices: M(i,j,l,m) = A3x3(i,l) * B3x3(j,m)
   subroutine outerProductA3x3OhB3x3(M3x3x3x3, A3x3, B3x3)
 
     !> Output 4-dimensional tensor (3×3×3×3) containing the outer product result.
     real(dp), intent(out) :: M3x3x3x3(:,:,:,:)
-  
+
     !> Input 3×3 matrix A3x3.
     real(dp), intent(in)  :: A3x3(:,:)
-  
+
     !> Input 3×3 matrix B3x3.
     real(dp), intent(in)  :: B3x3(:,:)
-  
+
     integer :: ii, jj, ll, mm
 
     @:ASSERT(size(B3x3, dim=1) == 3)
