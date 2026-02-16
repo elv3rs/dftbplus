@@ -979,7 +979,7 @@ module dftbp_reks_reksen
     !> temporary orbFON values
     real(dp), intent(in) :: f_i, f_j
 
-    real(dp) :: eps = 1.0E-3_dp
+    real(dp), save :: eps = 1.0E-3_dp
 
     res = 0.0_dp
     if (abs(f_j-f_i) < eps) then

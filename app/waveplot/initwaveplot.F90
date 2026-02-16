@@ -538,7 +538,7 @@ contains
     logical :: tFound
 
     !! Warning issued, if the detailed.xml id does not match the eigenvector id
-    character(len=63) :: warnId(3) = [&
+    character(len=63), save :: warnId(3) = [&
         & "The external files you are providing differ from those provided",&
         & "when this input file was generated. The results you obtain with",&
         & "the current files could therefore be different.                "]

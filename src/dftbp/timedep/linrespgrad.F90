@@ -210,7 +210,7 @@ contains
 
     !> Control variables
     logical :: tZVector, doAllZVectors, tFracOcc, doVanillaZvector
-    logical :: tHybridXc = .false.
+    logical, save :: tHybridXc = .false.
 
     !> Should gradients be calculated
     logical :: tForces
@@ -5037,7 +5037,7 @@ contains
     real(dp), intent(out) :: vecH(:)
 
     integer :: nSpin, ab, i, j, a, b, s, svv(2), ij, soo(2), ias
-    real(dp), dimension(2) :: spinFactor = [1.0_dp, -1.0_dp]
+    real(dp), dimension(2), save :: spinFactor = [1.0_dp, -1.0_dp]
     real(dp), allocatable  :: xpyq(:), gamxpyq(:), qTr(:), xpyqds(:), gamxpyqds(:)
     real(dp), allocatable  :: gamqt(:)
 

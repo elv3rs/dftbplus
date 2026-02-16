@@ -128,8 +128,8 @@ contains
     integer :: nSpin
     character :: sym
 
-    integer :: homo = 0
-    real(dp) :: eval_0 = 0.0_dp
+    integer, save :: homo = 0
+    real(dp), save :: eval_0 = 0.0_dp
 
     !> PpRPA eigenvalues (two-electron addition/removal energies)
     real(dp), allocatable :: pp_eval(:)

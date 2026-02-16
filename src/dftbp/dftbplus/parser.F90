@@ -8167,7 +8167,7 @@ contains
     type(string) :: buffer2
     character(sc), allocatable :: tmpFunc(:)
     integer :: ii, nFunc
-    logical :: tFunc = .true.
+    logical, save :: tFunc = .true.
 
 
     !> Read 'Energy' block

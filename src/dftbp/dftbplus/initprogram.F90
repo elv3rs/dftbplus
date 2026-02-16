@@ -1316,7 +1316,7 @@ contains
     logical :: tRandomSeed
 
     !> First guess for nr. of neighbours.
-    integer :: nInitNeighbour = 40
+    integer, save :: nInitNeighbour = 40
 
     !> Spin loop index
     integer :: iSpin

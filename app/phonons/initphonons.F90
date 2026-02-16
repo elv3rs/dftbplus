@@ -942,7 +942,7 @@ contains
   subroutine readKPointsFile_help(child,text)
     type(fnode),  pointer ::  child
     character(len=*), intent(in) :: text
-    integer :: iStart, iErr=0, ii, iOldStart
+    integer, save :: iStart, iErr=0, ii, iOldStart
     real(dp), dimension(:), allocatable :: tmparray
     real(dp), dimension(:,:), allocatable :: kpts
 

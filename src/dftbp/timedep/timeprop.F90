@@ -3011,7 +3011,7 @@ contains
 
     character(lc) :: strCount
 
-    logical :: exist=.false.
+    logical, save :: exist=.false.
 
     integer :: iCount
 

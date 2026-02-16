@@ -283,8 +283,8 @@ contains
     real(dp), allocatable :: Sci1(:), Sci2(:,:), ciTmp1(:), ciTmp2(:)
 
     real(dp) :: alpha, alphaMax, conv
-    real(dp) :: alphalast = 1.0_dp
-    logical :: tConverged = .false.
+    real(dp), save :: alphalast = 1.0_dp
+    logical, save :: tConverged = .false.
 
     @:ASSERT(size(ci,dim=1)>=size(ci,dim=2))
     @:ASSERT(size(ci,dim=1)==size(S,dim=1))
@@ -418,9 +418,9 @@ contains
     integer :: nOldSites(2)
 
     real(dp) :: alpha, alphaMax, conv
-    real(dp) :: alphalast = 1.0_dp
+    real(dp), save :: alphalast = 1.0_dp
     real(dp) :: rCount
-    logical :: tConverged = .false.
+    logical, save :: tConverged = .false.
 
     real(dp) :: Localisation, oldLocalisation
     integer, allocatable :: union(:)
@@ -869,7 +869,7 @@ contains
     complex(dp) :: phase
 
     real(dp) :: alpha, alphaMax, conv
-    real(dp) :: alphalast = 1.0_dp
+    real(dp), save :: alphalast = 1.0_dp
     logical :: tConverged
 
     @:ASSERT(size(ci,dim=1)>=size(ci,dim=2))

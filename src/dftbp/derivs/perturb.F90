@@ -2033,7 +2033,7 @@ contains
     type(TRotateDegen), allocatable :: degenTransform(:)
 
     !> Driving frequencies (including potentially 0 for static)
-    real(dp) :: omega = 0.0_dp
+    real(dp), save :: omega = 0.0_dp
 
     ! Number of electrons at the Fermi energy (if metallic)
     real(dp), allocatable :: neFermi(:)

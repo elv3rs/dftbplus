@@ -2521,7 +2521,7 @@ contains
     type(TFileDescr) :: fd
     integer :: ii
     character(10) :: suffix1, suffix2
-    logical :: tPartialHessian = .false.
+    logical, save :: tPartialHessian = .false.
 
     ! Consistency check in case some bug is introduced
     if (size(pDynMatrix, dim=2) /= 3*size(indMovedAtoms)) then
