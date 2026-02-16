@@ -22,8 +22,8 @@ program makecube
   narg=command_argument_count()
 
   if (.not.(narg==1 .or. narg==3 .or. narg==8)) then
-    write(*,*) 'usage:'
-    write(*,*) 'makecube pot_file [-r refpot] [-b boxfile xfile yfile zfile] '
+    write(*,*) "usage:"
+    write(*,*) "makecube pot_file [-r refpot] [-b boxfile xfile yfile zfile] "
     stop
   end if
 
@@ -31,7 +31,7 @@ program makecube
 
   call get_command(filebox, ln, err)
   if (ln<0 .or. err>0) then
-    stop 'Internal error: command line too long'
+    stop "Internal error: command line too long"
   end if
 
   k = index(filebox,"-r")
@@ -106,22 +106,22 @@ program makecube
   or(2) = y(1)  !(y(1) - y(ny))/2.d0
   or(3) = z(1)  !(z(1) - z(nz))/2.d0
 
-  write(*,*) 'CUBE'
-  write(*,*) 'x, y, z'
-  write(*,'(i4,3f12.5)') 1,or(1)/au,or(2)/au,or(3)/au
-  write(*,'(i4,3f12.5)') nx,(x(2)-x(1))/au,0.0,0.0
-  write(*,'(i4,3f12.5)') ny,0.0,(y(2)-y(1))/au,0.0
-  write(*,'(i4,3f12.5)') nz,0.0,0.0,(z(2)-z(1))/au
-  write(*,'(i1,4f12.5)') 1,0.0,0.0,0.0,0.0
+  write(*,*) "CUBE"
+  write(*,*) "x, y, z"
+  write(*,"(i4,3f12.5)") 1,or(1)/au,or(2)/au,or(3)/au
+  write(*,"(i4,3f12.5)") nx,(x(2)-x(1))/au,0.0,0.0
+  write(*,"(i4,3f12.5)") ny,0.0,(y(2)-y(1))/au,0.0
+  write(*,"(i4,3f12.5)") nz,0.0,0.0,(z(2)-z(1))/au
+  write(*,"(i1,4f12.5)") 1,0.0,0.0,0.0,0.0
 
 
   do i=1,nx
     do j=1,ny
       do k=1,nz
         if (refpot) then
-          write(*,'(E13.5)',advance='NO') phi3d(i,j,k)-phi3d_0(i,j,k)
+          write(*,"(E13.5)",advance="NO") phi3d(i,j,k)-phi3d_0(i,j,k)
         else
-          write(*,'(E13.5)',advance='NO') phi3d(i,j,k)
+          write(*,"(E13.5)",advance="NO") phi3d(i,j,k)
         end if
         if (mod(k-1,6) == 5) write(*,*)
       end do
@@ -131,18 +131,18 @@ program makecube
 
   open(newunit=fp,file="poissonbox.jmol", action="write")
 
-  write(fp,'(a,3(F10.4),a,3(F10.4),a,3(F10.4),a,3(F10.4),a)') &
+  write(fp,"(a,3(F10.4),a,3(F10.4),a,3(F10.4),a,3(F10.4),a)") &
       "draw p1 PLANE {",x(1),y(1),z(1),"}{", x(nx),y(1),z(1),"}{", &
       x(nx),y(ny),z(1),"}{",x(1),y(ny),z(1),"} color yellow translucent"
 
-  write(fp,'(a,3(F10.4),a,3(F10.4),a,3(F10.4),a,3(F10.4),a)') &
+  write(fp,"(a,3(F10.4),a,3(F10.4),a,3(F10.4),a,3(F10.4),a)") &
       "draw p2 PLANE {",x(1),y(1),z(nz),"}{",x(nx),y(1),z(nz),"}{", &
       x(nx),y(ny),z(nz),"}{",x(1),y(ny),z(nz),"} color yellow translucent"
 
-  write(fp,'(a,3(F10.4),a,3(F10.4),a)') "draw l1 {",x(1),y(1),z(1),"}{",x(1),y(1),z(nz),"}"
-  write(fp,'(a,3(F10.4),a,3(F10.4),a)') "draw l2 {",x(nx),y(1),z(1),"}{",x(nx),y(1),z(nz),"}"
-  write(fp,'(a,3(F10.4),a,3(F10.4),a)') "draw l3 {",x(nx),y(ny),z(1),"}{",x(nx),y(ny),z(nz),"}"
-  write(fp,'(a,3(F10.4),a,3(F10.4),a)') "draw l4 {",x(1),y(ny),z(1),"}{",x(1),y(ny),z(nz),"}"
+  write(fp,"(a,3(F10.4),a,3(F10.4),a)") "draw l1 {",x(1),y(1),z(1),"}{",x(1),y(1),z(nz),"}"
+  write(fp,"(a,3(F10.4),a,3(F10.4),a)") "draw l2 {",x(nx),y(1),z(1),"}{",x(nx),y(1),z(nz),"}"
+  write(fp,"(a,3(F10.4),a,3(F10.4),a)") "draw l3 {",x(nx),y(ny),z(1),"}{",x(nx),y(ny),z(nz),"}"
+  write(fp,"(a,3(F10.4),a,3(F10.4),a)") "draw l4 {",x(1),y(ny),z(1),"}{",x(1),y(ny),z(nz),"}"
 
   close(fp)
 

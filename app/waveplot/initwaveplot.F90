@@ -289,7 +289,7 @@ contains
     type(TStatus) :: errStatus
 
     ! Write header
-    call printDftbHeader('(WAVEPLOT '// version //')', releaseYear)
+    call printDftbHeader("(WAVEPLOT "// version //")", releaseYear)
 
     ! Read in input file as HSD
     call parseHSD(rootTag, hsdInput, hsdTree)

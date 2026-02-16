@@ -95,7 +95,8 @@ contains
 
 
     ! local variables
-    integer :: i, l, ncont, nc_vec(1), nldos
+    integer :: i, l, ncont, nldos
+    integer :: nc_vec(1)
     integer, dimension(:), allocatable :: sizes
     ! string needed to hold processor name
     character(:), allocatable :: hostname
@@ -156,7 +157,7 @@ contains
       case(DELTA_MINGO)
         parms%deltaModel = DELTA_MINGO
       case default
-        call error('Internal error deltaModel not properly set')
+        call error("Internal error deltaModel not properly set")
       end select
       parms%Wmax = tundos%Wmax
       parms%delta = tundos%delta      ! delta for G.F.
@@ -263,7 +264,7 @@ contains
   subroutine negf_destroy()
 
     write(stdOut, *)
-    write(stdOut, *) 'Release NEGF memory:'
+    write(stdOut, *) "Release NEGF memory:"
     call destruct(csrHam)
     call destroy_negf(negf)
     call writePeakInfo(stdOut)
@@ -301,7 +302,7 @@ contains
     ncont = transpar%ncont
     nbl = transpar%nPLs
     if (nbl==0) then
-      call error('Internal ERROR: nbl = 0 ?!')
+      call error("Internal ERROR: nbl = 0 ?!")
     end if
 
     allocate(PL_end(nbl))
@@ -363,9 +364,9 @@ contains
 
        do j1 = 1, ncont
           if (count(minv(:,j1)==j1)>1) then
-             write(stdOut,*) 'Contact',j1,'interacts with more than one PL:'
-             write(stdOut,*) 'PLs:',minv(:,j1)
-             call error('check cutoff value or PL size')
+             write(stdOut,*) "Contact",j1,"interacts with more than one PL:"
+             write(stdOut,*) "PLs:",minv(:,j1)
+             call error("check cutoff value or PL size")
           end if
           do m = 1, transpar%nPLs
              if (minv(m,j1)==j1) cblk(j1) = m
@@ -374,9 +375,9 @@ contains
 
 
        write(stdOut,*)
-       write(stdOut,*) ' Structure info:'
-       write(stdOut,*) ' Number of PLs:',nbl
-       write(stdOut,*) ' PLs coupled to contacts:',cblk(1:ncont)
+       write(stdOut,*) " Structure info:"
+       write(stdOut,*) " Number of PLs:",nbl
+       write(stdOut,*) " PLs coupled to contacts:",cblk(1:ncont)
        write(stdOut,*)
 
     end if
@@ -441,9 +442,9 @@ contains
 
     ! locals
     real(dp), allocatable :: tunnSKRes(:,:,:), ldosSKRes(:,:,:)
-    real(dp), pointer    :: tunnPMat(:,:)=>null()
-    real(dp), pointer    :: ldosPMat(:,:)=>null()
-    real(dp), pointer    :: currPVec(:)=>null()
+    real(dp), pointer, save    :: tunnPMat(:,:)=>null()
+    real(dp), pointer, save    :: ldosPMat(:,:)=>null()
+    real(dp), pointer, save    :: currPVec(:)=>null()
     type(TFileDescr) :: fd
     integer :: ii, jj, iK, nK, err, nnz, ntemp
     real(dp), allocatable :: kPoints(:,:), kWeights(:)
@@ -485,7 +486,7 @@ contains
       if(.not.allocated(currLead)) then
          allocate(currLead(size(currPVec)), stat=err)
          if (err/=0) then
-            call error('Allocation error (currTot)')
+            call error("Allocation error (currTot)")
          end if
          currLead = 0.0_dp
        end if
@@ -515,9 +516,9 @@ contains
 
     if (tIOProc) then
       do ii= 1, size(currLead)
-        write(*,'(1x,a,i3,i3,a,ES14.5,a,a)') &
-             & ' contacts: ', params%ni(ii), params%nf(ii), &
-             & ' current: ', currLead(ii),' ',HeatCurrUnits%name
+        write(*,"(1x,a,i3,i3,a,ES14.5,a,a)") &
+             & " contacts: ", params%ni(ii), params%nf(ii), &
+             & " current: ", currLead(ii)," ",HeatCurrUnits%name
       end do
     end if
 
@@ -538,12 +539,12 @@ contains
       end do
       ! Write Total tunneling on a separate file (optional)
       if (tIOProc .and. twriteTunn) then
-        filename = 'transmission'
+        filename = "transmission"
         call write_file(negf, tunnMat, tunnSKRes, filename, kpoints, kWeights)
 
         call openFile(fd, "conductance.dat", mode="w")
         do ii = 1, size(tunnMat,2)
-          write(fd%unit, *) '# T [K]', 'Thermal Conductance [W/K]'
+          write(fd%unit, *) "# T [K]", "Thermal Conductance [W/K]"
           do jj = 1, ntemp
             write(fd%unit, *) conductance(jj,1), conductance(jj,ii+1)
           end do
@@ -566,7 +567,7 @@ contains
       end do
       ! Write Total localDOS on a separate file (optional)
       if (tIOProc .and. twriteLDOS) then
-        filename = 'localdos'
+        filename = "localdos"
         call write_file(negf, ldosMat, ldosSKRes, filename, kpoints, kWeights)
       end if
     else
@@ -621,7 +622,7 @@ contains
 
     call associate_lead_currents(pNegf, currents)
     if (.not.associated(currents)) then
-      call error('Internal error: currVec not associated')
+      call error("Internal error: currVec not associated")
     end if
 
   end subroutine negf_phonon_current
@@ -639,11 +640,11 @@ contains
     call csr2dns(H,tmp)
 
     maxv = maxval(abs(tmp%val))
-    write(fu, *) 'Normalized Dynamical Matrix:'
+    write(fu, *) "Normalized Dynamical Matrix:"
 
     do ii = 1, tmp%nrow, 3
        do jj = 1, tmp%ncol, 3
-          write(fu,'(F8.4)',advance='no') real(tmp%val(ii,jj))/maxv
+          write(fu,"(F8.4)",advance="no") real(tmp%val(ii,jj))/maxv
        end do
        write(fu,*)
     end do
@@ -699,7 +700,7 @@ contains
         allocate(matTot(size(pMat,dim=1), size(pMat,dim=2)), stat=err)
 
         if (err /= 0) then
-          call error('Allocation error (tunnTot)')
+          call error("Allocation error (tunnTot)")
         end if
 
         matTot(:,:) = 0.0_dp
@@ -715,7 +716,7 @@ contains
           allocate(matSKRes(size(pMat,dim=1), size(pMat,dim=2), nK), stat=err)
 
           if (err/=0) then
-            call error('Allocation error (tunnSKRes)')
+            call error("Allocation error (tunnSKRes)")
           end if
 
           matSKRes(:,:,:) = 0.0_dp
@@ -823,36 +824,36 @@ contains
     integer :: ii, jj, iK, nK
 
     nK = size(kPoints,2)
-    call openFile(fd, trim(filename) // '.dat', mode="w")
-    if (trim(filename)=='transmission') then
-      write(fd%unit, *)  '# Energy [H]', '  Transmission'
+    call openFile(fd, trim(filename) // ".dat", mode="w")
+    if (trim(filename)=="transmission") then
+      write(fd%unit, *)  "# Energy [H]", "  Transmission"
     else
-      write(fd%unit, *)  '# Energy [H]', '  LDOS'
+      write(fd%unit, *)  "# Energy [H]", "  LDOS"
     end if
     do ii=1,size(pTot,1)
-      write(fd%unit, '(es20.8)', advance='no') (negf%Emin+(ii-1)*negf%Estep)*negf%eneconv
+      write(fd%unit, "(es20.8)", advance="no") (negf%Emin+(ii-1)*negf%Estep)*negf%eneconv
       do jj=1,size(pTot,2)
-        write(fd%unit, '(es20.8)', advance='no') pTot(ii,jj)
+        write(fd%unit, "(es20.8)", advance="no") pTot(ii,jj)
       end do
       write(fd%unit, *)
     end do
     call closeFile(fd)
 
     if (nK>1) then
-      call openFile(fd, trim(filename) // '_kpoints.dat', mode="w")
-      write(fd%unit, *)  '# NKpoints = ', nK
-      write(fd%unit, *)  '# Energy [eV], <k1 k2 k3 weight> '
-      write(fd%unit, '(A1)', advance="no") '# '
+      call openFile(fd, trim(filename) // "_kpoints.dat", mode="w")
+      write(fd%unit, *)  "# NKpoints = ", nK
+      write(fd%unit, *)  "# Energy [eV], <k1 k2 k3 weight> "
+      write(fd%unit, "(A1)", advance="no") "# "
       do iK = 1,nK
-        write(fd%unit, '(es15.5, es15.5, es15.5, es15.5)', advance="no") &
+        write(fd%unit, "(es15.5, es15.5, es15.5, es15.5)", advance="no") &
             & kpoints(:,iK), kWeights(iK)
       end do
       write(fd%unit, *)
       do ii = 1, size(pKRes(:,:,1),1)
-        write(fd%unit, '(f20.8)',advance="no") (negf%Emin+(ii-1)*negf%Estep)*negf%eneconv
+        write(fd%unit, "(f20.8)",advance="no") (negf%Emin+(ii-1)*negf%Estep)*negf%eneconv
         do jj=1,size(pKRes(:,:,1),2)
           do iK = 1,nK
-            write(fd%unit, '(es20.8)',advance="no") pKRes(ii,jj, iK)
+            write(fd%unit, "(es20.8)",advance="no") pKRes(ii,jj, iK)
           end do
           write(fd%unit, *)
         end do
@@ -869,23 +870,23 @@ contains
 
     type(TFileDescr) :: fd
 
-    write(stdOut,*) 'Dumping H and S on files...'
-    call openFile(fd, 'HH.dat', mode="w")
-    write(fd%unit, *) '% Size =',HH%nrow, HH%ncol
-    write(fd%unit, *) '% Nonzeros =',HH%nnz
-    write(fd%unit, *) '% '
-    write(fd%unit, *) 'zzz = ['
+    write(stdOut,*) "Dumping H and S on files..."
+    call openFile(fd, "HH.dat", mode="w")
+    write(fd%unit, *) "% Size =",HH%nrow, HH%ncol
+    write(fd%unit, *) "% Nonzeros =",HH%nnz
+    write(fd%unit, *) "% "
+    write(fd%unit, *) "zzz = ["
     call printcsr(fd%unit, HH)
-    write(fd%unit, *) ']'
+    write(fd%unit, *) "]"
     call closeFile(fd)
 
-    call openFile(fd, 'SS.dat', mode="w")
-    write(fd%unit, *) '% Size =',SS%nrow, SS%ncol
-    write(fd%unit, *) '% Nonzeros =',SS%nnz
-    write(fd%unit, *) '% '
-    write(fd%unit, *) 'zzz = ['
+    call openFile(fd, "SS.dat", mode="w")
+    write(fd%unit, *) "% Size =",SS%nrow, SS%ncol
+    write(fd%unit, *) "% Nonzeros =",SS%nnz
+    write(fd%unit, *) "% "
+    write(fd%unit, *) "zzz = ["
     call printcsr(fd%unit, SS)
-    write(fd%unit, *) ']'
+    write(fd%unit, *) "]"
     call closeFile(fd)
   end subroutine negf_dumpHS
 

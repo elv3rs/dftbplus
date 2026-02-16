@@ -35,7 +35,7 @@ program setupgeom
 #:else
   call initGlobalEnv()
 #:endif
-  call printDftbHeader('(setupgeom)', releaseYear)
+  call printDftbHeader("(setupgeom)", releaseYear)
   allocate(input)
   call parseHsdInput(input)
   deallocate(input)

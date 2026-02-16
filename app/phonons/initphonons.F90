@@ -370,7 +370,7 @@ contains
     !! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
       call dumpHSD(hsdTree, hsdParsedInput)
-      write(stdOut, '(/,/,A)') "Processed input in HSD format written to '" &
+      write(stdOut, "(/,/,A)") "Processed input in HSD format written to '" &
           &// hsdParsedInput // "'"
     end if
 
@@ -452,10 +452,10 @@ contains
     end select
 
     if (geo%tPeriodic) then
-      write(stdOut,*) 'supercell lattice vectors:'
-      write(stdOut,*) 'a1:',geo%latVecs(1,:)
-      write(stdOut,*) 'a2:',geo%latVecs(2,:)
-      write(stdOut,*) 'a3:',geo%latVecs(3,:)
+      write(stdOut,*) "supercell lattice vectors:"
+      write(stdOut,*) "a1:",geo%latVecs(1,:)
+      write(stdOut,*) "a2:",geo%latVecs(2,:)
+      write(stdOut,*) "a3:",geo%latVecs(3,:)
     end if
 
   end subroutine readGeometry
@@ -473,7 +473,8 @@ contains
     type(fnodelist), pointer :: pNodeList
     !type(fnodeList), pointer :: pNodeList
     integer :: ii, contact
-    real(dp) :: acc, contactRange(2), sep
+    real(dp) :: acc, sep
+    real(dp) :: contactRange(2)
 
     tp%defined = .true.
     tp%tPeriodic1D = .not. geom%tPeriodic
@@ -550,7 +551,8 @@ contains
     type(TGeometry), intent(in) :: geom
     logical, intent(in) :: upload
 
-    real(dp) :: contactLayerTol, vec(3)
+    real(dp) :: contactLayerTol
+    real(dp) :: vec(3)
     integer :: ii, jj
     type(fnode), pointer :: field, pNode, pTmp, pWide
     type(string) :: buffer, modif
@@ -593,7 +595,7 @@ contains
 
         call getChildValue(pNode, "wideBand", contacts(ii)%wideBand, .false.)
         if (contacts(ii)%wideBand) then
-          call getChildValue(pNode, 'LevelSpacing', contacts(ii)%wideBandDos, &
+          call getChildValue(pNode, "LevelSpacing", contacts(ii)%wideBandDos, &
                              &0.735_dp, modifier=modif, child=field)
           call convertUnitHsd(char(modif), energyUnits, field,&
                               &contacts(ii)%wideBandDos)
@@ -643,21 +645,21 @@ contains
     contactVec = geom%coords(:,iStart) - geom%coords(:,iStart2)
     if (any(sqrt(sum((geom%coords(:,iStart:iStart2-1) - geom%coords(:,iStart2:iEnd) &
         &- spread(contactVec, dim=2, ncopies=iStart2-iStart))**2, dim=1)) > plShiftTol)) then
-      write(stdOut,*) 'coords:', geom%coords(:,iStart)
-      write(stdOut,*) 'coords:', geom%coords(:,iStart2)
-      write(stdOut,*) 'Contact Vector:', contactVec(1:3)
+      write(stdOut,*) "coords:", geom%coords(:,iStart)
+      write(stdOut,*) "coords:", geom%coords(:,iStart2)
+      write(stdOut,*) "Contact Vector:", contactVec(1:3)
       write(stdOut,*) iStart,iStart2,iEnd
-      write(stdOut,*) 'X:'
+      write(stdOut,*) "X:"
       write(stdOut,*) ((geom%coords(1,iStart:iStart2-1) - geom%coords(1,iStart2:iEnd)&
           & - spread(contactVec(1), dim=1, ncopies=iStart2-iStart)))
-      write(stdOut,*) 'Y:'
+      write(stdOut,*) "Y:"
       write(stdOut,*) ((geom%coords(2,iStart:iStart2-1) - geom%coords(2,iStart2:iEnd) &
           & - spread(contactVec(2), dim=1, ncopies=iStart2-iStart)))
-      write(stdOut,*) 'Z:'
+      write(stdOut,*) "Z:"
       write(stdOut,*) ((geom%coords(3,iStart:iStart2-1) - geom%coords(3,iStart2:iEnd) &
           &- spread(contactVec(3), dim=1, ncopies=iStart2-iStart)))
       call error("Contact " // i2c(id) &
-          &// " does not consist of two rigidly shifted layers."//new_line('a') &
+          &// " does not consist of two rigidly shifted layers."//new_line("a") &
           &// "Check structure or increase PLShiftTolerance.")
     end if
 
@@ -866,16 +868,16 @@ contains
         allocate(kPoint(3, nKPoints))
         allocate(kWeight(nKPoints))
         ind = 1
-        do jj = ii, size(tmpI1)
+        loop1: do jj = ii, size(tmpI1)
           if (tmpI1(jj) == 0) then
-            cycle
+            cycle loop1
           end if
           rTmp3 = (kpts(:,jj) - kpts(:,jj-1)) / real(tmpI1(jj), dp)
           do kk = 1, tmpI1(jj)
             kPoint(:,ind) = kpts(:,jj-1) + real(kk, dp) * rTmp3
             ind = ind + 1
           end do
-        end do
+        end do loop1
         kWeight(:) = 1.0_dp
         if (len(modifier) > 0) then
           select case (tolower(char(modifier)))
@@ -1009,7 +1011,7 @@ contains
 
     call openFile(fd, trim(char(filename)))
     do ii = 1,  nDerivs
-        read(fd%unit,'(4f16.10)') dynMatrix(1:nDerivs,ii)
+        read(fd%unit,"(4f16.10)") dynMatrix(1:nDerivs,ii)
     end do
     call closeFile(fd)
 
@@ -1189,7 +1191,8 @@ contains
     type(TPdos), intent(inout) :: pdos
     type(TNEGFTunDos), intent(inout) :: tundos
     type(TTransPar), intent(inout) :: transpar
-    real(dp) :: atTemperature, TempRange(2)
+    real(dp) :: atTemperature
+    real(dp) :: TempRange(2)
 
     type(fnode), pointer :: val, child, field
     type(string) :: modif
@@ -1427,12 +1430,12 @@ contains
     logical :: tFound
 
     tFound = .false.
-    do contact = 1, size(contactNames)
+    loop1: do contact = 1, size(contactNames)
       tFound = (contactNames(contact) == contName)
       if (tFound) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     if (.not. tFound) then
       call detailedError(pNode, "Invalid collector contact name '" &
           &// trim(contName) // "'")
@@ -1489,7 +1492,8 @@ contains
     integer ::  iAtom, jAtom, ii, jj, kk, PL1, PL2
     !* First guess for nr. of neighbors.
     integer, parameter :: nInitNeighbours = 100
-    real(dp) :: disAtom, dd(3)
+    real(dp) :: disAtom
+    real(dp) :: dd(3)
     integer :: nAllAtom
     real(dp) :: mCutoff
     real(dp), allocatable :: coords(:,:), cellVec(:,:), rCellVec(:,:)
@@ -1533,15 +1537,15 @@ contains
     ! Check PL size with neighbor list
     do iAtom = 1, transpar%idxdevice(2)
       PL1 = getPL(iAtom)
-      do jj = 1, nNeighbour(iAtom)
+      loop1: do jj = 1, nNeighbour(iAtom)
         jAtom = img2CentCell(neighbourList%iNeighbour(jj,iAtom))
-        if (jAtom > transpar%idxdevice(2)) cycle
+        if (jAtom > transpar%idxdevice(2)) cycle loop1
         PL2 = getPL(jAtom)
         if (.not.(PL1==PL2 .or. PL1==PL2+1 .or. PL1==PL2-1)) then
-          write(stdOut,*) 'ERROR: PL size inconsistent with cutoff'
+          write(stdOut,*) "ERROR: PL size inconsistent with cutoff"
           stop
         end if
-      end do
+      end do loop1
     end do
 
   end subroutine buildNeighbourList

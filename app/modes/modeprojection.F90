@@ -89,17 +89,17 @@ contains
       call getPrincipleAxes(inertia, moments, geo%coords, atomicMasses, centreOfMass, movedAtoms)
 
       ! axis to project with respect to
-      do ii = 1, 3
+      loop1: do ii = 1, 3
         if (moments(ii) < epsilon(0.0_dp)) then
           ! zero moment of inertia - linear molecule, and this direction is along its axis
-          cycle
+          cycle loop1
         end if
         vTmp(:) = inertia(:,ii)
         do iAt = 1, nMovedAtom
           rTmp = cross3(vTmp, geo%coords(:,iAt) - centreOfMass)
           vectorsToNull((iAt - 1) * 3 + 1 : iAt * 3, nToNull - ii + 1) = rTmp
         end do
-      end do
+      end do loop1
     end if
 
     ! Change from displacements to weighted displacements basis of the Hessian

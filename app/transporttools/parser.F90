@@ -99,7 +99,7 @@ contains
     call parseHSD(rootTag, hsdInputName, hsdTree)
     call getChild(hsdTree, rootTag, root)
 
-    write(stdout, '(A,1X,I0,/)') 'Parser version:', parserVersion
+    write(stdout, "(A,1X,I0,/)") "Parser version:", parserVersion
     write(stdout, "(A)") "Interpreting input file '" // hsdInputName // "'"
     write(stdout, "(A)") repeat("-", 80)
 
@@ -135,7 +135,7 @@ contains
     ! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
       call dumpHSD(hsdTree, hsdProcInputName)
-      write(stdout, '(/,/,A)') "Processed input in HSD format written to '" &
+      write(stdout, "(/,/,A)") "Processed input in HSD format written to '" &
           &// hsdProcInputName // "'"
     end if
 
@@ -146,7 +146,7 @@ contains
 
     call destroyNode(hsdTree)
 
-    write(stdout,*) 'Geometry processed. Job finished'
+    write(stdout,*) "Geometry processed. Job finished"
 
   end subroutine parseHsdInput
 
@@ -254,7 +254,7 @@ contains
     !! mandatory contact entries. On the other hand we need to wait that
     !! contacts are parsed to resolve the name of the contact for task =
     !! contacthamiltonian
-    call getChildValue(root, "Task", pTask, child=pTaskType, default='uploadcontacts')
+    call getChildValue(root, "Task", pTask, child=pTaskType, default="uploadcontacts")
     call getNodeName(pTask, buffer)
 
     if (char(buffer)/="setupgeometry") then
@@ -274,7 +274,7 @@ contains
 
       call readContacts(pNodeList, transpar%contacts, geom, char(buffer), iAtInRegion, nPLs)
       call getSKcutoff(pTask, geom, skCutoff)
-      write(stdOut,*) 'Maximum SK cutoff:', SKcutoff*Bohr__AA,'(A)'
+      write(stdOut,*) "Maximum SK cutoff:", SKcutoff*Bohr__AA,"(A)"
       call getChildValue(pTask, "printInfo", printDebug, .false.)
       call setupGeometry(geom, iAtInRegion, transpar%contacts, skCutoff, nPLs, printDebug)
 
@@ -299,7 +299,8 @@ contains
     type(TWrappedInt1), allocatable, intent(out) :: iAtInRegion(:)
     integer, intent(out), allocatable :: nPLs(:)
 
-    real(dp) :: contactLayerTol, vec(3)
+    real(dp) :: contactLayerTol
+    real(dp) :: vec(3)
     integer :: selectionRange(2)
     integer :: ii, ishift
     type(fnode), pointer :: field, pNode, pTmp
@@ -366,14 +367,14 @@ contains
 
     contains
 
-      function isZeroBased(chr)
+      function isZeroBased(chr) result(res)
         character(*), intent(in) :: chr
-        logical :: isZeroBased
+        logical :: res
 
         if (trim(chr) == "" .or. tolower(trim(chr)) == "onebased") then
-          isZeroBased = .false.
+          res = .false.
         else if (tolower(trim(chr)) == "zerobased") then
-          isZeroBased = .true.
+          res = .true.
         else
           call error("Modifier in Atoms " // trim(chr) // " not recongnized")
         end if

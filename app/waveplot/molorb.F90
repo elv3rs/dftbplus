@@ -381,7 +381,8 @@ contains
 
     real(dp) :: curCoords(3,3), xyz(3), diff(3), frac(3)
     real(dp) :: atomAllOrbVal(nOrb, nCell)
-    logical :: nonZeroMask(nOrb), allZero
+    logical :: allZero
+    logical :: nonZeroMask(nOrb)
     integer :: nNonZero
     integer, target :: nonZeroIndContainer(nOrb)
     integer, pointer :: nonZeroIndices(:)

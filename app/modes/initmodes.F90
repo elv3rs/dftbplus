@@ -167,7 +167,7 @@ contains
     integer :: iErr
 
     !! Write header
-    call printDftbHeader('(MODES '// version //')', releaseYear)
+    call printDftbHeader("(MODES "// version //")", releaseYear)
 
     !! Read in input file as HSD
     call parseHSD(rootTag, hsdInput, hsdTree)

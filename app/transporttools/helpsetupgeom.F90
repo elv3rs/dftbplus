@@ -116,7 +116,7 @@ contains
       do ii = 1, size(iAtInRegion(icont)%data)
         jj = iAtInRegion(icont)%data(ii)
         if (.not.mask(jj)) then
-          write(sindx,'(I10)') jj
+          write(sindx,"(I10)") jj
           call error("atom "//adjustl(sindx)//" is found in more than one region")
         else
           mask(jj) = .false.
@@ -149,7 +149,8 @@ contains
     integer :: ii, jj, icont, ncont
     real(dp), allocatable :: subarray(:)
     integer, allocatable :: indxs(:), buffer(:)
-    real(dp) :: mean, contRange(3)
+    real(dp) :: mean
+    real(dp) :: contRange(3)
     integer :: visitOrder(3)
 
     ncont = size(iAtInRegion)-1
@@ -177,15 +178,15 @@ contains
           & - minval(geom%coords(:,iAtInRegion(icont)%data(:)),dim=2))
       contRange(abs(contDir(icont))) = huge(1.0)
       call index_heap_sort(visitOrder, contRange)
-      do ii = 3, 1, -1
+      loop1: do ii = 3, 1, -1
         jj = visitOrder(ii)
         if (jj == abs(contDir(icont))) then
-          cycle
+          cycle loop1
         end if
         subarray(:) = subarray * (abs(maxval(geom%coords(jj,iAtInRegion(icont)%data(:))) -&
             & minval(geom%coords(jj,iAtInRegion(icont)%data(:)))) + epsilon(1.0))
         subarray(:) = subarray + geom%coords(jj, iAtInRegion(icont)%data(:))
-      end do
+      end do loop1
       call index_heap_sort(indxs, subarray)
       buffer = iAtInRegion(icont)%data(indxs)
       iAtInRegion(icont)%data = buffer
@@ -204,7 +205,10 @@ contains
     real(dp), intent(in) :: plcutoff
 
     integer :: ii, jj, icont, ncont, PLsize, nAddPLs, iPL
-    real(dp) :: vec(3), uu(3), vv(3), tol, bestcross, bestdiff, mindist
+    real(dp) :: tol, bestcross, bestdiff, mindist
+    real(dp) :: vv(3)
+    real(dp) :: uu(3)
+    real(dp) :: vec(3)
     character(lc) :: errmess(4)
 
     ncont = size(iAtInRegion)-1
@@ -220,11 +224,11 @@ contains
         PLsize = size(data)/2
         write(stdOut, *) "PL size:",PLsize
         write(stdOut, *) "Number of PLs:",nPLs(icont)
-        write(stdOut, *) "contact vector:",contvec(1:3,icont)*Bohr__AA,'(A)'
+        write(stdOut, *) "contact vector:",contvec(1:3,icont)*Bohr__AA,"(A)"
         write(stdOut, *) "tolerance:",tol
         ! check PL size
         mindist=minDist2ndPL(geom%coords,data,PLsize,contvec(1:3,icont))
-        write(stdOut, *) "minimum distance 2nd neighbour PL:", mindist*Bohr__AA,'(A)'
+        write(stdOut, *) "minimum distance 2nd neighbour PL:", mindist*Bohr__AA,"(A)"
         if (mindist<plcutoff) then
           errmess(1) = "The size of the contact PL is shorter than SK cutoff"
           errmess(2) = "Check your input geometry or force SKTruncation"
@@ -237,20 +241,20 @@ contains
         do ii = 1, PLsize
           bestcross = huge(bestcross)
           bestdiff = huge(bestdiff)
-          do jj = PLsize+1, 2*PLsize
+          loop1: do jj = PLsize+1, 2*PLsize
             vec(:) = geom%coords(:,data(jj))-geom%coords(:,data(ii))
             bestcross = min(bestcross, norm2(cross3(vec,uu)))
             bestdiff = min(bestdiff, norm2(vec-vv))
             bestdiff = min(bestdiff, norm2(vec+vv))
             if (norm2(cross3(vec,uu))< tol .and. &
                   & (norm2(vec-vv)< tol .or. norm2(vec+vv)<tol)) then
-              exit
+              exit loop1
             end if
-          end do
+          end do loop1
           if (bestcross>tol .or. bestdiff>tol) then
              write(stdOut, *) "Atom ",data(ii)
-             write(stdOut, *) "Best cross vector:", bestcross*Bohr__AA, '(A)'
-             write(stdOut, *) "Best difference:", bestdiff*Bohr__AA, '(A)'
+             write(stdOut, *) "Best cross vector:", bestcross*Bohr__AA, "(A)"
+             write(stdOut, *) "Best difference:", bestdiff*Bohr__AA, "(A)"
              call error("Atom not found")
           end if
           call swap(data(PLsize+ii),data(jj))
@@ -261,7 +265,7 @@ contains
         PLsize = size(iAtInRegion(icont)%data)
         write(stdOut, *) "PL size:",PLsize
         contVec(1:3,icont) = contVec(1:3,icont)*real(sign(1,contDir(icont)),dp)
-        write(stdOut, *) "contact vector:",contvec(1:3,icont)*Bohr__AA, '(A)'
+        write(stdOut, *) "contact vector:",contvec(1:3,icont)*Bohr__AA, "(A)"
         ! counting number of added PLs. Factor of 2 is needed to get
         ! always an even total number
         mindist=minDist2ndPL(geom%coords,iAtInRegion(icont)%data,PLsize,contvec(1:3,icont))
@@ -339,7 +343,8 @@ contains
     type(TListIntR1), intent(out) :: PLlist
 
     integer :: ii, jj, kk, sizeL,  sizeD, ncont
-    integer :: icx, icy, icz, nc(3)
+    integer :: icx, icy, icz
+    integer :: nc(3)
     logical, allocatable :: mask(:)
     type(TListInt) :: atomsInPL
     integer, allocatable :: buffer(:)
@@ -434,7 +439,9 @@ contains
      real(dp), intent(in) :: contvec(:)
      integer :: dir
 
-     real(dp) :: uu(3), vv(3), tol
+     real(dp) :: tol
+     real(dp) :: vv(3)
+     real(dp) :: uu(3)
 
      vv = contvec(1:3)
      tol = norm2(vv)*contvec(4)
@@ -481,7 +488,7 @@ contains
     do icont = 1, ncont
       if (allocated(iAtInRegion(icont)%data)) then
         PLsize = size(iAtInRegion(icont)%data)/2
-        write(stdOut,*) 'Atoms in contact',icont,':'
+        write(stdOut,*) "Atoms in contact",icont,":"
         write(stdOut,*) iAtInRegion(icont)%data(1:PLsize)
         write(stdOut,*) iAtInRegion(icont)%data(PLsize+1:2*PLsize)
         write(stdOut,*)
@@ -489,7 +496,7 @@ contains
         call error("Atom list not allocated")
       end if
     end do
-    write(stdOut,*) 'Atoms in device:'
+    write(stdOut,*) "Atoms in device:"
     write(stdOut,*) iAtInRegion(ncont+1)%data
     write(stdOut,*)
 
@@ -527,63 +534,63 @@ contains
 
     ncont = size(iAtInRegion)-1
 
-    call openFile(fd2, 'transport.hsd', mode="w")
-    write(fd2%unit,'(A)') 'Transport{'
+    call openFile(fd2, "transport.hsd", mode="w")
+    write(fd2%unit,"(A)") "Transport{"
 
     ! Write Device Atoms
-    write(fd2%unit,'(2x,A)') 'Device{'
-    write(fd2%unit,'(4x,A)', advance='no') 'FirstLayerAtoms={ '
+    write(fd2%unit,"(2x,A)") "Device{"
+    write(fd2%unit,"(4x,A)", advance="no") "FirstLayerAtoms={ "
     kk = 0
     do jj = 1, len(PLlist)
-      write(sindx,'(I10)') kk+1
-      write(fd2%unit,'(A)', advance='no') ' '//trim(adjustl(sindx))
+      write(sindx,"(I10)") kk+1
+      write(fd2%unit,"(A)", advance="no") " "//trim(adjustl(sindx))
       call get(PLlist, atomsInPL, jj)
       kk = kk + size(atomsInPL)
       deallocate(atomsInPL)
     end do
-    write(fd2%unit,*) '}'  !close FirstLayerAtoms
-    write(sindx,'(I10)') kk
-    write(fd2%unit,'(4x,A)') 'AtomRange= 1 '//trim(adjustl(sindx))
-    write(fd2%unit,'(2x,A)') '}'  !close Device
+    write(fd2%unit,*) "}"  !close FirstLayerAtoms
+    write(sindx,"(I10)") kk
+    write(fd2%unit,"(4x,A)") "AtomRange= 1 "//trim(adjustl(sindx))
+    write(fd2%unit,"(2x,A)") "}"  !close Device
 
     ! Write Contact Atoms
     do icont = 1, ncont
-      write(fd2%unit,'(2x,A)') 'Contact{'
-      write(fd2%unit,'(4x,A)') 'Id = "'//trim(contacts(icont)%name)//'"'
-      write(sindx,'(I10)') kk+1
-      write(fd2%unit,'(4x,A)',advance='no') 'AtomRange= '//trim(adjustl(sindx))
+      write(fd2%unit,"(2x,A)") "Contact{"
+      write(fd2%unit,"(4x,A)") 'Id = "'//trim(contacts(icont)%name)//'"'
+      write(sindx,"(I10)") kk+1
+      write(fd2%unit,"(4x,A)",advance="no") "AtomRange= "//trim(adjustl(sindx))
       kk = kk + size(iAtInRegion(icont)%data)
-      write(sindx,'(I10)') kk
-      write(fd2%unit,'(A)') ' '//trim(adjustl(sindx))
-      write(fd2%unit,'(2x,A)') '}'  !close Contact
+      write(sindx,"(I10)") kk
+      write(fd2%unit,"(A)") " "//trim(adjustl(sindx))
+      write(fd2%unit,"(2x,A)") "}"  !close Contact
     end do
-    write(fd2%unit,'(A)') '}'  !close Transport
-    write(fd2%unit,'(A)') 'Hamiltonian = DFTB{'
-    write(fd2%unit,'(2x,A)') 'TruncateSKRange = {'
-    write(fd2%unit,'(4x,A,F8.4)') 'SKMaxDistance = ', plCutoff
-    write(fd2%unit,'(4x,A)') 'HardCutoff = Yes'
-    write(fd2%unit,'(2x,A)') '}'
-    write(fd2%unit,'(A)') '}'
+    write(fd2%unit,"(A)") "}"  !close Transport
+    write(fd2%unit,"(A)") "Hamiltonian = DFTB{"
+    write(fd2%unit,"(2x,A)") "TruncateSKRange = {"
+    write(fd2%unit,"(4x,A,F8.4)") "SKMaxDistance = ", plCutoff
+    write(fd2%unit,"(4x,A)") "HardCutoff = Yes"
+    write(fd2%unit,"(2x,A)") "}"
+    write(fd2%unit,"(A)") "}"
 
     call closeFile(fd2)
 
     ! gen output
 
-    call openFile(fd1, 'processed.gen', mode="w")
+    call openFile(fd1, "processed.gen", mode="w")
     if (geom%tPeriodic) then
-      write(fd1%unit,*) geom%natom, 'S'
+      write(fd1%unit,*) geom%natom, "S"
     else
-      write(fd1%unit,*) geom%natom, 'C'
+      write(fd1%unit,*) geom%natom, "C"
     end if
     do ii = 1, geom%nSpecies
-      write(fd1%unit,'(1x,A,1x)',advance='No') trim(geom%SpeciesNames(ii))
+      write(fd1%unit,"(1x,A,1x)",advance="No") trim(geom%SpeciesNames(ii))
     end do
     write(fd1%unit,*)
 
 102 format(I5,I2,3E20.10)
 
     ! Write Device Atoms
-    write(fd1%unit,"(4X,A)") '# device atoms'
+    write(fd1%unit,"(4X,A)") "# device atoms"
     do jj = 1, len(PLlist)
       kk = 0
       call get(PLlist, atomsInPL, jj)

@@ -10,7 +10,8 @@ program buildwire
 
   integer, parameter :: dp = kind(1.0d0)
 
-  integer :: i,d(3),pl_atm,tot_atm,num_pl,err,k
+  integer :: i,pl_atm,tot_atm,num_pl,err,k
+  integer :: d(3)
   character(100) :: gen_file
   character(2) :: period
   character(70) :: atm_spec
@@ -25,11 +26,11 @@ program buildwire
 
   iargc = command_argument_count()
   if (iargc < 3) then
-    write(*,*) 'buildwire pl.gen dir npls [-s]'
-    write(*,*) 'pl.gen: gen file with PL definition (supercell)'
-    write(*,*) 'dir: 1=x, 2=y, 3=z'
-    write(*,*) 'npls: Number of pls in the scattering region'
-    write(*,*) '-s: (optional) makes a supercell structure'
+    write(*,*) "buildwire pl.gen dir npls [-s]"
+    write(*,*) "pl.gen: gen file with PL definition (supercell)"
+    write(*,*) "dir: 1=x, 2=y, 3=z"
+    write(*,*) "npls: Number of pls in the scattering region"
+    write(*,*) "-s: (optional) makes a supercell structure"
     stop
   end if
 
@@ -53,29 +54,29 @@ program buildwire
   open(newunit=fp, file=trim(gen_file), action="read")
 
   read(fp,*) pl_atm, period
-  read(fp,'(A)') atm_spec
+  read(fp,"(A)") atm_spec
 
   ALLOCATE(X(pl_atm),stat=err)
-  IF (err /= 0) STOP 'no space for allocation (X)'
+  IF (err /= 0) STOP "no space for allocation (X)"
 
   ALLOCATE(Y(pl_atm),stat=err)
-  IF (err /= 0) STOP 'no space for allocation (Y)'
+  IF (err /= 0) STOP "no space for allocation (Y)"
 
   ALLOCATE(Z(pl_atm),stat=err)
-  IF (err /= 0) STOP 'no space for allocation (Z)'
+  IF (err /= 0) STOP "no space for allocation (Z)"
 
   ALLOCATE(n_atm(pl_atm),stat=err)
-  IF (err /= 0) STOP 'no space for allocation (n_atm)'
+  IF (err /= 0) STOP "no space for allocation (n_atm)"
 
   ALLOCATE(typ_atm(pl_atm),stat=err)
-  IF (err /= 0) STOP 'no space for allocation (typ_atm)'
+  IF (err /= 0) STOP "no space for allocation (typ_atm)"
 
 
   do i = 1,pl_atm
      read(fp,*) n_atm(i),typ_atm(i),X(i),Y(i),Z(i)
   end do
 
-  read(fp,'(A)') cell_centre
+  read(fp,"(A)") cell_centre
   do i = 1,3
      read(fp,*) cell(i,1),cell(i,2),cell(i,3)
   end do
@@ -86,17 +87,17 @@ program buildwire
   tot_atm=pl_atm * (num_pl + 4)
 
 
-  open(newunit=fp,file='Ordered_'//trim(gen_file), action="write")
+  open(newunit=fp,file="Ordered_"//trim(gen_file), action="write")
 
   if (.not.do_super) then
      period = "C"
   end if
 
-  write(fp,'(I5,A4)') tot_atm, period
-  write(fp,'(A)') trim(atm_spec)
+  write(fp,"(I5,A4)") tot_atm, period
+  write(fp,"(A)") trim(atm_spec)
   do k = 1,num_pl
      do i = 1,pl_atm
-        write(fp,'(I5,I5,F20.12,F20.12,F20.12)') n_atm(i),typ_atm(i), &
+        write(fp,"(I5,I5,F20.12,F20.12,F20.12)") n_atm(i),typ_atm(i), &
                                X(i)+(k-1)*cell(1,1)*d(1),&
                                Y(i)+(k-1)*cell(2,2)*d(2), &
                                Z(i)+(k-1)*cell(3,3)*d(3)
@@ -106,7 +107,7 @@ program buildwire
   ! build I contact
   do k = num_pl+1,num_pl+2
      do i = 1,pl_atm
-        write(fp,'(I5,I5,F20.12,F20.12,F20.12)') n_atm(i),typ_atm(i), &
+        write(fp,"(I5,I5,F20.12,F20.12,F20.12)") n_atm(i),typ_atm(i), &
                                X(i)+(k-1)*cell(1,1)*d(1),&
                                Y(i)+(k-1)*cell(2,2)*d(2), &
                                Z(i)+(k-1)*cell(3,3)*d(3)
@@ -116,7 +117,7 @@ program buildwire
   ! build II contact
   do k = 0,-1,-1
      do i = 1,pl_atm
-        write(fp,'(I5,I5,F20.12,F20.12,F20.12)') n_atm(i),typ_atm(i), &
+        write(fp,"(I5,I5,F20.12,F20.12,F20.12)") n_atm(i),typ_atm(i), &
                                X(i)+(k-1)*cell(1,1)*d(1),&
                                Y(i)+(k-1)*cell(2,2)*d(2), &
                                Z(i)+(k-1)*cell(3,3)*d(3)
@@ -124,7 +125,7 @@ program buildwire
   end do
 
   if (do_super) then
-    write(fp,'(A)') cell_centre
+    write(fp,"(A)") cell_centre
     do i = 1,3
         if(d(1)==1) write(fp,*) cell(i,1)*(num_pl+4)*d(1),cell(i,2),cell(i,3)
         if(d(2)==1) write(fp,*) cell(i,1),cell(i,2)*(num_pl+4)*d(2),cell(i,3)
@@ -134,34 +135,34 @@ program buildwire
 
   close(fp)
 
-  write(*,*) 'structure built'
-  write(*,*) 'Input for dftb+:'
+  write(*,*) "structure built"
+  write(*,*) "Input for dftb+:"
   write(*,*)
-  write(*,*) 'Transport{'
-  write(*,*) '  Device{'
-  write(*,"(1x,A,I0,' ',I0)") '    AtomRange = ',1, pl_atm*num_pl
-  write(*,FMT='(1x,a)', advance='NO') '    FirstLayerAtoms ='
+  write(*,*) "Transport{"
+  write(*,*) "  Device{"
+  write(*,"(1x,A,I0,' ',I0)") "    AtomRange = ",1, pl_atm*num_pl
+  write(*,FMT="(1x,a)", advance="NO") "    FirstLayerAtoms ="
   do i=1,num_pl
     write(tmpStr,"(I0)") (i-1)*pl_atm+1
-    write(*,'(1X,A)', advance='NO')trim(tmpStr)
+    write(*,"(1X,A)", advance="NO")trim(tmpStr)
   end do
   write(*,*)
-  write(*,*) '  }'
+  write(*,*) "  }"
 
-  write(*,*) '  Contact{'
+  write(*,*) "  Contact{"
   write(*,*) '    Id = "source"'
-  write(*,"(1x,A,I0,' ',I0)") '    AtomRange = ', pl_atm*num_pl+1, pl_atm*(num_pl+2)
-  write(*,*) '  }'
+  write(*,"(1x,A,I0,' ',I0)") "    AtomRange = ", pl_atm*num_pl+1, pl_atm*(num_pl+2)
+  write(*,*) "  }"
 
-  write(*,*) '  Contact{'
+  write(*,*) "  Contact{"
   write(*,*) '    Id = "drain"'
-  write(*,"(1x,A,I0,' ',I0)") '    AtomRange = ', pl_atm*(num_pl+2)+1, pl_atm*(num_pl+4)
-  write(*,*) '  }'
+  write(*,"(1x,A,I0,' ',I0)") "    AtomRange = ", pl_atm*(num_pl+2)+1, pl_atm*(num_pl+4)
+  write(*,*) "  }"
 
-  write(*,*) '  Task= contactHamiltonian{'
+  write(*,*) "  Task= contactHamiltonian{"
   write(*,*) '    contactId = "source"'
-  write(*,*) '  }'
-  write(*,*) '}'
+  write(*,*) "  }"
+  write(*,*) "}"
   write(*,*)
 
 end program buildwire

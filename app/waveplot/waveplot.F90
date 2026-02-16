@@ -68,7 +68,8 @@ program waveplot
   integer :: i1, i2, i3, ioStat
   integer :: iCell, iLevel, iKPoint, iSpin, iAtom, iSpecies, iAng, mAng, ind, nBox
   logical :: tFinished, tPlotLevel, hasIoError
-  character(len=80) :: comments(2), fileName
+  character(len=80) :: fileName
+  character(len=80) :: comments(2)
   real(dp) :: mDist, dist
   real(dp) :: cellMiddle(3), boxMiddle(3), frac(3), cubeCorner(3), coord(3), shift(3)
   real(dp) :: invBoxVecs(3,3), recVecs2p(3,3)
@@ -162,7 +163,7 @@ program waveplot
       end if
       if (wp%opt%tPlotAtomDens) then
         write(comments(2), 9989) wp%input%identity
-9989    format('Calc-Id:',I11,', atomdens')
+9989    format("Calc-Id:",I11,", atomdens")
         fileName = "wp-atomdens.cube"
         call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
             & buffer, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
@@ -283,7 +284,7 @@ program waveplot
     if (tPlotLevel) then
       if (wp%opt%tPlotChrg) then
         write(comments(2), 9990) wp%input%identity, iSpin, iKPoint, iLevel
-9990    format('Calc-Id:',I11,', Spin:',I2,', K-Point:',I6,', State:',I6, ', abs2')
+9990    format("Calc-Id:",I11,", Spin:",I2,", K-Point:",I6,", State:",I6, ", abs2")
         fileName = "wp-" // i2c(iSpin) // "-" // i2c(iKPoint) // "-" // i2c(iLevel) // "-abs2.cube"
         call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
             & buffer, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
@@ -294,7 +295,7 @@ program waveplot
       if (wp%opt%tPlotChrgDiff) then
         buffer(:,:,:) = buffer - (sumChrg / sumAtomicChrg) * atomicChrg(:,:,:,1)
         write(comments(2), 9995) wp%input%identity, iSpin, iKPoint, iLevel
-9995    format('Calc-Id:',I11,', Spin:',I2,', K-Point:',I6,', State:',I6, ', abs2diff')
+9995    format("Calc-Id:",I11,", Spin:",I2,", K-Point:",I6,", State:",I6, ", abs2diff")
         fileName = "wp-" // i2c(iSpin) // "-" // i2c(iKPoint) // "-" // i2c(iLevel) //&
             & "-abs2diff.cube"
         call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
@@ -310,7 +311,7 @@ program waveplot
           buffer(:,:,:) = real(gridValCmpl, dp)
         end if
         write(comments(2), 9991) wp%input%identity, iSpin, iKPoint, iLevel
-9991    format('Calc-Id:',I11,', Spin:',I2,', K-Point:',I6,', State:',I6, ', real')
+9991    format("Calc-Id:",I11,", Spin:",I2,", K-Point:",I6,", State:",I6, ", real")
         fileName = "wp-" // i2c(iSpin) // "-" // i2c(iKPoint) // "-" // i2c(iLevel) // "-real.cube"
         call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
             & buffer, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
@@ -321,7 +322,7 @@ program waveplot
       if (wp%opt%tPlotImag) then
         buffer(:,:,:) = aimag(gridValCmpl)
         write(comments(2), 9992) wp%input%identity, iSpin, iKPoint, iLevel
-9992    format('Calc-Id:',I11,', Spin:',I2,', K-Point:',I6,', State:',I6, ', imag')
+9992    format("Calc-Id:",I11,", Spin:",I2,", K-Point:",I6,", State:",I6, ", imag")
         fileName = "wp-" // i2c(iSpin) // "-" // i2c(iKPoint) // "-" // i2c(iLevel) // "-imag.cube"
         call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
             & buffer, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
@@ -348,7 +349,7 @@ program waveplot
   end if
   if (env%tGlobalLead .and. wp%opt%tPlotTotChrg) then
     write(comments(2), 9993) wp%input%identity
-9993 format('Calc-Id:',I11,', abs2')
+9993 format("Calc-Id:",I11,", abs2")
     fileName = "wp-abs2.cube"
     call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
         & totChrg, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
@@ -366,8 +367,8 @@ program waveplot
   if (env%tGlobalLead .and. wp%opt%tPlotTotDiff) then
     buffer(:,:,:) = totChrg - (sumTotChrg / sumAtomicChrg) * atomicChrg(:,:,:,1)
     write(comments(2), 9994) wp%input%identity
-9994 format('Calc-Id:',I11,', abs2diff')
-    fileName = 'wp-abs2diff.cube'
+9994 format("Calc-Id:",I11,", abs2diff")
+    fileName = "wp-abs2diff.cube"
     call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
         & buffer, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
     if (ioStat /= 0) then
@@ -387,8 +388,8 @@ program waveplot
   if (env%tGlobalLead .and. wp%opt%tPlotTotSpin) then
     buffer(:,:,:) = 2.0_dp * spinUp - totChrg
     write(comments(2), 9996) wp%input%identity
-9996 format('Calc-Id:',I11,', spinpol')
-    fileName = 'wp-spinpol.cube'
+9996 format("Calc-Id:",I11,", spinpol")
+    fileName = "wp-spinpol.cube"
     call writeCubeFile(wp%input%geo, wp%aNr%atomicNumbers, wp%loc%gridVec, wp%opt%gridOrigin,&
         & buffer, fileName, comments=comments, repeatBox=wp%opt%repeatBox, ioStat=ioStat)
     if (ioStat /= 0) then

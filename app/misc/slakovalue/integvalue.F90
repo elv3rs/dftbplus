@@ -174,7 +174,10 @@ contains
     integer, intent(in) :: nPoint
 
     integer :: ii
-    real(dp) :: dist, sk0(1), skm1(1), skp1(1)
+    real(dp) :: dist
+    real(dp) :: skp1(1)
+    real(dp) :: skm1(1)
+    real(dp) :: sk0(1)
 
     do ii = 0, nPoint
       dist = rStart + real(ii, dp) * dr

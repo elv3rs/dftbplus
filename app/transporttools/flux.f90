@@ -16,7 +16,10 @@ program flux
   real(dp), dimension(:,:), allocatable :: Inm
   real(dp), dimension(:,:), allocatable :: coord
   integer :: m, itmp, io, i, j, n, k, maxnn, maxnn_valid
-  real(dp) :: Iz, dr(3), e(3), Imax, frac, width, arr_len, rtmp(3)
+  real(dp) :: Iz, Imax, frac, width, arr_len
+  real(dp) :: rtmp(3)
+  real(dp) :: e(3)
+  real(dp) :: dr(3)
   character(64) :: arg, filename1, filename2, color
   character(4) :: id
   logical :: bondflux
@@ -82,18 +85,18 @@ program flux
   ! Figure out the number of atoms
   open(fp,file=trim(filename2), action="read")
   Inm = 0.d0
-  do m=1, nat
+  loop1: do m=1, nat
     read(fp,*, iostat=io) itmp, rtmp(1:3), nn(m), (neig(m,i), Inm(m,i), i=1,nn(m))
     if (io<0) then
       natoms = m-1
-      exit
+      exit loop1
     end if
-  end do
+  end do loop1
   close(fp)
 
   Imax=maxval(abs(Inm(1:natoms,1:maxnn)))
-  print*,'# Natoms=',natoms
-  print*,'# Imax=',Imax
+  print*,"# Natoms=",natoms
+  print*,"# Imax=",Imax
 
   if(Imax==0.d0) Imax=1.0_dp
   k=1
@@ -114,9 +117,9 @@ program flux
          arr_len = frac*Inm(m,j)/Imax
 
          if (arr_len > 0.1d0) then
-            write(*,*) '# ',n,m,Inm(m,j)/Imax
-            write(id,'(i4.4)') k
-            arg='draw arr'//id//' arrow width'
+            write(*,*) "# ",n,m,Inm(m,j)/Imax
+            write(id,"(i4.4)") k
+            arg="draw arr"//id//" arrow width"
 
             e(:)=coord(:,m)+dr(:)*0.9
             !write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),arr_len*width,' {', &
@@ -124,38 +127,38 @@ program flux
 
            if(arr_len < 0.2d0) then
               e(:)=coord(:,m)+dr(:)*0.9
-              write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),0.25*width,' {', &
-                    & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+              write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),0.25*width," {", &
+                    & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
            end if
            if(arr_len >= 0.2 .and. arr_len < 0.4d0) then
               e(:)=coord(:,m)+dr(:)*0.9
-              write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),0.5*width,' {', &
-                    & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+              write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),0.5*width," {", &
+                    & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
            end if
            if(arr_len >= 0.4 .and. arr_len < 1.d0) then
               e(:)=coord(:,m)+dr(:)*0.9
-              write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),width,' {', &
-                    & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+              write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),width," {", &
+                    & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
            end if
            if(arr_len >= 1.d0 .and. arr_len < 1.5d0) then
               e(:)=coord(:,m)+dr(:)*0.8
-              write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),1.5*width,' {', &
-                    & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+              write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),1.5*width," {", &
+                    & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
            end if
            if(arr_len >= 1.5d0 .and. arr_len < 2.0d0) then
               e(:)=coord(:,m)+dr(:)*0.8
-               write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),2.0*width,' {', &
-                     & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+               write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),2.0*width," {", &
+                     & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
            end if
            if(arr_len >= 2.0d0 .and. arr_len < 2.5d0) then
               e(:)=coord(:,m)+dr(:)*0.8
-              write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),2.5*width,' {', &
-                    & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+              write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),2.5*width," {", &
+                    & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
            end if
            if(arr_len >= 2.5d0) then
               e(:)=coord(:,m)+dr(:)*0.8
-              write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),3.0*width,' {', &
-                     & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
+              write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),3.0*width," {", &
+                     & coord(1:3,m),"}{",e(1:3),"} color "//trim(color)
             end if
             k=k+1
          end if
@@ -179,10 +182,10 @@ program flux
 
        end do
 
-       write(id,'(i4.4)') k
-       arg='draw arr'//id//' arrow width'
-       write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),width,' {', &
-           & coord(1:3,m),'}{',coord(:,m)+e(1:3),'} color '//trim(color)
+       write(id,"(i4.4)") k
+       arg="draw arr"//id//" arrow width"
+       write(*,"(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)") trim(arg),width," {", &
+           & coord(1:3,m),"}{",coord(:,m)+e(1:3),"} color "//trim(color)
        k=k+1
 
     end do

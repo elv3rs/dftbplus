@@ -41,12 +41,12 @@ program phonons
   call TTaggedWriter_init(taggedWriter)
 
   nProcs = 1
-  write(stdOut,*)'Computing environment'
+  write(stdOut,*)"Computing environment"
 #:if WITH_MPI
   write(*,*)env%mpi%globalComm%rank, env%mpi%globalComm%size, tIOProc, env%mpi%globalComm%lead
   nProcs = env%mpi%globalComm%size
 #:else
-  write(stdOut,*)'Not compiled with MPI enabled'
+  write(stdOut,*)"Not compiled with MPI enabled"
 #:endif
 
   if (tCompModes) then
@@ -125,23 +125,23 @@ contains
 
     ! solve the eigenproblem
     if (tPlotModes) then
-      write(stdOut,*) 'Computing vibrational frequencies and modes'
-      call heev(dynMatrix,eigenValues,'U','V')
+      write(stdOut,*) "Computing vibrational frequencies and modes"
+      call heev(dynMatrix,eigenValues,"U","V")
     else
-      write(stdOut,*) 'Computing vibrational frequencies'
-      call heev(dynMatrix,eigenValues,'U','N')
+      write(stdOut,*) "Computing vibrational frequencies"
+      call heev(dynMatrix,eigenValues,"U","N")
     end if
 
     ! take square root of modes (allowing for imaginary modes) and print
     eigenValues =  sign(sqrt(abs(eigenValues)),eigenValues)
-    write(stdOut,*)'Vibrational modes (cm-1):'
+    write(stdOut,*)"Vibrational modes (cm-1):"
     do ii = 1, 3 * nMovedAtom
-      write(stdOut,'(f8.2)')eigenValues(ii)*Hartree__cm
+      write(stdOut,"(f8.2)")eigenValues(ii)*Hartree__cm
     end do
     write(stdOut,*)
 
     if (tPlotModes) then
-      write(stdOut,*)'Plotting eigenmodes:'
+      write(stdOut,*)"Plotting eigenmodes:"
       write(stdOut,*)ModesToPlot(:)
       ! scale mode compoents on each atom by mass and then normalise total mode
       do ii = 1, nModesToPlot
@@ -182,9 +182,9 @@ contains
           do kk = 1, nCycles
             do ll = 1, nSteps
               write(fd%unit, *)nAtom
-              write(fd%unit, *)'Eigenmode',iMode,eigenValues(iMode)*Hartree__cm,'cm-1'
+              write(fd%unit, *)"Eigenmode",iMode,eigenValues(iMode)*Hartree__cm,"cm-1"
               do iAt = 1, nAtom
-                write(fd%unit, '(A3,T4,3F10.6)') &
+                write(fd%unit, "(A3,T4,3F10.6)") &
                     & geo%speciesNames(geo%species(iAt)), &
                     & (geo%coords(:,iAt)&
                     & + cos(2.0_dp * pi * real(ll) / real(nSteps))&
@@ -199,18 +199,18 @@ contains
         do ii = 1, nModesToPlot
           iMode = ModesToPlot(ii)
           write(fd%unit, *)nAtom
-          write(fd%unit, *)'Eigenmode',iMode,eigenValues(iMode)*Hartree__cm,'cm-1'
+          write(fd%unit, *)"Eigenmode",iMode,eigenValues(iMode)*Hartree__cm,"cm-1"
           if (tXmakeMol) then  ! need to account for its non-standard xyz vector
             ! format:
             do iAt = 1, nAtom
-              write(fd%unit, '(A3,T4,3F10.6,A,3F10.6)') &
+              write(fd%unit, "(A3,T4,3F10.6,A,3F10.6)") &
                   & geo%speciesNames(geo%species(iAt)), &
-                  & geo%coords(:,iAt)* Bohr__AA, ' atom_vector ',&
+                  & geo%coords(:,iAt)* Bohr__AA, " atom_vector ",&
                   & displ(:,iAt,ii)
             end do
           else  ! genuine xyz format
             do iAt = 1, nAtom
-              write(fd%unit, '(A3,T4,6F10.6)') &
+              write(fd%unit, "(A3,T4,6F10.6)") &
                   & geo%speciesNames(geo%species(iAt)), &
                   & geo%coords(:,iAt)* Bohr__AA, &
                   & displ(:,iAt,ii)
@@ -243,26 +243,26 @@ contains
 
     call setConversionUnits(unitsConv)
 
-    write(stdOut,*) 'Supercell repetitions:'
-    write(stdOut,*) nCells(1),'x',nCells(2),'x',nCells(3)
+    write(stdOut,*) "Supercell repetitions:"
+    write(stdOut,*) nCells(1),"x",nCells(2),"x",nCells(3)
 
     latVecs(1,:) = geo%latVecs(1,:)/real(nCells(1),dp)
     latVecs(2,:) = geo%latVecs(2,:)/real(nCells(2),dp)
     latVecs(3,:) = geo%latVecs(3,:)/real(nCells(3),dp)
 
     call invert33(invLatt, latVecs)
-    write(stdOut,*) 'reciprocal lattice vectors:'
-    write(stdOut,*) 'b1:',invLatt(:,1)
-    write(stdOut,*) 'b2:',invLatt(:,2)
-    write(stdOut,*) 'b3:',invLatt(:,3)
+    write(stdOut,*) "reciprocal lattice vectors:"
+    write(stdOut,*) "b1:",invLatt(:,1)
+    write(stdOut,*) "b2:",invLatt(:,2)
+    write(stdOut,*) "b3:",invLatt(:,3)
     invLatt = transpose(invLatt) * 2.0_dp * pi
 
     allocate(KdynMatrix(3*nAtomUnitCell,3*nAtomUnitCell))
     allocate(eigenValues(3*nAtomUnitCell))
 
-    write(stdOut,*) 'Computing Phonon Dispersion (units '//trim(outputUnits)//')'
+    write(stdOut,*) "Computing Phonon Dispersion (units "//trim(outputUnits)//")"
     if (tIOProc) then
-      call openFile(fu, 'phononDispersion.dat', mode="w")
+      call openFile(fu, "phononDispersion.dat", mode="w")
       if (tWriteTagged) then
         call openFile(ftag, autotestTag, mode="w")
       end if
@@ -279,7 +279,7 @@ contains
       q(2) = dot_product(invLatt(:,2), kPoint(:,iK))
       q(3) = dot_product(invLatt(:,3), kPoint(:,iK))
 
-      write(stdOut,*) ' q:',q(:)
+      write(stdOut,*) " q:",q(:)
       do  iAtom = 1,  nAtomUnitCell
         do  jAtom = 1, nAtomUnitCell
           ! This loops over all periodic copies
@@ -295,7 +295,7 @@ contains
       end do
 
       ! solve the eigenproblem
-      call heev(KdynMatrix,eigenValues,'U','N')
+      call heev(KdynMatrix,eigenValues,"U","N")
 
       ! take square root of modes (allowing for imaginary modes) and print
       eigenValues =  sign(sqrt(abs(eigenValues)),eigenValues)
