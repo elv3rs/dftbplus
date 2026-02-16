@@ -237,7 +237,7 @@ contains
 
     real(dp) :: theta, a
 
-    a = sqrt( -2.0_dp*log(u1) )
+    a = sqrt(-2.0_dp*log(u1))
     theta = 2.0_dp*pi*u2
 
     eta1 = a * cos(theta)

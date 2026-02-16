@@ -389,7 +389,7 @@ contains
     end if
 
     allocate(isuppz(2 * n))
-    abstol = ${LAPACK_LAMCH}$( 'Safe minimum' )
+    abstol = ${LAPACK_LAMCH}$('Safe minimum')
 
     errorGuard: block
       iStep = 1

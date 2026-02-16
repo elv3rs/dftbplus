@@ -186,7 +186,7 @@ module dftbp_common_constants
       & 'fr','ra','ac',&
       & 'th','pa','u ','np','pu','am','cm','bk','cf','es','fm','md','no',&
       & 'lr','rf','db','sg','bh','hs','mt','ds','rg','cn',&
-      &           'nh','fl','mc','lv','ts','og' ]
+      &           'nh','fl','mc','lv','ts','og']
 
 contains
 

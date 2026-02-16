@@ -1219,7 +1219,7 @@ contains
       do i2 = imgRange(1, 2), imgRange(2, 2)
         do i3 = imgRange(1, 3), imgRange(2, 3)
           ! relative coordinate with respect to the original reciprocal lattice
-          rr(:) = matmul(invCoeffs, real([ i1, i2, i3 ], dp))
+          rr(:) = matmul(invCoeffs, real([i1, i2, i3], dp))
           if (all(rr >= minLim) .and. all(rr < maxLim)) then
             ! Add point + shift vector
             call append(lr1, rr + matmul(invCoeffs, shifts))

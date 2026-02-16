@@ -159,7 +159,7 @@ contains
       ! and decide sign of contact direction
       associate(data=>iAtInRegion(icont)%data, dir=>contDir(icont))
       mean = sum(geom%coords(dir, data))/real(size(data),dp)
-      if (mean < minval(geom%coords(dir,iAtInRegion(ncont+1)%data ))) then
+      if (mean < minval(geom%coords(dir,iAtInRegion(ncont+1)%data))) then
         dir = -dir
       end if
       end associate
@@ -243,7 +243,7 @@ contains
             bestdiff = min(bestdiff, norm2(vec-vv))
             bestdiff = min(bestdiff, norm2(vec+vv))
             if (norm2(cross3(vec,uu))< tol .and. &
-                  & (norm2(vec-vv)< tol .or. norm2(vec+vv)<tol) ) then
+                  & (norm2(vec-vv)< tol .or. norm2(vec+vv)<tol)) then
               exit
             end if
           end do

@@ -256,7 +256,7 @@ contains
         nOrb2 = orb%nOrbAtom(iAt2f)
         iRow = iAtomStart(iAt2f)
         tmpCol(iRow:iRow+nOrb2-1, 1:nOrb1) = tmpCol(iRow:iRow+nOrb2-1, 1:nOrb1)&
-            & + reshape(sparse(ind:ind+nOrb2*nOrb1-1), [ nOrb2, nOrb1 ])
+            & + reshape(sparse(ind:ind+nOrb2*nOrb1-1), [nOrb2, nOrb1])
       end do
 
       ! Copy every column into the appropriate row in the upper triangle of
@@ -426,7 +426,7 @@ contains
     end do
 
     nrow = iAtomStart(nAtom+1) - 1
-    allocate(rowpnt(nrow+1) )
+    allocate(rowpnt(nrow+1))
     ! Calculate CSR row pointers:
     ! A row for a certain orbital of a certain atom is as long, as the
     ! nr. of columns determined previously for the atom.
@@ -578,7 +578,7 @@ contains
         nOrb2 = orb%nOrbAtom(iAt2f)
         iRow = iAtomStart(iAt2f)
         tmpCol(iRow:iRow+nOrb2-1, 1:nOrb1) = tmpCol(iRow:iRow+nOrb2-1, 1:nOrb1)&
-            & + phases(iCellVec(iAt2)) * reshape(sparse(ind:ind+nOrb2*nOrb1-1), [ nOrb2, nOrb1 ])
+            & + phases(iCellVec(iAt2)) * reshape(sparse(ind:ind+nOrb2*nOrb1-1), [nOrb2, nOrb1])
       end do
 
       ! Copy every column into the appropriate row in the upper triangle of
@@ -702,8 +702,8 @@ contains
         nOrb2 = orb%nOrbAtom(iAt2f)
         iRow = iAtomStart(iAt2f)
         sparse(ind:ind+nOrb2*nOrb1-1) = sparse(ind:ind+nOrb2*nOrb1-1)&
-            & + kWeight * real(  phases(iCellVec(iAt2))&
-            & * reshape(tmpCol(iRow:iRow+nOrb2-1, 1:nOrb1),[nOrb2*nOrb1] ), dp)
+            & + kWeight * real(phases(iCellVec(iAt2))&
+            & * reshape(tmpCol(iRow:iRow+nOrb2-1, 1:nOrb1),[nOrb2*nOrb1]), dp)
 
       end do
     end do

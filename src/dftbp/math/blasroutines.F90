@@ -411,7 +411,7 @@ contains
     @:ASSERT(size(a,dim=1) == size(x))
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
     n = size(y)
-    call ssymv( iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1 )
+    call ssymv(iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1)
 
   end subroutine symv_real
 
@@ -462,7 +462,7 @@ contains
     @:ASSERT(size(a,dim=1) == size(x))
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
     n = size(y)
-    call dsymv( iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1 )
+    call dsymv(iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1)
 
   end subroutine symv_dble
 
@@ -513,7 +513,7 @@ contains
     @:ASSERT(size(a,dim=1) == size(x))
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
     n = size(y)
-    call chemv( iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1 )
+    call chemv(iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1)
 
   end subroutine hemv_cmplx
 
@@ -564,7 +564,7 @@ contains
     @:ASSERT(size(a,dim=1) == size(x))
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
     n = size(y)
-    call zhemv( iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1 )
+    call zhemv(iUplo, n, iAlpha, a, n, x, 1, iBeta, y, 1)
 
   end subroutine hemv_dblecmplx
 
@@ -620,7 +620,7 @@ contains
     m = size(a,dim=1)
     n = size(a,dim=2)
 
-    call sgemv( iTrans, m, n, iAlpha, a, m, x, 1, iBeta, y, 1 )
+    call sgemv(iTrans, m, n, iAlpha, a, m, x, 1, iBeta, y, 1)
 
   end subroutine gemv_real
 
@@ -676,7 +676,7 @@ contains
     m = size(a,dim=1)
     n = size(a,dim=2)
 
-    call dgemv( iTrans, m, n, iAlpha, a, m, x, 1, iBeta, y, 1 )
+    call dgemv(iTrans, m, n, iAlpha, a, m, x, 1, iBeta, y, 1)
 
   end subroutine gemv_dble
 
@@ -800,7 +800,7 @@ contains
     @:ASSERT(size(ba,dim=2) == size(x))
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
     n = size(y)
-    call ssbmv( iUplo, n, k, iAlpha, ba, k+1, x, 1, iBeta, y, 1 )
+    call ssbmv(iUplo, n, k, iAlpha, ba, k+1, x, 1, iBeta, y, 1)
   end subroutine sbmv_real
 
 
@@ -853,7 +853,7 @@ contains
     @:ASSERT(size(ba,dim=2) == size(x))
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
     n = size(y)
-    call dsbmv( iUplo, n, k, iAlpha, ba, k+1, x, 1, iBeta, y, 1 )
+    call dsbmv(iUplo, n, k, iAlpha, ba, k+1, x, 1, iBeta, y, 1)
   end subroutine sbmv_dble
 
 
@@ -940,7 +940,7 @@ contains
     @:ASSERT(size(B,dim=2)>=in)
     @:ASSERT(size(C,dim=2)>=in)
 
-    call ssymm ( side, iUplo, im, in, iAlpha, A, lda, B, ldb, iBeta, C, ldc )
+    call ssymm (side, iUplo, im, in, iAlpha, A, lda, B, ldb, iBeta, C, ldc)
 
   end subroutine symm_real
 
@@ -1026,7 +1026,7 @@ contains
     @:ASSERT(ldb>=im)
     @:ASSERT(ldc>=im)
 
-    call dsymm ( side, iUplo, im, in, iAlpha, A, lda, B, ldb, iBeta, C, ldc )
+    call dsymm (side, iUplo, im, in, iAlpha, A, lda, B, ldb, iBeta, C, ldc)
 
   end subroutine symm_dble
 
@@ -1509,7 +1509,7 @@ contains
     @:ASSERT(size(c,dim=2)>=in)
     @:ASSERT(((size(a,dim=2)>=ik).and.(iTrans == 'n' .or. iTrans == 'N')) .or. (lda>=ik))
 
-    call ${NAME}$(iUplo, iTrans, in, ik, iAlpha, A, lda, iBeta, C, ldc )
+    call ${NAME}$(iUplo, iTrans, in, ik, iAlpha, A, lda, iBeta, C, ldc)
 
   end subroutine herk_${LABEL}$
 
@@ -1607,7 +1607,7 @@ contains
     @:ASSERT(size(c,dim=2)>=in)
     @:ASSERT(((size(a,dim=2)>=ik).and.(iTrans == 'n' .or. iTrans == 'N')) .or. (lda>=ik))
 
-    call ${NAME}$(iUplo, iTrans, in, ik, iAlpha, A, lda, B, ldb, iBeta, C, ldc )
+    call ${NAME}$(iUplo, iTrans, in, ik, iAlpha, A, lda, B, ldb, iBeta, C, ldc)
 
   end subroutine her2k_${LABEL}$
 #:endfor

@@ -191,7 +191,7 @@ contains
     case (1)
       ! nothing to do
     case (2)
-      x(1) = 0.5_dp * ( x(1) + x(2) )
+      x(1) = 0.5_dp * (x(1) + x(2))
       x(2) = x(1) - x(2)
     case (4)
       ! nothing to do
@@ -215,7 +215,7 @@ contains
     case (1)
       ! nothing to do
     case (2)
-      x(:,1) = 0.5_dp * ( x(:,1) + x(:,2) )
+      x(:,1) = 0.5_dp * (x(:,1) + x(:,2))
       x(:,2) = x(:,1) - x(:,2)
     case (4)
       ! nothing to do
@@ -239,7 +239,7 @@ contains
     case (1)
       ! nothing to do
     case (2)
-      x(:,:,1) = 0.5_dp * ( x(:,:,1) + x(:,:,2) )
+      x(:,:,1) = 0.5_dp * (x(:,:,1) + x(:,:,2))
       x(:,:,2) = x(:,:,1) - x(:,:,2)
     case (4)
       ! nothing to do
@@ -263,7 +263,7 @@ contains
     case (1)
       ! nothing to do
     case(2)
-      x(:,:,:,1) = 0.5_dp * ( x(:,:,:,1) + x(:,:,:,2) )
+      x(:,:,:,1) = 0.5_dp * (x(:,:,:,1) + x(:,:,:,2))
       x(:,:,:,2) = x(:,:,:,1) - x(:,:,:,2)
     case (4)
       ! nothing to do

@@ -608,7 +608,7 @@ contains
     dtmp = tmp * (tauB**6 - 3.0_dp * tauA * tauA * tauB**4 + 2.0_dp * omega * omega * tauB**4)/R**2
     ddtmp = -2.0_dp*tmp*(tauB**6 -3.0_dp*tauA*tauA*tauB**4 +2.0_dp*omega*omega*tauB**4)/R**3
     tmp = tmp * (tauB**6 - 3.0_dp * tauA * tauA * tauB**4 + 2.0_dp * omega * omega * tauB**4) / R
-    tmp2 = tauA * tauB**4 * 0.5_dp * prefac / (tauB * tauB - tauA * tauA )**2 - tmp
+    tmp2 = tauA * tauB**4 * 0.5_dp * prefac / (tauB * tauB - tauA * tauA)**2 - tmp
     dtmp2 = tmp / R
 
     ddYGammaSubPart = (ddtmp-dtmp2*tauA)*exp(-tauA*R) - (dtmp-tmp2*tauA)*tauA*exp(-tauA*R)

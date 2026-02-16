@@ -147,8 +147,8 @@ module dftbp_reks_reksfon
       ! Calculate hessian of f(x)
       fac1 = 4.0_dp / (1.0_dp + delta)**2
       fac2 = -1.0_dp * (2.0_dp + 3.0_dp*delta + y) / (2.0_dp + 2.0_dp*delta)
-      fac4 = -1.0_dp * delta**2 - y * ( 8.0_dp + (-8.0_dp+y)*y )
-      fac5 = delta * ( -2.0_dp + 5.0_dp*(-1.0_dp+y)*y )
+      fac4 = -1.0_dp * delta**2 - y * (8.0_dp + (-8.0_dp+y)*y)
+      fac5 = delta * (-2.0_dp + 5.0_dp*(-1.0_dp+y)*y)
       fac6 = 4.0_dp + delta*(2.0_dp-3.0_dp*y) + y*(-7.0_dp+2.0_dp*y) + (-1.0_dp+y)*y*log(y)
       fac3 = fac4 + fac5 - y*log(y)*fac6
       hess = fac1 * fac3 * y**fac2

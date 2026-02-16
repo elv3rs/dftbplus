@@ -179,10 +179,10 @@ module dftbp_reks_rekscommon
     if (option == 1) then
 
       ! when sizeInd = 3, (ind1,ind2) = (1,2) (1,3) (2,3)
-      tmp = ( real(2.0_dp*sizeInd+1.0_dp, dp) - sqrt( (2.0_dp*sizeInd+ &
-          & 1.0_dp)**2.0_dp - 8.0_dp*(sizeInd+curInd) ) )/2.0_dp
-      ind1 = int( real(tmp, dp) )
-      if ( real(tmp, dp)-real(ind1, dp) <= epsilon(1.0_dp) ) then
+      tmp = (real(2.0_dp*sizeInd+1.0_dp, dp) - sqrt((2.0_dp*sizeInd+ &
+          & 1.0_dp)**2.0_dp - 8.0_dp*(sizeInd+curInd)))/2.0_dp
+      ind1 = int(real(tmp, dp))
+      if (real(tmp, dp)-real(ind1, dp) <= epsilon(1.0_dp)) then
         ind1 = ind1 - 1
       end if
       ind2 = ind1**2/2 + ind1/2 - sizeInd*ind1 + sizeInd + curInd
@@ -193,9 +193,9 @@ module dftbp_reks_rekscommon
     else if (option == 2) then
 
       ! when sizeInd = 3, (ind1,ind2) = (1,1) (1,2) (1,3) (2,2) (2,3) (3,3)
-      tmp = ( real(2.0_dp*sizeInd+3.0_dp, dp) - sqrt( (2.0_dp*sizeInd+ &
-          & 3.0_dp)**2.0_dp - 8.0_dp*(sizeInd+curInd) ) )/2.0_dp
-      ind1 = int( real(tmp, dp) )
+      tmp = (real(2.0_dp*sizeInd+3.0_dp, dp) - sqrt((2.0_dp*sizeInd+ &
+          & 3.0_dp)**2.0_dp - 8.0_dp*(sizeInd+curInd)))/2.0_dp
+      ind1 = int(real(tmp, dp))
       ind2 = ind1**2/2 - ind1/2 - sizeInd*ind1 + sizeInd + curInd
 
     end if
@@ -692,8 +692,8 @@ module dftbp_reks_rekscommon
       j = Nc + Na
     ! (i,j) = (active,vacant)
     else
-      i = ( ij-Nc*Na-Nc*Nv-Na*(Na-1)*0.5_dp ) / Nv + 1 + Nc
-      j = mod( int(ij-Nc*Na-Nc*Nv-Na*(Na-1)*0.5_dp) ,Nv) + Nc + Na
+      i = (ij-Nc*Na-Nc*Nv-Na*(Na-1)*0.5_dp) / Nv + 1 + Nc
+      j = mod(int(ij-Nc*Na-Nc*Nv-Na*(Na-1)*0.5_dp) ,Nv) + Nc + Na
       if (j == Nc+Na) then
         i = i - 1
         j = j + Nv

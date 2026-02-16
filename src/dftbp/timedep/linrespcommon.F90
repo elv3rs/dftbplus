@@ -347,7 +347,7 @@ contains
     real(dp), intent(in) :: grndEigVecs(:,:,:)
 
     !> Resulting overlap between states
-    real(dp):: S_pq
+    real(dp) :: S_pq
 
     @:ASSERT(all(shape(grndEigVecs) == shape(ovrXev)))
     @:ASSERT(size(grndEigVecs, dim=3) == 2)
@@ -1498,8 +1498,8 @@ contains
     real(dp), intent(in) :: eigVec(:,:,:)
 
     integer, allocatable :: TDvin(:)
-    integer:: i, k, l, m, ia, jb, ii, aa, jj, bb, ss
-    integer:: nSpin, nmat, nexc, nup, ndwn
+    integer :: i, k, l, m, ia, jb, ii, aa, jj, bb, ss
+    integer :: nSpin, nmat, nexc, nup, ndwn
     real(dp), allocatable :: TDvec(:), TDvec_sq(:)
     real(dp), allocatable :: eigVecGlb(:,:,:), ovrXevGlb(:,:,:)
     real(dp) :: TDvnorm

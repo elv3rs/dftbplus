@@ -161,7 +161,7 @@ contains
     tHelical = .false.
 
     if (present(latVec)) then
-      if (present(tFracCoord) ) then
+      if (present(tFracCoord)) then
         tFractional = tFracCoord
       end if
       if (all(shape(latVec) == [2, 1]) .or. all(shape(latVec) == [3,1])) then

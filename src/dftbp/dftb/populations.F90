@@ -359,13 +359,13 @@ contains
         sTmp(1:nOrb2,1:nOrb1) = reshape(over(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         rhoTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         qq(1:nOrb1,1:nOrb1,iAtom1) = qq(1:nOrb1,1:nOrb1,iAtom1)&
-            & + 0.5_dp*( matmul(transpose(rhoTmp(1:nOrb2,1:nOrb1)), sTmp(1:nOrb2,1:nOrb1) )&
-            & + matmul(transpose(sTmp(1:nOrb2,1:nOrb1)), rhoTmp(1:nOrb2,1:nOrb1) ) )
+            & + 0.5_dp*(matmul(transpose(rhoTmp(1:nOrb2,1:nOrb1)), sTmp(1:nOrb2,1:nOrb1))&
+            & + matmul(transpose(sTmp(1:nOrb2,1:nOrb1)), rhoTmp(1:nOrb2,1:nOrb1)))
         ! Add contribution to the other triangle sum, using the symmetry but only when off diagonal
         if (iAtom1 /= iAtom2f) then
           qq(1:nOrb2,1:nOrb2,iAtom2f) = qq(1:nOrb2,1:nOrb2,iAtom2f)&
-              & + 0.5_dp*( matmul( rhoTmp(1:nOrb2,1:nOrb1), transpose(sTmp(1:nOrb2,1:nOrb1)) )&
-              & + matmul( sTmp(1:nOrb2,1:nOrb1), transpose(rhoTmp(1:nOrb2,1:nOrb1)) ) )
+              & + 0.5_dp*(matmul(rhoTmp(1:nOrb2,1:nOrb1), transpose(sTmp(1:nOrb2,1:nOrb1)))&
+              & + matmul(sTmp(1:nOrb2,1:nOrb1), transpose(rhoTmp(1:nOrb2,1:nOrb1))))
         end if
       end do
     end do
@@ -435,13 +435,13 @@ contains
         sTmp(1:nOrb2,1:nOrb1) = reshape(over(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         rhoTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         qq(1:nOrb1,1:nOrb1,iAtom1) = qq(1:nOrb1,1:nOrb1,iAtom1)&
-            & - 0.5_dp*( matmul(transpose(rhoTmp(1:nOrb2,1:nOrb1)), sTmp(1:nOrb2,1:nOrb1) )&
-            & - matmul(transpose(sTmp(1:nOrb2,1:nOrb1)), rhoTmp(1:nOrb2,1:nOrb1) ) )
+            & - 0.5_dp*(matmul(transpose(rhoTmp(1:nOrb2,1:nOrb1)), sTmp(1:nOrb2,1:nOrb1))&
+            & - matmul(transpose(sTmp(1:nOrb2,1:nOrb1)), rhoTmp(1:nOrb2,1:nOrb1)))
         ! Add contribution to the other triangle sum, using the symmetry but only when off diagonal
         if (iAtom1 /= iAtom2f) then
           qq(1:nOrb2,1:nOrb2,iAtom2f) = qq(1:nOrb2,1:nOrb2,iAtom2f)&
-              & + 0.5_dp*( matmul( rhoTmp(1:nOrb2,1:nOrb1), transpose(sTmp(1:nOrb2,1:nOrb1)) )&
-              & - matmul( sTmp(1:nOrb2,1:nOrb1), transpose(rhoTmp(1:nOrb2,1:nOrb1)) ) )
+              & + 0.5_dp*(matmul(rhoTmp(1:nOrb2,1:nOrb1), transpose(sTmp(1:nOrb2,1:nOrb1)))&
+              & - matmul(sTmp(1:nOrb2,1:nOrb1), transpose(rhoTmp(1:nOrb2,1:nOrb1))))
         end if
       end do
     end do

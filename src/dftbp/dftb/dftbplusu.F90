@@ -642,10 +642,10 @@ contains
 
     select case(this%iFunctional)
     case(plusUFunctionals%fll)
-      allocate( character(len=3) :: name)
+      allocate(character(len=3) :: name)
       name = "FLL"
     case(plusUFunctionals%pSic)
-      allocate( character(len=4) :: name)
+      allocate(character(len=4) :: name)
       name = "pSic"
     end select
 

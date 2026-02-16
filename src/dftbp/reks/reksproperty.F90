@@ -202,8 +202,8 @@ module dftbp_reks_reksproperty
                 kst = kst + 1
                 ! <PPS|OSS> = <OSS|PPS>, etc
                 unrelTdm(:,:,lst) = unrelTdm(:,:,lst) + rhoXdel(:,:,kst) &
-                    & * ( eigvecsSSR(ist,ia) * eigvecsSSR(jst,ib) &
-                    & + eigvecsSSR(jst,ia) * eigvecsSSR(ist,ib) )
+                    & * (eigvecsSSR(ist,ia) * eigvecsSSR(jst,ib) &
+                    & + eigvecsSSR(jst,ia) * eigvecsSSR(ist,ib))
               end if
             end do
           end do
@@ -730,22 +730,22 @@ module dftbp_reks_reksproperty
     do mu = 1, nOrb
       do nu = 1, nOrb
         resTdm(nu,mu,1) = resTdm(nu,mu,1) + SAweight(1) * &
-            & ( (n_a-1.0_dp)*sqrt(n_a) - (n_b-1.0_dp)*sqrt(n_b) ) * &
+            & ((n_a-1.0_dp)*sqrt(n_a) - (n_b-1.0_dp)*sqrt(n_b)) * &
             & eigenvecs(mu,a) * eigenvecs(nu,b)
         resTdm(nu,mu,1) = resTdm(nu,mu,1) - 2.0_dp * G1 * &
-            & Rab(1,2) * ( eigenvecs(mu,a) * eigenvecs(nu,a) - &
-            & eigenvecs(mu,b) * eigenvecs(nu,b) )
+            & Rab(1,2) * (eigenvecs(mu,a) * eigenvecs(nu,a) - &
+            & eigenvecs(mu,b) * eigenvecs(nu,b))
       end do
     end do
     if (nstHalf == 3) then
       do mu = 1, nOrb
         do nu = 1, nOrb
           resTdm(nu,mu,3) = resTdm(nu,mu,3) + SAweight(1) * &
-              & ( (n_a-1.0_dp)*sqrt(n_a) + (n_b-1.0_dp)*sqrt(n_b) ) * &
+              & ((n_a-1.0_dp)*sqrt(n_a) + (n_b-1.0_dp)*sqrt(n_b)) * &
               & eigenvecs(mu,a) * eigenvecs(nu,b)
           resTdm(nu,mu,3) = resTdm(nu,mu,3) - 2.0_dp * G1 * &
-              & Rab(2,3) * ( eigenvecs(mu,a) * eigenvecs(nu,a) - &
-              & eigenvecs(mu,b) * eigenvecs(nu,b) )
+              & Rab(2,3) * (eigenvecs(mu,a) * eigenvecs(nu,a) - &
+              & eigenvecs(mu,b) * eigenvecs(nu,b))
         end do
       end do
     end if

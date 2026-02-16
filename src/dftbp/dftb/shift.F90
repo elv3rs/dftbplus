@@ -117,7 +117,7 @@ contains
           ham(iOrig+1:iOrig+nOrb2*nOrb1,iSpin) = &
               & ham(iOrig+1:iOrig+nOrb2*nOrb1,iSpin) + &
               & over(iOrig+1:iOrig+nOrb2*nOrb1) * 0.5_dp * &
-              & ( shift(iAt1,iSpin) + shift(iAt2f,iSpin) )
+              & (shift(iAt1,iSpin) + shift(iAt2f,iSpin))
         end do
       end do
     end do
@@ -208,12 +208,12 @@ contains
           nOrb2 = orb%nOrbSpecies(iSp2)
           iOrig = iPair(iNeigh, iAt1)
           tmpS(1:nOrb2,1:nOrb1) = reshape( &
-              & over(iOrig+1:iOrig+nOrb2*nOrb1),[nOrb2,nOrb1] )
+              & over(iOrig+1:iOrig+nOrb2*nOrb1),[nOrb2,nOrb1])
           tmpH(1:nOrb2,1:nOrb1) = 0.5_dp * ( &
               & matmul(tmpS(1:nOrb2,1:nOrb1), &
               & shift(1:nOrb1,1:nOrb1,iAt1,iSpin)) + &
               & matmul(shift(1:nOrb2,1:nOrb2,iAt2f,iSpin), &
-              & tmpS(1:nOrb2,1:nOrb1)) )
+              & tmpS(1:nOrb2,1:nOrb1)))
           ham(iOrig+1:iOrig+nOrb2*nOrb1,iSpin) = &
               & ham(iOrig+1:iOrig+nOrb2*nOrb1,iSpin) + &
               & reshape(tmpH(1:nOrb2, 1:nOrb1), [nOrb2*nOrb1])

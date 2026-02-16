@@ -178,7 +178,7 @@ contains
     call init_contacts(this%negf, ncont)
     call set_scratch(this%negf, "./GS/")
 
-    if (tIoProc .and. greendens%saveSGF ) then
+    if (tIoProc .and. greendens%saveSGF) then
       call create_scratch(this%negf)
     end if
 
@@ -697,7 +697,7 @@ contains
               ! lowest numbered atom in the PL. Note, if mask is all false, minval returns huge()
               i1 = minval(img2CentCell(iNeigh(:nNeigh(ii),ii)), &
                   & mask = (img2CentCell(iNeigh(:nNeigh(ii),ii)) >= iAtContStart .and. &
-                  & img2CentCell(iNeigh(:nNeigh(ii),ii)) <= iAtContEnd) )
+                  & img2CentCell(iNeigh(:nNeigh(ii),ii)) <= iAtContEnd))
               if (i1 >= iAtContStart .and. i1 <= iAtContEnd) then
                 minv(m, j1) = j1
               endif
@@ -810,9 +810,9 @@ contains
          iats = atomst(nn)
          iate = atomst(nn+1)-1
          do ii = atomst(mm), atomst(mm+1)-1
-            kk = maxval( img2CentCell(iNeigh(:nNeigh(ii),ii)), &
+            kk = maxval(img2CentCell(iNeigh(:nNeigh(ii),ii)), &
                mask = (img2CentCell(iNeigh(:nNeigh(ii),ii)) >= iats .and. &
-               img2CentCell(iNeigh(:nNeigh(ii),ii)) <= iate) )
+               img2CentCell(iNeigh(:nNeigh(ii),ii)) <= iate))
          end do
          if (nn > mm+1 .and. kk >= iats .and. kk <= iate) then
            write(stdOut,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -2181,10 +2181,10 @@ contains
       integer :: nchars
 
       nchars = 3
-      do while (nK/(10**nchars) > 1 )
+      do while (nK/(10**nchars) > 1)
         nchars = nchars + 1
       end do
-      allocate(character(len=nchars)::skp)
+      allocate(character(len=nchars) :: skp)
       ! create fmtstring = '(In.n)'
       write(fmtstring, '( "(I",I1,".",I1,")" )') nchars, nchars
 

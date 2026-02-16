@@ -19,7 +19,7 @@ module dftbp_io_charmanip
   integer, parameter :: nQuoteChar = 2
 
   !> types of quote mark
-  character(len=1), parameter :: quoteChars(nQuoteChar) = [ "'", '"' ]
+  character(len=1), parameter :: quoteChars(nQuoteChar) = ["'", '"']
 
   ! Whitespace like characters
 

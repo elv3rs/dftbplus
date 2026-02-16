@@ -342,19 +342,19 @@ contains
               do ii = 1, 3
                 shiftSprime(1:nOrb2,1:nOrb1) = 0.5_dp * (&
                     & matmul(sPrimeTmp(1:nOrb2,1:nOrb1,ii), &
-                    & shift(1:nOrb1,1:nOrb1,iAtom1,iSpin,iL) )&
+                    & shift(1:nOrb1,1:nOrb1,iAtom1,iSpin,iL))&
                     & + matmul(shift(1:nOrb2,1:nOrb2,iAtom2f,iSpin,iL), &
-                    & sPrimeTmp(1:nOrb2,1:nOrb1,ii)) )
+                    & sPrimeTmp(1:nOrb2,1:nOrb1,ii)))
                 ! again factor of 2 from lower triangle, cf published force expressions for SCC:
                 if (iSpin == 1) then
-                  derivTmp(ii) = derivTmp(ii) + 2.0_dp * ( sum( shiftSprime(1:nOrb2,1:nOrb1) *&
-                      & sqrDMTmp(1:nOrb2,1:nOrb1) ) )
+                  derivTmp(ii) = derivTmp(ii) + 2.0_dp * (sum(shiftSprime(1:nOrb2,1:nOrb1) *&
+                      & sqrDMTmp(1:nOrb2,1:nOrb1)))
                 else
                   if (iL > Lpaired) then
                     derivTmp(ii) = derivTmp(ii)&
-                        & + fac * 2.0_dp * ( sum( shiftSprime(1:nOrb2,1:nOrb1) *&
+                        & + fac * 2.0_dp * (sum(shiftSprime(1:nOrb2,1:nOrb1) *&
                         & DM(iSquare(iAtom2f):iSquare(iAtom2f+1)-1, &
-                        & iSquare(iAtom1):iSquare(iAtom1+1)-1,1,tmpLs) ) )
+                        & iSquare(iAtom1):iSquare(iAtom1+1)-1,1,tmpLs)))
                   end if
                 end if
               end do
@@ -752,7 +752,7 @@ contains
           ! assign index i and j from ij
           call assignIndex(Nc, Na, Nv, reksAlg, ij, i, j)
           omega(ij) = omega(ij) + 2.0_dp * weightIL(iL) * hamSqrL(i,j,1,iL) &
-              & * ( fillingL(i,1,iL) - fillingL(j,1,iL) )
+              & * (fillingL(i,1,iL) - fillingL(j,1,iL))
         end do
 
         ! get Rab value
@@ -786,7 +786,7 @@ contains
           ! assign index i and j from ij
           call assignIndex(Nc, Na, Nv, reksAlg, ij, i, j)
           omega(ij) = omega(ij) + 2.0_dp * weightIL(iL) * tmpHam(i,j) &
-              & * ( fillingL(i,1,iL) - fillingL(j,1,iL) )
+              & * (fillingL(i,1,iL) - fillingL(j,1,iL))
         end do
 
         ! get Rab value
@@ -2581,8 +2581,8 @@ contains
             else
               kst = kst + 1
               nacH(:,:,cst) = nacH(:,:,cst) + SIgrad(:,:,kst) * &
-                  & ( eigvecsSSR(ist,ast) * eigvecsSSR(jst,bst) &
-                  & + eigvecsSSR(jst,ast) * eigvecsSSR(ist,bst) )
+                  & (eigvecsSSR(ist,ast) * eigvecsSSR(jst,bst) &
+                  & + eigvecsSSR(jst,ast) * eigvecsSSR(ist,bst))
             end if
           end do
         end do
@@ -2750,9 +2750,9 @@ contains
 
         ! compute Hxc kernel with respect to AO basis
         HxcSqrS(mu,nu,tau,gam) = 0.25_dp * overSqr(nu,mu) * overSqr(gam,tau) * &
-            & ( (tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4) )
+            & ((tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4))
         HxcSqrD(mu,nu,tau,gam) = 0.25_dp * overSqr(nu,mu) * overSqr(gam,tau) * &
-            & ( (tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4) )
+            & ((tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4))
 
         if (isHybridXc) then
 
@@ -2864,9 +2864,9 @@ contains
 
             ! s = same spin (s1=s2), d = different spin (s1/=s2)
             HxcHalfS(k,l) = 0.25_dp * overSqr(mu,nu) * overSqr(tau,gam) * &
-                & ( (tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4) )
+                & ((tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4))
             HxcHalfD(k,l) = 0.25_dp * overSqr(mu,nu) * overSqr(tau,gam) * &
-                & ( (tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4) )
+                & ((tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4))
 
           end if
 
@@ -2892,9 +2892,9 @@ contains
           !        use tmp22 part -> relatively less times
           !        Why show different cost?
           !call getTwoIndices(nOrb, l, tau, gam, 2)
-          tmp22 = ( real(2.0_dp*nOrb+3.0_dp, dp) - sqrt( (2.0_dp*nOrb+ &
-              & 3.0_dp)**2.0_dp - 8.0_dp*(nOrb+l) ) )/2.0_dp
-          tau = int( real(tmp22, dp) )
+          tmp22 = (real(2.0_dp*nOrb+3.0_dp, dp) - sqrt((2.0_dp*nOrb+ &
+              & 3.0_dp)**2.0_dp - 8.0_dp*(nOrb+l)))/2.0_dp
+          tau = int(real(tmp22, dp))
           gam = tau**2/2 - tau/2 - nOrb*tau + nOrb + l
 
           ! LC terms
@@ -3005,9 +3005,9 @@ contains
 
                 ! s = same spin (s1=s2), d = different spin (s1/=s2)
                 HxcSpS(jj,ii) = 0.25_dp * over(ii) * over(jj) * &
-                    & ( (tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4) )
+                    & ((tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4))
                 HxcSpD(jj,ii) = 0.25_dp * over(ii) * over(jj) * &
-                    & ( (tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4) )
+                    & ((tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4))
 
               end if
 
@@ -3061,12 +3061,12 @@ contains
     b = Nc + 2
 
     Rab(1,2) = Rab(1,2) + 2.0_dp * SAweight(1) * weightIL(iL) * &
-        & ( sqrt(n_a)*fillingL(a,1,iL)*hamSqr(b,a) &
-        & - sqrt(n_b)*fillingL(b,1,iL)*hamSqr(a,b) )
+        & (sqrt(n_a)*fillingL(a,1,iL)*hamSqr(b,a) &
+        & - sqrt(n_b)*fillingL(b,1,iL)*hamSqr(a,b))
     if (nstates == 3) then
       Rab(2,3) = Rab(2,3) + 2.0_dp * SAweight(1) * weightIL(iL) * &
-          & ( sqrt(n_a)*fillingL(a,1,iL)*hamSqr(b,a) &
-          & + sqrt(n_b)*fillingL(b,1,iL)*hamSqr(a,b) )
+          & (sqrt(n_a)*fillingL(a,1,iL)*hamSqr(b,a) &
+          & + sqrt(n_b)*fillingL(b,1,iL)*hamSqr(a,b))
     end if
 
   end subroutine getRab22_1st_
@@ -3491,20 +3491,20 @@ contains
 
           if (iL <= Lpaired) then
             HxcTot(i,j,q,p) = HxcTot(i,j,q,p) + 2.0_dp * weight(iL) * &
-                 & ( fillingL(i,1,iL) - fillingL(j,1,iL) ) &
-                 & * ( tmpHxcS * ( fillingL(p,1,iL) - fillingL(q,1,iL) ) &
-                 & + tmpHxcD * ( fillingL(p,1,iL) - fillingL(q,1,iL) ) )
+                 & (fillingL(i,1,iL) - fillingL(j,1,iL)) &
+                 & * (tmpHxcS * (fillingL(p,1,iL) - fillingL(q,1,iL)) &
+                 & + tmpHxcD * (fillingL(p,1,iL) - fillingL(q,1,iL)))
           else
             if (mod(iL,2) == 1) then
               HxcTot(i,j,q,p) = HxcTot(i,j,q,p) + 2.0_dp * weight(iL) * &
-                   & ( fillingL(i,1,iL) - fillingL(j,1,iL) ) &
-                   & * ( tmpHxcS * ( fillingL(p,1,iL) - fillingL(q,1,iL) ) &
-                   & + tmpHxcD * ( fillingL(p,1,iL+1) - fillingL(q,1,iL+1) ) )
+                   & (fillingL(i,1,iL) - fillingL(j,1,iL)) &
+                   & * (tmpHxcS * (fillingL(p,1,iL) - fillingL(q,1,iL)) &
+                   & + tmpHxcD * (fillingL(p,1,iL+1) - fillingL(q,1,iL+1)))
             else
               HxcTot(i,j,q,p) = HxcTot(i,j,q,p) + 2.0_dp * weight(iL) * &
-                   & ( fillingL(i,1,iL) - fillingL(j,1,iL) ) &
-                   & * ( tmpHxcS * ( fillingL(p,1,iL) - fillingL(q,1,iL) ) &
-                   & + tmpHxcD * ( fillingL(p,1,iL-1) - fillingL(q,1,iL-1) ) )
+                   & (fillingL(i,1,iL) - fillingL(j,1,iL)) &
+                   & * (tmpHxcS * (fillingL(p,1,iL) - fillingL(q,1,iL)) &
+                   & + tmpHxcD * (fillingL(p,1,iL-1) - fillingL(q,1,iL-1)))
             end if
           end if
 
@@ -3579,18 +3579,18 @@ contains
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, a, b, i, &
             & 3, reksAlg, e1, e2)
         if (ia == 1 .and. ib == 2) then
-          XTdel(ij) = XTdel(ij) + 0.5_dp*( sqrt(n_a)*e1 - sqrt(n_b)*e2 )
+          XTdel(ij) = XTdel(ij) + 0.5_dp*(sqrt(n_a)*e1 - sqrt(n_b)*e2)
         else if (ia == 2 .and. ib == 3) then
-          XTdel(ij) = XTdel(ij) + 0.5_dp*( sqrt(n_a)*e1 + sqrt(n_b)*e2 )
+          XTdel(ij) = XTdel(ij) + 0.5_dp*(sqrt(n_a)*e1 + sqrt(n_b)*e2)
         end if
       end if
       if (j == a) then
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, b, a, i, &
             & 3, reksAlg, e1, e2)
         if (ia == 1 .and. ib == 2) then
-          XTdel(ij) = XTdel(ij) + 0.5_dp*( sqrt(n_a)*e2 - sqrt(n_b)*e1 )
+          XTdel(ij) = XTdel(ij) + 0.5_dp*(sqrt(n_a)*e2 - sqrt(n_b)*e1)
         else if (ia == 2 .and. ib == 3) then
-          XTdel(ij) = XTdel(ij) + 0.5_dp*( sqrt(n_a)*e2 + sqrt(n_b)*e1 )
+          XTdel(ij) = XTdel(ij) + 0.5_dp*(sqrt(n_a)*e2 + sqrt(n_b)*e1)
         end if
       end if
 
@@ -3600,27 +3600,27 @@ contains
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, b, a, j, &
             & 3, reksAlg, e1, e2)
         if (ia == 1 .and. ib == 2) then
-          XTdel(ij) = XTdel(ij) - 0.5_dp*( sqrt(n_a)*e2 )
+          XTdel(ij) = XTdel(ij) - 0.5_dp*(sqrt(n_a)*e2)
         else if (ia == 2 .and. ib == 3) then
-          XTdel(ij) = XTdel(ij) - 0.5_dp*( sqrt(n_a)*e2 )
+          XTdel(ij) = XTdel(ij) - 0.5_dp*(sqrt(n_a)*e2)
         end if
       end if
       if (i == b) then
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, a, b, j, &
             & 3, reksAlg, e1, e2)
         if (ia == 1 .and. ib == 2) then
-          XTdel(ij) = XTdel(ij) + 0.5_dp*( sqrt(n_b)*e2 )
+          XTdel(ij) = XTdel(ij) + 0.5_dp*(sqrt(n_b)*e2)
         else if (ia == 2 .and. ib == 3) then
-          XTdel(ij) = XTdel(ij) - 0.5_dp*( sqrt(n_b)*e2 )
+          XTdel(ij) = XTdel(ij) - 0.5_dp*(sqrt(n_b)*e2)
         end if
       end if
       if (i == a .and. j == b) then
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, b, b, b, &
             & 3, reksAlg, e1, e2)
         if (ia == 1 .and. ib == 2) then
-          XTdel(ij) = XTdel(ij) + 0.5_dp*( sqrt(n_b)*e1 )
+          XTdel(ij) = XTdel(ij) + 0.5_dp*(sqrt(n_b)*e1)
         else if (ia == 2 .and. ib == 3) then
-          XTdel(ij) = XTdel(ij) - 0.5_dp*( sqrt(n_b)*e1 )
+          XTdel(ij) = XTdel(ij) - 0.5_dp*(sqrt(n_b)*e1)
         end if
       end if
 
@@ -3726,30 +3726,30 @@ contains
 
         ! 1st microstate (up) = 1st down = 3rd up = 4th down
         RdelL(nu,mu,1,1) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-          & ( sqrt(n_a)*fillingL(a,1,1) - sqrt(n_b)*fillingL(b,1,1) )
+          & (sqrt(n_a)*fillingL(a,1,1) - sqrt(n_b)*fillingL(b,1,1))
         ! 2nd microstate (up) = 2nd down = 3rd down = 4th up
         RdelL(nu,mu,2,1) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-          & ( sqrt(n_a)*fillingL(a,1,2) - sqrt(n_b)*fillingL(b,1,2) )
+          & (sqrt(n_a)*fillingL(a,1,2) - sqrt(n_b)*fillingL(b,1,2))
         ! 5th microstate (up) = 6th down
         RdelL(nu,mu,3,1) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-          & ( sqrt(n_a)*fillingL(a,1,5) - sqrt(n_b)*fillingL(b,1,5) )
+          & (sqrt(n_a)*fillingL(a,1,5) - sqrt(n_b)*fillingL(b,1,5))
         ! 6th microstate (up) = 5th down
         RdelL(nu,mu,4,1) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-          & ( sqrt(n_a)*fillingL(a,1,6) - sqrt(n_b)*fillingL(b,1,6) )
+          & (sqrt(n_a)*fillingL(a,1,6) - sqrt(n_b)*fillingL(b,1,6))
 
         if (nstates == 3) then
           ! 1st microstate (up) = 1st down = 3rd up = 4th down
           RdelL(nu,mu,1,3) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-            & ( sqrt(n_a)*fillingL(a,1,1) + sqrt(n_b)*fillingL(b,1,1) )
+            & (sqrt(n_a)*fillingL(a,1,1) + sqrt(n_b)*fillingL(b,1,1))
           ! 2nd microstate (up) = 2nd down = 3rd down = 4th up
           RdelL(nu,mu,2,3) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-            & ( sqrt(n_a)*fillingL(a,1,2) + sqrt(n_b)*fillingL(b,1,2) )
+            & (sqrt(n_a)*fillingL(a,1,2) + sqrt(n_b)*fillingL(b,1,2))
           ! 5th microstate (up) = 6th down
           RdelL(nu,mu,3,3) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-            & ( sqrt(n_a)*fillingL(a,1,5) + sqrt(n_b)*fillingL(b,1,5) )
+            & (sqrt(n_a)*fillingL(a,1,5) + sqrt(n_b)*fillingL(b,1,5))
           ! 6th microstate (up) = 5th down
           RdelL(nu,mu,4,3) = eigenvecs(nu,b,1) * eigenvecs(mu,a,1) * &
-            & ( sqrt(n_a)*fillingL(a,1,6) + sqrt(n_b)*fillingL(b,1,6) )
+            & (sqrt(n_a)*fillingL(a,1,6) + sqrt(n_b)*fillingL(b,1,6))
         end if
 
       end do
@@ -4175,9 +4175,9 @@ contains
 
             ! s = same spin (s1=s2), d = different spin (s1/=s2)
             tmpHxcS(jj) = 0.25_dp * overSqr(mu,nu) * overSqr(tau,gam) * &
-                & ( (tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4) )
+                & ((tmpG1+tmpG2+tmpG3+tmpG4) + (tmpS1+tmpS2+tmpS3+tmpS4))
             tmpHxcD(jj) = 0.25_dp * overSqr(mu,nu) * overSqr(tau,gam) * &
-                & ( (tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4) )
+                & ((tmpG1+tmpG2+tmpG3+tmpG4) - (tmpS1+tmpS2+tmpS3+tmpS4))
 
           end if
 
@@ -4242,9 +4242,9 @@ contains
           !        use tmp22 part -> 3.9 sec per 1 CG-loop
           !        Why show different cost?
           !call getTwoIndices(nOrb, jj, mu, nu, 2)
-          tmp22 = ( real(2.0_dp*nOrb+3.0_dp, dp) - sqrt( (2.0_dp*nOrb+ &
-              & 3.0_dp)**2.0_dp - 8.0_dp*(nOrb+jj) ) )/2.0_dp
-          mu = int( real(tmp22, dp) )
+          tmp22 = (real(2.0_dp*nOrb+3.0_dp, dp) - sqrt((2.0_dp*nOrb+ &
+              & 3.0_dp)**2.0_dp - 8.0_dp*(nOrb+jj)))/2.0_dp
+          mu = int(real(tmp22, dp))
           nu = mu**2/2 - mu/2 - nOrb*mu + nOrb + jj
 
           ! calculate the H-XC kernel for LC term
@@ -4386,10 +4386,10 @@ contains
           e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, a, b, t, &
               & 2, reksAlg, e1, e2)
-          Q1del(nu,mu,1) = Q1del(nu,mu,1) + ( sqrt(n_a)*e1 - sqrt(n_b)*e2 ) * &
+          Q1del(nu,mu,1) = Q1del(nu,mu,1) + (sqrt(n_a)*e1 - sqrt(n_b)*e2) * &
             & eigenvecs(mu,t,1) * eigenvecs(nu,b,1) * 0.5_dp
           if (nstates == 3) then
-            Q1del(nu,mu,3) = Q1del(nu,mu,3) + ( sqrt(n_a)*e1 + sqrt(n_b)*e2 ) * &
+            Q1del(nu,mu,3) = Q1del(nu,mu,3) + (sqrt(n_a)*e1 + sqrt(n_b)*e2) * &
               & eigenvecs(mu,t,1) * eigenvecs(nu,b,1) * 0.5_dp
           end if
 
@@ -4397,10 +4397,10 @@ contains
           e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, a, b, t, &
               & 1, reksAlg, e1, e2)
-          Q1del(nu,mu,1) = Q1del(nu,mu,1) + ( sqrt(n_a)*e1 - sqrt(n_b)*e2 ) * &
+          Q1del(nu,mu,1) = Q1del(nu,mu,1) + (sqrt(n_a)*e1 - sqrt(n_b)*e2) * &
             & eigenvecs(mu,t,1) * eigenvecs(nu,a,1) * 0.5_dp
           if (nstates == 3) then
-            Q1del(nu,mu,3) = Q1del(nu,mu,3) + ( sqrt(n_a)*e1 + sqrt(n_b)*e2 ) * &
+            Q1del(nu,mu,3) = Q1del(nu,mu,3) + (sqrt(n_a)*e1 + sqrt(n_b)*e2) * &
               & eigenvecs(mu,t,1) * eigenvecs(nu,a,1) * 0.5_dp
           end if
 

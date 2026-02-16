@@ -363,7 +363,7 @@ contains
   #:endif
 
     self%nOrb = size(ei)
-    if (all(self%eiRange == [-1,-1] )) then
+    if (all(self%eiRange == [-1,-1])) then
       eiRange(:) = [1, self%nOrb]
     else
       eiRange(:) = self%eiRange
@@ -671,7 +671,7 @@ contains
     integer :: ii, nOrb, eiRange(2)
 
     nOrb = size(ei)
-    if (all(self%eiRange == [-1,-1] )) then
+    if (all(self%eiRange == [-1,-1])) then
       eiRange(:) = [1, nOrb]
     else
       eiRange(:) = self%eiRange
@@ -680,7 +680,7 @@ contains
     isAnyDegenerate = .false.
     do ii = eiRange(1)+1, eiRange(2)
       ! assumes sorted:
-      if ( ei(ii) - ei(ii-1) < self%tolerance) then
+      if (ei(ii) - ei(ii-1) < self%tolerance) then
         isAnyDegenerate = .true.
         return
       end if
@@ -757,7 +757,7 @@ contains
       grpMembership(ii) = nGrp
       do jj = ii + 1, iEnd
         ! assumes sorted:
-        if ( ei(jj) - ei(jj-1) > localTol) then
+        if (ei(jj) - ei(jj-1) > localTol) then
           exit
         end if
         grpMembership(jj) = nGrp

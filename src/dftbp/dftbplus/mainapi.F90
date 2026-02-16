@@ -483,8 +483,8 @@ contains
 
     main%tExtChrg = .true.
     if (main%tForces) then
-      if ( allocated(main%chrgForces) ) then
-         if ( size(main%chrgForces,2) /= size(chargeQs) ) then
+      if (allocated(main%chrgForces)) then
+         if (size(main%chrgForces,2) /= size(chargeQs)) then
             deallocate(main%chrgForces)
          end if
       end if

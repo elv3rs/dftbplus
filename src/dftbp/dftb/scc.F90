@@ -506,8 +506,8 @@ contains
     !> Spatial extension of external charge distribution
     real(dp), intent(in), optional :: blurWidths(:)
 
-    if ( allocated(this%extCharges) ) then
-       if ( this%extCharges%getNumCharges() /= size(chargeQs) ) then
+    if (allocated(this%extCharges)) then
+       if (this%extCharges%getNumCharges() /= size(chargeQs)) then
           deallocate(this%extCharges)
        end if
     end if

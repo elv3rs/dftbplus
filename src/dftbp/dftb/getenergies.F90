@@ -311,7 +311,7 @@ contains
     if (tFixEf) then
       if (nSpin == 2) then
         nEl(:) = sum(sum(qOrb(:,iAtInCentralRegion,:),dim=1),dim=1)
-        nEl(1) = 0.5_dp * ( nEl(1) + nEl(2) )
+        nEl(1) = 0.5_dp * (nEl(1) + nEl(2))
         nEl(2) = nEl(1) - nEl(2)
         energy%NEf = sum(nEl(:2) * Ef(:2))
       else

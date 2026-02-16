@@ -152,7 +152,7 @@ program flux
               write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),2.5*width,' {', &
                     & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)
            endif
-           if(arr_len >= 2.5d0 ) then
+           if(arr_len >= 2.5d0) then
               e(:)=coord(:,m)+dr(:)*0.8
               write(*,'(a24,f6.2,a2,3(f10.4),a2,3(f10.4),a14)') trim(arg),3.0*width,' {', &
                      & coord(1:3,m),'}{',e(1:3),'} color '//trim(color)

@@ -48,11 +48,11 @@ contains
     nSpin = size(shiftPerL, dim=3)
     nAtom = size(shiftPerL, dim=2)
 
-    if (size(shiftPerL, dim=1) /= orb%mShell ) then
+    if (size(shiftPerL, dim=1) /= orb%mShell) then
       call error("Internal error in writeshift: size(shiftPerL,1)")
     endif
 
-    if (size(shiftPerL, dim=2) /= size(orb%nOrbAtom) ) then
+    if (size(shiftPerL, dim=2) /= size(orb%nOrbAtom)) then
       call error("Internal error in writeshift size(shiftPerL,2)")
     endif
 

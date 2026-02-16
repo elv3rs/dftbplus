@@ -97,7 +97,7 @@ module dftbp_math_ranlux
 
 
   !> Nr. of random numbers to throw away to destroy coherence
-  integer, parameter :: ndskip(0:maxlev) = [ 0, 24, 73, 199, 365 ]
+  integer, parameter :: ndskip(0:maxlev) = [0, 24, 73, 199, 365]
 
 
   !> 2**24 as integer

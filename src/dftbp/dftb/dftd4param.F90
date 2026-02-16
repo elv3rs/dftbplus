@@ -413,7 +413,7 @@ contains
       & 0.400000_dp, 0.500000_dp, 0.600000_dp, 0.700000_dp, 0.800000_dp, &
       & 0.900000_dp, 1.000000_dp, 1.200000_dp, 1.400000_dp, 1.600000_dp, &
       & 1.800000_dp, 2.000000_dp, 2.500000_dp, 3.000000_dp, 4.000000_dp, &
-      & 5.000000_dp, 7.500000_dp, 10.00000_dp ]
+      & 5.000000_dp, 7.500000_dp, 10.00000_dp]
 
     !  just precalculate all weights and get the job done
     real(dp), parameter :: weights(imagFrequencies) = 0.5_dp * [ &
@@ -439,7 +439,7 @@ contains
       & (freq(20) - freq(19)) + (freq(21) - freq(20)), &
       & (freq(21) - freq(20)) + (freq(22) - freq(21)), &
       & (freq(22) - freq(21)) + (freq(23) - freq(22)), &
-      & (freq(23) - freq(22)) ]
+      & (freq(23) - freq(22))]
 
     trapzd = sum(pol*weights)
 

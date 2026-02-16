@@ -331,8 +331,8 @@ contains
             iOrb2 = iAtomStart(iAtom1+1) - 1
             Pst = 0.5_dp * (sum(ci(iOrb1:iOrb2,iLev1)*Sci2(iOrb1:iOrb2,iLev2))&
                 & + sum(ci(iOrb1:iOrb2,iLev2)*Sci1(iOrb1:iOrb2)))
-            Pss = sum ( ci(iOrb1:iOrb2,iLev1)*Sci1(iOrb1:iOrb2) )
-            Ptt = sum ( ci(iOrb1:iOrb2,iLev2)*Sci2(iOrb1:iOrb2,iLev2) )
+            Pss = sum (ci(iOrb1:iOrb2,iLev1)*Sci1(iOrb1:iOrb2))
+            Ptt = sum (ci(iOrb1:iOrb2,iLev2)*Sci2(iOrb1:iOrb2,iLev2))
             Ast = Ast + Pst * Pst - 0.25_dp * (Pss - Ptt) * (Pss - Ptt)
             Bst = Bst + Pst * (Pss - Ptt)
           end do
@@ -553,8 +553,8 @@ contains
 
             Pst = 0.5_dp * (sum(ci(iOrb1:iOrb2,iLev1)*Sci1(iOrb1:iOrb2,2))&
                 & + sum(ci(iOrb1:iOrb2,iLev2)*Sci1(iOrb1:iOrb2,1)))
-            Pss = sum ( ci(iOrb1:iOrb2,iLev1)*Sci1(iOrb1:iOrb2,1) )
-            Ptt = sum ( ci(iOrb1:iOrb2,iLev2)*Sci1(iOrb1:iOrb2,2) )
+            Pss = sum (ci(iOrb1:iOrb2,iLev1)*Sci1(iOrb1:iOrb2,1))
+            Ptt = sum (ci(iOrb1:iOrb2,iLev2)*Sci1(iOrb1:iOrb2,2))
             Ast = Ast + Pst * Pst - 0.25_dp * (Pss - Ptt) * (Pss - Ptt)
             Bst = Bst + Pst * (Pss - Ptt)
           end do
@@ -925,7 +925,7 @@ contains
             iOrb1 = iAtomStart(iAtom1)
             iOrb2 = iAtomStart(iAtom1+1) - 1
             Pst = 0.5_dp * (sum(ci(iOrb1:iOrb2,iLev1)*Sci2(iOrb1:iOrb2,iLev2))&
-                & +sum(ci(iOrb1:iOrb2,iLev2)*Sci1(iOrb1:iOrb2)) )
+                & +sum(ci(iOrb1:iOrb2,iLev2)*Sci1(iOrb1:iOrb2)))
             Pss = sum(ci(iOrb1:iOrb2,iLev1)*Sci1(iOrb1:iOrb2))
             Ptt = sum(ci(iOrb1:iOrb2,iLev2)*Sci2(iOrb1:iOrb2,iLev2))
             Ast = Ast + abs(Pst)**2 - 0.25_dp * abs(Pss - Ptt)**2

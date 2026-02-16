@@ -303,7 +303,7 @@ contains
         nOrb2 = iAtomStart(iAtom2f+1) - jj
         iVec = iCellVec(iAtom2)
         if (iVec /= iOldVec) then
-          phase = exp(imag * dot_product(kPoint2p(:2), cellVec(:2, iVec)) )
+          phase = exp(imag * dot_product(kPoint2p(:2), cellVec(:2, iVec)))
           iOldVec = iVec
         end if
         tmpSqr(:nOrb2,:nOrb1) = reshape(orig(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2, nOrb1])
@@ -1446,7 +1446,7 @@ contains
         @:ASSERT(jj >= ii)
         nOrb2 = iAtomStart(iAtom2f + 1) - jj
         ! take the anti-Hermitian part of the block
-        tmpSqr(1:nOrb2, 1:nOrb1) = 0.5_dp * ( square(nOrb+jj:nOrb+jj+nOrb2-1, ii:ii+nOrb1-1)&
+        tmpSqr(1:nOrb2, 1:nOrb1) = 0.5_dp * (square(nOrb+jj:nOrb+jj+nOrb2-1, ii:ii+nOrb1-1)&
             & - transpose(square(nOrb+ii:nOrb+ii+nOrb1-1, jj:jj+nOrb2-1)))
         @:ASSERT(sizePrim >= iOrig + nOrb1*nOrb2 - 1)
         ! sigma_x : i * 1 = i use + imaginary part of block
@@ -1596,7 +1596,7 @@ contains
         @:ASSERT(sizePrim >= iOrig + nOrb1*nOrb2 - 1)
 
         ! take the anti-Hermitian part of the block
-        tmpSqr(1:nOrb2, 1:nOrb1) = 0.5_dp * ( square(nOrb+jj:nOrb+jj+nOrb2-1, ii:ii+nOrb1-1)&
+        tmpSqr(1:nOrb2, 1:nOrb1) = 0.5_dp * (square(nOrb+jj:nOrb+jj+nOrb2-1, ii:ii+nOrb1-1)&
             & + conjg(transpose(square(nOrb+ii:nOrb+ii+nOrb1-1, jj:jj+nOrb2-1))))
         tmpSqr = phase*kWeight*tmpSqr
         ! sigma_x : i * 1 = i use + imaginary part of block

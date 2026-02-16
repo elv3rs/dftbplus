@@ -269,11 +269,11 @@ module dftbp_reks_rekscpeqn
           & Nc, Na, reksAlg, shift2e)
 
       ! compute step length
-      rNorm1 = sum( r0(:)*z0(:) )
+      rNorm1 = sum(r0(:)*z0(:))
       if (rNorm1 == 0.0_dp) then
         alpha = 0.0_dp
       else
-        alpha = rNorm1 / sum( p0(:)*(shift1e(:)+shift2e(:)) )
+        alpha = rNorm1 / sum(p0(:)*(shift1e(:)+shift2e(:)))
       end if
       ! update the approximate solution
       ZT(:) = ZT + alpha * p0
@@ -288,7 +288,7 @@ module dftbp_reks_rekscpeqn
             & Nc, Na, Glevel, reksAlg, z1)
       end if
       ! compute a gradient correction factor
-      rNorm2 = sum( r1(:)*z1(:) )
+      rNorm2 = sum(r1(:)*z1(:))
       if (rNorm2 == 0.0_dp) then
         beta = 0.0_dp
       else
@@ -297,7 +297,7 @@ module dftbp_reks_rekscpeqn
       p1(:) = z1 + beta * p0
 
       ! calculate square residual for current iteration
-      eps = sum( r1(:)*r1(:) )
+      eps = sum(r1(:)*r1(:))
 
       ! show current iteration
       write(stdOut,'(2x,a,1x,i4,4x,a,F18.12)') &

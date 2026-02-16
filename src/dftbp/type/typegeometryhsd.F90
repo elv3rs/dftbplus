@@ -55,7 +55,7 @@ contains
 
     call setChildValue(node, "TypeNames", geo%speciesNames, .false.)
     call setChildValue(node, "TypesAndCoordinates", &
-        &reshape(geo%species, [ 1, size(geo%species) ]), geo%coords, .false.)
+        &reshape(geo%species, [1, size(geo%species)]), geo%coords, .false.)
     call setChildValue(node, "Periodic", geo%tPeriodic, .false.)
     if (geo%tPeriodic .or. geo%tHelical) then
       call setChildValue(node, "LatticeVectors", geo%latVecs, .false.)
@@ -78,11 +78,11 @@ contains
     call writeChildValue(xf, "TypeNames", geo%speciesNames)
     if (geo%tPeriodic .or. geo%tHelical) then
       call writeChildValue(xf, "TypesAndCoordinates", &
-          &reshape(geo%species, [ 1, size(geo%species) ]), geo%coords&
+          &reshape(geo%species, [1, size(geo%species)]), geo%coords&
           & + spread(geo%origin, 2, size(geo%species)))
     else
       call writeChildValue(xf, "TypesAndCoordinates", &
-          &reshape(geo%species, [ 1, size(geo%species) ]), geo%coords)
+          &reshape(geo%species, [1, size(geo%species)]), geo%coords)
     end if
     call writeChildValue(xf, "Periodic", geo%tPeriodic)
     call writeChildValue(xf, "Helical", geo%tHelical)

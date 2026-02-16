@@ -18,7 +18,7 @@ program integvalue
   integer, parameter :: nSKInter = 20
   integer, parameter :: nSKInterOld = 10
   integer, parameter :: iSKInterOld(nSKInterOld) &
-      & = [ 8, 9, 10, 13, 14, 15, 16, 18, 19, 20 ]
+      & = [8, 9, 10, 13, 14, 15, 16, 18, 19, 20]
   real(dp), parameter :: deltaXDiff = epsilon(1.0_dp)**0.25_dp
 
   type(TOldSKData) :: skdata
@@ -99,7 +99,7 @@ contains
 
     call get_command_argument(2, fname)
     call get_command_argument(3, arg)
-    if (arg /= "orig" .and. arg /= "ext" ) then
+    if (arg /= "orig" .and. arg /= "ext") then
       call error("The third argument must be 'orig' or 'ext'")
     end if
     extended = (arg == "ext")

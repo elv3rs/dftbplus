@@ -331,7 +331,7 @@ contains
       call openFile(file, hessianFile, mode="r", iostat=iErr)
       if (iErr /= 0) then
         call detailedError(child2, "Could not open file '" // hessianFile&
-            & // "' for direct reading." )
+            & // "' for direct reading.")
       end if
       read(file%unit, *, iostat=iErr) dynMatrix
       if (iErr /= 0) then

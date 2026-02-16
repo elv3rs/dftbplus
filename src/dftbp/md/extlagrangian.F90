@@ -14,7 +14,7 @@ module dftbp_md_extlagrangian
   implicit none
 
   private
-  public ::ExtLagrangian, ExtLagrangian_init
+  public :: ExtLagrangian, ExtLagrangian_init
   public :: ExtLagrangianInp
 
 

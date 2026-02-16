@@ -29,7 +29,7 @@ module dftbp_md_velocityverlet
     real(dp) :: deltaT
 
     !> list of particle positions
-    real(dp), allocatable :: positions(:,: )
+    real(dp), allocatable :: positions(:,:)
 
     !> list of particle velocities
     real(dp), allocatable :: velocities(:,:)

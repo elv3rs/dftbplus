@@ -2118,7 +2118,7 @@ contains
     if (this%tCoordOpt) then
       allocate(tmpCoords(this%nMovedCoord))
       tmpCoords(1:this%nMovedCoord) = reshape(this%coord0(:, this%indMovedAtom),&
-          & [ this%nMovedCoord ])
+          & [this%nMovedCoord])
       select case (input%ctrl%iGeoOpt)
       case(geoOptTypes%steepestDesc)
         allocate(tmpWeight(this%nMovedCoord))
@@ -2126,7 +2126,7 @@ contains
             & reshape(spread(this%mass(this%indMovedAtom), 1, 3), [this%nMovedCoord])
         allocate(pSteepDesc)
         call init(pSteepDesc, size(tmpCoords), input%ctrl%maxForce, input%ctrl%maxAtomDisp,&
-            & tmpWeight )
+            & tmpWeight)
         deallocate(tmpWeight)
         call init(this%pGeoCoordOpt, pSteepDesc)
       case (geoOptTypes%conjugateGrad)
@@ -2177,7 +2177,7 @@ contains
         call TFire_init(pFireLat, 9, input%ctrl%maxForce, input%ctrl%deltaT)
         call init(this%pGeoLatOpt, pFireLat)
       end select
-      if (this%tLatOptIsotropic ) then
+      if (this%tLatOptIsotropic) then
         ! optimisation uses scaling factor of unit cell
         call reset(this%pGeoLatOpt,&
             & [1.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp])
@@ -2186,7 +2186,7 @@ contains
         call reset(this%pGeoLatOpt,&
             & [1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp])
       else
-        call reset(this%pGeoLatOpt, reshape(this%latVec, [ 9 ]) )
+        call reset(this%pGeoLatOpt, reshape(this%latVec, [9]))
       end if
     end if
 
@@ -5405,7 +5405,7 @@ contains
     ! 4. Solver == ELSI using a sparse solver
     this%tLargeDenseMatrices = .not. (this%tWriteRealHS .or. this%tWriteHS .or. &
           &   (this%electronicSolver%iSolver == electronicSolverTypes%GF) .or. &
-          &   (this%electronicSolver%iSolver == electronicSolverTypes%OnlyTransport) )
+          &   (this%electronicSolver%iSolver == electronicSolverTypes%OnlyTransport))
     if (this%electronicSolver%isElsiSolver) then
       this%tLargeDenseMatrices = this%tLargeDenseMatrices&
           & .and. .not. this%electronicSolver%elsi%isSparse
@@ -6387,14 +6387,18 @@ contains
     integer :: iSpin, iK
 
     ! Deallocate arrays, if already allocated
-    if (allocated(this%densityMatrix%deltaRhoOut))&
-        & deallocate(this%densityMatrix%deltaRhoOut)
-    if (allocated(this%densityMatrix%deltaRhoOutCplx))&
-        & deallocate(this%densityMatrix%deltaRhoOutCplx)
-    if (allocated(this%densityMatrix%iKiSToiGlobalKS))&
-        & deallocate(this%densityMatrix%iKiSToiGlobalKS)
-    if (allocated(this%densityMatrix%deltaRhoOutCplxHS))&
-        & deallocate(this%densityMatrix%deltaRhoOutCplxHS)
+    if (allocated(this%densityMatrix%deltaRhoOut)) then
+      deallocate(this%densityMatrix%deltaRhoOut)
+    end if
+    if (allocated(this%densityMatrix%deltaRhoOutCplx)) then
+      deallocate(this%densityMatrix%deltaRhoOutCplx)
+    end if
+    if (allocated(this%densityMatrix%iKiSToiGlobalKS)) then
+      deallocate(this%densityMatrix%iKiSToiGlobalKS)
+    end if
+    if (allocated(this%densityMatrix%deltaRhoOutCplxHS)) then
+      deallocate(this%densityMatrix%deltaRhoOutCplxHS)
+    end if
 
     if (this%tRealHS) then
       ! Prevent for deleting charges read in from file
@@ -6612,7 +6616,7 @@ contains
     end if
 
     if (tPeriodic) then
-      if ( .not. (nKPoint == 1 .and. all(kPoint(:, 1) == [0.0_dp, 0.0_dp, 0.0_dp])) ) then
+      if (.not. (nKPoint == 1 .and. all(kPoint(:, 1) == [0.0_dp, 0.0_dp, 0.0_dp]))) then
         call error("REKS can compute only gamma-point in periodic case")
       end if
     end if

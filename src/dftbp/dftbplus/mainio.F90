@@ -2302,10 +2302,10 @@ contains
     call xml_NewElement(xf, "geometry")
     call writeChildValue(xf, "typenames", speciesName)
     if (tPeriodic .or. tHelical) then
-      call writeChildValue(xf, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
+      call writeChildValue(xf, "typesandcoordinates", reshape(species0, [1, size(species0)]),&
           & coord0Out + spread(origin, 2, size(coord0Out, dim=2)))
     else
-      call writeChildValue(xf, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
+      call writeChildValue(xf, "typesandcoordinates", reshape(species0, [1, size(species0)]),&
           & coord0Out)
     end if
     call writeChildValue(xf, "periodic", tPeriodic)

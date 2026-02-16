@@ -80,7 +80,7 @@ contains
       & iAtomStart, orb, alpha, beta)
 
     !> Vector on return
-    ${typename}$(dp), intent(inout):: y(:)
+    ${typename}$(dp), intent(inout) :: y(:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -172,7 +172,7 @@ contains
       & iSparseStart, iAtomStart, coords, species, orb, alpha, beta)
 
     !> Vector on return
-    ${typename}$(dp), intent(inout):: y(:)
+    ${typename}$(dp), intent(inout) :: y(:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -275,7 +275,7 @@ contains
       & iSparseStart, iAtomStart, orb, alpha, beta)
 
     !> Vector on return
-    complex(dp), intent(inout):: y(:)
+    complex(dp), intent(inout) :: y(:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -380,7 +380,7 @@ contains
       & img2CentCell, iSparseStart, iAtomStart, coords, species, orb, alpha, beta)
 
     !> Vector on return
-    complex(dp), intent(inout):: y(:)
+    complex(dp), intent(inout) :: y(:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -498,7 +498,7 @@ contains
       & iSparseStart, iAtomStart, orb, alpha, beta)
 
     !> Dense matrix on return
-    ${typename}$(dp), intent(inout):: C(:,:)
+    ${typename}$(dp), intent(inout) :: C(:,:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -635,7 +635,7 @@ contains
       & iSparseStart, iAtomStart, coords, species, orb, alpha, beta)
 
     !> Dense matrix on return
-    ${typename}$(dp), intent(inout):: C(:,:)
+    ${typename}$(dp), intent(inout) :: C(:,:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -784,7 +784,7 @@ contains
       & img2CentCell, iSparseStart, iAtomStart, orb, alpha, beta)
 
     !> Dense matrix on return
-    complex(dp), intent(inout):: C(:,:)
+    complex(dp), intent(inout) :: C(:,:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)
@@ -939,7 +939,7 @@ contains
       & img2CentCell, iSparseStart, iAtomStart, coords, species, orb, alpha, beta)
 
     !> Dense matrix on return
-    complex(dp), intent(inout):: C(:,:)
+    complex(dp), intent(inout) :: C(:,:)
 
     !> Sparse matrix
     real(dp), intent(in) :: A(:)

@@ -395,18 +395,18 @@ contains
       select case (this%symmetry)
       case ("B")
         allocate(symmetries(2))
-        symmetries(:) = [ "T", "S" ]
+        symmetries(:) = ["T", "S"]
       case ("S")
         allocate(symmetries(1))
-        symmetries(:) = [ "S" ]
+        symmetries(:) = ["S"]
       case ("T")
         allocate(symmetries(1))
-        symmetries(:) = [ "T" ]
+        symmetries(:) = ["T"]
       end select
     else
       ! ADG: temporary solution for spin polarized case.
       allocate(symmetries(1))
-      symmetries(:) = [ " " ]
+      symmetries(:) = [" "]
     end if
     ! Allocation for general arrays
     allocate(gammaMat(this%nAtom, this%nAtom))
@@ -486,7 +486,7 @@ contains
     ! single particle excitation oscillator strengths
     sposz(:) = twothird * wij(:) * sum(snglPartTransDip**2, dim=2)
 
-    if (this%tOscillatorWindow .and. tZVector ) then
+    if (this%tOscillatorWindow .and. tZVector) then
       call error("Incompabilitity between excited state property evaluation and an oscillator&
           & strength window at the moment.")
     end if
@@ -702,12 +702,12 @@ contains
       end if
 
       if (this%tSpin) then
-        if (any( abs(filling) > elecTolMax .and. abs(filling-1.0_dp) > elecTolMax ) ) then
+        if (any(abs(filling) > elecTolMax .and. abs(filling-1.0_dp) > elecTolMax)) then
           call error("Fractional fillings not currently possible for excited state property&
               & calculations")
         end if
       else
-        if (any( abs(filling) > elecTolMax .and. abs(filling-2.0_dp) > elecTolMax ) ) then
+        if (any(abs(filling) > elecTolMax .and. abs(filling-2.0_dp) > elecTolMax)) then
           call error("Fractional fillings not currently possible for excited state property&
               & calculations")
         end if
@@ -1104,7 +1104,7 @@ contains
 
         write(fdArnoldiTest%unit,"(I4,4E16.8)")iState,&
             & dot_product(Hv,xpy(:,iState))-eval(iState),&
-            & sqrt(sum( (Hv-xpy(:,iState)*eval(iState) )**2 )), orthnorm(iState,iState) - 1.0_dp,&
+            & sqrt(sum((Hv-xpy(:,iState)*eval(iState))**2)), orthnorm(iState,iState) - 1.0_dp,&
             & max(maxval(orthnorm(:iState-1,iState)), maxval(orthnorm(iState+1:,iState)))
       end do
       call closeFile(fdArnoldiTest)
@@ -2532,8 +2532,8 @@ contains
       do nu = 1, nOrb
         do mu = 1, nOrb
           xpycc(mu,nu,iSpin) = xpycc(mu,nu,iSpin) + xpy(ia) *&
-              & ( grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,a,iSpin)&
-              & + grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,i,iSpin) )
+              & (grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,a,iSpin)&
+              & + grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,i,iSpin))
         end do
       end do
     end do
@@ -2550,8 +2550,8 @@ contains
         do nu = 1, nOrb
           do mu = 1, nOrb
             xmycc(mu,nu,iSpin) = xmycc(mu,nu,iSpin) + xmy(ia) *&
-                & ( grndEigVecs(mu,i,iSpin) * grndEigVecs(nu,a,iSpin)&
-                & + grndEigVecs(mu,a,iSpin) * grndEigVecs(nu,i,iSpin) )
+                & (grndEigVecs(mu,i,iSpin) * grndEigVecs(nu,a,iSpin)&
+                & + grndEigVecs(mu,a,iSpin) * grndEigVecs(nu,i,iSpin))
             xpyas(mu,nu,iSpin) = xpyas(mu,nu,iSpin) + xpy(ia) *&
                 & grndEigVecs(mu,i,iSpin) * grndEigVecs(nu,a,iSpin)
             xmyas(mu,nu,iSpin) = xmyas(mu,nu,iSpin) + xmy(ia) *&
@@ -2598,8 +2598,8 @@ contains
         do mu = 1, nOrb
           do nu = 1, nOrb
             wcc(mu,nu,iSpin) = wcc(mu,nu,iSpin) + woo(ij,iSpin) *&
-                & ( grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,j,iSpin)&
-                & + grndEigVecs(mu,j,iSpin)*grndEigVecs(nu,i,iSpin) )
+                & (grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,j,iSpin)&
+                & + grndEigVecs(mu,j,iSpin)*grndEigVecs(nu,i,iSpin))
           end do
         end do
 
@@ -2613,8 +2613,8 @@ contains
       do nu = 1, nOrb
         do mu = 1, nOrb
           wcc(mu,nu,iSpin) = wcc(mu,nu,iSpin) + wov(ia) *&
-              & ( grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,a,iSpin)&
-              & + grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,i,iSpin) )
+              & (grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,a,iSpin)&
+              & + grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,i,iSpin))
         end do
       end do
     end do
@@ -2628,8 +2628,8 @@ contains
         do mu = 1, nOrb
           do nu = 1, nOrb
             wcc(mu,nu,iSpin) = wcc(mu,nu,iSpin) + wvv(ab,iSpin) *&
-                & ( grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,b,iSpin)&
-                & + grndEigVecs(mu,b,iSpin)*grndEigVecs(nu,a,iSpin) )
+                & (grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,b,iSpin)&
+                & + grndEigVecs(mu,b,iSpin)*grndEigVecs(nu,a,iSpin))
           end do
         end do
 
@@ -2677,11 +2677,11 @@ contains
           tmp3b = 2.0_dp * xpyq(iAt1) * xpyq(iAt2)
         end if
 
-        excgrad(:,iAt1) = excgrad(:,iAt1) + dgab(:) * ( tmp3a + tmp3b )
-        excgrad(:,iAt2) = excgrad(:,iAt2) - dgab(:) * ( tmp3a + tmp3b )
+        excgrad(:,iAt1) = excgrad(:,iAt1) + dgab(:) * (tmp3a + tmp3b)
+        excgrad(:,iAt2) = excgrad(:,iAt2) - dgab(:) * (tmp3a + tmp3b)
 
         tmp5(:) = shift_excited(iAt1,:) + shift_excited(iAt2,:)
-        tmp7(:) = 2.0_dp * ( shxpyq(iAt1,:) + shxpyq(iAt2,:) )
+        tmp7(:) = 2.0_dp * (shxpyq(iAt1,:) + shxpyq(iAt2,:))
 
         if (lr%tSpin) then
           tmp9 = lr%spinW(iSp1) * dm(iAt1) + lr%spinW(iSp2) * dm(iAt2)
@@ -2695,25 +2695,25 @@ contains
             do mu = indAlpha, indAlpha1
               do nu = indBeta, indBeta1
                 tmprs = tmprs +&
-          & ( 2.0_dp * (PS(mu,nu,iSpin) * DS(nu,mu,iSpin) + PS(nu,mu,iSpin) * DS(mu,nu,iSpin)) +&
+          & (2.0_dp * (PS(mu,nu,iSpin) * DS(nu,mu,iSpin) + PS(nu,mu,iSpin) * DS(mu,nu,iSpin)) +&
           &   SPS(mu,nu,iSpin) * deltaRho(mu,nu,iSpin) + SPS(nu,mu,iSpin) * deltaRho(nu,mu,iSpin) +&
-          &   pc(mu,nu,iSpin) * SDS(mu,nu,iSpin) + pc(nu,mu,iSpin) * SDS(nu,mu,iSpin) )
+          &   pc(mu,nu,iSpin) * SDS(mu,nu,iSpin) + pc(nu,mu,iSpin) * SDS(nu,mu,iSpin))
                 tmprs = tmprs + 2.0_dp *&
-          & ( xpyas(mu,nu,iSpin) * SXS(mu,nu,iSpin) + xpyas(nu,mu,iSpin) * SXS(nu,mu,iSpin) +&
-          &   SX(mu,nu,iSpin) * XS(mu,nu,iSpin) + SX(nu,mu,iSpin) * XS(nu,mu,iSpin) )
+          & (xpyas(mu,nu,iSpin) * SXS(mu,nu,iSpin) + xpyas(nu,mu,iSpin) * SXS(nu,mu,iSpin) +&
+          &   SX(mu,nu,iSpin) * XS(mu,nu,iSpin) + SX(nu,mu,iSpin) * XS(nu,mu,iSpin))
                 tmprs = tmprs +&
-          & ( XS(mu,nu,iSpin) * XS(nu,mu,iSpin) + XS(nu,mu,iSpin) * XS(mu,nu,iSpin) +&
+          & (XS(mu,nu,iSpin) * XS(nu,mu,iSpin) + XS(nu,mu,iSpin) * XS(mu,nu,iSpin) +&
           &   SXS(mu,nu,iSpin) * xpyas(nu,mu,iSpin) + SXS(nu,mu,iSpin) * xpyas(mu,nu,iSpin) +&
           &   xpyas(mu,nu,iSpin) * SXS(nu,mu,iSpin) + xpyas(nu,mu,iSpin) * SXS(mu,nu,iSpin) +&
-          &   SX(mu,nu,iSpin) * SX(nu,mu,iSpin) + SX(nu,mu,iSpin) * SX(mu,nu,iSpin) )
+          &   SX(mu,nu,iSpin) * SX(nu,mu,iSpin) + SX(nu,mu,iSpin) * SX(mu,nu,iSpin))
                 tmprs = tmprs + 2.0_dp *&
-          & ( xmyas(mu,nu,iSpin) * SYS(mu,nu,iSpin) + xmyas(nu,mu,iSpin) * SYS(nu,mu,iSpin) +&
-          &   SY(mu,nu,iSpin) * YS(mu,nu,iSpin) + SY(nu,mu,iSpin) * YS(nu,mu,iSpin) )
+          & (xmyas(mu,nu,iSpin) * SYS(mu,nu,iSpin) + xmyas(nu,mu,iSpin) * SYS(nu,mu,iSpin) +&
+          &   SY(mu,nu,iSpin) * YS(mu,nu,iSpin) + SY(nu,mu,iSpin) * YS(nu,mu,iSpin))
                 tmprs = tmprs -&
-          & ( YS(mu,nu,iSpin) * YS(nu,mu,iSpin) + YS(nu,mu,iSpin) * YS(mu,nu,iSpin) +&
+          & (YS(mu,nu,iSpin) * YS(nu,mu,iSpin) + YS(nu,mu,iSpin) * YS(mu,nu,iSpin) +&
           &   SYS(mu,nu,iSpin) * xmyas(nu,mu,iSpin) + SYS(nu,mu,iSpin) * xmyas(mu,nu,iSpin) +&
           &   xmyas(mu,nu,iSpin) * SYS(nu,mu,iSpin) + xmyas(nu,mu,iSpin) * SYS(mu,nu,iSpin) +&
-          &   SY(mu,nu,iSpin) * SY(nu,mu,iSpin) + SY(nu,mu,iSpin) * SY(mu,nu,iSpin) )
+          &   SY(mu,nu,iSpin) * SY(nu,mu,iSpin) + SY(nu,mu,iSpin) * SY(mu,nu,iSpin))
               end do
             end do
           end do
@@ -2762,23 +2762,23 @@ contains
                   tmprs = 0.0_dp
                   do ka = 1, nOrb
                     tmprs = tmprs +&
-            & ( PS(mu,ka,iSpin) * deltaRho(nu,ka,iSpin) + PS(nu,ka,iSpin) * deltaRho(mu,ka,iSpin) +&
-            &   pc(mu,ka,iSpin) * DS(nu,ka,iSpin) + pc(nu,ka,iSpin) * DS(mu,ka,iSpin) ) *&
+            & (PS(mu,ka,iSpin) * deltaRho(nu,ka,iSpin) + PS(nu,ka,iSpin) * deltaRho(mu,ka,iSpin) +&
+            &   pc(mu,ka,iSpin) * DS(nu,ka,iSpin) + pc(nu,ka,iSpin) * DS(mu,ka,iSpin)) *&
             &  (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka))
                     tmprs = tmprs +&
-            & ( xpyas(mu,ka,iSpin) * XS(nu,ka,iSpin) + xpyas(ka,mu,iSpin) * SX(ka,nu,iSpin) +&
-            &   xpyas(nu,ka,iSpin) * XS(mu,ka,iSpin) + xpyas(ka,nu,iSpin) * SX(ka,mu,iSpin) )*&
+            & (xpyas(mu,ka,iSpin) * XS(nu,ka,iSpin) + xpyas(ka,mu,iSpin) * SX(ka,nu,iSpin) +&
+            &   xpyas(nu,ka,iSpin) * XS(mu,ka,iSpin) + xpyas(ka,nu,iSpin) * SX(ka,mu,iSpin))*&
             &  (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka))
                     tmprs = tmprs +&
-            & ( xmyas(mu,ka,iSpin) * YS(nu,ka,iSpin) + xmyas(ka,mu,iSpin) * SY(ka,nu,iSpin) +&
-            &   xmyas(nu,ka,iSpin) * YS(mu,ka,iSpin) + xmyas(ka,nu,iSpin) * SY(ka,mu,iSpin) ) *&
+            & (xmyas(mu,ka,iSpin) * YS(nu,ka,iSpin) + xmyas(ka,mu,iSpin) * SY(ka,nu,iSpin) +&
+            &   xmyas(nu,ka,iSpin) * YS(mu,ka,iSpin) + xmyas(ka,nu,iSpin) * SY(ka,mu,iSpin)) *&
             &  (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka))
                     tmprs = tmprs +&
-            & ( XS(mu,ka,iSpin) * xpyas(ka,nu,iSpin) + XS(nu,ka,iSpin) * xpyas(ka,mu,iSpin) +&
+            & (XS(mu,ka,iSpin) * xpyas(ka,nu,iSpin) + XS(nu,ka,iSpin) * xpyas(ka,mu,iSpin) +&
             &   xpyas(mu,ka,iSpin) * SX(ka,nu,iSpin) + xpyas(nu,ka,iSpin) * SX(ka,mu,iSpin)) *&
             &  (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka))
                     tmprs = tmprs -&
-            & ( YS(mu,ka,iSpin) * xmyas(ka,nu,iSpin) + YS(nu,ka,iSpin) * xmyas(ka,mu,iSpin) +&
+            & (YS(mu,ka,iSpin) * xmyas(ka,nu,iSpin) + YS(nu,ka,iSpin) * xmyas(ka,mu,iSpin) +&
             &   xmyas(mu,ka,iSpin) * SY(ka,nu,iSpin) + xmyas(nu,ka,iSpin) * SY(ka,mu,iSpin)) *&
             &  (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka))
                   end do
@@ -3170,7 +3170,7 @@ contains
     end do
 
     do s = 1, nSpin
-      pc(:,:,s) = 0.5_dp * ( pc(:,:,s) + transpose(pc(:,:,s)) )
+      pc(:,:,s) = 0.5_dp * (pc(:,:,s) + transpose(pc(:,:,s)))
     end do
 
     pc(:,:,:) = pc + t
@@ -4518,8 +4518,8 @@ contains
           do nu = 1, nOrb
             do mu = 1, nOrb
                xmycc(mu,nu,iSpin,iState) = xmycc(mu,nu,iSpin,iState) + xmy(ia,iState) *&
-                & ( grndEigVecs(mu,i,iSpin) * grndEigVecs(nu,a,iSpin)&
-                & + grndEigVecs(mu,a,iSpin) * grndEigVecs(nu,i,iSpin) )
+                & (grndEigVecs(mu,i,iSpin) * grndEigVecs(nu,a,iSpin)&
+                & + grndEigVecs(mu,a,iSpin) * grndEigVecs(nu,i,iSpin))
                xpyas(mu,nu,iSpin,iState) = xpyas(mu,nu,iSpin,iState) + xpy(ia,iState) *&
                 & grndEigVecs(mu,i,iSpin) * grndEigVecs(nu,a,iSpin)
                xmyas(mu,nu,iSpin,iState) = xmyas(mu,nu,iSpin,iState) + xmy(ia,iState) *&
@@ -4575,8 +4575,8 @@ contains
         do mu = 1, nOrb
           do nu = 1, nOrb
             wcc(mu,nu,iSpin) = wcc(mu,nu,iSpin) + woo(ij,iSpin) *&
-                & ( grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,j,iSpin)&
-                & + grndEigVecs(mu,j,iSpin)*grndEigVecs(nu,i,iSpin) )
+                & (grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,j,iSpin)&
+                & + grndEigVecs(mu,j,iSpin)*grndEigVecs(nu,i,iSpin))
           end do
         end do
 
@@ -4590,8 +4590,8 @@ contains
       do nu = 1, nOrb
         do mu = 1, nOrb
           wcc(mu,nu,iSpin) = wcc(mu,nu,iSpin) + wov(ia) *&
-              & ( grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,a,iSpin)&
-              & + grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,i,iSpin) )
+              & (grndEigVecs(mu,i,iSpin)*grndEigVecs(nu,a,iSpin)&
+              & + grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,i,iSpin))
         end do
       end do
     end do
@@ -4605,8 +4605,8 @@ contains
         do mu = 1, nOrb
           do nu = 1, nOrb
             wcc(mu,nu,iSpin) = wcc(mu,nu,iSpin) + wvv(ab,iSpin) *&
-                & ( grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,b,iSpin)&
-                & + grndEigVecs(mu,b,iSpin)*grndEigVecs(nu,a,iSpin) )
+                & (grndEigVecs(mu,a,iSpin)*grndEigVecs(nu,b,iSpin)&
+                & + grndEigVecs(mu,b,iSpin)*grndEigVecs(nu,a,iSpin))
           end do
         end do
 
@@ -4672,72 +4672,72 @@ contains
             do mu = indAlpha, indAlpha1
               do nu = indBeta, indBeta1
                 tmprs = tmprs +&
-                    & ( 2.0_dp * (PS(mu,nu,iSpin) * DS(nu,mu,iSpin)&
+                    & (2.0_dp * (PS(mu,nu,iSpin) * DS(nu,mu,iSpin)&
                     & + PS(nu,mu,iSpin) * DS(mu,nu,iSpin))&
                     & + SPS(mu,nu,iSpin) * deltaRho(mu,nu,iSpin)&
                     & + SPS(nu,mu,iSpin) * deltaRho(nu,mu,iSpin)&
                     & + pc(mu,nu,iSpin) * SDS(mu,nu,iSpin)&
-                    & + pc(nu,mu,iSpin) * SDS(nu,mu,iSpin) )
+                    & + pc(nu,mu,iSpin) * SDS(nu,mu,iSpin))
 
                 tmprs = tmprs +&
-                    & ( xpyas(mu,nu,iSpin,1) * SXS(mu,nu,iSpin,2)&
+                    & (xpyas(mu,nu,iSpin,1) * SXS(mu,nu,iSpin,2)&
                     & + xpyas(nu,mu,iSpin,2) * SXS(nu,mu,iSpin,1)&
                     & + SX(mu,nu,iSpin,1) * XS(mu,nu,iSpin,2)&
-                    & + SX(nu,mu,iSpin,2) * XS(nu,mu,iSpin,1) )
+                    & + SX(nu,mu,iSpin,2) * XS(nu,mu,iSpin,1))
                 tmprs = tmprs +&
-                    & ( xpyas(mu,nu,iSpin,2) * SXS(mu,nu,iSpin,1)&
+                    & (xpyas(mu,nu,iSpin,2) * SXS(mu,nu,iSpin,1)&
                     & + xpyas(nu,mu,iSpin,1) * SXS(nu,mu,iSpin,2)&
                     & + SX(mu,nu,iSpin,2) * XS(mu,nu,iSpin,1)&
-                    & + SX(nu,mu,iSpin,1) * XS(nu,mu,iSpin,2) )
+                    & + SX(nu,mu,iSpin,1) * XS(nu,mu,iSpin,2))
 
                 tmprs = tmprs + 0.5_dp *&
-                    & ( XS(mu,nu,iSpin,1) * XS(nu,mu,iSpin,2)&
+                    & (XS(mu,nu,iSpin,1) * XS(nu,mu,iSpin,2)&
                     & + XS(nu,mu,iSpin,2) * XS(mu,nu,iSpin,1)&
                     & + SXS(mu,nu,iSpin,1) * xpyas(nu,mu,iSpin,2)&
                     & + SXS(nu,mu,iSpin,2) * xpyas(mu,nu,iSpin,1)&
                     & + xpyas(mu,nu,iSpin,1) * SXS(nu,mu,iSpin,2)&
                     & + xpyas(nu,mu,iSpin,2) * SXS(mu,nu,iSpin,1)&
                     & + SX(mu,nu,iSpin,1) * SX(nu,mu,iSpin,2)&
-                    & + SX(nu,mu,iSpin,2) * SX(mu,nu,iSpin,1) )
+                    & + SX(nu,mu,iSpin,2) * SX(mu,nu,iSpin,1))
                 tmprs = tmprs + 0.5_dp *&
-                    & ( XS(mu,nu,iSpin,2) * XS(nu,mu,iSpin,1)&
+                    & (XS(mu,nu,iSpin,2) * XS(nu,mu,iSpin,1)&
                     & + XS(nu,mu,iSpin,1) * XS(mu,nu,iSpin,2)&
                     & + SXS(mu,nu,iSpin,2) * xpyas(nu,mu,iSpin,1)&
                     & + SXS(nu,mu,iSpin,1) * xpyas(mu,nu,iSpin,2)&
                     & + xpyas(mu,nu,iSpin,2) * SXS(nu,mu,iSpin,1)&
                     & + xpyas(nu,mu,iSpin,1) * SXS(mu,nu,iSpin,2)&
                     & + SX(mu,nu,iSpin,2) * SX(nu,mu,iSpin,1)&
-                    & + SX(nu,mu,iSpin,1) * SX(mu,nu,iSpin,2) )
+                    & + SX(nu,mu,iSpin,1) * SX(mu,nu,iSpin,2))
 
                 tmprs = tmprs +&
-                    & ( xmyas(mu,nu,iSpin,1) * SYS(mu,nu,iSpin,2)&
+                    & (xmyas(mu,nu,iSpin,1) * SYS(mu,nu,iSpin,2)&
                     & + xmyas(nu,mu,iSpin,2) * SYS(nu,mu,iSpin,1)&
                     & + SY(mu,nu,iSpin,1) * YS(mu,nu,iSpin,2)&
-                    & + SY(nu,mu,iSpin,2) * YS(nu,mu,iSpin,1) )
+                    & + SY(nu,mu,iSpin,2) * YS(nu,mu,iSpin,1))
                 tmprs = tmprs +&
-                    & ( xmyas(mu,nu,iSpin,2) * SYS(mu,nu,iSpin,1)&
+                    & (xmyas(mu,nu,iSpin,2) * SYS(mu,nu,iSpin,1)&
                     & + xmyas(nu,mu,iSpin,1) * SYS(nu,mu,iSpin,2)&
                     & + SY(mu,nu,iSpin,2) * YS(mu,nu,iSpin,1)&
-                    & + SY(nu,mu,iSpin,1) * YS(nu,mu,iSpin,2) )
+                    & + SY(nu,mu,iSpin,1) * YS(nu,mu,iSpin,2))
 
                 tmprs = tmprs - 0.5_dp *&
-                    & ( YS(mu,nu,iSpin,1) * YS(nu,mu,iSpin,2)&
+                    & (YS(mu,nu,iSpin,1) * YS(nu,mu,iSpin,2)&
                     & + YS(nu,mu,iSpin,2) * YS(mu,nu,iSpin,1)&
                     & + SYS(mu,nu,iSpin,1) * xmyas(nu,mu,iSpin,2)&
                     & + SYS(nu,mu,iSpin,2) * xmyas(mu,nu,iSpin,1)&
                     & + xmyas(mu,nu,iSpin,1) * SYS(nu,mu,iSpin,2)&
                     & + xmyas(nu,mu,iSpin,2) * SYS(mu,nu,iSpin,1)&
                     & + SY(mu,nu,iSpin,1) * SY(nu,mu,iSpin,2)&
-                    & + SY(nu,mu,iSpin,2) * SY(mu,nu,iSpin,1) )
+                    & + SY(nu,mu,iSpin,2) * SY(mu,nu,iSpin,1))
                 tmprs = tmprs - 0.5_dp *&
-                    & ( YS(mu,nu,iSpin,2) * YS(nu,mu,iSpin,1)&
+                    & (YS(mu,nu,iSpin,2) * YS(nu,mu,iSpin,1)&
                     & + YS(nu,mu,iSpin,1) * YS(mu,nu,iSpin,2)&
                     & + SYS(mu,nu,iSpin,2) * xmyas(nu,mu,iSpin,1)&
                     & + SYS(nu,mu,iSpin,1) * xmyas(mu,nu,iSpin,2)&
                     & + xmyas(mu,nu,iSpin,2) * SYS(nu,mu,iSpin,1)&
                     & + xmyas(nu,mu,iSpin,1) * SYS(mu,nu,iSpin,2)&
                     & + SY(mu,nu,iSpin,2) * SY(nu,mu,iSpin,1)&
-                    & + SY(nu,mu,iSpin,1) * SY(mu,nu,iSpin,2) )
+                    & + SY(nu,mu,iSpin,1) * SY(mu,nu,iSpin,2))
               end do
             end do
           end do
@@ -4786,47 +4786,47 @@ contains
                   tmprs = 0.0_dp
                   do ka = 1, nOrb
                     tmprs = tmprs + (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( PS(mu,ka,iSpin) * deltaRho(nu,ka,iSpin)&
+                        & (PS(mu,ka,iSpin) * deltaRho(nu,ka,iSpin)&
                         & + PS(nu,ka,iSpin) * deltaRho(mu,ka,iSpin)&
                         & + pc(mu,ka,iSpin) * DS(nu,ka,iSpin)&
-                        & + pc(nu,ka,iSpin) * DS(mu,ka,iSpin) )
+                        & + pc(nu,ka,iSpin) * DS(mu,ka,iSpin))
                     tmprs = tmprs + 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( xpyas(mu,ka,iSpin,1) * XS(nu,ka,iSpin,2)&
+                        & (xpyas(mu,ka,iSpin,1) * XS(nu,ka,iSpin,2)&
                         & + xpyas(ka,mu,iSpin,2) * SX(ka,nu,iSpin,1)&
                         & + xpyas(nu,ka,iSpin,1) * XS(mu,ka,iSpin,2)&
-                        & + xpyas(ka,nu,iSpin,2) * SX(ka,mu,iSpin,1) )
+                        & + xpyas(ka,nu,iSpin,2) * SX(ka,mu,iSpin,1))
                     tmprs = tmprs + 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( xpyas(mu,ka,iSpin,2) * XS(nu,ka,iSpin,1)&
+                        & (xpyas(mu,ka,iSpin,2) * XS(nu,ka,iSpin,1)&
                         & + xpyas(ka,mu,iSpin,1) * SX(ka,nu,iSpin,2)&
                         & + xpyas(nu,ka,iSpin,2) * XS(mu,ka,iSpin,1)&
-                        & + xpyas(ka,nu,iSpin,1) * SX(ka,mu,iSpin,2) )
+                        & + xpyas(ka,nu,iSpin,1) * SX(ka,mu,iSpin,2))
                     tmprs = tmprs + 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( xmyas(mu,ka,iSpin,1) * YS(nu,ka,iSpin,2)&
+                        & (xmyas(mu,ka,iSpin,1) * YS(nu,ka,iSpin,2)&
                         & + xmyas(ka,mu,iSpin,2) * SY(ka,nu,iSpin,1)&
                         & + xmyas(nu,ka,iSpin,1) * YS(mu,ka,iSpin,2)&
-                        & + xmyas(ka,nu,iSpin,2) * SY(ka,mu,iSpin,1) )
+                        & + xmyas(ka,nu,iSpin,2) * SY(ka,mu,iSpin,1))
                     tmprs = tmprs + 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( xmyas(mu,ka,iSpin,2) * YS(nu,ka,iSpin,1)&
+                        & (xmyas(mu,ka,iSpin,2) * YS(nu,ka,iSpin,1)&
                         & + xmyas(ka,mu,iSpin,1) * SY(ka,nu,iSpin,2)&
                         & + xmyas(nu,ka,iSpin,2) * YS(mu,ka,iSpin,1)&
-                        & + xmyas(ka,nu,iSpin,1) * SY(ka,mu,iSpin,2) )
+                        & + xmyas(ka,nu,iSpin,1) * SY(ka,mu,iSpin,2))
                     tmprs = tmprs + 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( XS(mu,ka,iSpin,1) * xpyas(ka,nu,iSpin,2)&
+                        & (XS(mu,ka,iSpin,1) * xpyas(ka,nu,iSpin,2)&
                         & + XS(nu,ka,iSpin,1) * xpyas(ka,mu,iSpin,2)&
                         & + xpyas(mu,ka,iSpin,1) * SX(ka,nu,iSpin,2)&
                         & + xpyas(nu,ka,iSpin,1) * SX(ka,mu,iSpin,2))
                     tmprs = tmprs + 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( XS(mu,ka,iSpin,2) * xpyas(ka,nu,iSpin,1)&
+                        & (XS(mu,ka,iSpin,2) * xpyas(ka,nu,iSpin,1)&
                         & + XS(nu,ka,iSpin,2) * xpyas(ka,mu,iSpin,1)&
                         & + xpyas(mu,ka,iSpin,2) * SX(ka,nu,iSpin,1)&
                         & + xpyas(nu,ka,iSpin,2) * SX(ka,mu,iSpin,1))
                     tmprs = tmprs - 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( YS(mu,ka,iSpin,1) * xmyas(ka,nu,iSpin,2)&
+                        & (YS(mu,ka,iSpin,1) * xmyas(ka,nu,iSpin,2)&
                         & + YS(nu,ka,iSpin,1) * xmyas(ka,mu,iSpin,2)&
                         & + xmyas(mu,ka,iSpin,1) * SY(ka,nu,iSpin,2)&
                         & + xmyas(nu,ka,iSpin,1) * SY(ka,mu,iSpin,2))
                     tmprs = tmprs - 0.5_dp * (lrGammaOrb(mu,ka) + lrGammaOrb(nu,ka)) *&
-                        & ( YS(mu,ka,iSpin,2) * xmyas(ka,nu,iSpin,1)&
+                        & (YS(mu,ka,iSpin,2) * xmyas(ka,nu,iSpin,1)&
                         & + YS(nu,ka,iSpin,2) * xmyas(ka,mu,iSpin,1)&
                         & + xmyas(mu,ka,iSpin,2) * SY(ka,nu,iSpin,1)&
                         & + xmyas(nu,ka,iSpin,2) * SY(ka,mu,iSpin,1))

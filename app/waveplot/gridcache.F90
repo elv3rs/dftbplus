@@ -170,7 +170,7 @@ contains
     integer :: iLvlStart, iLvlEnd
 
     !! Auxiliary variables
-    integer ::nAll
+    integer :: nAll
     integer :: iSpin, iKPoint, iLevel, ind, ii, iostat
     integer :: curVec(3)
     logical :: tFound

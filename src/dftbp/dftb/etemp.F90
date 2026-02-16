@@ -266,7 +266,7 @@ contains
             if (eigenvals(k,i,ispin)>(Ef+3.0_dp*w)) then
               exit
             end if
-            x = ( eigenvals(k,i,ispin) - Ef ) / kT
+            x = (eigenvals(k,i,ispin) - Ef) / kT
             call hX(hermites,MPorder*2,x)
             occ = 0.5_dp * erfcwrap(x)
             do l=1, MPorder
@@ -280,7 +280,7 @@ contains
       do ispin = 1, size(eigenvals,dim=3)
         do i = 1, size(kWeight)
           do j = 1, size(eigenvals,dim=1)
-            x = ( eigenvals(j,i,ispin) - Ef ) / kT
+            x = (eigenvals(j,i,ispin) - Ef) / kT
             ! Where the compiler does not handle inf gracefully, trap the exponential function for
             ! small input values
           #:if EXP_TRAP
@@ -335,7 +335,7 @@ contains
       do ispin = 1, size(eigenvals,dim=3)
         do i = 1, size(kWeight)
           do j = 1, size(eigenvals,dim=1)
-            x = ( eigenvals(j,i,ispin) - Ef ) * w
+            x = (eigenvals(j,i,ispin) - Ef) * w
             if (x<10.0_dp) then
               ! Where the compiler does not handle inf gracefully, trap the exponential function for
               ! small input values

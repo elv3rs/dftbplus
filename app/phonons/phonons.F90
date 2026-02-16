@@ -233,7 +233,7 @@ contains
     integer  :: ii, jj, kk, ll, nAtom,  iAtom,  iK, jAtom,  kAtom
     integer  :: i2, j2, k2, nrep
     real(dp), allocatable :: eigenValues(:)
-    real(dp)::  ModKPoint,  ModDeltaR
+    real(dp) ::  ModKPoint,  ModDeltaR
     character(lc) :: lcTmp, lcTmp2
     complex(dp), dimension(:,:), allocatable :: KdynMatrix
     real(dp) :: latVecs(3,3), invLatt(3,3)

@@ -1098,9 +1098,9 @@ contains
         ! form the derivative of the density matrix
         dRho(:,:) = dRho + 0.5_dp * (&
             & matmul(cWorkLocal(:, :nFilled(iS, iK)),&
-            & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))) )&
+            & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))))&
             & + matmul(eigvecsTransformed(:, :nFilled(iS, iK)),&
-            & transpose(conjg(cWorkLocal(:, :nFilled(iS, iK)))) ) )
+            & transpose(conjg(cWorkLocal(:, :nFilled(iS, iK))))))
 
       end do
 
@@ -1130,9 +1130,9 @@ contains
 
       ! form the derivative of the density matrix
       dRho(:,:) = matmul(workLocal(:, :nFilled(iS, iK)),&
-          & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))) )&
+          & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))))&
           & + matmul(eigvecsTransformed(:, :nFilled(iS, iK)),&
-          & transpose(conjg(workLocal(:, :nFilled(iS, iK)))) )
+          & transpose(conjg(workLocal(:, :nFilled(iS, iK)))))
 
     end if
 
@@ -1655,9 +1655,9 @@ contains
         ! form the derivative of the density matrix
         dRho(:,:) = dRho(:,:) + 0.5_dp * (&
             & matmul(cWorkLocal2(:, :nFilled(iS, iK)),&
-            & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))) )&
+            & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))))&
             & + matmul(eigvecsTransformed(:, :nFilled(iS, iK)),&
-            & transpose(conjg(cWorkLocal2(:, :nFilled(iS, iK)))) ) )
+            & transpose(conjg(cWorkLocal2(:, :nFilled(iS, iK))))))
 
       end do
 
@@ -1688,9 +1688,9 @@ contains
 
       ! form the derivative of the density matrix
       dRho(:,:) = matmul(cWorkLocal(:, :nFilled(iS, iK)),&
-          & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))) )&
+          & transpose(conjg(eigvecsTransformed(:, :nFilled(iS, iK)))))&
           & + matmul(eigvecsTransformed(:, :nFilled(iS, iK)),&
-          & transpose(conjg(cWorkLocal(:, :nFilled(iS, iK)))) )
+          & transpose(conjg(cWorkLocal(:, :nFilled(iS, iK)))))
 
     end if
 

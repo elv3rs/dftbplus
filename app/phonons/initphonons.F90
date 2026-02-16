@@ -297,9 +297,9 @@ contains
     ! Read the atomic masses from SlaterKosterFiles or Masses
     allocate(speciesMass(geo%nSpecies))
     call getChild(root,"Masses",child=node, requested=.true.)
-    if ( associated(node) ) then
+    if (associated(node)) then
       call getChild(node, "SlaterKosterFiles", child=value,requested=.false.)
-      if ( associated(value) ) then
+      if (associated(value)) then
         call readSKfiles(value, geo, speciesMass)
       else
         call readMasses(node, geo, speciesMass)
@@ -365,7 +365,7 @@ contains
 
     !! Issue warning about unprocessed nodes
     write(stdOut, "(/, A)") "check unprocessed nodes..."
-    call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed )
+    call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed)
 
     !! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
@@ -537,7 +537,7 @@ contains
       else
          npl = 1
          allocate(pls(npl))
-         pls = [ 1 ]
+         pls = [1]
       end if
 
   end subroutine readFirstLayerAtoms
@@ -847,7 +847,7 @@ contains
         allocate(kpts(3, 0:len(lr1)))
         call asVector(li1, tmpI1)
         call asArray(lr1, kpts(:,1:len(lr1)))
-        kpts(:,0) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
+        kpts(:,0) = [0.0_dp, 0.0_dp, 0.0_dp]
         call destruct(li1)
         call destruct(lr1)
         if (any(tmpI1 < 0)) then
@@ -997,7 +997,7 @@ contains
 
     ! workaround for NAG7.1 Build 7148 in Debug build
     strTmp = char(filename)
-    inquire(file=strTmp, exist=texist )
+    inquire(file=strTmp, exist=texist)
     if (texist) then
       write(stdOut, "(/, A)") "read dftb hessian '"//trim(char(filename))//"'..."
     else
@@ -1087,7 +1087,7 @@ contains
     call getChildValue(child, "Filename", filename, "hessian.cp2k")
     ! workaround for NAG7.1 Build 7148 in Debug build
     strTmp = char(filename)
-    inquire(file=strTmp, exist=texist )
+    inquire(file=strTmp, exist=texist)
     if (texist) then
       write(stdOut, "(/, A)") "read cp2k hessian '"//trim(char(filename))//"'..."
     else
@@ -1144,7 +1144,7 @@ contains
 
     integer :: iCount, jCount, ii, jj, kk, ll
 
-    select case ( selTypeModes )
+    select case (selTypeModes)
     case(modeEnum%INPLANE)
       iCount = 0
       do ii = 1, nMovedAtom
@@ -1201,7 +1201,7 @@ contains
       if (.not.tTransport) then
         call detailedError(node, "Tunneling requires Transport block")
       end if
-      call readTunAndDos(child, geo, tundos, transpar, maxval(transpar%contacts(:)%kbT) )
+      call readTunAndDos(child, geo, tundos, transpar, maxval(transpar%contacts(:)%kbT))
     endif
 
     !call readKPoints(node, geo, tBadKpoints)
@@ -1324,14 +1324,14 @@ contains
       end do
       call destroyNodeList(pNodeList)
     else
-      allocate(tundos%ni(ncont-1) )
-      allocate(tundos%nf(ncont-1) )
+      allocate(tundos%ni(ncont-1))
+      allocate(tundos%nf(ncont-1))
       call setChild(root, "TerminalCurrents", pTmp)
       ind = 1
       do ii = 1, 1
         do jj = ii + 1, ncont
           call setChildValue(pTmp, "EmitterCollector", &
-              &[ transpar%contacts(ii)%name, transpar%contacts(jj)%name ])
+              &[transpar%contacts(ii)%name, transpar%contacts(jj)%name])
           tundos%ni(ind) = ii
           tundos%nf(ind) = jj
           ind = ind + 1
@@ -1508,7 +1508,7 @@ contains
     else
       nAllAtom = geo%nAtom
       allocate(rCellVec(3, 1))
-      rCellVec(:, 1) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
+      rCellVec(:, 1) = [0.0_dp, 0.0_dp, 0.0_dp]
     end if
 
     allocate(coords(3, nAllAtom))
@@ -1585,7 +1585,7 @@ contains
         PL = ii
       end if
     end do
-    if ( iAt>=transpar%PL(transpar%nPLs) .and. iAt<=transpar%idxdevice(2)) then
+    if (iAt>=transpar%PL(transpar%nPLs) .and. iAt<=transpar%idxdevice(2)) then
       PL = transpar%nPLs
     endif
     if (iAt > transpar%idxdevice(2)) then

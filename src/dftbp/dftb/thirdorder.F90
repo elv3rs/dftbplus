@@ -365,26 +365,26 @@ contains
 
             dShift1(iSh1, iAt1) = dShift1(iSh1, iAt1) + this%gamma3ab(iSh2, iSh1, iNeigh, iAt1) * (&
                 & this%chargesPerShell(iSh2, iAt2f) * dChargesPerAtom(iAt1) +&
-                & dChargesPerShell(iSh2, iAt2f) * this%chargesPerAtom(iAt1) )
+                & dChargesPerShell(iSh2, iAt2f) * this%chargesPerAtom(iAt1))
             dShift2(iSh1, iAt1) = dShift2(iSh1, iAt1) + this%gamma3ba(iSh2, iSh1, iNeigh, iAt1) * (&
                 & this%chargesPerShell(iSh2, iAt2f) * dChargesPerAtom(iAt2f) +&
-                & dChargesPerShell(iSh2, iAt2f) * this%chargesPerAtom(iAt2f) )
+                & dChargesPerShell(iSh2, iAt2f) * this%chargesPerAtom(iAt2f))
             dShift3(iAt1) = dShift3(iAt1) + this%gamma3ab(iSh2, iSh1, iNeigh, iAt1) * (&
                 & this%chargesPerShell(iSh2, iAt2f) * dChargesPerShell(iSh1, iAt1) +&
-                & dChargesPerShell(iSh2, iAt2f) * this%chargesPerShell(iSh1, iAt1) )
+                & dChargesPerShell(iSh2, iAt2f) * this%chargesPerShell(iSh1, iAt1))
 
             if (iAt2f /= iAt1) then
               dShift1(iSh2, iAt2f) = dShift1(iSh2, iAt2f)&
                   & + this%gamma3ba(iSh2, iSh1, iNeigh, iAt1) * (&
                   & this%chargesPerShell(iSh1, iAt1) * dChargesPerAtom(iAt2f) +&
-                  & dChargesPerShell(iSh1, iAt1) * this%chargesPerAtom(iAt2f) )
+                  & dChargesPerShell(iSh1, iAt1) * this%chargesPerAtom(iAt2f))
               dShift2(iSh2, iAt2f) = dShift2(iSh2, iAt2f)&
                   & + this%gamma3ab(iSh2, iSh1, iNeigh, iAt1) * (&
                   & this%chargesPerShell(iSh1, iAt1) * dChargesPerAtom(iAt1) +&
-                  & dChargesPerShell(iSh1, iAt1) * this%chargesPerAtom(iAt1) )
+                  & dChargesPerShell(iSh1, iAt1) * this%chargesPerAtom(iAt1))
               dShift3(iAt2f) = dShift3(iAt2f) + this%gamma3ba(iSh2, iSh1, iNeigh, iAt1) * (&
                   & this%chargesPerShell(iSh1, iAt1) * dChargesPerShell(iSh2, iAt2f) +&
-                  & dChargesPerShell(iSh1, iAt1) * this%chargesPerShell(iSh2, iAt2f) )
+                  & dChargesPerShell(iSh1, iAt1) * this%chargesPerShell(iSh2, iAt2f))
             end if
           end do
         end do

@@ -875,7 +875,7 @@ module dftbp_reks_reksen
     orbFON(:) = 0.0_dp
     do iL = 1, Lmax
       orbFON(:) = orbFON(:) + 0.5_dp * weight(iL) * &
-          & ( fillingL(:,1,iL) + fillingL(:,2,iL) )
+          & (fillingL(:,1,iL) + fillingL(:,2,iL))
     end do
 
   end subroutine fockFON_
@@ -901,14 +901,14 @@ module dftbp_reks_reksen
 
     if (iL <= Lpaired) then
       Fc(:,:) = Fc + 0.5_dp * hamSqr * &
-          & ( weight(iL) + weight(iL) )
+          & (weight(iL) + weight(iL))
     else
       if (mod(iL,2) == 1) then
         Fc(:,:) = Fc + 0.5_dp * hamSqr * &
-            & ( weight(iL) + weight(iL+1) )
+            & (weight(iL) + weight(iL+1))
       else
         Fc(:,:) = Fc + 0.5_dp * hamSqr * &
-            & ( weight(iL) + weight(iL-1) )
+            & (weight(iL) + weight(iL-1))
       end if
     end if
 
@@ -952,14 +952,14 @@ module dftbp_reks_reksen
       ind_a = Nc + ind
       if (iL <= Lpaired) then
         Fa(:,:,ind) = Fa(:,:,ind) + 0.5_dp * fillingL(ind_a,1,iL) * &
-            & ( weight(iL) + weight(iL) ) * hamSqr / orbFON(ind_a)
+            & (weight(iL) + weight(iL)) * hamSqr / orbFON(ind_a)
       else
         if (mod(iL,2) == 1) then
           Fa(:,:,ind) = Fa(:,:,ind) + 0.5_dp * fillingL(ind_a,1,iL) * &
-              & ( weight(iL) + weight(iL+1) ) * hamSqr / orbFON(ind_a)
+              & (weight(iL) + weight(iL+1)) * hamSqr / orbFON(ind_a)
         else
           Fa(:,:,ind) = Fa(:,:,ind) + 0.5_dp * fillingL(ind_a,1,iL) * &
-              & ( weight(iL) + weight(iL-1) ) * hamSqr / orbFON(ind_a)
+              & (weight(iL) + weight(iL-1)) * hamSqr / orbFON(ind_a)
         end if
       end if
     end do
@@ -984,12 +984,12 @@ module dftbp_reks_reksen
     res = 0.0_dp
     if (abs(f_j-f_i) < eps) then
       if (f_j >= f_i) then
-        res = ( f_j*fock_j - f_i*fock_i )
+        res = (f_j*fock_j - f_i*fock_i)
       else
-        res = -( f_j*fock_j - f_i*fock_i )
+        res = -(f_j*fock_j - f_i*fock_i)
       end if
     else
-      res = ( f_j*fock_j - f_i*fock_i ) / (f_j - f_i)
+      res = (f_j*fock_j - f_i*fock_i) / (f_j - f_i)
     end if
 
   end subroutine fockFijMO_
@@ -1101,20 +1101,20 @@ module dftbp_reks_reksen
       do iL = 1, Lmax
         if (iL <= Lpaired) then
           Wab(ist,1) = Wab(ist,1) + fillingL(Nc+ia,1,iL) * &
-              & tmpHamL(ist,1,iL) * ( weight(iL) + weight(iL) )
+              & tmpHamL(ist,1,iL) * (weight(iL) + weight(iL))
           Wab(ist,2) = Wab(ist,2) + fillingL(Nc+ib,1,iL) * &
-              & tmpHamL(ist,1,iL) * ( weight(iL) + weight(iL) )
+              & tmpHamL(ist,1,iL) * (weight(iL) + weight(iL))
         else
           if (mod(iL,2) == 1) then
             Wab(ist,1) = Wab(ist,1) + fillingL(Nc+ia,1,iL) * &
-                & tmpHamL(ist,1,iL) * ( weight(iL) + weight(iL+1) )
+                & tmpHamL(ist,1,iL) * (weight(iL) + weight(iL+1))
             Wab(ist,2) = Wab(ist,2) + fillingL(Nc+ib,1,iL) * &
-                & tmpHamL(ist,1,iL) * ( weight(iL) + weight(iL+1) )
+                & tmpHamL(ist,1,iL) * (weight(iL) + weight(iL+1))
           else
             Wab(ist,1) = Wab(ist,1) + fillingL(Nc+ia,1,iL) * &
-                & tmpHamL(ist,1,iL) * ( weight(iL) + weight(iL-1) )
+                & tmpHamL(ist,1,iL) * (weight(iL) + weight(iL-1))
             Wab(ist,2) = Wab(ist,2) + fillingL(Nc+ib,1,iL) * &
-                & tmpHamL(ist,1,iL) * ( weight(iL) + weight(iL-1) )
+                & tmpHamL(ist,1,iL) * (weight(iL) + weight(iL-1))
           end if
         end if
       end do

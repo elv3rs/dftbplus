@@ -100,7 +100,7 @@ module dftbp_dftb_coordnumber
     &         1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Cm-No
     &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Rf-
     &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Rf-Cn
-    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp ]  ! Nh-Og
+    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp]  ! Nh-Og
 
 
   !> Possible counting functions for calculating coordination numbers

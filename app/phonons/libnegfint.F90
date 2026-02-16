@@ -351,7 +351,7 @@ contains
 
                 i1 = minval(img2CentCell(iNeigh(1:nNeigh(i),i)), &
                      mask = (img2CentCell(iNeigh(1:nNeigh(i),i))>=iatc1 .and. &
-                     img2CentCell(iNeigh(1:nNeigh(i),i))<=iatc2) )
+                     img2CentCell(iNeigh(1:nNeigh(i),i))<=iatc2))
                 if (i1>=iatc1 .and. i1<=iatc2) then
                    minv(m,j1) = j1
                 endif
@@ -469,7 +469,7 @@ contains
 
     do iK = 1, nK
 
-      call create(zDynMat, size(DynMat,1), size(DynMat,2) )
+      call create(zDynMat, size(DynMat,1), size(DynMat,2))
       zDynMat%val = DynMat
 
       nnz = nzdrop(zDynMat,cutoff)

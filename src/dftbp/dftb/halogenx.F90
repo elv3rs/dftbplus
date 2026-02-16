@@ -43,11 +43,11 @@ module dftbp_dftb_halogenx
   end type THalogenX
 
   !> Possible types for the first species in the interaction
-  character(*), parameter :: halogenXSpecies1(2) = [character(1) ::&
+  character(*), parameter :: halogenXSpecies1(2) = [character(1) :: &
       & 'O', 'N']
 
   !> Possible types for the second species in the interaction
-  character(*), parameter :: halogenXSpecies2(3) = [character(2) ::&
+  character(*), parameter :: halogenXSpecies2(3) = [character(2) :: &
       & 'Cl', 'Br', 'I']
 
   !> Energy (in kcal/mol) for pair truncation

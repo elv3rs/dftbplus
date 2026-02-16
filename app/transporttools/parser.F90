@@ -349,7 +349,7 @@ contains
            call asArray(vecBuffer, vec)
            call convertUnitHsd(char(modif), lengthUnits, pNode, vec)
            ! check vector is along x y or z
-           if (count(vec == 0.0_dp) < 2 ) then
+           if (count(vec == 0.0_dp) < 2) then
              call error("ContactVector must be along either x, y or z")
            end if
            contacts(ii)%lattice = vec

@@ -158,14 +158,14 @@ contains
       select case (RPA%sym)
       case ("B")
         allocate(symmetries(2))
-        symmetries(:) = [ "S", "T" ]
+        symmetries(:) = ["S", "T"]
       case ("S")
         allocate(symmetries(1))
-        symmetries(:) = [ "S" ]
+        symmetries(:) = ["S"]
       case ("T")
         ! Like B. Triplet calculation requires first singlet exc. energy
         allocate(symmetries(2))
-        symmetries(:) = [ "S", "T" ]
+        symmetries(:) = ["S", "T"]
       end select
     else
       @:ERROR_HANDLING(err, -1, "Spin-unrestricted calculations currently not possible with pp-RPA")
@@ -195,7 +195,7 @@ contains
     end if
     nocc = nocc / 2
 
-    if ((.not. RPA%tConstVir) .or. ( (RPA%tConstVir) .and. (RPA%nVirtual > nOrb-nocc) )) then
+    if ((.not. RPA%tConstVir) .or. ((RPA%tConstVir) .and. (RPA%nVirtual > nOrb-nocc))) then
       nvir = nOrb - nocc
     else
       nvir = RPA%nVirtual
@@ -295,7 +295,7 @@ contains
     real(dp), intent(in) :: cc(:,:,:)
 
     !> Pp-RPA eigenvalues
-    real(dp), intent(out):: pp_eval(:)
+    real(dp), intent(out) :: pp_eval(:)
 
     !> Pp-RPA eigenvectors
     real(dp), intent(out) :: vr(:,:)
@@ -303,18 +303,18 @@ contains
     !> Error code return, 0 if no problems
     integer, intent(out), optional :: err
 
-    real(dp):: A_s(nxvv,nxvv), A_t(nxvv-nvir,nxvv-nvir)
-    real(dp):: B_s(nxvv,nxoo), B_t(nxvv-nvir,nxoo-nocc)
-    real(dp):: C_s(nxoo,nxoo), C_t(nxoo-nocc,nxoo-nocc)
+    real(dp) :: A_s(nxvv,nxvv), A_t(nxvv-nvir,nxvv-nvir)
+    real(dp) :: B_s(nxvv,nxoo), B_t(nxvv-nvir,nxoo-nocc)
+    real(dp) :: C_s(nxoo,nxoo), C_t(nxoo-nocc,nxoo-nocc)
     integer :: a, b, c, d, i, j, k, l, ab, cd, ij, kl
     integer :: ab_r, cd_r, ij_r, kl_r
     integer :: at1, at2, natom
-    real(dp):: factor1, factor2
+    real(dp) :: factor1, factor2
     logical :: updwn
-    real(dp):: q_1(size(gamma_eri, dim=1))
-    real(dp):: q_2(size(gamma_eri, dim=1))
-    real(dp):: q_3(size(gamma_eri, dim=1))
-    real(dp):: q_4(size(gamma_eri, dim=1))
+    real(dp) :: q_1(size(gamma_eri, dim=1))
+    real(dp) :: q_2(size(gamma_eri, dim=1))
+    real(dp) :: q_3(size(gamma_eri, dim=1))
+    real(dp) :: q_4(size(gamma_eri, dim=1))
     integer :: info, nRPA, nxvv_r, nxoo_r
     real(dp), allocatable :: work(:)
     real(dp), allocatable :: wi(:), vl(:,:)
@@ -647,8 +647,8 @@ contains
     real(dp), allocatable :: norm(:)
     real(dp), allocatable :: wvr(:)
     integer, allocatable :: wvin(:)
-    real(dp):: weight
-    real(dp):: ks_ener_a, ks_ener_b
+    real(dp) :: weight
+    real(dp) :: ks_ener_a, ks_ener_b
 
     nRPA = size(pp_eval)
     allocate(e_ind(nRPA))

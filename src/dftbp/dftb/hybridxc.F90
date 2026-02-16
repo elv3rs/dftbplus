@@ -496,21 +496,21 @@ contains
     ! Allocate selected gamma function types
     select case(gammaType)
     case (hybridXcGammaTypes%full)
-      allocate(THybridXcFunc_full:: this)
+      allocate(THybridXcFunc_full :: this)
     case (hybridXcGammaTypes%mic)
-      allocate(THybridXcFunc_mic:: this)
+      allocate(THybridXcFunc_mic :: this)
     case (hybridXcGammaTypes%truncated)
       if (.not. present(gammaCutoff)) then
         @:RAISE_ERROR(errStatus, -1, "HybridXc Module: Coulomb truncation requires cutoff, which is&
             & not present.")
       end if
-      allocate(THybridXcFunc_truncated:: this)
+      allocate(THybridXcFunc_truncated :: this)
     case (hybridXcGammaTypes%truncatedAndDamped)
       if (.not. present(gammaCutoff)) then
         @:RAISE_ERROR(errStatus, -1, "HybridXc Module: Coulomb truncation requires cutoff, which is&
             & not present.")
       end if
-      allocate(THybridXcFunc_truncatedAndDamped:: this)
+      allocate(THybridXcFunc_truncatedAndDamped :: this)
     case default
       @:RAISE_ERROR(errStatus, -1, "HybridXc Module: Invalid gamma function type obtained.")
     end select

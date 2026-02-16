@@ -148,7 +148,7 @@ contains
     real(dp), intent(out) :: output(:,:,:)
 
     integer :: nSpin, nAtom
-    integer ::iS, iAt, iOrb
+    integer :: iS, iAt, iOrb
     logical, allocatable :: mask(:)
 
     nSpin = size(output, dim=3)

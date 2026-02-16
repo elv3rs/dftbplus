@@ -179,7 +179,7 @@ contains
     real(dp), intent(inout), optional :: mixedStress(:,:)
 
     !> Derivatives for atom positions
-    real(dp), intent(inout), optional:: derivs(:,:)
+    real(dp), intent(inout), optional :: derivs(:,:)
 
     !> Triplet state derivatives
     real(dp), intent(inout), optional :: tripletDerivs(:,:)
@@ -296,7 +296,7 @@ contains
     !> state)
     type(TEnergies), allocatable, intent(out) :: dftbEnergy(:)
 
-    if (.not.isNonAufbau .and. (isGroundGuess .or. isSpinPurify) ) then
+    if (.not.isNonAufbau .and. (isGroundGuess .or. isSpinPurify)) then
       call error("Delta DFTB internal error - setting request without non-Aufbau fillings")
     end if
 

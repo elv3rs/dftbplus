@@ -237,7 +237,7 @@ contains
       grpMembership(ii) = nGrp
       do jj = ii + 1, iEnd
         ! assume sorted:
-        if ( abs(levels(jj) - levels(jj-1)) > localTol) then
+        if (abs(levels(jj) - levels(jj-1)) > localTol) then
           exit
         end if
         grpMembership(jj) = nGrp

@@ -1939,7 +1939,7 @@ contains
       allocate(ctrl%xi(orb%mShell,geo%nSpecies), source = 0.0_dp)
       do iSp = 1, geo%nSpecies
         call getChildValue(child, geo%speciesNames(iSp), &
-            & ctrl%xi(:orb%nShell(iSp),iSp), modifier=modifier, child=child2 )
+            & ctrl%xi(:orb%nShell(iSp),iSp), modifier=modifier, child=child2)
         call convertUnitHsd(char(modifier), energyUnits, child2,&
             & ctrl%xi(:orb%nShell(iSp),iSp))
       end do
@@ -2434,7 +2434,7 @@ contains
             call openFile(file, unquote(char(buffer2)), mode="r", iostat=iErr)
             if (iErr /= 0) then
               call detailedError(value1, "Could not open file '"&
-                  & // trim(unquote(char(buffer2))) // "' for direct reading" )
+                  & // trim(unquote(char(buffer2))) // "' for direct reading")
             end if
             read(file%unit, *, iostat=iErr) tmpR2
             if (iErr /= 0) then
@@ -2778,7 +2778,7 @@ contains
     end select
 
     if ((ctrl%solver%isolver == electronicSolverTypes%omm .or.&
-        & ctrl%solver%isolver == electronicSolverTypes%pexsi ) .and. .not.ctrl%tSpinSharedEf&
+        & ctrl%solver%isolver == electronicSolverTypes%pexsi) .and. .not.ctrl%tSpinSharedEf&
         & .and. ctrl%tSpin .and. .not. ctrl%t2Component) then
       call detailedError(value1, "This solver currently requires spin values to be relaxed")
     end if
@@ -3004,7 +3004,7 @@ contains
       allocate(kpts(3, 0:len(lr1)))
       call asVector(li1, tmpI1)
       call asArray(lr1, kpts(:,1:len(lr1)))
-      kpts(:,0) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
+      kpts(:,0) = [0.0_dp, 0.0_dp, 0.0_dp]
       call destruct(li1)
       call destruct(lr1)
       if (any(tmpI1 < 0)) then
@@ -3126,7 +3126,7 @@ contains
     type(string) :: buffer
     type(fnode), pointer :: value1, child
     type(TListRealR1) :: lr1
-    real(dp):: rTmp3(3), rTmp22(2,2)
+    real(dp) :: rTmp3(3), rTmp22(2,2)
     integer :: iTmp, iTmp2(2), kk, ii, jj
     real(dp), allocatable :: kPts(:,:)
     character(lc) :: errorStr
@@ -4264,8 +4264,8 @@ contains
       else
         allocate(cellVec(3, 1))
         allocate(rCellVec(3, 1))
-        cellVec(:, 1) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
-        rCellVec(:, 1) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
+        cellVec(:, 1) = [0.0_dp, 0.0_dp, 0.0_dp]
+        rCellVec(:, 1) = [0.0_dp, 0.0_dp, 0.0_dp]
       end if
       call TNeighbourlist_init(neighs, geo%nAtom, 10)
       if (geo%tPeriodic) then
@@ -4298,7 +4298,7 @@ contains
       end do
       do iAt1 = 1, geo%nAtom
         iSp1 = geo%species(iAt1)
-        if (nNeighs(iAt1) <= 4 ) then
+        if (nNeighs(iAt1) <= 4) then
           tmpR2(1, iAt1) = tmp2R2(1+nNeighs(iAt1), iSp1)
           tmpR2(2, iAt1) = tmp2R2(7+nNeighs(iAt1), iSp1)
         else

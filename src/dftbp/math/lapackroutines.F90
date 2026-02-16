@@ -752,7 +752,7 @@ contains
     @:ASSERT(size(x) > 0)
     n = size(x)
     x(:) = 0.0
-    call SLARNV( iDist, iSeed, n, x )
+    call SLARNV(iDist, iSeed, n, x)
   end subroutine larnv_real
 
 
@@ -779,7 +779,7 @@ contains
     @:ASSERT(size(x) > 0)
     n = size(x)
     x(:) = 0.0d0
-    call DLARNV( iDist, iSeed, n, x )
+    call DLARNV(iDist, iSeed, n, x)
   end subroutine larnv_dble
 
 
@@ -806,7 +806,7 @@ contains
     @:ASSERT(size(x) > 0)
     n = size(x)
     x(:) = 0.0
-    call CLARNV( iDist, iSeed, n, x )
+    call CLARNV(iDist, iSeed, n, x)
   end subroutine larnv_cplx
 
 
@@ -833,7 +833,7 @@ contains
     @:ASSERT(size(x) > 0)
     n = size(x)
     x(:) = 0.0d0
-    call ZLARNV( iDist, iSeed, n, x )
+    call ZLARNV(iDist, iSeed, n, x)
   end subroutine larnv_dblecplx
 
 
@@ -1028,7 +1028,7 @@ contains
   @:ASSERT(iTransA == 'n' .or. iTransA == 'N' .or. iTransA == 't'&
       & .or. iTransA == 'T' .or. iTransA == 'c' .or. iTransA == 'C')
 
-    call ${kind}$trsm ( side, uplo, iTransa, diag, m, n, alpha, a, lda, b, ldb )
+    call ${kind}$trsm (side, uplo, iTransa, diag, m, n, alpha, a, lda, b, ldb)
 
   end subroutine ${kind}$trsm_${suffix}$
 

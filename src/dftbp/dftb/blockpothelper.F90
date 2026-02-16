@@ -59,12 +59,12 @@ contains
             if (equiv(iOrb1, iOrb2, iAt, iS) > 0) then
               if (tSkew) then
                 output(equiv(iOrb1, iOrb2, iAt, iS)) = &
-                    & 0.5_dp*( input(iOrb1, iOrb2, iAt, iS) &
-                    &  - input(iOrb2, iOrb1, iAt, iS) )
+                    & 0.5_dp*(input(iOrb1, iOrb2, iAt, iS) &
+                    &  - input(iOrb2, iOrb1, iAt, iS))
               else
                 output(equiv(iOrb1, iOrb2, iAt, iS)) = &
-                    & 0.5_dp*( input(iOrb1, iOrb2, iAt, iS) &
-                    &  + input(iOrb2, iOrb1, iAt, iS) )
+                    & 0.5_dp*(input(iOrb1, iOrb2, iAt, iS) &
+                    &  + input(iOrb2, iOrb1, iAt, iS))
               end if
             end if
           end do

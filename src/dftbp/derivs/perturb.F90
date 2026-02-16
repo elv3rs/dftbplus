@@ -1686,7 +1686,7 @@ contains
     do iS = 1, nIndepHam
       do iK = 1, nKPts
         do iLev = 1, nOrbs
-          if ( filling(iLev, iK, iS) < epsilon(1.0) ) then
+          if (filling(iLev, iK, iS) < epsilon(1.0)) then
             ! assumes Fermi filling, so above this is empty
             nFilled(iS, iK) = iLev - 1
             exit
@@ -1702,7 +1702,7 @@ contains
     do iS = 1, nIndepHam
       do iK = 1, nKpts
         do iLev = 1, nOrbs
-          if ( abs( filling(iLev, iK, iS) - maxFill ) > epsilon(1.0)) then
+          if (abs(filling(iLev, iK, iS) - maxFill) > epsilon(1.0)) then
             ! assumes Fermi filling, so this is filled
             nEmpty(iS, iK) = iLev
             exit
@@ -1744,7 +1744,7 @@ contains
       dRhoOutSqr => null()
     end if
 
-    call TPotentials_init(dPotential, orb, nAtom, nSpin, 0,0 )
+    call TPotentials_init(dPotential, orb, nAtom, nSpin, 0,0)
 
     allocate(tMetallic(nIndepHam, nKpts))
     tMetallic(:,:) = .not.(nFilled == nEmpty -1)

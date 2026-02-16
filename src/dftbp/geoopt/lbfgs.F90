@@ -947,7 +947,7 @@ contains
     db = bb - aa
     dc = cc - aa
     denom = (db * dc)**2 * (db - dc)
-    d1(:,:) = reshape([ dc**2, -dc**3, -db**2, db**3], [2, 2])
+    d1(:,:) = reshape([dc**2, -dc**3, -db**2, db**3], [2, 2])
     temp(:) = matmul(d1, [fb - fa - fpa * db, fc - fa - fpa * dc])
 
     ta = temp(1) / denom

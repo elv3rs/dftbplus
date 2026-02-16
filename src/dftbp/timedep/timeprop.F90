@@ -2071,7 +2071,7 @@ contains
           iOrb2 = iSquare(iAt+1)
           nOrb = iOrb2 - iOrb1
           qBlock(:nOrb,:nOrb,iAt,iSpin) = 0.5_dp * (qBlock(:nOrb,:nOrb,iAt,iSpin)&
-              & + transpose(qBlock(:nOrb,:nOrb,iAt,iSpin)) )
+              & + transpose(qBlock(:nOrb,:nOrb,iAt,iSpin)))
         end do
       end do
     end if

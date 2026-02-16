@@ -246,7 +246,7 @@ contains
     !> Has the optimization completed
     logical, intent(out) :: isConverged
 
-    if( maxval(abs(dx)) < this%tol ) then
+    if(maxval(abs(dx)) < this%tol) then
       xNew(:) = 0.0_dp
       isConverged = .true.
     else
@@ -272,7 +272,7 @@ contains
 
     p = -1.0_dp * dot_product(this%velocity,dx)
     this%velocity(:) = (1.0_dp-this%a)*this%velocity - this%a*dx*mag(this%velocity)/mag(dx)
-    if( p < 0.0_dp ) then
+    if(p < 0.0_dp) then
       this%velocity(:) = 0.0_dp
       this%resetStep = this%iter
       this%dt = this%dt * this%f_dec
