@@ -314,7 +314,7 @@ contains
     ! assume first determinant
     this%iDeterminant = 1
 
-    this%determinants = [integer ::]
+    this%determinants = [integer :: ]
 
     if (isNonAufbau) then
       if (isGroundGuess) then
