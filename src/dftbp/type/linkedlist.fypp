@@ -236,21 +236,21 @@ contains
 
     pCur => list%pFirst
     ii = 1
-    do while(associated(pCur))
+    loop1: do while(associated(pCur))
     #:if ITEM_RANK == 0
       if (pCur%data == data) then
-        exit
+        exit loop1
       end if
     #:else
       if (all(shape(pCur%data) == shape(data))) then
         if (all(pCur%data == data)) then
-          exit
+          exit loop1
         end if
       end if
     #:endif
       pCur => pCur%pNext
       ii = ii + 1
-    end do
+    end do loop1
 
     if (associated(pCur)) then
       ind = ii
