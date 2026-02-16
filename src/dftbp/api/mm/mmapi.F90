@@ -1189,8 +1189,8 @@ contains
     tSpeciesNameChanged = checkSpeciesNames(this%env, this%main, inputSpeciesNames)
 
     if(tSpeciesNameChanged)then
-      call error('speciesNames has changed between calls to DFTB+. This will cause erroneous&
-          & results.' // newline // 'Instead call destruct and then fully re-initialize.')
+      call error("speciesNames has changed between calls to DFTB+. This will cause erroneous&
+          & results." // newline // "Instead call destruct and then fully re-initialize.")
     else
        continue
     end if

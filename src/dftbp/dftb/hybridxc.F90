@@ -2328,22 +2328,22 @@ contains
       allocate(Hmat(nOrb, nOrb), source=${CONV}$(0, kind=dp))
       allocate(tmpMat(nOrb, nOrb), source=${CONV}$(0, kind=dp))
 
-      call ${MATOP}$(tmpMat, 'l', sSqrTri, rhoSqrTri)
-      call ${MATOP}$(hamCamSqr, 'r', sSqrTri, tmpMat)
+      call ${MATOP}$(tmpMat, "l", sSqrTri, rhoSqrTri)
+      call ${MATOP}$(hamCamSqr, "r", sSqrTri, tmpMat)
       call hadamardProduct(hamCamSqr, hamCamSqr, camGammaAO)
 
       call hadamardProduct(tmpMat, tmpMat, camGammaAO)
-      call ${MATOP}$(hamCamSqr, 'r', sSqrTri, tmpMat, alpha=${CONV}$(1, kind=dp),&
+      call ${MATOP}$(hamCamSqr, "r", sSqrTri, tmpMat, alpha=${CONV}$(1, kind=dp),&
           & beta=${CONV}$(1, kind=dp))
 
       call hadamardProduct(Hmat, rhoSqrTri, camGammaAO)
-      call ${MATOP}$(tmpMat, 'l', sSqrTri, Hmat)
-      call ${MATOP}$(hamCamSqr, 'r', sSqrTri, tmpMat, alpha=${CONV}$(1, kind=dp),&
+      call ${MATOP}$(tmpMat, "l", sSqrTri, Hmat)
+      call ${MATOP}$(hamCamSqr, "r", sSqrTri, tmpMat, alpha=${CONV}$(1, kind=dp),&
           & beta=${CONV}$(1, kind=dp))
 
-      call ${MATOP}$(tmpMat, 'l', rhoSqrTri, sSqrTri)
+      call ${MATOP}$(tmpMat, "l", rhoSqrTri, sSqrTri)
       call hadamardProduct(tmpMat, tmpMat, camGammaAO)
-      call ${MATOP}$(hamCamSqr, 'l', sSqrTri, tmpMat, alpha=${CONV}$(1, kind=dp),&
+      call ${MATOP}$(hamCamSqr, "l", sSqrTri, tmpMat, alpha=${CONV}$(1, kind=dp),&
           & beta=${CONV}$(1, kind=dp))
 
       if (this%isSpin .or. this%tREKS) then
@@ -2583,17 +2583,17 @@ contains
       iKPrime = iKSComposite(3, ii)
       iGlobalKPrimeS = iKPrimeiSToiGlobalKPrimeS(iKPrime, iS)
 
-      call hemm(Sp_dPp, 'l', SSqrCplxPrime(:,:, iKPrime),&
+      call hemm(Sp_dPp, "l", SSqrCplxPrime(:,:, iKPrime),&
           & densityMatrix%deltaRhoInCplx(:,:, iGlobalKPrimeS))
-      call hemm(dPp_Sp, 'l', densityMatrix%deltaRhoInCplx(:,:, iGlobalKPrimeS),&
+      call hemm(dPp_Sp, "l", densityMatrix%deltaRhoInCplx(:,:, iGlobalKPrimeS),&
           & SSqrCplxPrime(:,:, iKPrime))
 
       ! use conjg(S(k)) = transpose(S(k)) = S(-k)
       ! use conjg(dP(k)) = transpose(dP(k)) = dP(-k)
       Sp_c(:,:) = conjg(SSqrCplxPrime(:,:, iKPrime))
       dPp_c(:,:) = conjg(densityMatrix%deltaRhoInCplx(:,:, iGlobalKPrimeS))
-      call hemm(Sp_dPp_cc, 'l', Sp_c, dPp_c)
-      call hemm(dPp_Sp_cc, 'l', dPp_c, Sp_c)
+      call hemm(Sp_dPp_cc, "l", Sp_c, dPp_c)
+      call hemm(dPp_Sp_cc, "l", dPp_c, Sp_c)
 
       ! spin-polarized case: y-matrix constructed even if k and k' do not change
       call getCamGammaFourierAO(this, denseDesc%iAtomStart, this%cellVecsG, this%rCellVecsG,&
@@ -2602,23 +2602,23 @@ contains
           & kPoints(:, iK), -kPointPrime(:, iKPrime), gammaAOCc)
 
       ! Term 1 of Eq.(6.3.6)
-      call hemm(tmp, 'r', SSqrCplxPrime(:,:, iKPrime), Sp_dPp)
+      call hemm(tmp, "r", SSqrCplxPrime(:,:, iKPrime), Sp_dPp)
       tmp(:,:) = tmp * gammaAO
       ! Term 1 of Eq.(6.3.6) (complex conjugated for inverse k-points)
       ! use conjg(S(k)) = transpose(S(k)) = S(-k)
-      call hemm(tmp2, 'r', Sp_c, Sp_dPp_cc)
+      call hemm(tmp2, "r", Sp_c, Sp_dPp_cc)
       tmp2(:,:) = tmp2 * gammaAOCc
       tmp(:,:) = tmp + tmp2
 
       ! Term 2 of Eq.(6.3.6)
-      call hemm(tmp, 'r', SSqrCplx(:,:, iK), Sp_dPp * gammaAO, beta=(1.0_dp, 0.0_dp))
+      call hemm(tmp, "r", SSqrCplx(:,:, iK), Sp_dPp * gammaAO, beta=(1.0_dp, 0.0_dp))
       ! Term 2 of Eq.(6.3.6) (complex conjugated for inverse k-points)
-      call hemm(tmp, 'r', SSqrCplx(:,:, iK), Sp_dPp_cc * gammaAOCc, beta=(1.0_dp, 0.0_dp))
+      call hemm(tmp, "r", SSqrCplx(:,:, iK), Sp_dPp_cc * gammaAOCc, beta=(1.0_dp, 0.0_dp))
 
       ! Term 3 of Eq.(6.3.6)
-      call hemm(tmp, 'l', SSqrCplx(:,:, iK), dPp_Sp * gammaAO, beta=(1.0_dp, 0.0_dp))
+      call hemm(tmp, "l", SSqrCplx(:,:, iK), dPp_Sp * gammaAO, beta=(1.0_dp, 0.0_dp))
       ! Term 3 of Eq.(6.3.6) (complex conjugated for inverse k-points)
-      call hemm(tmp, 'l', SSqrCplx(:,:, iK), dPp_Sp_cc * gammaAOCc, beta=(1.0_dp, 0.0_dp))
+      call hemm(tmp, "l", SSqrCplx(:,:, iK), dPp_Sp_cc * gammaAOCc, beta=(1.0_dp, 0.0_dp))
 
       ! Add terms 1-3 of Eq.(6.3.6)
       ! (the factor 0.5 accounts for the additional -k' points)
@@ -2628,9 +2628,9 @@ contains
       ! Term 4 of Eq.(6.3.6)
       tmp(:,:) = densityMatrix%deltaRhoInCplx(:,:, iGlobalKPrimeS) * gammaAO
       tmp2(:,:) = tmp
-      call hemm(tmp, 'r', SSqrCplx(:,:, iK), tmp2)
+      call hemm(tmp, "r", SSqrCplx(:,:, iK), tmp2)
       tmp2(:,:) = tmp
-      call hemm(tmp, 'l', SSqrCplx(:,:, iK), tmp2)
+      call hemm(tmp, "l", SSqrCplx(:,:, iK), tmp2)
 
       ! Add term 4 of Eq.(6.3.6)
       ! (the factor 0.5 accounts for the additional -k' points)
@@ -2641,9 +2641,9 @@ contains
       ! use conjg(dP(k)) = transpose(dP(k)) = dP(-k)
       tmp(:,:) = dPp_c * gammaAOCc
       tmp2(:,:) = tmp
-      call hemm(tmp, 'r', SSqrCplx(:,:, iK), tmp2)
+      call hemm(tmp, "r", SSqrCplx(:,:, iK), tmp2)
       tmp2(:,:) = tmp
-      call hemm(tmp, 'l', SSqrCplx(:,:, iK), tmp2)
+      call hemm(tmp, "l", SSqrCplx(:,:, iK), tmp2)
 
       ! Add term 4 of Eq.(6.3.6)
       ! (the factor 0.5 accounts for the additional -k' points)
@@ -6444,18 +6444,18 @@ contains
         wk_wkp = kWeights(iK) * kWeights(iKPrime)
 
         ! dP(k)@S(k)
-        call hemm(dP_S, 'l', densityMatrix%deltaRhoOutCplx(:,:, iGlobalKS), SSqrCplx(:,:, iK))
+        call hemm(dP_S, "l", densityMatrix%deltaRhoOutCplx(:,:, iGlobalKS), SSqrCplx(:,:, iK))
         dP_S_cc(:,:) = conjg(dP_S)
 
         ! dP(k')@S(k')
-        call hemm(dPp_Sp, 'l', densityMatrix%deltaRhoOutCplx(:,:, iGlobalKPrimeS),&
+        call hemm(dPp_Sp, "l", densityMatrix%deltaRhoOutCplx(:,:, iGlobalKPrimeS),&
             & SSqrCplx(:,:, iKPrime))
 
         ! [dP(k')@S(k')]^T
         dPp_Sp_T(:,:) = transpose(dPp_Sp)
 
         ! [S(k')@dP(k')@S(k')]^T = [S(k')@dP(k')@S(k')]*
-        call hemm(tmp, 'l', SSqrCplx(:,:, iKPrime), dPp_Sp)
+        call hemm(tmp, "l", SSqrCplx(:,:, iKPrime), dPp_Sp)
         Sp_dPp_Sp_T(:,:) = conjg(tmp)
 
         ! dP(-k)
@@ -6481,12 +6481,12 @@ contains
             & overSqrPrime)
 
         ! Term 1 of Eq.(6.3.11)
-        call hemm(tmp, 'r', densityMatrix%deltaRhoOutCplx(:,:, iGlobalKS) * gammaAO, dPp_Sp)
-        call hemm(tmp, 'r', densityMatrix%deltaRhoOutCplx(:,:, iGlobalKPrimeS), dP_S * gammaAO,&
+        call hemm(tmp, "r", densityMatrix%deltaRhoOutCplx(:,:, iGlobalKS) * gammaAO, dPp_Sp)
+        call hemm(tmp, "r", densityMatrix%deltaRhoOutCplx(:,:, iGlobalKPrimeS), dP_S * gammaAO,&
             & beta=(1.0_dp, 0.0_dp))
         ! Term 1 of Eq.(6.3.11) (complex conjugated for inverse k-points, k -> -k)
-        call hemm(tmp, 'r', dPm * gammaAOCc, dPp_Sp, beta=(1.0_dp, 0.0_dp))
-        call hemm(tmp, 'r', densityMatrix%deltaRhoOutCplx(:,:, iGlobalKPrimeS),&
+        call hemm(tmp, "r", dPm * gammaAOCc, dPp_Sp, beta=(1.0_dp, 0.0_dp))
+        call hemm(tmp, "r", densityMatrix%deltaRhoOutCplx(:,:, iGlobalKPrimeS),&
             & dP_S_cc * gammaAOCc, beta=(1.0_dp, 0.0_dp))
         ! [...]^adj = 0.5 * [(...) + (...)^adj]
         ! we actually calculate ([...]^adj)^T here, so that the transpose in dS(k') * tmp^T can be

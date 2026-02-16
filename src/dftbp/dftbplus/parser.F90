@@ -157,7 +157,7 @@ contains
     logical :: tReadAnalysis
     integer, allocatable :: implicitParserVersion
 
-    write(stdout, '(A,1X,I0,/)') 'Parser version:', parserVersion
+    write(stdout, "(A,1X,I0,/)") "Parser version:", parserVersion
     write(stdout, "(A)") repeat("-", 80)
 
     call getChild(hsdTree, rootTag, root)
@@ -497,7 +497,7 @@ contains
 
       modeName = "geometry relaxation"
       call detailedWarning(node, "This driver is deprecated and will be removed in future&
-          & versions."//new_line('a')//&
+          & versions."//new_line("a")//&
           & "Please use the GeometryOptimisation driver instead.")
 
       ! Steepest downhill optimisation
@@ -508,7 +508,7 @@ contains
 
       modeName = "geometry relaxation"
       call detailedWarning(node, "This driver is deprecated and will be removed in future&
-          & versions."//new_line('a')// "Please use the GeometryOptimisation driver instead.")
+          & versions."//new_line("a")// "Please use the GeometryOptimisation driver instead.")
 
       ! Conjugate gradient location optimisation
       ctrl%iGeoOpt = geoOptTypes%conjugateGrad
@@ -518,7 +518,7 @@ contains
 
       modeName = "geometry relaxation"
       call detailedWarning(node, "This driver is deprecated and will be removed in future&
-          & versions."//new_line('a')//&
+          & versions."//new_line("a")//&
           & "Please use the GeometryOptimisation driver instead.")
 
       ! Gradient DIIS optimisation, only stable in the quadratic region
@@ -531,7 +531,7 @@ contains
 
       modeName = "geometry relaxation"
       call detailedWarning(node, "This driver is deprecated and will be removed in future&
-          & versions."//new_line('a')//&
+          & versions."//new_line("a")//&
           & "Please use the GeometryOptimisation driver instead.")
 
       ctrl%iGeoOpt = geoOptTypes%lbfgs
@@ -555,7 +555,7 @@ contains
 
       modeName = "geometry relaxation"
       call detailedWarning(node, "This driver is deprecated and will be removed in future&
-          & versions."//new_line('a')//&
+          & versions."//new_line("a")//&
           & "Please use the GeometryOptimisation driver instead.")
 
       ctrl%iGeoOpt = geoOptTypes%fire
@@ -899,8 +899,8 @@ contains
     type(fnode), pointer :: pXlbomd, pXlbomdFast, pRoot, pChild
     logical :: tXlbomdFast
 
-    call getChild(node, 'Xlbomd', pXlbomd, requested=.false.)
-    call getChild(node, 'XlbomdFast', pXlbomdFast, requested=.false.)
+    call getChild(node, "Xlbomd", pXlbomd, requested=.false.)
+    call getChild(node, "XlbomdFast", pXlbomdFast, requested=.false.)
     if (.not. (associated(pXlbomd) .or. associated(pXlbomdFast))) then
       return
     end if
@@ -916,37 +916,37 @@ contains
       pRoot => pXlbomd
     end if
     allocate(input)
-    call getChildValue(pRoot, 'IntegrationSteps', input%nKappa, 5, child=pChild)
+    call getChildValue(pRoot, "IntegrationSteps", input%nKappa, 5, child=pChild)
     if (all([5, 6, 7] /= input%nKappa)) then
-      call detailedError(pChild, 'Invalid number of integration steps (must be&
-          & 5, 6 or 7)')
+      call detailedError(pChild, "Invalid number of integration steps (must be&
+          & 5, 6 or 7)")
     end if
-    call getChildValue(pRoot, 'PreSteps', input%nPreSteps, 0)
+    call getChildValue(pRoot, "PreSteps", input%nPreSteps, 0)
 
     ! Since support for inverse Jacobian has been removed, we can set FullSccSteps
     ! to its minimal value (no averaging of inverse Jacobians is done anymore)
     input%nFullSccSteps = input%nKappa + 1
 
     if (tXlbomdFast) then
-      call getChildValue(pRoot, 'TransientSteps', input%nTransientSteps, 10)
+      call getChildValue(pRoot, "TransientSteps", input%nTransientSteps, 10)
       input%minSccIter = 1
       input%maxSccIter = 1
       ! Dummy value as minSccIter and maxSccIter have been set to 1.
       input%sccTol = 1e-5_dp
-      call getChildValue(pRoot, 'Scale', input%scale, 1.0_dp, child=pChild)
+      call getChildValue(pRoot, "Scale", input%scale, 1.0_dp, child=pChild)
       if (input%scale <= 0.0_dp .or. input%scale > 1.0_dp) then
-        call detailedError(pChild, 'Scaling value must be in the interval&
-            & (0.0, 1.0]')
+        call detailedError(pChild, "Scaling value must be in the interval&
+            & (0.0, 1.0]")
       end if
 
     else
       input%nTransientSteps = 0
-      call getChildValue(pRoot, 'MinSccIterations', input%minSCCIter, 1)
-      call getChildValue(pRoot, 'MaxSccIterations', input%maxSCCIter, 200)
+      call getChildValue(pRoot, "MinSccIterations", input%minSCCIter, 1)
+      call getChildValue(pRoot, "MaxSccIterations", input%maxSCCIter, 200)
       if (input%maxSCCIter <= 0) then
         call detailedError(pRoot,"MaxSccIterations must be >= 1")
       end if
-      call getChildValue(pRoot, 'SccTolerance', input%sccTol, 1e-5_dp)
+      call getChildValue(pRoot, "SccTolerance", input%sccTol, 1e-5_dp)
       input%scale = 1.0_dp
     end if
 
@@ -1572,10 +1572,10 @@ contains
                 & iTmpN(ctrl%dftbUInp%iUJ(1:ctrl%dftbUInp%niUJ(ii,iSp1),ii,iSp1)) + 1
           end do
           if (any(iTmpN(:)>1)) then
-            write(stdout, *)'Multiple copies of shells present in OrbitalPotential!'
+            write(stdout, *)"Multiple copies of shells present in OrbitalPotential!"
             write(stdout, "(A,A3,A,I2)") &
-                & 'The count for the occurrence of shells of species ', &
-                & trim(geo%speciesNames(iSp1)),' are:'
+                & "The count for the occurrence of shells of species ", &
+                & trim(geo%speciesNames(iSp1))," are:"
             write(stdout, *)iTmpN(1:slako%orb%nShell(iSp1))
             call abortProgram()
           end if
@@ -1659,7 +1659,7 @@ contains
             & resolved SCC")
       end if
       if (ctrl%t3rd .or. ctrl%t3rdFull) then
-        call getChild(node, 'HubbardDerivs', child, requested=.true.)
+        call getChild(node, "HubbardDerivs", child, requested=.true.)
         allocate(ctrl%HubDerivs(slako%orb%mShell, geo%nSpecies))
         ctrl%hubDerivs(:,:) = 0.0_dp
         do iSp1 = 1, geo%nSpecies
@@ -1774,7 +1774,7 @@ contains
         call getParamSearchPaths(searchPath)
         call findFile(searchPath, paramFile, paramTmp)
         if (allocated(paramTmp)) call move_alloc(paramTmp, paramFile)
-        write(stdOut, '(a)') "Using parameter file '"//paramFile//"' for xTB Hamiltonian"
+        write(stdOut, "(a)") "Using parameter file '"//paramFile//"' for xTB Hamiltonian"
         call ctrl%tbliteInp%setupCalculator(paramFile)
       else
         call detailedError(node, "Either a Method or ParameterFile must be specified for xTB")
@@ -2215,7 +2215,7 @@ contains
           allocate(ctrl%mdftbAtomicIntegrals%DxzXZDzz(geo%nSpecies), source=0.0_dp)
           allocate(ctrl%mdftbAtomicIntegrals%DyzYZDxxyy(geo%nSpecies), source=0.0_dp)
 
-          call getChild(value1, 'AtomDIntegralScalings', child2, requested=.false.)
+          call getChild(value1, "AtomDIntegralScalings", child2, requested=.false.)
           if (associated(child2)) then
             do iSp1 = 1, geo%nSpecies
               call getChildValue(child2, trim(geo%speciesNames(iSp1)),&
@@ -2223,7 +2223,7 @@ contains
             end do
           end if
 
-          call getChild(value1, 'AtomQIntegralScalings', child2, requested=.false.)
+          call getChild(value1, "AtomQIntegralScalings", child2, requested=.false.)
           if (associated(child2)) then
             do iSp1 = 1, geo%nSpecies
               call getChildValue(child2, trim(geo%speciesNames(iSp1)),&
@@ -2231,7 +2231,7 @@ contains
             end do
           end if
 
-          call getChild(value1, 'OneCenterAtomIntegrals', child2, requested=.true.)
+          call getChild(value1, "OneCenterAtomIntegrals", child2, requested=.true.)
           do iSp1 = 1, geo%nSpecies
             call getChildValue(child2, trim(geo%speciesNames(iSp1))//":S|X|Px",&
                 & ctrl%mdftbAtomicIntegrals%SXPx(iSp1), 0.0_dp)
@@ -2323,8 +2323,8 @@ contains
     case ("colinear", "collinear")
       ctrl%tSpin = .true.
       ctrl%t2Component = .false.
-      call getChildValue(value1, 'UnpairedElectrons', ctrl%nrSpinPol, 0.0_dp)
-      call getChildValue(value1, 'RelaxTotalSpin', ctrl%tSpinSharedEf, .false.)
+      call getChildValue(value1, "UnpairedElectrons", ctrl%nrSpinPol, 0.0_dp)
+      call getChildValue(value1, "RelaxTotalSpin", ctrl%tSpinSharedEf, .false.)
       if (.not. ctrl%tReadChrg) then
         call getInitialSpins(value1, geo, 1, ctrl%initialSpins)
       end if
@@ -2855,11 +2855,11 @@ contains
     if (ctrl%checkStopHybridCalc) then
       if (ctrl%maxSccIter == 1) then
         call warning("Restarting a hybrid xc-functional run with what appears to be&
-            & a poor k-point sampling that does probably" // NEW_LINE('A') // " not match the&
+            & a poor k-point sampling that does probably" // NEW_LINE("A") // " not match the&
             & original sampling (however fine for bandstructure calculations).")
       else
         call error("Error while parsing k-point sampling for a hybrid xc-functional&
-            & run." // NEW_LINE('A') // "   Only allowed for bandstructure calculations,&
+            & run." // NEW_LINE("A") // "   Only allowed for bandstructure calculations,&
             & i.e. a single SCC iteration.")
       end if
     end if
@@ -3093,8 +3093,8 @@ contains
       if (allocated(ctrl%hybridXcInp) .and. geo%tPeriodic&
           & .and. (char(buffer) /= "supercellfolding") .and. (.not. ctrl%tReadChrg)) then
         call detailedError(child, "Error while parsing k-point sampling for a hybrid xc-functional&
-            & run. Currently only" // NEW_LINE('A') // "   the supercell folding technique (or any&
-            & format specifying the Gamma-point only)" // NEW_LINE('A') // "   is supported.")
+            & run. Currently only" // NEW_LINE("A") // "   the supercell folding technique (or any&
+            & format specifying the Gamma-point only)" // NEW_LINE("A") // "   is supported.")
       end if
     end if
 
@@ -4959,16 +4959,16 @@ contains
       ctrl%lrespini%tPrintEigVecs = .false.
 
       if (ctrl%tSpin) then
-        ctrl%lrespini%sym = ' '
+        ctrl%lrespini%sym = " "
       else
         call getChildValue(child, "Symmetry", buffer, child=child2)
         select case (unquote(char(buffer)))
         case ("Singlet" , "singlet")
-          ctrl%lrespini%sym = 'S'
+          ctrl%lrespini%sym = "S"
         case ("Triplet" , "triplet")
-          ctrl%lrespini%sym = 'T'
+          ctrl%lrespini%sym = "T"
         case ("Both" , "both")
-          ctrl%lrespini%sym = 'B'
+          ctrl%lrespini%sym = "B"
         case default
           call detailedError(child2, "Invalid symmetry value '"  // char(buffer) // &
               & "' (must be 'Singlet', 'Triplet' or 'Both').")
@@ -5037,8 +5037,8 @@ contains
         select case(char(buffer))
         case ("arpack")
           if (.not. withArpack) then
-            call detailedError(child2, 'This DFTB+ binary has been compiled without support for&
-                & linear response calculations using the ARPACK/ngARPACK library.')
+            call detailedError(child2, "This DFTB+ binary has been compiled without support for&
+                & linear response calculations using the ARPACK/ngARPACK library.")
           end if
           call getChildValue(child2, "WriteStatusArnoldi", ctrl%lrespini%tArnoldi, default=.false.)
           call getChildValue(child2, "TestArnoldi", ctrl%lrespini%tDiagnoseArnoldi, default=.false.)
@@ -5087,16 +5087,16 @@ contains
       allocate(ctrl%pprpa)
 
       if (ctrl%tSpin) then
-        ctrl%pprpa%sym = ' '
+        ctrl%pprpa%sym = " "
       else
         call getChildValue(child, "Symmetry", buffer, child=child2)
         select case (unquote(char(buffer)))
         case ("Singlet" , "singlet")
-          ctrl%pprpa%sym = 'S'
+          ctrl%pprpa%sym = "S"
         case ("Triplet" , "triplet")
-          ctrl%pprpa%sym = 'T'
+          ctrl%pprpa%sym = "T"
         case ("Both" , "both")
-          ctrl%pprpa%sym = 'B'
+          ctrl%pprpa%sym = "B"
         case default
           call detailedError(child2, "Invalid symmetry value '"  // char(buffer) // &
               & "' (must be 'Singlet', 'Triplet' or 'Both').")
@@ -5724,7 +5724,7 @@ contains
             ctrl%spinW(:orb%nShell(iSp1), :orb%nShell(iSp1), iSp1) =&
                 & reshape(rWork(:orb%nShell(iSp1)**2), [orb%nShell(iSp1), orb%nShell(iSp1)])
           else
-            write(strTmp, "(A,I0,A,I0,A,A,A)")'Expecting a ', orb%nShell(iSp1), ' x ',&
+            write(strTmp, "(A,I0,A,I0,A,A,A)")"Expecting a ", orb%nShell(iSp1), " x ",&
                 & orb%nShell(iSp1), ' spin constant matrix for "', trim(geo%speciesNames(iSp1)),&
                 & '", as ShellResolvedSpin enabled.'
             call detailedError(child, trim(strTmp))
@@ -8206,12 +8206,12 @@ contains
     end if
 
     if (.not. tFunc) then
-      write(stdOut,'(A)',advance="no") "Current Functional : "
+      write(stdOut,"(A)",advance="no") "Current Functional : "
       do ii = 1, nFunc
         if (ii == nFunc) then
-          write(stdOut,'(A)') "'" // trim(tmpFunc(ii)) // "'"
+          write(stdOut,"(A)") "'" // trim(tmpFunc(ii)) // "'"
         else
-          write(stdOut,'(A)',advance="no") "'" // trim(tmpFunc(ii)) // "' "
+          write(stdOut,"(A)",advance="no") "'" // trim(tmpFunc(ii)) // "' "
         end if
       end do
       call detailedError(child1, "Invalid Functional")

@@ -14,13 +14,13 @@ module dftbp_io_commonformats
       & format2Ue, format1U1e
 
   !> Format string for energy second derivative matrix
-  character(len=*), parameter :: formatHessian = '(4f16.10)'
+  character(len=*), parameter :: formatHessian = "(4f16.10)"
 
   !> Format string for Born charges
-  character(len=*), parameter :: formatBorn = '(3f16.10)'
+  character(len=*), parameter :: formatBorn = "(3f16.10)"
 
   !> Format string for derivative of Born charges
-  character(len=*), parameter :: formatdBorn = '(9E16.8)'
+  character(len=*), parameter :: formatdBorn = "(9E16.8)"
 
   !> Atomic geometries format
   character(len=*), parameter :: formatGeoOut = "(I5, F16.8, F16.8, F16.8)"

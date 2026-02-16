@@ -313,38 +313,38 @@ contains
         & "Free energy shift", solvation%param%freeEnergyShift, "H", &
         & Hartree__eV * solvation%param%freeEnergyShift, "eV"
 
-    write(unit, '(a, ":", t30)', advance='no') "Born interaction kernel"
+    write(unit, '(a, ":", t30)', advance="no") "Born interaction kernel"
     select case(solvation%param%kernel)
     case default
-      write(unit, '(a)') "unknown (internal error)"
+      write(unit, "(a)") "unknown (internal error)"
     case(fgbKernel%still)
-      write(unit, '(a)') "Still"
+      write(unit, "(a)") "Still"
     case(fgbKernel%p16)
-      write(unit, '(a)') "P16"
+      write(unit, "(a)") "P16"
     end select
 
     write(unit, '(a, ":", t30, a)') "Born radii integrator", "GBOBC"
 
-    write(unit, '(a, ":", t30)', advance='no') "SASA model"
+    write(unit, '(a, ":", t30)', advance="no") "SASA model"
     if (allocated(solvation%sasaCont)) then
-      write(unit, '(a)') "Yes"
+      write(unit, "(a)") "Yes"
       call writeSASAContInfo(unit, solvation%sasaCont)
     else
-      write(unit, '(a)') "No"
+      write(unit, "(a)") "No"
     end if
 
-    write(unit, '(a, ":", t30)', advance='no') "CM5 correction"
+    write(unit, '(a, ":", t30)', advance="no") "CM5 correction"
     if (allocated(solvation%cm5)) then
-      write(unit, '(a)') "Yes"
+      write(unit, "(a)") "Yes"
     else
-      write(unit, '(a)') "No"
+      write(unit, "(a)") "No"
     end if
 
-    write(unit, '(a, ":", t30)', advance='no') "Hydrogen bond correction"
+    write(unit, '(a, ":", t30)', advance="no") "Hydrogen bond correction"
     if (allocated(solvation%hBondStrength)) then
-      write(unit, '(a)') "Yes"
+      write(unit, "(a)") "Yes"
     else
-      write(unit, '(a)') "No"
+      write(unit, "(a)") "No"
     end if
 
   end subroutine writeGeneralizedBornInfo

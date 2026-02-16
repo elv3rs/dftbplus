@@ -380,7 +380,7 @@ contains
       iu = n
     end if
 
-    if (jobz == 'v' .or. jobz == 'V') then
+    if (jobz == "v" .or. jobz == "V") then
       allocate(z(n, iu - il + 1))
       ldz = n
     else
@@ -389,7 +389,7 @@ contains
     end if
 
     allocate(isuppz(2 * n))
-    abstol = ${LAPACK_LAMCH}$('Safe minimum')
+    abstol = ${LAPACK_LAMCH}$("Safe minimum")
 
     errorGuard: block
       iStep = 1
@@ -420,7 +420,7 @@ contains
 
       iStep = 3
       a(:,:) = 0.0_${KIND}$
-      if (jobz == 'v' .or. jobz == 'V') then
+      if (jobz == "v" .or. jobz == "V") then
         a(:n, :iu-il+1) = z
       end if
     end block errorGuard
@@ -781,13 +781,13 @@ contains
     allocate(isuppz(2 * n))
     allocate(tmpChole(size(a, dim=1)))
 
-    wantz = (jobz == 'V' .or. jobz == 'v')
-    upper = (uplo == 'U' .or. uplo == 'u')
-    abstol = ${LAPACK_LAMCH}$('Safe minimum')
+    wantz = (jobz == "V" .or. jobz == "v")
+    upper = (uplo == "U" .or. uplo == "u")
+    abstol = ${LAPACK_LAMCH}$("Safe minimum")
     if (subspace) then
-      range = 'I'
+      range = "I"
     else
-      range = 'A'
+      range = "A"
     end if
 
     errorGuard: block
@@ -862,10 +862,10 @@ contains
         end do
 
         if (upper) then
-          uploNew = 'L'
+          uploNew = "L"
           upper = .false.
         else
-          uploNew = 'U'
+          uploNew = "U"
           upper = .true.
         end if
 
@@ -878,7 +878,7 @@ contains
           else
             trans = transAdjoint
           end if
-          call ${LAPACK_TRSM}$('Left', uploNew, trans, 'Non-unit', n, neig, one, A, n, B, n)
+          call ${LAPACK_TRSM}$("Left", uploNew, trans, "Non-unit", n, neig, one, A, n, B, n)
         else if (iitype == 3) then
           ! For B*A*x=(lambda)*x;
           ! backtransform eigenvectors: x = L*y or U'*y     !'
@@ -887,7 +887,7 @@ contains
           else
             trans = transNormal
           end if
-          call ${LAPACK_TRMM}$('Left', uploNew, trans, 'Non-unit', n, neig, one, a, n, b, n)
+          call ${LAPACK_TRMM}$("Left", uploNew, trans, "Non-unit", n, neig, one, a, n, b, n)
         end if
         do ii = 1,m
           a(1:n, ii) = b(1:n, ii)
@@ -960,34 +960,34 @@ contains
     @:ASSERT(size(wi) >= n)
 
     if (present(vl)) then
-      jobvl = 'V'
+      jobvl = "V"
       ldvl = size(vl, dim=1)
       @:ASSERT(all(shape(vl)>=[n,n]))
     else
-      jobvl = 'N'
+      jobvl = "N"
       ldvl = 1
     end if
     if (present(vr)) then
-      jobvr = 'V'
+      jobvr = "V"
       ldvr = size(vr, dim=1)
       @:ASSERT(all(shape(vr)>=[n,n]))
     else
-      jobvr = 'N'
+      jobvr = "N"
       ldvr = 1
     end if
 
     errorGuard: block
       iStep = 1
-      if (jobvl == 'V' .and. jobvr == 'V') then
+      if (jobvl == "V" .and. jobvr == "V") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr,&
             & workDummy, -1, info_)
-      else if (jobvl == 'V' .and. jobvr == 'N') then
+      else if (jobvl == "V" .and. jobvr == "N") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, dummyvr, ldvr,&
             & workDummy, -1, info_)
-      else if (jobvl == 'N' .and. jobvr == 'V') then
+      else if (jobvl == "N" .and. jobvr == "V") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, dummyvl, ldvl, vr, ldvr,&
             & workDummy, -1, info_)
-      else if (jobvl == 'N' .and. jobvr == 'N') then
+      else if (jobvl == "N" .and. jobvr == "N") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, dummyvl, ldvl, dummyvr, ldvr,&
             & workDummy, -1, info_)
       end if
@@ -996,16 +996,16 @@ contains
       iStep = 2
       workSize = nint(workDummy(1))
       allocate(work(workSize))
-      if (jobvl == 'V' .and. jobvr == 'V') then
+      if (jobvl == "V" .and. jobvr == "V") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr, work,&
             & workSize, info_)
-      else if (jobvl == 'V' .and. jobvr == 'N') then
+      else if (jobvl == "V" .and. jobvr == "N") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, dummyvr, ldvr, work,&
             & workSize, info_)
-      else if (jobvl == 'N' .and. jobvr == 'V') then
+      else if (jobvl == "N" .and. jobvr == "V") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, dummyvl, ldvl, vr, ldvr, work,&
             & workSize, info_)
-      else if (jobvl == 'N' .and. jobvr == 'N') then
+      else if (jobvl == "N" .and. jobvr == "N") then
         call ${LAPACK_ROUTINE}$(jobvl, jobvr, n, a, lda, wr, wi, dummyvl, ldvl, dummyvr, ldvr,&
             & work, workSize, info_)
       end if

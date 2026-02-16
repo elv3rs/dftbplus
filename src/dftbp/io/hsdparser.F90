@@ -162,7 +162,7 @@ contains
 
     ! Explicitely setting "stream" access to avoid record length issues
     call openFile(fd, file,&
-        & options=TOpenOptions(status='old', action='read', access='stream'), iostat=iostat)
+        & options=TOpenOptions(status="old", action="read", access="stream"), iostat=iostat)
     if (iostat /= 0) then
       call parsingError("Error in opening file '" // trim(file) //"'.", file, -1)
     end if
@@ -392,7 +392,7 @@ contains
 
           ! Explicitely setting "stream" access to avoid record length issues
           call openFile(newFile, word,&
-              & options=TOpenOptions(status='old', action='read', access='stream'), iostat=iostat)
+              & options=TOpenOptions(status="old", action="read", access="stream"), iostat=iostat)
           if (iostat /= 0) then
             call parsingError("Error in opening file '" // trim(word) // "'.", curFile, curLine)
           end if
@@ -654,7 +654,7 @@ contains
     character(:), allocatable :: header
     character(100) :: buffer
 
-    write(buffer, '(i0)') line
+    write(buffer, "(i0)") line
     header = "HSD parser error: File '" // trim(file) // "', Line " // trim(buffer) // "."
     allocate(character(max(len_trim(message), len(header))) :: msgArray(2))
     msgArray(1) = header
@@ -682,7 +682,7 @@ contains
 
     ! Explicitely setting "stream" access to avoid record length issues
     call openFile(fd, file,&
-        & options=TOpenOptions(status='replace', action='write', access='stream'), iostat=iostat)
+        & options=TOpenOptions(status="replace", action="write", access="stream"), iostat=iostat)
     if (iostat /= 0) then
       call parsingError("Error in opening file for the HSD output.", file, -1)
     end if

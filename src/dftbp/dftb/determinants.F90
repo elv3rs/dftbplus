@@ -39,7 +39,7 @@ module dftbp_dftb_determinants
 
 
   !> Names of the determinants, matching TDeterminantsEnum
-  character(len=2), parameter :: detNames(0:2) = ['s0', 't1', 's1']
+  character(len=2), parameter :: detNames(0:2) = ["s0", "t1", "s1"]
 
 
   !> Control type for Delta DFTB / TI-DFTB

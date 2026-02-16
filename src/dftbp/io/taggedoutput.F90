@@ -57,181 +57,181 @@ module dftbp_io_taggedoutput
   type :: TTagLabelsEnum
 
     !> unit cell volume (periodic)
-    character(lenLabel) :: volume = 'cell_volume'
+    character(lenLabel) :: volume = "cell_volume"
 
     !> final geometry
-    character(lenLabel) :: endCoord = 'end_coords'
+    character(lenLabel) :: endCoord = "end_coords"
 
     !> excitation energies in Casida formalism
-    character(lenLabel) :: excEgy = 'exc_energies_sqr'
+    character(lenLabel) :: excEgy = "exc_energies_sqr"
 
     !> excited state force contributions
-    character(lenLabel) :: excForce = 'exc_forces'
+    character(lenLabel) :: excForce = "exc_forces"
 
     !> oscillator strength for excitations
-    character(lenLabel) :: excOsc = 'exc_oscillator'
+    character(lenLabel) :: excOsc = "exc_oscillator"
 
     !> Transition dipole moments for excitations
-    character(lenLabel) :: excDipole = 'exc_transdip'
+    character(lenLabel) :: excDipole = "exc_transdip"
 
     !> Square of transition charges for target state
-    character(lenLabel) :: transQ = 'transq_sqr'
+    character(lenLabel) :: transQ = "transq_sqr"
 
     !> nonadiabatic coupling vector, H
-    character(lenLabel) :: nacH = 'coupling_vectors'
+    character(lenLabel) :: nacH = "coupling_vectors"
 
     !> nonadiabatic coupling vector TD-DFTB
-    character(lenLabel) :: nacv = 'nac_vectors'
+    character(lenLabel) :: nacv = "nac_vectors"
 
     !> ground state total forces
-    character(lenLabel) :: forceTot = 'forces'
+    character(lenLabel) :: forceTot = "forces"
 
     !> forces on any external charges present
-    character(lenLabel) :: chrgForces = 'forces_ext_charges'
+    character(lenLabel) :: chrgForces = "forces_ext_charges"
 
     !> Fermi level(s)
-    character(lenLabel) :: fermiLvl = 'fermi_level'
+    character(lenLabel) :: fermiLvl = "fermi_level"
 
     !> number of electrons
-    character(lenLabel) :: nElec = 'number_of_electrons'
+    character(lenLabel) :: nElec = "number_of_electrons"
 
     !> eigenvalues/single particle states
-    character(lenLabel) :: eigvals = 'eigenvalues'
+    character(lenLabel) :: eigvals = "eigenvalues"
 
     !> filling of the eigenstates
-    character(lenLabel) :: eigFill = 'filling'
+    character(lenLabel) :: eigFill = "filling"
 
     !> Gibbs free energy for finite pressure periodic systems
-    character(lenLabel) :: gibbsFree = 'gibbs_energy'
+    character(lenLabel) :: gibbsFree = "gibbs_energy"
 
     !> Gross atomic charges
-    character(lenLabel) :: qOutAtGross  = 'gross_atomic_charges'
+    character(lenLabel) :: qOutAtGross  = "gross_atomic_charges"
 
     !> Charge model 5 corrected atomic gross charges
-    character(lenLabel) :: qOutAtCM5 = 'cm5_atomic_charges'
+    character(lenLabel) :: qOutAtCM5 = "cm5_atomic_charges"
 
     !> Gross atomic spin polarizations
-    character(lenLabel) :: spinOutAtGross  = 'gross_atomic_spins'
+    character(lenLabel) :: spinOutAtGross  = "gross_atomic_spins"
 
     !> numerically calculated second derivatives matrix
-    character(lenLabel) :: hessianNum = 'hessian_numerical'
+    character(lenLabel) :: hessianNum = "hessian_numerical"
 
     !> numerically calculated Born charges
-    character(lenLabel) :: BorndDipNum = 'born_mudrv_numerical'
+    character(lenLabel) :: BorndDipNum = "born_mudrv_numerical"
 
     !> final energy components after real-time propagation
-    character(lenLabel) :: tdenergy = 'final_energy'
+    character(lenLabel) :: tdenergy = "final_energy"
 
     !> final dipole moment vector after real-time propagation
-    character(lenLabel) :: tddipole = 'final_dipole_moment'
+    character(lenLabel) :: tddipole = "final_dipole_moment"
 
     !> final negative gross atomic Mulliken charges after real-time propagation
-    character(lenLabel) :: tdcharges = 'final_td_charges'
+    character(lenLabel) :: tdcharges = "final_td_charges"
 
     !> final forces components after real-time (Ehrenfest) propagation
-    character(lenLabel) :: ehrenforces = 'final_ehrenfest_forc'
+    character(lenLabel) :: ehrenforces = "final_ehrenfest_forc"
 
     !> final geometry after real-time (Ehrenfest) propagation
-    character(lenLabel) :: ehrencoords = 'final_ehrenfest_geom'
+    character(lenLabel) :: ehrencoords = "final_ehrenfest_geom"
 
     !> final velocities after real-time (Ehrenfest) propagation
-    character(lenLabel) :: ehrenvelos = 'final_ehrenfest_velo'
+    character(lenLabel) :: ehrenvelos = "final_ehrenfest_velo"
 
     !> final molecular orbitals occupations after real-time (Ehrenfest) propagation
-    character(lenLabel) :: tdprojocc = 'final_td_proj_occ'
+    character(lenLabel) :: tdprojocc = "final_td_proj_occ"
 
     !> Sum of bond populaion values (should be number of electrons)
-    character(lenLabel) :: sumBondPopul = 'sum_bond_pops'
+    character(lenLabel) :: sumBondPopul = "sum_bond_pops"
 
     !> final atom-resolved energies
-    character(lenLabel) :: atomenergies = 'atomic_energies'
+    character(lenLabel) :: atomenergies = "atomic_energies"
 
     !> total energy including electron TS contribution
-    character(lenLabel) :: freeEgy = 'mermin_energy'
+    character(lenLabel) :: freeEgy = "mermin_energy"
 
     !> Mulliken charges
-    character(lenLabel) :: qOutput = 'orbital_charges'
+    character(lenLabel) :: qOutput = "orbital_charges"
 
     !> Pipek-Mezey localisation score of single particle levels
-    character(lenLabel) :: pmlocalise = 'pm_localisation'
+    character(lenLabel) :: pmlocalise = "pm_localisation"
 
     !> total stress tensor for periodic geometries
-    character(lenLabel) :: stressTot = 'stress'
+    character(lenLabel) :: stressTot = "stress"
 
     !> total tunneling vector
-    character(lenLabel) :: tunn = 'total_tunneling'
+    character(lenLabel) :: tunn = "total_tunneling"
 
     !> total projected DOS vector
-    character(lenLabel) :: ldos = 'total_localdos'
+    character(lenLabel) :: ldos = "total_localdos"
 
     !> total bond currents
-    character(lenLabel) :: localCurrents = 'local_currents'
+    character(lenLabel) :: localCurrents = "local_currents"
 
     !> total internal energy
-    character(lenLabel) :: egyTotal   = 'total_energy'
+    character(lenLabel) :: egyTotal   = "total_energy"
 
     !> total internal energy for averaged state in REKS
-    character(lenLabel) :: egyAvg   = 'averaged_energy'
+    character(lenLabel) :: egyAvg   = "averaged_energy"
 
     !> total internal energy extrapolated to 0 K
-    character(lenLabel) :: egy0Total   = 'extrapolated0_energy'
+    character(lenLabel) :: egy0Total   = "extrapolated0_energy"
 
     !> Energy, which if differentiated gives - force
-    character(lenLabel) :: egyForceRelated = 'forcerelated_energy'
+    character(lenLabel) :: egyForceRelated = "forcerelated_energy"
 
     !> Internal electric field
-    character(lenLabel) :: internField = 'internal_efield'
+    character(lenLabel) :: internField = "internal_efield"
 
     !> External electric field
-    character(lenLabel) :: externField = 'external_efield'
+    character(lenLabel) :: externField = "external_efield"
 
     !> Static electric polarizability from linear response/perturbation
-    character(lenLabel) :: dmudEPerturb = 'staticPolResponse'
+    character(lenLabel) :: dmudEPerturb = "staticPolResponse"
 
     !> Static gross charge (Mulliken) response from linear response/perturbation
-    character(lenLabel) :: dqdEPerturb = 'staticChargeReponse'
+    character(lenLabel) :: dqdEPerturb = "staticChargeReponse"
 
     !> Derivatives of ground state single particle eigenvalues wrt. k
-    character(lenLabel) :: dEigenDE = 'dEidEfield'
+    character(lenLabel) :: dEigenDE = "dEidEfield"
 
     !> Number of electrons at the Fermi energy
-    character(lenLabel) :: neFermi = 'neFermi'
+    character(lenLabel) :: neFermi = "neFermi"
 
     !> Derivative of the Fermi energy with respect to electric field
-    character(lenLabel) :: dEfdE = 'dEfdE'
+    character(lenLabel) :: dEfdE = "dEfdE"
 
     !> Derivatives of ground state single particle eigenvalues wrt. onsite potentials
-    character(lenLabel) :: dEigenDVons = 'dEidVons'
+    character(lenLabel) :: dEigenDVons = "dEidVons"
 
     !> Derivatives of ground state single particle eigenvalues wrt. potential at an atom
-    character(lenLabel) :: dEigenDV = 'dEidV'
+    character(lenLabel) :: dEigenDV = "dEidV"
 
     !> Static gross charge (Mulliken) response with respect to potential at an atom
-    character(lenLabel) :: dqdV = 'dqdV'
+    character(lenLabel) :: dqdV = "dqdV"
 
     !> Static net charge (onsite) response with respect to potential at an atom
-    character(lenLabel) :: dqnetdV = 'dqnetdV'
+    character(lenLabel) :: dqnetdV = "dqnetdV"
 
     !> Derivatives of gross atomic charges wrt. x
-    character(lenLabel) :: dqdx = 'dqdx'
+    character(lenLabel) :: dqdx = "dqdx"
 
     !> Born effective charges
-    character(lenLabel) :: borncharges = 'borncharges'
+    character(lenLabel) :: borncharges = "borncharges"
 
     !> two-electron addition/removal energies in ppRPA formalism
-    character(lenLabel) :: egyppRPA = '2e_add-rem_energies'
+    character(lenLabel) :: egyppRPA = "2e_add-rem_energies"
 
     !> atomic masses
-    character(lenLabel) :: atomMass = 'atomic_masses'
+    character(lenLabel) :: atomMass = "atomic_masses"
 
     !> Total dipole moment
-    character(lenLabel) :: dipoleMoment = 'dipole_moments'
+    character(lenLabel) :: dipoleMoment = "dipole_moments"
 
     !> Rescaled dipole moment (for example if solvated)
-    character(lenLabel) :: scaledDipole = 'scaled_dipole'
+    character(lenLabel) :: scaledDipole = "scaled_dipole"
 
     !> Atomic dipole moments
-    character(lenLabel) :: dipoleAtom = 'atomic_dipole_moment'
+    character(lenLabel) :: dipoleAtom = "atomic_dipole_moment"
 
   end type TTagLabelsEnum
 
@@ -351,10 +351,10 @@ contains
     if (present(dataShape)) then
       if (size(dataShape) == 1) then
         write(buffer, "(5A,I0,4A)") '("', getLabel(tag), ":", trim(dataType), ":", size(dataShape),&
-            & ":", '",', 'I0', ')'
+            & ":", '",', "I0", ")"
       else
         write(buffer, "(5A,I0,3A,I0,2A)") '("', getLabel(tag), ":", trim(dataType), ":",&
-            & size(dataShape), ":", '",', 'I0,', size(dataShape) - 1, '(",",I0)', ')'
+            & size(dataShape), ":", '",', "I0,", size(dataShape) - 1, '(",",I0)', ")"
       end if
       write(file, buffer) dataShape
     else

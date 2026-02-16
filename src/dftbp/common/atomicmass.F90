@@ -102,11 +102,11 @@ contains
     !> Element symbol
     character(len=2) :: symbol
 
-    integer, parameter :: offset = iachar('a') - iachar('A')
+    integer, parameter :: offset = iachar("a") - iachar("A")
     integer :: iMin
     real(dp) :: deltas(size(elementSymbol))
 
-    symbol = '??'
+    symbol = "??"
     if (mass <= 0.0_dp) then
       return
     end if

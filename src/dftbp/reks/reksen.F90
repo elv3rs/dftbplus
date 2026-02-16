@@ -229,7 +229,7 @@ module dftbp_reks_reksen
     tmpMat(:,:) = this%fock
 
     eigen(:,1,1) = 0.0_dp
-    call heev(tmpMat, eigen(:,1,1), 'U', 'V')
+    call heev(tmpMat, eigen(:,1,1), "U", "V")
     this%eigvecsFock(:,:) = tmpMat
 
   end subroutine getFockandDiag
@@ -363,7 +363,7 @@ module dftbp_reks_reksen
     ! save state energies to print information
     tmpEn(:) = this%energy
     if (this%tSSR) then
-      call heev(tmpState, tmpEigen, 'U', 'V')
+      call heev(tmpState, tmpEigen, "U", "V")
       this%eigvecsSSR(:,:) = tmpState
       this%energy(:) = tmpEigen
     end if
@@ -599,7 +599,7 @@ module dftbp_reks_reksen
     end if
 
     if (fa < fb) then
-      write(stdOut,'(A6,F9.6,A20,I4,A8,I4,A8)') " fa = ", fa, &
+      write(stdOut,"(A6,F9.6,A20,I4,A8,I4,A8)") " fa = ", fa, &
           & ", MO swap between a(", Nc+1, ") and b(", Nc+2, ") occurs"
       tmpMO(:) = eigenvecs(:,Nc+1)
       eigenvecs(:,Nc+1) = eigenvecs(:,Nc+2)

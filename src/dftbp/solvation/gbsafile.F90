@@ -77,7 +77,7 @@ contains
         iStart = min(verify(line(iStart:), whiteSpaces) + iStart - 1, len_trim(line))
         write(errorStr, '(a, "(", i0, "):", 1x, 6a)') &
           & trim(file), lineno, "Could not read real", newline, trim(line), &
-          & newline, repeat('-', max(iStart-1, 0)), '^'
+          & newline, repeat("-", max(iStart-1, 0)), "^"
         if (present(node)) then
           call detailedError(node, trim(errorStr))
         else
@@ -87,7 +87,7 @@ contains
       if (iStart < len_trim(line)) then
         write(errorStr, '(a, "(", i0, "):", 1x, 6a)') &
           & trim(file), lineno, "Trailing content", newline, trim(line), newline, &
-          & repeat('-', max(iStart-1, 0)), '^'
+          & repeat("-", max(iStart-1, 0)), "^"
         if (present(node)) then
           call detailedWarning(node, trim(errorStr))
         else
@@ -104,7 +104,7 @@ contains
         iStart = min(verify(line(iStart:), whiteSpaces) + iStart - 1, len_trim(line))
         write(errorStr, '(a, "(", i0, "):", 1x, 6a)') trim(file), lineno, &
           & "Could not read surface tension", newline, trim(line), newline, &
-          & repeat('-', max(iStart-1, 0)), '^'
+          & repeat("-", max(iStart-1, 0)), "^"
         if (present(node)) then
           call detailedError(node, trim(errorStr))
         else
@@ -116,7 +116,7 @@ contains
         iStart = min(verify(line(iStart:), whiteSpaces) + iStart - 1, len_trim(line))
         write(errorStr, '(a, "(", i0, "):", 1x, 6a)') trim(file), lineno, &
           & "Could not read descreening", newline, trim(line), newline, &
-          & repeat('-', max(iStart-1, 0)), '^'
+          & repeat("-", max(iStart-1, 0)), "^"
         if (present(node)) then
           call detailedError(node, trim(errorStr))
         else
@@ -128,7 +128,7 @@ contains
         iStart = min(verify(line(iStart:), whiteSpaces) + iStart - 1, len_trim(line))
         write(errorStr, '(a, "(", i0, "):", 1x, 6a)') trim(file), lineno, &
           & "Could not read hydrogen bond strength", newline, trim(line), newline, &
-          & repeat('-', max(iStart-1, 0)), '^'
+          & repeat("-", max(iStart-1, 0)), "^"
         if (present(node)) then
           call detailedError(node, trim(errorStr))
         else
@@ -138,7 +138,7 @@ contains
       if (iStart < len_trim(line)) then
         write(errorStr, '(a, "(", i0, "):", 1x, 6a)') &
           & trim(file), lineno, "Trailing content", newline, trim(line), newline, &
-          & repeat('-', max(iStart-1, 0)), '^'
+          & repeat("-", max(iStart-1, 0)), "^"
         if (present(node)) then
           call detailedWarning(node, trim(errorStr))
         else
@@ -169,7 +169,7 @@ contains
         input%sasaInput%surfaceTension(iSp) = surfaceTension(iZp)
         input%hBondPar(iSp) = -hBondPar(iZp)**2 * kcal_mol__Hartree
       else
-        write(errorStr, '(3a)') trim(file), " contains no parameters for species ", &
+        write(errorStr, "(3a)") trim(file), " contains no parameters for species ", &
             & trim(speciesNames(iSp))
         if (present(node)) then
           call detailedWarning(node, trim(errorStr))
@@ -216,7 +216,7 @@ contains
     call lineReader%readLine(line, iErr)
 
     if (iErr /= 0) then
-      write(errorStr, '(3a, i0)') "While reading file ", trim(file),&
+      write(errorStr, "(3a, i0)") "While reading file ", trim(file),&
           & "an error was encountered on line ", lineno
       call detailedError(node, trim(errorStr))
     end if

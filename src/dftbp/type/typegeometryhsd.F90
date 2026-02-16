@@ -314,7 +314,7 @@ contains
     allocate(geo%coords(3, geo%nAtom))
     do ii = 1, geo%nAtom
       ! save atom number as string for error printout
-      write(errorStr, '(i0)') ii
+      write(errorStr, "(i0)") ii
       iEnd = nextLine(text, iStart)
       call getNextToken(text(:iEnd), iTmp, iStart, iErr)
       call checkError(node, iErr, "Bad sequential number for atom "//trim(errorStr))
@@ -353,7 +353,7 @@ contains
       allocate(geo%origin(3))
       iEnd = nextLine(text, iStart)
       call getNextToken(text(:iEnd), geo%origin, iStart, iErr)
-      call checkError(node, iErr, 'Invalid specified helical boundary conditions: origin.')
+      call checkError(node, iErr, "Invalid specified helical boundary conditions: origin.")
       geo%origin(:) = geo%origin * AA__Bohr
       allocate(geo%latVecs(3, 1))
       iEnd = nextLine(text, iStart)

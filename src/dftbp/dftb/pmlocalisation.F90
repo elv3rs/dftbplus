@@ -100,7 +100,7 @@ contains
     call move_alloc(input%sparseTols, this%sparseTols)
     if (allocated(this%sparseTols)) then
       if (any(this%sparseTols < epsilon(0.0_dp))) then
-        call error('Tolerances for sparse Pipek-Mezey localisation too small.')
+        call error("Tolerances for sparse Pipek-Mezey localisation too small.")
       end if
     end if
 
@@ -311,11 +311,11 @@ contains
     lpLocalise: do iIter = 1, nIter
       alphamax = 0.0_dp
       ! Sweep over all pairs of levels
-      write(stdout, *)'Iter', iIter
+      write(stdout, *)"Iter", iIter
       do iLev1 = 1, nLev
 
         if (iLev1 < nLev) then
-          call symm(Sci2(1:nOrb,iLev1+1:nLev),'l',S,ci(:,iLev1+1:nLev),'L')
+          call symm(Sci2(1:nOrb,iLev1+1:nLev),"l",S,ci(:,iLev1+1:nLev),"L")
         else
           call hemv(Sci2(1:nOrb,nLev),S,ci(:,nLev))
         end if
@@ -425,10 +425,10 @@ contains
     real(dp) :: Localisation, oldLocalisation
     integer, allocatable :: union(:)
 
-    write(stdout, *)'Pipek Mezey localisation'
+    write(stdout, *)"Pipek Mezey localisation"
 
     Localisation = PipekMezyLocality_real(ci,S,iAtomStart)
-    write(stdout, *)'Initial', Localisation
+    write(stdout, *)"Initial", Localisation
 
     @:ASSERT(size(ci,dim=1)>=size(ci,dim=2))
     @:ASSERT(size(ci,dim=1)==size(S,dim=1))
@@ -468,7 +468,7 @@ contains
     allocate(union(2*nAtom))
 
     ! make Mulliken charges for each level
-    call symm(Sci2,'L',S,ci(:,1:nLev),'L')
+    call symm(Sci2,"L",S,ci(:,1:nLev),"L")
     Sci2 = Sci2 * ci(:,1:nLev)
 
     nSitesLev(:) = 0
@@ -664,19 +664,19 @@ contains
 
       oldLocalisation = Localisation
       Localisation = PipekMezyLocality_real(ci,S,iAtomStart)
-      write(stdout, "(A,F12.6,1X,A,E20.12)")'Current localisation ',Localisation,&
-          & 'change ',Localisation-oldLocalisation
+      write(stdout, "(A,F12.6,1X,A,E20.12)")"Current localisation ",Localisation,&
+          & "change ",Localisation-oldLocalisation
 
       conv = abs(alphamax) - abs(alphalast)
       if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0)) then
-        write(stdout, *)'Converged on rotation angle'
+        write(stdout, *)"Converged on rotation angle"
         tConverged = .true.
         exit lpLocalise
       end if
 
       conv = abs(Localisation-oldLocalisation)
       if (abs(conv)<convergence) then
-        write(stdout, *)'Converged on localization value.'
+        write(stdout, *)"Converged on localization value."
         tConverged = .true.
         exit lpLocalise
       end if
@@ -687,7 +687,7 @@ contains
     end do lpLocalise
 
     Localisation = PipekMezyLocality_real(ci,S,iAtomStart)
-    write(stdout, *)'Final',Localisation
+    write(stdout, *)"Final",Localisation
 
     if (.not.tConverged) then
       write(stdout, *)alphamax
@@ -723,7 +723,7 @@ contains
 
     PipekMezyLocality = 0.0_dp
 
-    call symm(Sci,'L',S,ci,'L')
+    call symm(Sci,"L",S,ci,"L")
 
     Sci = ci * Sci
     do iAtom = 1, nAtom
@@ -798,7 +798,7 @@ contains
     call unpackHS(S, over, kPoint, iNeighbour, nNeighbourSK, iCellVec, cellVec, iAtomStart,&
         & iPair, img2CentCell)
 
-    call hemm(Sci,'L',S,ci,'L')
+    call hemm(Sci,"L",S,ci,"L")
     Sci = conjg(ci) * Sci
 
     do iLev = 1, nLev
@@ -903,7 +903,7 @@ contains
 
     lpLocalise: do iIter = 1, nIter
 
-      write(stdout, *)'Iter', iIter
+      write(stdout, *)"Iter", iIter
 
       alphamax = 0.0_dp
 
@@ -911,7 +911,7 @@ contains
       do iLev1 = 1, nLev
 
         if (iLev1 < nLev) then
-          call hemm(Sci2(1:nOrb,iLev1+1:nLev),'l',S,ci(:,iLev1+1:nLev), 'L')
+          call hemm(Sci2(1:nOrb,iLev1+1:nLev),"l",S,ci(:,iLev1+1:nLev), "L")
         else
           call hemv(Sci2(1:nOrb,nLev),S,ci(:,nLev))
         end if

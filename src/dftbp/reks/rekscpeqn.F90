@@ -245,7 +245,7 @@ module dftbp_reks_rekscpeqn
 
     iter = 0
     eps = 0.0_dp
-    write(stdOut,'(2x,a)') 'CG solver: Constructing Y initial guess'
+    write(stdOut,"(2x,a)") "CG solver: Constructing Y initial guess"
 
     CGsolver: do iter = 1, maxIter
 
@@ -300,8 +300,8 @@ module dftbp_reks_rekscpeqn
       eps = sum(r1(:)*r1(:))
 
       ! show current iteration
-      write(stdOut,'(2x,a,1x,i4,4x,a,F18.12)') &
-          & 'CG solver: Iteration', iter, 'eps =', eps
+      write(stdOut,"(2x,a,1x,i4,4x,a,F18.12)") &
+          & "CG solver: Iteration", iter, "eps =", eps
 
       ! convergence check
       if (eps > ConvergeLimit) then
@@ -310,14 +310,14 @@ module dftbp_reks_rekscpeqn
         z0(:) = z1
         p0(:) = p1
         if (iter == maxIter) then
-          write(stdOut,'(2x,a,i4,a)') &
-              & 'Warning! Maximum number of iterations (', maxIter, &
-              & ') is exceeded in CG solver'
+          write(stdOut,"(2x,a,i4,a)") &
+              & "Warning! Maximum number of iterations (", maxIter, &
+              & ") is exceeded in CG solver"
           call error("Increase the maximum number of iterations")
         end if
       else
-        write(stdOut,'(2x,a,1x,i4,1x,a)') &
-            & 'Convergence reached in CG solver after', iter, 'iterations'
+        write(stdOut,"(2x,a,1x,i4,1x,a)") &
+            & "Convergence reached in CG solver after", iter, "iterations"
         exit CGsolver
       end if
 
@@ -331,7 +331,7 @@ module dftbp_reks_rekscpeqn
         & GammaAO, SpinAO, LrGammaAO, orderRmatL, getDenseAO, &
         & Lpaired, Glevel, tSaveMem, isHybridXc, ZmatL)
     call getQ2mat(eigenvecs, fillingL, weight, ZmatL, Q2mat)
-    write(stdOut,'(2x,a)') 'CG solver: Calculating converged R, Z, Q2 matrix'
+    write(stdOut,"(2x,a)") "CG solver: Calculating converged R, Z, Q2 matrix"
     write(stdOut,"(A)") repeat("-", 82)
 
   end subroutine CGgrad
@@ -572,7 +572,7 @@ module dftbp_reks_rekscpeqn
 
       ! check singularity for preconditioner
       if (abs(tmpApre(ij)) <= epsilon(1.0_dp)) then
-        write(stdOut,'(A,f15.8)') " Current preconditioner value = ", tmpApre(ij)
+        write(stdOut,"(A,f15.8)") " Current preconditioner value = ", tmpApre(ij)
         call error("A singularity exists in preconditioner for PCG, set Preconditioner = No")
       end if
 
@@ -633,7 +633,7 @@ module dftbp_reks_rekscpeqn
       tmpMat(:,:) = 0.0_dp
       Zmo(:,:) = 0.0_dp
       call gemm(tmpMat, ZmatL(:,:,iL), eigenvecs(:,:,1))
-      call gemm(Zmo, eigenvecs(:,:,1), tmpMat, transA='T')
+      call gemm(Zmo, eigenvecs(:,:,1), tmpMat, transA="T")
       do pq = 1, superN
         ! assign index p and q from pq
         call assignIndex(Nc, Na, Nv, reksAlg, pq, p, q)

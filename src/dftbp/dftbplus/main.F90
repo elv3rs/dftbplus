@@ -390,7 +390,7 @@ contains
 
       if (this%tMD) then
         call closeFile(this%fdMd)
-        write(stdOut, "(2A)") 'MD information accumulated in ', mdOut
+        write(stdOut, "(2A)") "MD information accumulated in ", mdOut
       end if
     end if
 
@@ -1508,11 +1508,11 @@ contains
               if (this%tMD .and. iGeoStep /= 0 .and. tWriteRestart) then
                 ! the iGeoStep test is so that the initial step has a new file
                 call writeBandOut(this%deltaDftb%determinantName(this%deltaDftb%iDeterminant) //&
-                    & '_' //  bandOut, this%eigen, this%filling, this%kWeight,&
+                    & "_" //  bandOut, this%eigen, this%filling, this%kWeight,&
                     & isFileAppended=this%mdOutput%bandStructure)
               else
                 call writeBandOut(this%deltaDftb%determinantName(this%deltaDftb%iDeterminant) //&
-                    & '_' //  bandOut, this%eigen, this%filling, this%kWeight)
+                    & "_" //  bandOut, this%eigen, this%filling, this%kWeight)
               end if
             end if
           end if
@@ -1998,7 +1998,7 @@ contains
         ediff = energy - this%elast
         gnorm = norm2(this%gcurr)
         gamax = maxval(abs(this%gcurr))
-        write(stdOut, '(a)') stepSummary(energy, ediff, gnorm, gamax, dnorm, damax, 2)
+        write(stdOut, "(a)") stepSummary(energy, ediff, gnorm, gamax, dnorm, damax, 2)
 
         econv = ediff <= epsilon(0.0_dp) .and. abs(ediff) < this%optTol%energy
         dconv = dnorm / this%filter%nvar < this%optTol%dispNorm .and. damax < this%optTol%dispElem
@@ -2105,20 +2105,20 @@ contains
     real(dp), intent(in) :: energy, ediff, gnorm, gamax, dnorm, damax
     integer, intent(in) :: prlevel
     character(len=:), allocatable :: str
-    character(len=*), parameter :: nl = new_line('a')
+    character(len=*), parameter :: nl = new_line("a")
 
     str = ""
     if (prlevel <= 0) return
 
     if (prlevel > 1) then
-      str = str//nl//"total energy  "//format_string(energy, '(es14.7)')//" H    "//&
-        &            "   energy change "//format_string(ediff, '(es14.7)')//" H"
-      str = str//nl//"gradient norm "//format_string(gnorm, '(es14.7)')//" H/a0 "//&
-        &            "   max. gradient "//format_string(gamax, '(es14.7)')//" H/a0"
-      str = str//nl//"step length   "//format_string(dnorm, '(es14.7)')//" a0   "//&
-        &            "   max. step     "//format_string(damax, '(es14.7)')//" a0"
+      str = str//nl//"total energy  "//format_string(energy, "(es14.7)")//" H    "//&
+        &            "   energy change "//format_string(ediff, "(es14.7)")//" H"
+      str = str//nl//"gradient norm "//format_string(gnorm, "(es14.7)")//" H/a0 "//&
+        &            "   max. gradient "//format_string(gamax, "(es14.7)")//" H/a0"
+      str = str//nl//"step length   "//format_string(dnorm, "(es14.7)")//" a0   "//&
+        &            "   max. step     "//format_string(damax, "(es14.7)")//" a0"
     else
-      str = str//nl//"total energy  "//format_string(energy, '(es14.7)')//" H"
+      str = str//nl//"total energy  "//format_string(energy, "(es14.7)")//" H"
     end if
 
   contains
@@ -3426,7 +3426,7 @@ contains
       end if
 
       ! Warning: SSqrReal gets overwritten here
-      call diagDenseMtx(env, electronicSolver, 'V', HSqrReal, SSqrReal, eigen(:, iSpin),&
+      call diagDenseMtx(env, electronicSolver, "V", HSqrReal, SSqrReal, eigen(:, iSpin),&
           & errStatus)
       @:PROPAGATE_ERROR(errStatus)
       eigvecsReal(:,:,iKS) = HSqrReal
@@ -3667,7 +3667,7 @@ contains
         end if
       end if
 
-      call diagDenseMtx(env, electronicSolver, 'V', HSqrCplx, SSqrCplx, eigen(:, iK, iSpin),&
+      call diagDenseMtx(env, electronicSolver, "V", HSqrCplx, SSqrCplx, eigen(:, iK, iSpin),&
           & errStatus)
       @:PROPAGATE_ERROR(errStatus)
       eigvecsCplx(:,:, iKS) = HSqrCplx
@@ -3841,7 +3841,7 @@ contains
         end if
       end if
 
-      call diagDenseMtx(env, electronicSolver, 'V', HSqrCplx, SSqrCplx, eigen(:,iK), errStatus)
+      call diagDenseMtx(env, electronicSolver, "V", HSqrCplx, SSqrCplx, eigen(:,iK), errStatus)
       @:PROPAGATE_ERROR(errStatus)
       eigvecsCplx(:,:,iKS) = HSqrCplx
 
@@ -5965,7 +5965,7 @@ contains
     allocate(dipole(size(q0, dim=1), nAtom))
     allocate(potentialDerivative(nAtom, 1))
     write(stdOut,*)
-    write(stdOut, "(A)", advance='no') 'Hellmann Feynman dipole:'
+    write(stdOut, "(A)", advance="no") "Hellmann Feynman dipole:"
 
     if (nDipole > 0) then
       allocate(potentialGradDeriv(nDipole, nAtom))
@@ -6013,7 +6013,7 @@ contains
         dipole(1, iAt) = dipole(1, iAt) + sum(q0(:, iAt, 1)) *&
             & eFieldScaling%scaledExtEField(coord0(iCart, iAt))
       end do
-      write(stdOut, "(F16.8)", advance='no') sum(dipole)
+      write(stdOut, "(F16.8)", advance="no") sum(dipole)
     end do
     write(stdOut, *) " au"
 
@@ -8032,12 +8032,12 @@ contains
         nFilledLev = nint(nEl(iSpin) / real(3 - nSpin, dp))
         localisation = pipekMezey%getLocalisation(eigvecsReal(:, 1:nFilledLev, iKS), SSqrReal,&
             & denseDesc%iAtomStart)
-        write(stdOut, "(A, E15.8)") 'Original localisation', localisation
+        write(stdOut, "(A, E15.8)") "Original localisation", localisation
         call pipekMezey%calcCoeffs(eigvecsReal(:, 1:nFilledLev, iKS), SSqrReal,&
             & denseDesc%iAtomStart)
         localisation = pipekMezey%getLocalisation(eigvecsReal(:,1:nFilledLev,iKS), SSqrReal,&
             & denseDesc%iAtomStart)
-        write(stdOut, "(A, E20.12)") 'Final localisation ', localisation
+        write(stdOut, "(A, E20.12)") "Final localisation ", localisation
       end do
 
       call writeRealEigvecs(env, runId, neighbourList, nNeighbourSK, denseDesc, iSparseStart,&
@@ -8054,7 +8054,7 @@ contains
             & eigvecsCplx(:,:nFilledLev,iKS), SSqrCplx, ints%overlap, kpoint(:,iK), neighbourList,&
             & nNeighbourSK, iCellVec, cellVec, denseDesc%iAtomStart, iSparseStart, img2CentCell)
       end do
-      write(stdOut, "(A, E20.12)") 'Original localisation', localisation
+      write(stdOut, "(A, E20.12)") "Original localisation", localisation
 
       ! actual localisation calls
       do iKS = 1, parallelKS%nLocalKS
@@ -8075,7 +8075,7 @@ contains
             & eigvecsCplx(:,:nFilledLev,iKS), SSqrCplx, ints%overlap, kpoint(:,iK), neighbourList,&
             & nNeighbourSK, iCellVec, cellVec, denseDesc%iAtomStart, iSparseStart, img2CentCell)
       end do
-      write(stdOut, "(A, E20.12)") 'Final localisation', localisation
+      write(stdOut, "(A, E20.12)") "Final localisation", localisation
 
       call writeCplxEigvecs(env, runId, neighbourList, nNeighbourSK, cellVec, iCellVec, denseDesc,&
           & iSparseStart, img2CentCell, species, speciesName, orb, kPoint, ints%overlap,&
@@ -8230,7 +8230,7 @@ contains
 
         eigen(:,:,:) = 0.0_dp
         call env%globalTimer%startTimer(globalTimers%diagonalization)
-        call diagDenseMtx(env, electronicSolver, 'V', HSqrReal, SSqrReal, eigen(:,1,1), errStatus)
+        call diagDenseMtx(env, electronicSolver, "V", HSqrReal, SSqrReal, eigen(:,1,1), errStatus)
         @:PROPAGATE_ERROR(errStatus)
         call env%globalTimer%stopTimer(globalTimers%diagonalization)
         eigvecsReal(:,:,1) = HSqrReal
@@ -8288,7 +8288,7 @@ contains
 
     ! Calculate CSC = C^T_old * S_new * C_old
     tmpMat(:,:) = 0.0_dp
-    call gemm(tmpMat, eigvecsReal(:,:,1), reks%overSqr, transA='T')
+    call gemm(tmpMat, eigvecsReal(:,:,1), reks%overSqr, transA="T")
     tmpC(:,:) = 0.0_dp
     call gemm(tmpC, tmpMat, eigvecsReal(:,:,1))
 
@@ -8297,7 +8297,7 @@ contains
     tmpEigen(:) = 0.0_dp
     call env%globalTimer%startTimer(globalTimers%diagonalization)
     ! tmpC becomes eigenvectors (X) of CSC
-    call heev(tmpC, tmpEigen, 'U', 'V')
+    call heev(tmpC, tmpEigen, "U", "V")
     call env%globalTimer%stopTimer(globalTimers%diagonalization)
 
     ! Make inverse square root matrix consisting of eigenvalues (s) of CSC
@@ -8308,7 +8308,7 @@ contains
 
     ! Calculate a unitary matrix U = CSC^(-1/2) = X * s^(-1/2) * X^T
     tmpMat(:,:) = 0.0_dp
-    call gemm(tmpMat, tmpS, tmpC, transB='T')
+    call gemm(tmpMat, tmpS, tmpC, transB="T")
     unitaryMat(:,:) = 0.0_dp
     call gemm(unitaryMat, tmpC, tmpMat)
 

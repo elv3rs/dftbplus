@@ -157,7 +157,7 @@ contains
         do j = i+1, ncont
           do jAt = transpar%contacts(j)%idxrange(1), transpar%contacts(j)%idxrange(2)
             if (sum((coords(:,iAt)-coords(:,jAt))**2) <= skCutOff**2) then
-              write(errString,"(A,I0,A,I0,A)") 'Atom ', iAt, ' in contact "'//&
+              write(errString,"(A,I0,A,I0,A)") "Atom ", iAt, ' in contact "'//&
                   & trim(transpar%contacts(i)%name) // '" and atom ', jAt, ' in contact "'// &
                   & trim(transpar%contacts(j)%name) // '" interact with each other.'
               call error(trim(errString))
@@ -168,8 +168,8 @@ contains
     end do
 
     if (hasFullySurroundingContacts(isPeriodic, nCont, transpar)) then
-      call error('Device has contacts breaking periodicity in all three directions, so should not&
-          & be a periodic geometry')
+      call error("Device has contacts breaking periodicity in all three directions, so should not&
+          & be a periodic geometry")
     end if
 
     ! ------------------------------------------------------------------------------
@@ -269,18 +269,18 @@ contains
         params%FictCont(i) = transpar%contacts(i)%wideBand
         params%contact_DOS(i) = transpar%contacts(i)%wideBandDOS
 
-        write(stdOut,"(1X,A,I0,A)") '(negf_init) CONTACT INFO #', i,&
+        write(stdOut,"(1X,A,I0,A)") "(negf_init) CONTACT INFO #", i,&
             & ' "'//trim(transpar%contacts(i)%name)//'"'
 
         if (params%FictCont(i)) then
-          write(stdOut,*) 'FICTITIOUS CONTACT '
-          write(stdOut,*) 'DOS: ', params%contact_DOS(i)
+          write(stdOut,*) "FICTITIOUS CONTACT "
+          write(stdOut,*) "DOS: ", params%contact_DOS(i)
         end if
-        write(stdOut,*) 'Temperature (DM): ', params%kbT_dm(i)
-        write(stdOut,*) 'Temperature (Current): ', params%kbT_t(i)
+        write(stdOut,*) "Temperature (DM): ", params%kbT_dm(i)
+        write(stdOut,*) "Temperature (Current): ", params%kbT_t(i)
         if (transpar%contacts(i)%tFermiSet) then
-          write(stdOut,format2U)'Potential (with built-in)', pot(i), 'H', Hartree__eV*pot(i), 'eV'
-          write(stdOut,format2U)'eFermi', eFermi(i), 'H', Hartree__eV*eFermi(i), 'eV'
+          write(stdOut,format2U)"Potential (with built-in)", pot(i), "H", Hartree__eV*pot(i), "eV"
+          write(stdOut,format2U)"eFermi", eFermi(i), "H", Hartree__eV*eFermi(i), "eV"
         end if
         write(stdOut,*)
 
@@ -288,8 +288,8 @@ contains
         params%mu(i) = eFermi(i) - pot(i)
 
         if (transpar%contacts(i)%tFermiSet) then
-          write(stdOut,format2U)'Electro-chemical potentials', params%mu(i), 'H',&
-              & Hartree__eV*params%mu(i), 'eV'
+          write(stdOut,format2U)"Electro-chemical potentials", params%mu(i), "H",&
+              & Hartree__eV*params%mu(i), "eV"
           write(stdOut,*)
         end if
 
@@ -344,18 +344,18 @@ contains
         params%n_poles = 0
       end if
 
-      write(stdOut,*) 'Density Matrix Parameters'
+      write(stdOut,*) "Density Matrix Parameters"
       if (.not.transpar%defined) then
-        write(stdOut,*) 'Temperature (DM): ', params%kbT_dm(1)
-        write(stdOut,*) 'eFermi: ', params%mu(1)
+        write(stdOut,*) "Temperature (DM): ", params%kbT_dm(1)
+        write(stdOut,*) "eFermi: ", params%mu(1)
       end if
-      write(stdOut,*) 'Contour Points: ', params%Np_n(:2)
-      write(stdOut,*) 'Number of poles: ', params%N_poles
-      write(stdOut,*) 'Real-axis points: ', params%Np_real
+      write(stdOut,*) "Contour Points: ", params%Np_n(:2)
+      write(stdOut,*) "Number of poles: ", params%N_poles
+      write(stdOut,*) "Real-axis points: ", params%Np_real
       if (params%readOldDM_SGFs==0) then
-        write(stdOut,*) 'Read Existing SGFs: Yes '
+        write(stdOut,*) "Read Existing SGFs: Yes "
       else
-        write(stdOut,*) 'Read Existing SGFs: No, option ', params%readOldDM_SGFs
+        write(stdOut,*) "Read Existing SGFs: No, option ", params%readOldDM_SGFs
       end if
       write(stdOut,*)
 
@@ -495,13 +495,13 @@ contains
     write(stdOut,*)
     select case(elph%model)
     case(1)
-      write(stdOut,*) 'Setting local fully diagonal (FD) elastic dephasing model'
+      write(stdOut,*) "Setting local fully diagonal (FD) elastic dephasing model"
       call set_elph_dephasing(negf, elph%coupling, elph%scba_niter)
     case(2)
-      write(stdOut,*) 'Setting local block diagonal (BD) elastic dephasing model'
+      write(stdOut,*) "Setting local block diagonal (BD) elastic dephasing model"
       call set_elph_block_dephasing(negf, elph%coupling, elph%orbsperatm, elph%scba_niter)
     case(3)
-      write(stdOut,*) 'Setting overlap mask (OM) block diagonal elastic dephasing model'
+      write(stdOut,*) "Setting overlap mask (OM) block diagonal elastic dephasing model"
       call set_elph_s_dephasing(negf, elph%coupling, elph%orbsperatm, elph%scba_niter)
     case default
       call error("This electron-phonon model is not supported")
@@ -522,15 +522,15 @@ contains
     write(stdOut,*)
     select case(elph%model)
     case(1)
-      write(stdOut,*) 'Setting local fully diagonal (FD) BP dephasing model'
+      write(stdOut,*) "Setting local fully diagonal (FD) BP dephasing model"
       !write(stdOut,*) 'coupling=',elph%coupling
       call set_bp_dephasing(negf, elph%coupling)
     case(2)
-      write(stdOut,*) 'Setting local block diagonal (BD) BP dephasing model'
-      call error('NOT IMPLEMENTED! INTERRUPTED!')
+      write(stdOut,*) "Setting local block diagonal (BD) BP dephasing model"
+      call error("NOT IMPLEMENTED! INTERRUPTED!")
     case(3)
-      write(stdOut,*) 'Setting overlap mask (OM) block diagonal BP dephasing model'
-      call error('NOT IMPLEMENTED! INTERRUPTED!')
+      write(stdOut,*) "Setting overlap mask (OM) block diagonal BP dephasing model"
+      call error("NOT IMPLEMENTED! INTERRUPTED!")
     case default
       call error("BP model is not supported")
     end select
@@ -576,7 +576,7 @@ contains
     type(TNegfInt), intent(inout) :: this
 
     write(stdOut, *)
-    write(stdOut, *) 'Release NEGF memory:'
+    write(stdOut, *) "Release NEGF memory:"
     !BA: the following two/three calls are probably absolutely unnecessary
     call destruct(this%csrHam)
     call destruct(this%csrOver)
@@ -636,7 +636,7 @@ contains
     end if
 
     if (nDevicePLs==0) then
-      call error('Internal ERROR: nDevicePLs = 0 ?!')
+      call error("Internal ERROR: nDevicePLs = 0 ?!")
     end if
 
     nAtom = size(denseDescr%iAtomStart) - 1
@@ -708,17 +708,17 @@ contains
         do j1 = 1, ncont
 
           if (all(minv(:,j1) == 0)) then
-            write(stdOut,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(stdOut,"(A,I0,A)") 'WARNING: contact ',j1,' does not interact with any PL'
-            write(stdOut,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(stdOut,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            write(stdOut,"(A,I0,A)") "WARNING: contact ",j1," does not interact with any PL"
+            write(stdOut,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
             minv(1,j1) = j1
           end if
 
           if (count(minv(:,j1)==j1) > 1) then
-            write(stdOut,"(A)")     '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(stdOut,"(A,I0,A)")'ERROR: contact ',j1,' interacts with more than one PL'
-            write(stdOut,"(A)")     '       check structure and increase PL size         '
-            write(stdOut,"(A)")     '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(stdOut,"(A)")     "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            write(stdOut,"(A,I0,A)")"ERROR: contact ",j1," interacts with more than one PL"
+            write(stdOut,"(A)")     "       check structure and increase PL size         "
+            write(stdOut,"(A)")     "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
             call error("")
           end if
 
@@ -736,9 +736,9 @@ contains
 
       end if
 
-      write(stdOut,*) ' Structure info:'
-      write(stdOut,"(1X,A,1X,I0)") ' Number of PLs:',nDevicePLs
-      write(stdOut,*) ' PLs coupled to contacts:',cblk(:ncont)
+      write(stdOut,*) " Structure info:"
+      write(stdOut,"(1X,A,1X,I0)") " Number of PLs:",nDevicePLs
+      write(stdOut,*) " PLs coupled to contacts:",cblk(:ncont)
       write(stdOut,*)
 
     end if
@@ -791,7 +791,7 @@ contains
     end if
 
     if (nbl==0) then
-      call error('Internal ERROR: nbl = 0 ?!')
+      call error("Internal ERROR: nbl = 0 ?!")
     end if
 
     allocate(atomst(nbl+1))
@@ -815,9 +815,9 @@ contains
                img2CentCell(iNeigh(:nNeigh(ii),ii)) <= iate))
          end do
          if (nn > mm+1 .and. kk >= iats .and. kk <= iate) then
-           write(stdOut,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-           write(stdOut,*) 'WARNING: PL ',mm,' interacts with PL',nn
-           write(stdOut,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+           write(stdOut,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+           write(stdOut,*) "WARNING: PL ",mm," interacts with PL",nn
+           write(stdOut,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
            info = mm
          end if
        end do
@@ -865,27 +865,27 @@ contains
 
     params%ikpoint = nkpoint
     params%spin = spin
-    params%DorE='N'
+    params%DorE="N"
     nn=size(mu,1)
     params%mu(:nn) = mu(:nn)
 
     if(present(DensMat)) then
-       params%DorE = 'D'
+       params%DorE = "D"
        call set_params(negf,params)
        call pass_DM(negf,rho=DensMat)
     end if
     if(present(EnMat)) then
-       params%DorE = 'E'
+       params%DorE = "E"
        call set_params(negf,params)
        call pass_DM(negf,rhoE=EnMat)
     end if
     if (present(DensMat).and.present(EnMat)) then
-       params%DorE  = 'B'
+       params%DorE  = "B"
        call set_params(negf,params)
-       call error('UNSUPPORTED CASE in negf_density')
+       call error("UNSUPPORTED CASE in negf_density")
     end if
 
-    if (params%DorE=='N') then
+    if (params%DorE=="N") then
       return
     end if
 
@@ -955,24 +955,24 @@ contains
 
     type(TFileDescr) :: fd
 
-    write(stdOut, *) 'Dumping H and S in files...'
+    write(stdOut, *) "Dumping H and S in files..."
 
-    call openFile(fd, 'HH.dat', mode="w")
-    write(fd%unit, *) '% Size =',HH%nrow, HH%ncol
-    write(fd%unit, *) '% Nonzeros =',HH%nnz
-    write(fd%unit, *) '% '
-    write(fd%unit, *) 'zzz = ['
+    call openFile(fd, "HH.dat", mode="w")
+    write(fd%unit, *) "% Size =",HH%nrow, HH%ncol
+    write(fd%unit, *) "% Nonzeros =",HH%nnz
+    write(fd%unit, *) "% "
+    write(fd%unit, *) "zzz = ["
     call printcsr(fd%unit, HH)
-    write(fd%unit, *) ']'
+    write(fd%unit, *) "]"
     call closeFile(fd)
 
-    call openFile(fd, 'SS.dat', mode="w")
-    write(fd%unit, *) '% Size =',SS%nrow, SS%ncol
-    write(fd%unit, *) '% Nonzeros =',SS%nnz
-    write(fd%unit, *) '% '
-    write(fd%unit, *) 'zzz = ['
+    call openFile(fd, "SS.dat", mode="w")
+    write(fd%unit, *) "% Size =",SS%nrow, SS%ncol
+    write(fd%unit, *) "% Nonzeros =",SS%nnz
+    write(fd%unit, *) "% "
+    write(fd%unit, *) "zzz = ["
     call printcsr(fd%unit, SS)
-    write(fd%unit, *) ']'
+    write(fd%unit, *) "]"
     call closeFile(fd)
 
   end subroutine negf_dumpHS
@@ -1074,7 +1074,7 @@ contains
 
     call associate_lead_currents(pNegf, currents)
     if (.not.associated(currents)) then
-      call error('Internal error: currVec not associated')
+      call error("Internal error: currVec not associated")
     end if
 
   end subroutine negf_current
@@ -1181,7 +1181,7 @@ contains
 
     write(stdOut, *)
     write(stdOut, '(80("="))')
-    write(stdOut, *) '                         COMPUTING DENSITY MATRIX      '
+    write(stdOut, *) "                         COMPUTING DENSITY MATRIX      "
     write(stdOut, '(80("="))')
 
     do iKS = 1, nKS
@@ -1193,7 +1193,7 @@ contains
         write(stdOut,*) 'k-point',iK,'Spin',iS
       end if
     #:else
-      write(stdOut,*) 'k-point',iK,'Spin',iS
+      write(stdOut,*) "k-point",iK,"Spin",iS
     #:endif
 
       call foldToCSR(this%csrHam, ham(:,iS), kPoints(:,iK), iAtomStart, iPair, iNeighbor,&
@@ -1332,14 +1332,14 @@ contains
 
     write(stdOut, *)
     write(stdOut, '(80("="))')
-    write(stdOut, *) '                     COMPUTING E-WEIGHTED DENSITY MATRIX '
+    write(stdOut, *) "                     COMPUTING E-WEIGHTED DENSITY MATRIX "
     write(stdOut, '(80("="))')
 
     do iKS = 1, nKS
       iK = groupKS(1, iKS)
       iS = groupKS(2, iKS)
 
-      write(stdOut,*) 'k-point',iK,'Spin',iS
+      write(stdOut,*) "k-point",iK,"Spin",iS
 
       call foldToCSR(this%csrHam, ham(:,iS), kPoints(:,iK), iAtomStart, iPair, iNeighbor,&
           & nNeighbor, img2CentCell, iCellVec, cellVec, orb)
@@ -1493,7 +1493,7 @@ contains
     if (params%verbose > 30) then
       write(stdOut, *)
       write(stdOut, '(80("="))')
-      write(stdOut, *) '                            COMPUTATION OF CURRENT         '
+      write(stdOut, *) "                            COMPUTATION OF CURRENT         "
       write(stdOut, '(80("="))')
       write(stdOut, *)
     end if
@@ -1502,7 +1502,7 @@ contains
       iK = groupKS(1, iKS)
       iS = groupKS(2, iKS)
 
-      write(stdOut,*) 'Spin',iS,'k-point',iK,'k-weight',kWeights(iK)
+      write(stdOut,*) "Spin",iS,"k-point",iK,"k-weight",kWeights(iK)
 
       params%mu(:ncont) = mu(:ncont,iS)
 
@@ -1550,7 +1550,7 @@ contains
       if(.not.allocated(currLead)) then
         allocate(currLead(size(currPVec)), stat=err)
         if (err /= 0) then
-          call error('Allocation error (currTot)')
+          call error("Allocation error (currTot)")
         end if
         currLead(:) = 0.0_dp
       end if
@@ -1588,13 +1588,13 @@ contains
 
     do ii = 1, size(currLead)
       write(stdOut, *)
-      write(stdOut, '(1x,a,i3,i3,a,ES14.5,a,a)') ' contacts: ',params%ni(ii),params%nf(ii),&
-          & ' current: ', currLead(ii),' ',unitsOfCurrent%name
+      write(stdOut, "(1x,a,i3,i3,a,ES14.5,a,a)") " contacts: ",params%ni(ii),params%nf(ii),&
+          & " current: ", currLead(ii)," ",unitsOfCurrent%name
     end do
 
     ! Write Total transmission, T(E), on a separate file (optional)
     if (allocated(tunnMat)) then
-      filename = 'transmission'
+      filename = "transmission"
       if (tIOProc .and. twriteTunn) then
         call write_file(this%negf, tunnMat, tunnSKRes, filename, nS, kpoints, kWeights)
       end if
@@ -1608,7 +1608,7 @@ contains
 
     ! Write Total lead current, I_i(E), on a separate file (optional)
     if (allocated(currMat)) then
-      filename = 'current'
+      filename = "current"
       if (tIOProc .and. tWriteTunn) then
         call write_file(this%negf, currMat, currSKRes, filename, nS, kpoints, kWeights)
       end if
@@ -1683,7 +1683,7 @@ contains
         allocate(matTot(size(pMat,dim=1), size(pMat,dim=2)), stat=err)
 
         if (err /= 0) then
-          call error('Allocation error (tunnTot)')
+          call error("Allocation error (tunnTot)")
         end if
 
         matTot(:,:) = 0.0_dp
@@ -1699,7 +1699,7 @@ contains
           allocate(matSKRes(size(pMat,dim=1), size(pMat,dim=2), nK), stat=err)
 
           if (err/=0) then
-            call error('Allocation error (tunnSKRes)')
+            call error("Allocation error (tunnSKRes)")
           end if
 
           matSKRes(:,:,:) = 0.0_dp
@@ -1777,11 +1777,11 @@ contains
 
     nK = size(kpoints, dim=2)
 
-    call openFile(fd, trim(filename)//'.dat', mode="w")
+    call openFile(fd, trim(filename)//".dat", mode="w")
     do ii = 1, size(matTot, dim=1)
-      write(fd%unit,'(F20.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
+      write(fd%unit,"(F20.6)",ADVANCE="NO") (params%Emin+(ii-1)*params%Estep) * Hartree__eV
       do jj = 1, size(matTot, dim=2)
-        write(fd%unit,'(ES20.8)',ADVANCE='NO') matTot(ii,jj)
+        write(fd%unit,"(ES20.8)",ADVANCE="NO") matTot(ii,jj)
       end do
       write(fd%unit,*)
     end do
@@ -1789,11 +1789,11 @@ contains
 
     if (nK*nS > 1) then
 
-      call openFile(fd, file=trim(filename)//'_kpoints.dat', mode="w")
-      write(fd%unit, *)'# NKpoints = ', nK
-      write(fd%unit, *)'# NSpin = ', nS
-      write(fd%unit, *)'# Energy [eV], <spin k1 k2 k3 weight> '
-      write(fd%unit, '(A1)', ADVANCE='NO') '# '
+      call openFile(fd, file=trim(filename)//"_kpoints.dat", mode="w")
+      write(fd%unit, *)"# NKpoints = ", nK
+      write(fd%unit, *)"# NSpin = ", nS
+      write(fd%unit, *)"# Energy [eV], <spin k1 k2 k3 weight> "
+      write(fd%unit, "(A1)", ADVANCE="NO") "# "
 
       ! iKS = 1 2 3 4 5 6 7 8 9 10
       ! iK=groupKS(1,iKS), iS=groupKS(2,iKS)
@@ -1801,8 +1801,8 @@ contains
       ! iS  = 1 1 1 1 1 2 2 2 2 2
       do iS = 1, nS
         do iK = 1, nK
-          write(fd%unit, '(i5.2)', ADVANCE='NO') iS
-          write(fd%unit, '(es15.5, es15.5, es15.5, es15.5)', ADVANCE='NO')kpoints(:,iK),&
+          write(fd%unit, "(i5.2)", ADVANCE="NO") iS
+          write(fd%unit, "(es15.5, es15.5, es15.5, es15.5)", ADVANCE="NO")kpoints(:,iK),&
               & kWeights(iK)
         end do
       end do
@@ -1810,10 +1810,10 @@ contains
 
       if (allocated(matSKRes)) then
         do ii = 1, size(matSKRes(:,:,:), dim=1)
-          write(fd%unit, '(f20.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
+          write(fd%unit, "(f20.6)",ADVANCE="NO") (params%Emin+(ii-1)*params%Estep) * Hartree__eV
           do jj = 1, size(matSKRes(:,:,:), dim=2)
             do iKS = 1, nK*nS
-              write(fd%unit, '(es20.8)',ADVANCE='NO') matSKRes(ii,jj, iKS)
+              write(fd%unit, "(es20.8)",ADVANCE="NO") matSKRes(ii,jj, iKS)
             end do
             write(fd%unit, *)
           end do
@@ -1860,11 +1860,11 @@ contains
     nKS = nK*nS
 
     do jj=1,size(matTot, dim=2)
-      call openFile(fd, trim(regionLabels(jj))//'.dat', mode="w")
-      write(fd%unit,"(A)")'# Energy / eV     States / e'
+      call openFile(fd, trim(regionLabels(jj))//".dat", mode="w")
+      write(fd%unit,"(A)")"# Energy / eV     States / e"
       do ii=1,size(matTot, dim=1)
-        write(fd%unit,'(F12.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
-        write(fd%unit,'(ES20.8)') matTot(ii,jj)
+        write(fd%unit,"(F12.6)",ADVANCE="NO") (params%Emin+(ii-1)*params%Estep) * Hartree__eV
+        write(fd%unit,"(ES20.8)") matTot(ii,jj)
       end do
       call closeFile(fd)
     end do
@@ -1872,24 +1872,24 @@ contains
     if (allocated(matSKRes)) then
       if (nKS > 1) then
         do jj = 1, size(matSKRes(:,:,:), dim=2)
-          call openFile(fd, trim(regionLabels(jj))//'_kpoints.dat', mode="w")
-          write(fd%unit, "(A,I0)")'# NKpoints = ', nK
-          write(fd%unit, "(A,I1)")'# NSpin = ', nS
-          write(fd%unit, "(A)")'# <spin k1 k2 k3 weight> '
-          write(fd%unit, '(A1)', ADVANCE='NO') '# '
+          call openFile(fd, trim(regionLabels(jj))//"_kpoints.dat", mode="w")
+          write(fd%unit, "(A,I0)")"# NKpoints = ", nK
+          write(fd%unit, "(A,I1)")"# NSpin = ", nS
+          write(fd%unit, "(A)")"# <spin k1 k2 k3 weight> "
+          write(fd%unit, "(A1)", ADVANCE="NO") "# "
           do iS = 1, nS
             do iK = 1, nK
-              write(fd%unit, '(i5.1)', ADVANCE='NO') iS
-              write(fd%unit, '(es15.5, es15.5, es15.5, es15.5)', ADVANCE='NO') kpoints(:,iK),&
+              write(fd%unit, "(i5.1)", ADVANCE="NO") iS
+              write(fd%unit, "(es15.5, es15.5, es15.5, es15.5)", ADVANCE="NO") kpoints(:,iK),&
                   & kWeights(iK)
             end do
           end do
           write(fd%unit, *)
 
           do ii = 1, size(matSKRes(:,:,:), dim=1)
-            write(fd%unit, '(f20.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
+            write(fd%unit, "(f20.6)",ADVANCE="NO") (params%Emin+(ii-1)*params%Estep) * Hartree__eV
             do iKS = 1,nKS
-              write(fd%unit, '(es20.8)',ADVANCE='NO') matSKRes(ii,jj, iKS)
+              write(fd%unit, "(es20.8)",ADVANCE="NO") matSKRes(ii,jj, iKS)
             end do
             write(fd%unit, *)
           end do
@@ -2015,7 +2015,7 @@ contains
 
     write(stdOut, *)
     write(stdOut, '(80("="))')
-    write(stdOut, *) '                        COMPUTING LOCAL CURRENTS          '
+    write(stdOut, *) "                        COMPUTING LOCAL CURRENTS          "
     write(stdOut, '(80("="))')
     write(stdOut, *)
 
@@ -2048,7 +2048,7 @@ contains
       iK = groupKS(1, iKS)
       iS = groupKS(2, iKS)
 
-      write(stdOut,*) 'k-point',iK,'Spin',iS
+      write(stdOut,*) "k-point",iK,"Spin",iS
 
       ! We need to recompute Rho and RhoE .....
       call foldToCSR(this%csrHam, ham(:,iS), kPoints(:,iK), iAtomStart, iPair,&
@@ -2085,7 +2085,7 @@ contains
         ! print local currents
         iKgl = (iS-1) * nK + iK
         write(skp, fmtstring) iKgl
-        call openFile(fd, 'lcurrents_'//skp//"_"//spin2ch(iS)//'.dat', mode="w")
+        call openFile(fd, "lcurrents_"//skp//"_"//spin2ch(iS)//".dat", mode="w")
 
         ! loop on central cell atoms and write local currents to all other
         ! interacting atoms within the cell and neighbour cells
@@ -2094,7 +2094,7 @@ contains
           mOrb = orb%nOrbAtom(mm)
           iRow = iAtomStart(mm)
 
-          write(fd%unit,'(I5,3(F12.6),I4)',advance='NO') mm, lc_coord(:,mm), lc_neigh%nNeighbour(mm)
+          write(fd%unit,"(I5,3(F12.6),I4)",advance="NO") mm, lc_coord(:,mm), lc_neigh%nNeighbour(mm)
 
           do inn = 1, lc_neigh%nNeighbour(mm)
             nn = lc_neigh%iNeighbour(inn, mm)
@@ -2113,7 +2113,7 @@ contains
             end do
             ! pi-factor  comes from  Gn = rho * pi
             Im = Im * 2.0_dp*params%g_spin*pi*eovh*kWeights(iK)
-            write(fd%unit,'(I5,ES17.8)',advance='NO') nn, Im
+            write(fd%unit,"(I5,ES17.8)",advance="NO") nn, Im
             lcurr(inn, mm, iS) = lcurr(inn, mm, iS) + Im
           end do
 
@@ -2137,11 +2137,11 @@ contains
       testArray(:,:) = 0.0_dp
       ! Write the total current per spin channel
       do iS = 1, nSpin
-        call openFile(fd, 'lcurrents_'//spin2ch(iS)//'.dat', mode="w")
+        call openFile(fd, "lcurrents_"//spin2ch(iS)//".dat", mode="w")
         do mm = 1, nAtom
-          write(fd%unit,'(I5,3(F12.6),I4)',advance='NO') mm, lc_coord(:,mm), lc_neigh%nNeighbour(mm)
+          write(fd%unit,"(I5,3(F12.6),I4)",advance="NO") mm, lc_coord(:,mm), lc_neigh%nNeighbour(mm)
           do inn = 1, lc_neigh%nNeighbour(mm)
-            write(fd%unit,'(I5,ES17.8)',advance='NO') lc_neigh%iNeighbour(inn, mm), lcurr(inn,mm,iS)
+            write(fd%unit,"(I5,ES17.8)",advance="NO") lc_neigh%iNeighbour(inn, mm), lcurr(inn,mm,iS)
             testArray(inn,(iS-1)*nAtom+mm) = lcurr(inn,mm,iS)
           end do
           write(fd%unit,*)
@@ -2168,7 +2168,7 @@ contains
       !> label
       character(1) :: ch
 
-      character(1), parameter :: labels(2) = ['u', 'd']
+      character(1), parameter :: labels(2) = ["u", "d"]
 
       ch = labels(iS)
 
@@ -2277,7 +2277,7 @@ contains
     N = size(H, dim=1)
 
     if (N /= negf%NumStates) then
-      call error('orthogonalization: negf init NumStates error')
+      call error("orthogonalization: negf init NumStates error")
     end if
 
     allocate(A(N,N),W(N))
@@ -2289,7 +2289,7 @@ contains
 
     A(:,:) = S
 
-    call heev(A, W, 'L', 'V')
+    call heev(A, W, "L", "V")
     !call DSYEV('V','U',N,A,N,W,WORK,3*N,INFO )
 
     !print  *,'U matrix, Eigenvectors for S diagonalization'
@@ -2385,7 +2385,7 @@ contains
 
     N = size(H, dim=1)
     if (N /= negf%NumStates) then
-      call error('orthogonalization: negf init NumStates error')
+      call error("orthogonalization: negf init NumStates error")
     end if
 
     N2=negf%str%central_dim
@@ -2397,7 +2397,7 @@ contains
     A(:,:) = S(:N2,1:N2)
     U(:,:) = A
 
-    call heev(U, W, 'L', 'V')
+    call heev(U, W, "L", "V")
     !call DSYEV('V','U',N2,U,N2,W,WORK,3*N2,INFO )
 
     !print  *,'U matrix, Eigenvectors for S diagonalization'

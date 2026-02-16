@@ -2892,15 +2892,15 @@ contains
         if (any(abs(input%ctrl%supercellFoldingMatrix&
             & - this%supercellFoldingMatrix) > 1e-06_dp)) then
           write(tmpStr, "(A,3I5,A,3I5,A,3I5,A,3F10.6)")&
-              & 'Error while processing k-point sampling for hybrid run.'&
-              & // NEW_LINE('A')&
-              & // '   When restarting, only identical k-point samplings to the previous run are'&
-              & // NEW_LINE('A') // '   supported. In this case this would correspond to the&
-              & following supercell' // NEW_LINE('A') // '   folding matrix:'&
-              & // NEW_LINE('A'),&
-              & nint(this%supercellFoldingMatrix(1, 1:3)), NEW_LINE('A'),&
-              & nint(this%supercellFoldingMatrix(2, 1:3)), NEW_LINE('A'),&
-              & nint(this%supercellFoldingMatrix(3, 1:3)), NEW_LINE('A'),&
+              & "Error while processing k-point sampling for hybrid run."&
+              & // NEW_LINE("A")&
+              & // "   When restarting, only identical k-point samplings to the previous run are"&
+              & // NEW_LINE("A") // "   supported. In this case this would correspond to the&
+              & following supercell" // NEW_LINE("A") // "   folding matrix:"&
+              & // NEW_LINE("A"),&
+              & nint(this%supercellFoldingMatrix(1, 1:3)), NEW_LINE("A"),&
+              & nint(this%supercellFoldingMatrix(2, 1:3)), NEW_LINE("A"),&
+              & nint(this%supercellFoldingMatrix(3, 1:3)), NEW_LINE("A"),&
               & this%supercellFoldingMatrix(:, 4)
           call error(trim(tmpStr))
         end if
@@ -3263,11 +3263,11 @@ contains
       select case(input%ctrl%thermostatInp%thermostatType)
       case (thermostatTypes%dummy)
         if (this%tBarostat) then
-          write(stdOut, "('Mode:',T30,A,/,T30,A)") 'MD without scaling of velocities',&
+          write(stdOut, "('Mode:',T30,A,/,T30,A)") "MD without scaling of velocities",&
               & '(a.k.a. "NPE" ensemble)'
         else
-          write(stdOut, "('Mode:',T30,A,/,T30,A)") 'MD without scaling of velocities',&
-              & '(a.k.a. NVE ensemble)'
+          write(stdOut, "('Mode:',T30,A,/,T30,A)") "MD without scaling of velocities",&
+              & "(a.k.a. NVE ensemble)"
         end if
       case (thermostatTypes%andersen)
         if (this%tBarostat) then
@@ -3312,19 +3312,19 @@ contains
       tGeoOptRequiresEgy = .true.
       select case (input%ctrl%iGeoOpt)
       case (geoOptTypes%steepestDesc)
-        write(stdOut, "('Mode:',T30,A)")'Steepest descent' // trim(strTmp)
+        write(stdOut, "('Mode:',T30,A)")"Steepest descent" // trim(strTmp)
       case (geoOptTypes%conjugateGrad)
-        write(stdOut, "('Mode:',T30,A)") 'Conjugate gradient relaxation' // trim(strTmp)
+        write(stdOut, "('Mode:',T30,A)") "Conjugate gradient relaxation" // trim(strTmp)
       case (geoOptTypes%diis)
-        write(stdOut, "('Mode:',T30,A)") 'Modified gDIIS relaxation' // trim(strTmp)
+        write(stdOut, "('Mode:',T30,A)") "Modified gDIIS relaxation" // trim(strTmp)
         tGeoOptRequiresEgy = .false.
       case (geoOptTypes%lbfgs)
-        write(stdout, "('Mode:',T30,A)") 'LBFGS relaxation' // trim(strTmp)
+        write(stdout, "('Mode:',T30,A)") "LBFGS relaxation" // trim(strTmp)
       case (geoOptTypes%fire)
-        write(stdout, "('Mode:',T30,A)") 'FIRE relaxation' // trim(strTmp)
+        write(stdout, "('Mode:',T30,A)") "FIRE relaxation" // trim(strTmp)
         tGeoOptRequiresEgy = .false.
       case (geoOptTypes%geometryoptimisation)
-        write(stdout, "('Mode:',T30,A)") 'Geometry optimisation relaxation'
+        write(stdout, "('Mode:',T30,A)") "Geometry optimisation relaxation"
       case default
         call error("Unknown optimisation mode")
       end select
@@ -3517,8 +3517,8 @@ contains
 
     if (.not. allocated(this%reks) .and. .not.this%tRestartNoSC) then
       if (.not.input%ctrl%tSetFillingTemp) then
-        write(stdOut, format2Ue) "Electronic temperature", this%tempElec, 'H',&
-            & Hartree__eV * this%tempElec, 'eV'
+        write(stdOut, format2Ue) "Electronic temperature", this%tempElec, "H",&
+            & Hartree__eV * this%tempElec, "eV"
       end if
     end if
     if (this%tMD) then
@@ -3838,14 +3838,14 @@ contains
 
       if (allocated(input%ctrl%atomicExtPotential)) then
         if (allocated(input%ctrl%atomicExtPotential%iAtOnSite)) then
-          write(stdOut, "(A)")'Net on-site potentials at atoms (/ H)'
+          write(stdOut, "(A)")"Net on-site potentials at atoms (/ H)"
           do ii = 1, size(input%ctrl%atomicExtPotential%iAtOnSite)
             write(stdOut,"(1X,I6,' : ',E14.6)")input%ctrl%atomicExtPotential%iAtOnSite(ii),&
                 & input%ctrl%atomicExtPotential%VextOnSite(ii)
           end do
         end if
         if (allocated(input%ctrl%atomicExtPotential%iAt)) then
-          write(stdOut, "(A)")'Gross on-site potentials at atoms (/ H)'
+          write(stdOut, "(A)")"Gross on-site potentials at atoms (/ H)"
           do ii = 1, size(input%ctrl%atomicExtPotential%iAt)
             write(stdOut,"(1X,I6,' : ',E14.6)")input%ctrl%atomicExtPotential%iAt(ii),&
                 & input%ctrl%atomicExtPotential%Vext(ii)
@@ -3861,9 +3861,9 @@ contains
           write(strTmp, "(A,':')") "U-J coupling constants"
           write(stdOut, "(A,T25,A2)")trim(strTmp), this%speciesName(iSp)
           do jj = 1, this%dftbU%nUJ(iSp)
-            write(strTmp, "(A,I1,A)")'(A,',this%dftbU%niUJ(jj,iSp),'I2,T25,A,F6.4)'
-            write(stdOut, trim(strTmp)) 'Shells:',&
-                & this%dftbU%iUJ(1:this%dftbU%niUJ(jj,iSp),jj,iSp), 'UJ:', this%dftbU%UJ(jj,iSp)
+            write(strTmp, "(A,I1,A)")"(A,",this%dftbU%niUJ(jj,iSp),"I2,T25,A,F6.4)"
+            write(stdOut, trim(strTmp)) "Shells:",&
+                & this%dftbU%iUJ(1:this%dftbU%niUJ(jj,iSp),jj,iSp), "UJ:", this%dftbU%UJ(jj,iSp)
           end do
         end if
       end do
@@ -4057,7 +4057,7 @@ contains
       case (diffTypes%finiteDiff)
         ! set step size from input
         if (input%ctrl%deriv1stDelta < epsilon(1.0_dp)) then
-          write(tmpStr, "(A,E12.4)") 'Too small value for finite difference step :',&
+          write(tmpStr, "(A,E12.4)") "Too small value for finite difference step :",&
               & input%ctrl%deriv1stDelta
           call error(tmpStr)
         end if
@@ -5244,7 +5244,7 @@ contains
         call clearFile(bandOut)
       else
         do iDet = 1, this%deltaDftb%nDeterminant()
-          call clearFile(this%deltaDftb%determinantName(iDet) // '_' //  bandOut)
+          call clearFile(this%deltaDftb%determinantName(iDet) // "_" //  bandOut)
         end do
       end if
       if (this%doPerturbation .and. this%isEResp) then
@@ -5340,9 +5340,9 @@ contains
         this%isCIopt = this%linearResponse%isCIopt
         if (this%isCIopt) then
           ! Currently always using Bearpark algorithm:
-          write(stdOut, "('Conical Intersection finder:',T30,A)") 'Bearpark'
-          write(stdOut, format2Ue) "CI finder level shift", this%linearResponse%energyShiftCI, 'H',&
-              & Hartree__eV * this%linearResponse%energyShiftCI, 'eV'
+          write(stdOut, "('Conical Intersection finder:',T30,A)") "Bearpark"
+          write(stdOut, format2Ue) "CI finder level shift", this%linearResponse%energyShiftCI, "H",&
+              & Hartree__eV * this%linearResponse%energyShiftCI, "eV"
         end if
       end if
     end if
@@ -6211,7 +6211,7 @@ contains
       if (input%ctrl%lrespini%tEnergyWindow .or. input%ctrl%lrespini%tOscillatorWindow) then
         call error("hybrid functional excited states not available for window options.")
       end if
-      if (input%ctrl%lrespini%sym == 'B' .or. input%ctrl%lrespini%sym == 'T') then
+      if (input%ctrl%lrespini%sym == "B" .or. input%ctrl%lrespini%sym == "T") then
         call warning("hybrid functional excited states not well tested for triplet excited states!")
       end if
       if (input%ctrl%tSpin) then

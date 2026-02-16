@@ -170,15 +170,15 @@ contains
       end if
 
       if (nSpin == 2) then
-        write(fdHS%unit, formatFermiWrite) 'Fermi level (up):', Ef(1), "H", Hartree__eV * Ef(1),&
-            & 'eV'
-        write(fdHS%unit, formatFermiWrite) 'Fermi level (down):', Ef(2), "H", Hartree__eV * Ef(2),&
-            & 'eV'
+        write(fdHS%unit, formatFermiWrite) "Fermi level (up):", Ef(1), "H", Hartree__eV * Ef(1),&
+            & "eV"
+        write(fdHS%unit, formatFermiWrite) "Fermi level (down):", Ef(2), "H", Hartree__eV * Ef(2),&
+            & "eV"
       else
-        write(fdHS%unit, formatFermiWrite) 'Fermi level :', Ef(1), "H", Hartree__eV * Ef(1), 'eV'
+        write(fdHS%unit, formatFermiWrite) "Fermi level :", Ef(1), "H", Hartree__eV * Ef(1), "eV"
       end if
 
-      write(stdOut,*) 'shiftcont_' // trim(filename) // '.dat written to file'
+      write(stdOut,*) "shiftcont_" // trim(filename) // ".dat written to file"
 
     else
 
@@ -202,7 +202,7 @@ contains
 
       write(fdHS%unit) Ef(:)
 
-      write(stdOut,*) 'shiftcont_' // trim(filename) // '.bin written to file'
+      write(stdOut,*) "shiftcont_" // trim(filename) // ".bin written to file"
 
     end if
 

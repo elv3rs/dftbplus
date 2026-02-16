@@ -59,26 +59,26 @@ contains
     !> Solvation model
     class(TSolvation), intent(in) :: solvation
 
-    write(unit, '(a, ":", t30)', advance='no') "Solvation"
+    write(unit, '(a, ":", t30)', advance="no") "Solvation"
     select type(solvation)
     type is(TGeneralizedBorn)
       if (solvation%isALPB()) then
-        write(unit, '(a)') "analytical linearized Poisson-Boltzmann model"
+        write(unit, "(a)") "analytical linearized Poisson-Boltzmann model"
       else
-        write(unit, '(a)') "generalized Born model"
+        write(unit, "(a)") "generalized Born model"
       end if
       call writeGeneralizedBornInfo(unit, solvation)
 
     type is(TCosmo)
-      write(unit, '(a)') "conductor like screening model"
+      write(unit, "(a)") "conductor like screening model"
       call writeCosmoInfo(unit, solvation)
 
     type is(TSASACont)
-      write(unit, '(a)') "surface area model"
+      write(unit, "(a)") "surface area model"
       call writeSASAContInfo(unit, solvation)
 
     class default
-      write(unit, '(a)') "internal error"
+      write(unit, "(a)") "internal error"
       call error("Unknown solvation model passed")
 
     end select

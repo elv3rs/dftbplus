@@ -298,9 +298,9 @@ contains
     character(*), intent(inout) :: iomsg
 
     if (this%invertValue) then
-      write(unit,"(a20, a, e24.14, a)") this%name, ':', this%conversionFact, " / x"
+      write(unit,"(a20, a, e24.14, a)") this%name, ":", this%conversionFact, " / x"
     else
-      write(unit,"(a20, a, e24.14, a)") this%name, ':', this%conversionFact, " * x"
+      write(unit,"(a20, a, e24.14, a)") this%name, ":", this%conversionFact, " * x"
     end if
     iostat = 0
 

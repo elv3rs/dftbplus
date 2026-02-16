@@ -27,7 +27,7 @@ module dftbp_dftb_elstatpot
   type :: TElStatPotentialsInp
 
     !> File to store the resulting points
-    character(lc) :: espOutFile = 'ESP.dat'
+    character(lc) :: espOutFile = "ESP.dat"
 
     !> Should the potential appended to the file
     logical :: tAppendESP = .false.

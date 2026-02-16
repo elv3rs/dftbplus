@@ -345,7 +345,7 @@ contains
     if (present(side)) then
       iSide(:) = side
     else
-      iSide(:) = 'L'
+      iSide(:) = "L"
     end if
 
     @:ASSERT(all(shape(xx) == shape(uu)))
@@ -353,10 +353,10 @@ contains
 
     ! should blasify:
     select case(iSide)
-    case ('L', 'l')
+    case ("L", "l")
       work(:,:) = matmul(xx, transpose(uu))
       xx(:,:) = matmul(uu, work)
-    case ('R', 'r')
+    case ("R", "r")
       work(:,:) = matmul(xx, uu)
       xx(:,:) = matmul(transpose(uu), work)
     case default
@@ -384,7 +384,7 @@ contains
     if (present(side)) then
       iSide(:) = side
     else
-      iSide(:) = 'L'
+      iSide(:) = "L"
     end if
 
     @:ASSERT(all(shape(xx) == shape(uu)))
@@ -392,10 +392,10 @@ contains
 
     ! should blasify:
     select case(iSide)
-    case ('L', 'l')
+    case ("L", "l")
       work(:,:) = matmul(xx, transpose(conjg(uu)))
       xx(:,:) = matmul(uu, work)
-    case ('R', 'r')
+    case ("R", "r")
       work(:,:) = matmul(xx, uu)
       xx(:,:) = matmul(transpose(conjg(uu)), work)
     case default
@@ -438,8 +438,8 @@ contains
     if (present(iError)) then
       iError = info
     else if (info /= 0) then
-99120 format ('Matrix inversion failed because of error in getrf or getri.', &
-          & ' Info flag: ',i10)
+99120 format ("Matrix inversion failed because of error in getrf or getri.", &
+          & " Info flag: ",i10)
       write (error_string, 99120) info
       call error(error_string)
     end if
@@ -668,21 +668,21 @@ contains
 
     dummyM(:,:) = matIn
 
-    call heev(dummyM, dummyEV, 'U', 'V')
+    call heev(dummyM, dummyEV, "U", "V")
 
     ! Calculate matrix sqrt
     do ii = 1, spaceDim
       dummyM2(:,ii) = sqrt(dummyEV(ii)) * dummyM(:,ii)
     end do
 
-    call gemm(matSqrt, dummyM2, dummyM, transB='T')
+    call gemm(matSqrt, dummyM2, dummyM, transB="T")
 
     ! Calculate invverse of matrix sqrt
     do ii = 1, spaceDim
       dummyM2(:,ii) = dummyM(:,ii) / sqrt(dummyEV(ii))
     end do
 
-    call gemm(matSqrtInv, dummyM2, dummyM, transB='T')
+    call gemm(matSqrtInv, dummyM2, dummyM, transB="T")
 
   end subroutine calcMatrixSqrt
 

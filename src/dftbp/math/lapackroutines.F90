@@ -332,16 +332,16 @@ contains
     call sgetrf(mm, nn, aa, lda, ipiv, info)
 
     if (info < 0) then
-99040 format ('Failure in LU factorisation sgetrf,', &
-          & ' illegal argument at position ',i10)
+99040 format ("Failure in LU factorisation sgetrf,", &
+          & " illegal argument at position ",i10)
       write (error_string, 99040) info
       call error(error_string)
     else
       if (present(iError)) then
         iError = info
       else if (info > 0) then
-99050   format ('Factor U is exactly zero in sgetrf,', &
-            & ' info flag is ',i10)
+99050   format ("Factor U is exactly zero in sgetrf,", &
+            & " info flag is ",i10)
         write (error_string, 99050) info
         call error(error_string)
       end if
@@ -391,16 +391,16 @@ contains
     call dgetrf(mm, nn, aa, lda, ipiv, info)
 
     if (info < 0) then
-99060 format ('Failure in LU factorisation dgetrf,', &
-          & ' illegal argument at position ',i10)
+99060 format ("Failure in LU factorisation dgetrf,", &
+          & " illegal argument at position ",i10)
       write (error_string, 99060) info
       call error(error_string)
     else
       if (present(iError)) then
         iError = info
       else if (info > 0) then
-99070   format ('Factor U is exactly zero in dgetrf,', &
-            & ' info flag is ',i10)
+99070   format ("Factor U is exactly zero in dgetrf,", &
+            & " info flag is ",i10)
         write (error_string, 99070) info
         call error(error_string)
       end if
@@ -450,16 +450,16 @@ contains
     call cgetrf(mm, nn, aa, lda, ipiv, info)
 
     if (info < 0) then
-99045 format ('Failure in LU factorisation sgetrf,', &
-          & ' illegal argument at position ',i10)
+99045 format ("Failure in LU factorisation sgetrf,", &
+          & " illegal argument at position ",i10)
       write (error_string, 99045) info
       call error(error_string)
     else
       if (present(iError)) then
         iError = info
       else if (info > 0) then
-99055   format ('Factor U is exactly zero in sgetrf,', &
-            & ' info flag is ',i10)
+99055   format ("Factor U is exactly zero in sgetrf,", &
+            & " info flag is ",i10)
         write (error_string, 99055) info
         call error(error_string)
       end if
@@ -509,16 +509,16 @@ contains
     call zgetrf(mm, nn, aa, lda, ipiv, info)
 
     if (info < 0) then
-99065 format ('Failure in LU factorisation dgetrf,', &
-          & ' illegal argument at position ',i10)
+99065 format ("Failure in LU factorisation dgetrf,", &
+          & " illegal argument at position ",i10)
       write (error_string, 99065) info
       call error(error_string)
     else
       if (present(iError)) then
         iError = info
       else if (info > 0) then
-99075   format ('Factor U is exactly zero in dgetrf,', &
-            & ' info flag is ',i10)
+99075   format ("Factor U is exactly zero in dgetrf,", &
+            & " info flag is ",i10)
         write (error_string, 99075) info
         call error(error_string)
       end if
@@ -567,16 +567,16 @@ contains
     call sgetri(nn, aa, lda, ipiv, work, lwork, info)
 
     if (info < 0) then
-99080 format ('Failure in LU factorisation (sgetri),', &
-          & ' illegal argument at position ',i10)
+99080 format ("Failure in LU factorisation (sgetri),", &
+          & " illegal argument at position ",i10)
       write (error_string, 99080) info
       call error(error_string)
     else
       if (present(iError)) then
         iError = info
       else if (info > 0) then
-99090   format ('Factor U is exactly zero in sgetri,', &
-            & ' info flag is ',i10)
+99090   format ("Factor U is exactly zero in sgetri,", &
+            & " info flag is ",i10)
         write (error_string, 99090) info
         call error(error_string)
       end if
@@ -625,16 +625,16 @@ contains
     call dgetri(nn, aa, lda, ipiv, work, lwork, info)
 
     if (info < 0) then
-99100 format ('Failure in LU factorisation (dgetri), illegal argument at&
-          & position ', i10)
+99100 format ("Failure in LU factorisation (dgetri), illegal argument at&
+          & position ", i10)
       write (error_string, 99100) info
       call error(error_string)
     else
       if (present(iError)) then
         iError = info
       else if (info > 0) then
-99110   format ('Factor U is exactly zero in dgetri,', &
-            & ' info flag is ',i10)
+99110   format ("Factor U is exactly zero in dgetri,", &
+            & " info flag is ",i10)
         write (error_string, 99110) info
         call error(error_string)
       end if
@@ -881,10 +881,10 @@ contains
     ldvt = size(Vt,dim=1)
 
     ! S and S as default
-    jobu0 = 'S'
+    jobu0 = "S"
     if (present(jobu)) jobu0 = jobu
     @:ASSERT(any(jobu0 == ['A', 'S', 'O', 'N']))
-    jobvt0 = 'S'
+    jobvt0 = "S"
     if (present(jobvt)) jobvt0 = jobvt
     @:ASSERT(any(jobvt0 == ['A', 'S', 'O', 'N']))
     @:ASSERT(.not. (jobu0 == 'O' .and. jobvt0 == 'O') )
@@ -1023,7 +1023,7 @@ contains
   if (present(transa)) then
     iTransA = transA
   else
-    iTransA = 'n'
+    iTransA = "n"
   end if
   @:ASSERT(iTransA == 'n' .or. iTransA == 'N' .or. iTransA == 't'&
       & .or. iTransA == 'T' .or. iTransA == 'c' .or. iTransA == 'C')
@@ -1080,7 +1080,7 @@ contains
       @:ASSERT(any(trans == ['n', 'N', 't', 'T', 'c', 'C']))
       atr = trans
     else
-      atr = 'n'
+      atr = "n"
     end if
     lda = max(1, size(amat, 1))
     ldb = max(1, size(bmat, 1))
@@ -1151,7 +1151,7 @@ contains
       @:ASSERT(any(trans == ['n', 'N', 't', 'T', 'c', 'C']))
       atr = trans
     else
-      atr = 'n'
+      atr = "n"
     end if
     lda = max(1, size(amat, 1))
     ldb = max(1, size(bmat, 1))

@@ -195,7 +195,7 @@ contains
 
     ! H * C for initialization
     call mwrite(lun1, C, 1)
-    call spmv(HP, C, vecf2, uplo='u')
+    call spmv(HP, C, vecf2, uplo="u")
     call mwrite(lun2, vecf2, 1)
 
     e = 0
@@ -219,7 +219,7 @@ contains
           Uaug(i, j) = av(ij)
         end do
       end do
-      call syev(Uaug, d, uplo='u', jobz='v')
+      call syev(Uaug, d, uplo="u", jobz="v")
       valn = d(1)
 
       vecf1 = 0.0_dp

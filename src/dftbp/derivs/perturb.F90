@@ -141,7 +141,7 @@ module dftbp_derivs_perturb
   end type TResponse
 
   !> Direction labels
-  character(len=1), parameter :: direction(3) = ['x','y','z']
+  character(len=1), parameter :: direction(3) = ["x","y","z"]
 
 contains
 
@@ -369,7 +369,7 @@ contains
     type(TRotateDegen), allocatable :: degenTransform(:)
 
     write(stdOut,*)
-    write(stdOut,*)'Perturbation calculation with respect to applied electric field'
+    write(stdOut,*)"Perturbation calculation with respect to applied electric field"
     write(stdOut,*)
 
     call init_perturbation(parallelKS, this%tolDegen, nOrbs, nKpts, nSpin, nIndepHam, maxFill,&
@@ -475,7 +475,7 @@ contains
 
         if (any(tMetallic)) then
           write(stdOut,*)
-          write(stdOut,"(A,2E20.12)")'d E_f / d E_'//trim(quaternionName(iCart+1))//':',&
+          write(stdOut,"(A,2E20.12)")"d E_f / d E_"//trim(quaternionName(iCart+1))//":",&
               & dEfdE(:,iCart)
           write(stdOut,*)
         end if
@@ -724,7 +724,7 @@ contains
         & eigvals, tempElec, Ef, kWeight)
 
     write(stdOut,*)
-    write(stdOut,*)'Perturbation calculation of atomic polarisability kernel'
+    write(stdOut,*)"Perturbation calculation of atomic polarisability kernel"
     write(stdOut,*)
 
     allocate(dqOut(orb%mOrb, nAtom, nSpin))
@@ -765,7 +765,7 @@ contains
 
     lpAtom: do iAt = 1, nAtom
 
-      write(stdOut,*)'Derivative with respect to potential at atom ', iAt
+      write(stdOut,*)"Derivative with respect to potential at atom ", iAt
 
       dqOut(:,:,:) = 0.0_dp
       dqIn(:,:,:) = 0.0_dp
@@ -804,7 +804,7 @@ contains
           dEiTmp(:,:,:,iAt,iOmega) = dEi
         end if
 
-        write(stdOut,*)'Frontier orbital derivatives'
+        write(stdOut,*)"Frontier orbital derivatives"
         do iS = 1, nIndepHam
           do iK = 1, nKpts
             write(stdOut,*)dEi(nFilled(iS, iK), iK, iS), dEi(nEmpty(iS, iK), iK, iS)
@@ -812,7 +812,7 @@ contains
         end do
 
         call getOnsitePopulation(dRho(:,1), orb, iSparseStart, dqNetAtom)
-        write(stdOut,*)'Derivatives of Mulliken and on-site (net) populations'
+        write(stdOut,*)"Derivatives of Mulliken and on-site (net) populations"
         do jAt = 1, nAtom
           write(stdOut,*)jAt, sum(dqOut(:,jAt,1)), dqNetAtom(jAt)
         end do
@@ -823,7 +823,7 @@ contains
         end if
 
         if (isBandWritten) then
-          write(atLabel,"(A,I0)")'ATOM ',iAt
+          write(atLabel,"(A,I0)")"ATOM ",iAt
           if (iAt == 1) then
             call writeDerivBandOut(derivVBandOut, dEi, kWeight, preLabel=atLabel)
           else
@@ -834,13 +834,13 @@ contains
 
         if (fdDetailedOut%isConnected()) then
           if (abs(omega(iOmega)) > epsilon(0.0_dp)) then
-            write(fdDetailedOut%unit, format2U)"Response at omega = ", omega(iOmega), ' H ',&
-                & omega(iOmega) * Hartree__eV, ' eV'
+            write(fdDetailedOut%unit, format2U)"Response at omega = ", omega(iOmega), " H ",&
+                & omega(iOmega) * Hartree__eV, " eV"
           else
             write(fdDetailedOut%unit, "(A)")"Static response:"
           end if
-          write(fdDetailedOut%unit, "(A,I0)")'Derivatives wrt. a potential at atom ', iAt
-          write(fdDetailedOut%unit, "(1X,A)")'Frontier orbital energy derivatives (a.u.)'
+          write(fdDetailedOut%unit, "(A,I0)")"Derivatives wrt. a potential at atom ", iAt
+          write(fdDetailedOut%unit, "(1X,A)")"Frontier orbital energy derivatives (a.u.)"
           write(fdDetailedOut%unit, "(1X,A,T14,A,T28,A)")"Spin Kpt","Last filled","First empty"
           do iS = 1, nIndepHam
             do iK = 1, nKpts
@@ -848,7 +848,7 @@ contains
                   & dEi(nEmpty(iS, iK), iK, iS)
             end do
           end do
-          write(fdDetailedOut%unit, *) 'Atomic population derivatives (a.u.)'
+          write(fdDetailedOut%unit, *) "Atomic population derivatives (a.u.)"
           write(fdDetailedOut%unit, "(1X,A,T10,A,T22,A)")"Atom","Mulliken","On-site"
           do jAt = 1, nAtom
             write(fdDetailedOut%unit, "(I5, 2F12.6)")jAt, sum(dqOut(:,jAt,1)), dqNetAtom(jAt)
@@ -1164,14 +1164,14 @@ contains
 
     if (abs(omega) > epsilon(0.0_dp)) then
       write(stdOut, "(1X,A)")"Frequency dependant response calculation"
-      write(stdOut, format2U)"  omega driving frequency", omega, ' H ', omega * Hartree__eV, ' eV'
+      write(stdOut, format2U)"  omega driving frequency", omega, " H ", omega * Hartree__eV, " eV"
     else
       write(stdOut, "(1X,A)")"Static response calculation"
     end if
 
 
     if (tSccCalc .and. maxSccIter > 1) then
-      write(stdOut,"(1X,A,T12,A)")'SCC Iter','Error'
+      write(stdOut,"(1X,A,T12,A)")"SCC Iter","Error"
     end if
 
     lpSCC: do iSccIter = 1, maxSccIter
@@ -1749,7 +1749,7 @@ contains
     allocate(tMetallic(nIndepHam, nKpts))
     tMetallic(:,:) = .not.(nFilled == nEmpty -1)
     if (any(tMetallic)) then
-      write(stdOut,*)'Metallic system'
+      write(stdOut,*)"Metallic system"
       ! Density of electrons at the Fermi energy, required to correct later for shift in Fermi level
       ! at q=0 in metals
       if (allocated(neFermi)) then
@@ -1765,9 +1765,9 @@ contains
         end do
       end do
       neFermi(:) = maxFill * neFermi
-      write(stdOut,*)'Density of states at the Fermi energy Nf (a.u.):', neFermi
+      write(stdOut,*)"Density of states at the Fermi energy Nf (a.u.):", neFermi
     else
-      write(stdOut,*)'Non-metallic system'
+      write(stdOut,*)"Non-metallic system"
     end if
 
   end subroutine init_perturbation
@@ -2202,8 +2202,8 @@ contains
       ! perturbation direction
       lpCart: do iCart = 1, 3
 
-        write(stdOut,"(A,A,A,I0)")'Calculating derivative for displacement along ', &
-            & trim(direction(iCart)),' for atom ', iAt
+        write(stdOut,"(A,A,A,I0)")"Calculating derivative for displacement along ", &
+            & trim(direction(iCart))," for atom ", iAt
 
         if (tSccCalc) then
           sOmega(:,:,:) = 0.0_dp
@@ -2258,7 +2258,7 @@ contains
             dRhoOut(:) = 0.0_dp
           end if
 
-          write(stdOut,"(1X,A,T12,A)")'SCC Iter','Error'
+          write(stdOut,"(1X,A,T12,A)")"SCC Iter","Error"
         end if
 
         iSCCIter = 1
@@ -2531,11 +2531,11 @@ contains
     call mpifx_allreduceip(env%mpi%globalComm, dEi, MPI_SUM)
   #:endif
 
-    write(stdOut, *)'dEi/d (eV / AA)'
+    write(stdOut, *)"dEi/d (eV / AA)"
     write(stdOut,"(T16,A,T32,A,T48,A)")direction
     do iS = 1, nSpin
       do iAt = 1, nAtom
-        write(stdOut, "(1X,A,I0)")'dEi/d At.', iAt
+        write(stdOut, "(1X,A,I0)")"dEi/d At.", iAt
         do iOrb = 1, size(dEi,dim=1)
           write(stdOut, "(3F16.8)") dEi(iOrb, 1, iS, :, iAt) * AA__Bohr
         end do
@@ -2560,7 +2560,7 @@ contains
     if (tMulliken .or. tSccCalc) then
 
       if (tWriteDetailedOut) then
-        write(fdDetailedOut, *)'Derivatives of atomic Mulliken charges with atom positions'
+        write(fdDetailedOut, *)"Derivatives of atomic Mulliken charges with atom positions"
         do iAt = 1, nAtom
           write(fdDetailedOut,"(A,I0,T10,A,T26,A,T42,A)")"At",iAt,"x","y","z"
           do iS = 1, nSpin
@@ -2622,7 +2622,7 @@ contains
 
     nAtom = size(bornCharges, dim=3)
 
-    write(fd, *)'Born effective charges (a.u.)'
+    write(fd, *)"Born effective charges (a.u.)"
     write(fd, *)
     ! i.e. derivative of dipole moment wrt to atom positions, i.e. (d/dx) (q-q0) x, or
     ! equivalently derivative of forces wrt to a homogeneous electric field

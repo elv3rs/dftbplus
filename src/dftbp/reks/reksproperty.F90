@@ -226,7 +226,7 @@ module dftbp_reks_reksproperty
     tmpMat(:,:) = 0.0_dp
     call gemm(tmpMat, tmpRho, eigenvecs)
     tmpRho(:,:) = 0.0_dp
-    call gemm(tmpRho, eigenvecs, tmpMat, transA='T')
+    call gemm(tmpRho, eigenvecs, tmpMat, transA="T")
 
     call printUnrelaxedFONs(tmpRho, rstate, Lstate, Nc, Na, tSSR)
 
@@ -346,7 +346,7 @@ module dftbp_reks_reksproperty
       tmpRho(p,q) = (fp - fq) * ZT(pq,ii)
     end do
     tmpMat(:,:) = 0.0_dp
-    call gemm(tmpMat, tmpRho, eigenvecs, transB='T')
+    call gemm(tmpMat, tmpRho, eigenvecs, transB="T")
     tmpRho(:,:) = 0.0_dp
     call gemm(tmpRho, eigenvecs, tmpMat)
 
@@ -388,7 +388,7 @@ module dftbp_reks_reksproperty
     tmpMat(:,:) = 0.0_dp
     call gemm(tmpMat, tmpRho, eigenvecs)
     tmpRho(:,:) = 0.0_dp
-    call gemm(tmpRho, eigenvecs, tmpMat, transA='T')
+    call gemm(tmpRho, eigenvecs, tmpMat, transA="T")
 
     call printRelaxedFONs(tmpRho, rstate, Nc, Na, tSSR)
 
@@ -502,7 +502,7 @@ module dftbp_reks_reksproperty
     tmpMat(:,:) = 0.0_dp
     call gemm(tmpMat, tmpRho, eigenvecs)
     tmpRho(:,:) = 0.0_dp
-    call gemm(tmpRho, eigenvecs, tmpMat, transA='T')
+    call gemm(tmpRho, eigenvecs, tmpMat, transA="T")
 
     call printRelaxedFONsL(tmpRho, Lstate, Nc, Na)
 
@@ -588,15 +588,15 @@ module dftbp_reks_reksproperty
     nstHalf = size(tdp,dim=2)
 
     write(stdOut,*)
-    write(stdOut,'(A)') " Oscillator Strength (au)"
+    write(stdOut,"(A)") " Oscillator Strength (au)"
     do ist = 1, nstHalf
 
       call getTwoIndices(nstates, ist, ia, ib, 1)
 
       osc = 2.0_dp / 3.0_dp * (energy(ib) - energy(ia)) * sum(tdp(:,ist)**2)
 
-      write(stdOut,'(A4,I1,A6,I1,A5)',advance="no") " ( S", ia - 1, " <-> S", ib - 1, " ) : "
-      write(stdOut,'(1(f12.6))') osc
+      write(stdOut,"(A4,I1,A6,I1,A5)",advance="no") " ( S", ia - 1, " <-> S", ib - 1, " ) : "
+      write(stdOut,"(1(f12.6))") osc
 
     end do
 

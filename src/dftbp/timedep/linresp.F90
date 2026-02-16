@@ -163,11 +163,11 @@ contains
     if (any([linrespSolverTypes%Arpack, linrespSolverTypes%Stratmann] == this%iLinRespSolver)) then
       this%tinit = .true.
     else
-      call error('Internal error: Illegal routine call to LinResp_init.')
+      call error("Internal error: Illegal routine call to LinResp_init.")
     end if
 
     if (this%iLinRespSolver == linrespSolverTypes%Arpack .and. .not. withArpack) then
-      call error('This binary is buit without ARPACK support, but it is requested.')
+      call error("This binary is buit without ARPACK support, but it is requested.")
     end if
 
     this%nExc = ini%nExc
@@ -207,10 +207,10 @@ contains
         call error("StateCouplings: Second index must be larger than first one.")
       end if
       if (ini%nExc < ini%indNACouplings(2)) then
-        call error('StateCouplings: Index must not exceed number of states to calculate.')
+        call error("StateCouplings: Index must not exceed number of states to calculate.")
       end if
       if (this%tSpin) then
-        call error('StateCouplings: Spin-polarized systems currently not available.')
+        call error("StateCouplings: Spin-polarized systems currently not available.")
       end if
       if (ini%isCIopt .and. ini%indNACouplings(2)-ini%indNACouplings(1) > 1) then
         call error("CI optimization: States must be neighbouring.")
@@ -331,7 +331,7 @@ contains
           & SSqrReal, filling, species0, iNeighbour, img2CentCell, orb, fdTagged, taggedWriter,&
           & hybridXc, excEnergy, allExcEnergies)
     else
-      call error('Internal error: Illegal routine call to LinResp_calcExcitations.')
+      call error("Internal error: Illegal routine call to LinResp_calcExcitations.")
     end if
 
   end subroutine linResp_calcExcitations
@@ -458,7 +458,7 @@ contains
       end if
 
     else
-      call error('Internal error: Illegal routine call to LinResp_addGradients.')
+      call error("Internal error: Illegal routine call to LinResp_addGradients.")
     end if
 
   end subroutine LinResp_addGradients

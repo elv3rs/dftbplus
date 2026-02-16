@@ -134,10 +134,10 @@ contains
     real(dp) :: invLatVec(3,3)
 
     ! Format first line of a gen file
-    character(len=*), parameter :: formatHead1 = '(1X,I0,1X,A2)'
+    character(len=*), parameter :: formatHead1 = "(1X,I0,1X,A2)"
 
     ! Format a vector
-    character(len=*), parameter :: formatVec = '(3E20.10)'
+    character(len=*), parameter :: formatVec = "(3E20.10)"
 
     nAtom = size(coord, dim=2)
     nSpecies = maxval(species)
@@ -183,9 +183,9 @@ contains
     end if
 
     do ii = 1, nSpecies
-      write(fd, '(1X,A)', advance='NO')trim(speciesName(ii))
+      write(fd, "(1X,A)", advance="NO")trim(speciesName(ii))
     end do
-    write(fd,'(A)')
+    write(fd,"(A)")
 
     write(formatCoordinates, '("(I5,2X,I",I0,",3E20.10)")') floor(log10(real(nSpecies)))+1
     if (tFractional) then
@@ -396,33 +396,33 @@ contains
     !> Release year
     integer, intent(in) :: year
 
-    character, parameter :: verticalBar = '|'
-    character, parameter :: horizontalBar = '='
+    character, parameter :: verticalBar = "|"
+    character, parameter :: horizontalBar = "="
     integer, parameter :: headerWidth = 80
 
-    write(stdOut, '(2A,/,A)') verticalBar, repeat(horizontalBar, headerWidth - 1), verticalBar
-    write(stdOut, '(3A)') verticalBar, '  DFTB+ ', trim(text)
-    write(stdOut, '(A)') verticalBar
-    write(stdOut, '(2A,I0,A)') verticalBar, '  Copyright (C) 2006 - ', year,&
-        & '  DFTB+ developers group'
-    write(stdOut, '(A,/,2A,/,A)') verticalBar, verticalBar, repeat(horizontalBar, headerWidth - 1),&
+    write(stdOut, "(2A,/,A)") verticalBar, repeat(horizontalBar, headerWidth - 1), verticalBar
+    write(stdOut, "(3A)") verticalBar, "  DFTB+ ", trim(text)
+    write(stdOut, "(A)") verticalBar
+    write(stdOut, "(2A,I0,A)") verticalBar, "  Copyright (C) 2006 - ", year,&
+        & "  DFTB+ developers group"
+    write(stdOut, "(A,/,2A,/,A)") verticalBar, verticalBar, repeat(horizontalBar, headerWidth - 1),&
         & verticalBar
-    write(stdOut, '(2A)') verticalBar,&
-        & '  When publishing results obtained with DFTB+, please cite the following',&
-        & verticalBar, '  reference:'
-    write(stdOut, '(A)') verticalBar
-    write(stdOut, '(2A)') verticalBar,&
-        & '    Recent Developments in DFTB+, a Software Package for Efficient Atomistic',&
+    write(stdOut, "(2A)") verticalBar,&
+        & "  When publishing results obtained with DFTB+, please cite the following",&
+        & verticalBar, "  reference:"
+    write(stdOut, "(A)") verticalBar
+    write(stdOut, "(2A)") verticalBar,&
+        & "    Recent Developments in DFTB+, a Software Package for Efficient Atomistic",&
         & verticalBar,&
-        & '    Quantum Mechanical Simulations, J. Phys. Chem. A 129, 5373−5390 (2025).',&
-        & verticalBar, '    [https://doi.org/10.1021/acs.jpca.5c01146]'
-    write(stdOut, '(A)') verticalBar
-    write(stdOut, '(2A,2(/,2A))') verticalBar,&
-        & '  You should also cite additional publications crediting the parametrization',&
+        & "    Quantum Mechanical Simulations, J. Phys. Chem. A 129, 5373−5390 (2025).",&
+        & verticalBar, "    [https://doi.org/10.1021/acs.jpca.5c01146]"
+    write(stdOut, "(A)") verticalBar
+    write(stdOut, "(2A,2(/,2A))") verticalBar,&
+        & "  You should also cite additional publications crediting the parametrization",&
         & verticalBar,&
-        & '  data you use. Please consult the documentation of the SK-files for the', verticalBar,&
-        & '  references.'
-    write(stdOut, '(A,/,2A,/)') verticalBar, verticalBar, repeat(horizontalBar, headerWidth - 1)
+        & "  data you use. Please consult the documentation of the SK-files for the", verticalBar,&
+        & "  references."
+    write(stdOut, "(A,/,2A,/)") verticalBar, verticalBar, repeat(horizontalBar, headerWidth - 1)
 
   end subroutine printDFTBHeader
 

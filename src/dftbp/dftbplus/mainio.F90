@@ -2386,7 +2386,7 @@ contains
     call openFile(fd, fileName, mode=fileMode)
     do iSpin = 1, size(eigen, dim=3)
       do iK = 1, size(eigen, dim=2)
-        write(fd%unit, *) 'KPT ', iK, ' SPIN ', iSpin, ' KWEIGHT ', kWeight(iK)
+        write(fd%unit, *) "KPT ", iK, " SPIN ", iSpin, " KWEIGHT ", kWeight(iK)
         do iEgy = 1, size(eigen, dim=1)
           ! meV accuracy for eigenvalues
           write(fd%unit, "(I6, F12.4, F9.5)") iEgy, Hartree__eV * eigen(iEgy, iK, iSpin),&
@@ -2437,8 +2437,8 @@ contains
     do iCart = 1, 3
       do iSpin = 1, size(dEigen, dim=3)
         do iK = 1, size(dEigen, dim=2)
-          write(fd%unit, *) 'DIR ', quaternionName(iCart+1), ' KPT ', iK, ' SPIN ', iSpin,&
-              & ' KWEIGHT ', kWeight(iK)
+          write(fd%unit, *) "DIR ", quaternionName(iCart+1), " KPT ", iK, " SPIN ", iSpin,&
+              & " KWEIGHT ", kWeight(iK)
           do iEgy = 1, size(dEigen, dim=1)
             write(fd%unit, "(I6, E16.6)") iEgy, Hartree__eV * dEigen(iEgy, iK, iSpin, iCart)
           end do
@@ -2491,7 +2491,7 @@ contains
         if (present(preLabel)) then
           write(fd%unit, "(A)", advance="NO")trim(preLabel) // " "
         end if
-        write(fd%unit, *) 'KPT ', iK, ' SPIN ', iSpin, ' KWEIGHT ', kWeight(iK)
+        write(fd%unit, *) "KPT ", iK, " SPIN ", iSpin, " KWEIGHT ", kWeight(iK)
         do iEgy = 1, size(dEigen, dim=1)
           write(fd%unit, "(I6, E16.6)") iEgy, Hartree__eV * dEigen(iEgy, iK, iSpin)
         end do
@@ -2533,8 +2533,8 @@ contains
     end if
 
     if (tPartialHessian) then
-      write(suffix1,'(I10)') indMovedAtoms(1)
-      write(suffix2,'(I10)') indMovedAtoms(size(indMovedAtoms))
+      write(suffix1,"(I10)") indMovedAtoms(1)
+      write(suffix2,"(I10)") indMovedAtoms(size(indMovedAtoms))
       call openFile(fd,&
           & fileName // "." // trim(adjustl(suffix1)) // "-" // trim(adjustl(suffix2)),&
           & mode="w")
@@ -2547,10 +2547,10 @@ contains
     end do
 
     if (tPartialHessian) then
-      write(stdOut, "(2A)") 'Hessian matrix written to ',&
+      write(stdOut, "(2A)") "Hessian matrix written to ",&
           & fileName//"."//trim(adjustl(suffix1))//"-"//trim(adjustl(suffix2))
     else
-      write(stdOut, "(2A)") 'Hessian matrix written to ', fileName
+      write(stdOut, "(2A)") "Hessian matrix written to ", fileName
     end if
 
     call closeFile(fd)
@@ -2588,8 +2588,8 @@ contains
 
     tPartialMatrix = size(pBornMatrix, dim=2) < 3 * nDerivAtoms
     if (tPartialMatrix) then
-      write(suffix1,'(I10)') indMovedAtoms(1)
-      write(suffix2,'(I10)') indMovedAtoms(size(indMovedAtoms))
+      write(suffix1,"(I10)") indMovedAtoms(1)
+      write(suffix2,"(I10)") indMovedAtoms(size(indMovedAtoms))
       call openFile(fd, fileName // "." // trim(adjustl(suffix1)) // "-" // trim(adjustl(suffix2)),&
           & mode="w")
     else
@@ -2603,10 +2603,10 @@ contains
     call closeFile(fd)
 
     if (tPartialMatrix) then
-      write(stdOut, "(2A)") 'Born charges matrix written to ',&
+      write(stdOut, "(2A)") "Born charges matrix written to ",&
           & fileName//"."//trim(adjustl(suffix1))//"-"//trim(adjustl(suffix2))
     else
-      write(stdOut, "(2A)") 'Born charges matrix written to ', fileName
+      write(stdOut, "(2A)") "Born charges matrix written to ", fileName
     end if
 
   end subroutine writeBornChargesOut
@@ -2643,8 +2643,8 @@ contains
 
     tPartialMatrix = size(pdBornMatrix, dim=3) < 3 * nDerivAtoms
     if (tPartialMatrix) then
-      write(suffix1,'(I10)') indMovedAtoms(1)
-      write(suffix2,'(I10)') indMovedAtoms(size(indMovedAtoms))
+      write(suffix1,"(I10)") indMovedAtoms(1)
+      write(suffix2,"(I10)") indMovedAtoms(size(indMovedAtoms))
       file = fileName // "." // trim(adjustl(suffix1)) // "-" // trim(adjustl(suffix2))
     else
       file = fileName
@@ -2656,7 +2656,7 @@ contains
     end do
 
     call closeFile(fd)
-    write(stdOut, "(2A)") 'Born charge derivative matrix written to ', file
+    write(stdOut, "(2A)") "Born charge derivative matrix written to ", file
 
   end subroutine writeBornDerivs
 
@@ -2758,11 +2758,11 @@ contains
       ! depends on the contact calculations
       select case(iDistribFn)
       case(0)
-        write(fd,*) 'Fermi distribution function'
+        write(fd,*) "Fermi distribution function"
       case(fillingTypes%Methfessel)
-        write(fd,*) 'Gaussian distribution function'
+        write(fd,*) "Gaussian distribution function"
       case default
-        write(fd,*) 'Methfessel-Paxton distribution function order',&
+        write(fd,*) "Methfessel-Paxton distribution function order",&
             & iDistribFn-fillingTypes%Methfessel
       end select
       write(fd,*)
@@ -2772,7 +2772,7 @@ contains
       if (tMD) then
         write(fd, "(A, I0)") "MD step: ", iGeoStep
       else if (tDerivs) then
-        write(fd, "(A, I0)") 'Difference derivative step: ', iGeoStep
+        write(fd, "(A, I0)") "Difference derivative step: ", iGeoStep
       else
         if (tCoordOpt .and. tLatOpt) then
           write(fd, "(A, I0, A, I0)") "Geometry optimization step: ", iGeoStep,&
@@ -2924,16 +2924,16 @@ contains
       if (tPrintMulliken) then
         do iSpin = 1, 4
 
-          write(fd,"(3A, F16.8)") 'Nr. of electrons (', quaternionName(iSpin), '):',&
+          write(fd,"(3A, F16.8)") "Nr. of electrons (", quaternionName(iSpin), "):",&
               & sum(qOutput(:, iAtInCentralRegion(:), iSpin))
           write(fd, *)
-          write(fd, "(/, 3A)") 'Atom populations (', quaternionName(iSpin), ')'
+          write(fd, "(/, 3A)") "Atom populations (", quaternionName(iSpin), ")"
           write(fd, "(A5, 1X, A16)") " Atom", " Population"
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
             write(fd, "(1X, I5, 1X, F16.8)") iAt, sum(qOutput(:, iAt, iSpin))
           end do
-          write(fd, "(/, 3A)") 'l-shell populations (', quaternionName(iSpin), ')'
+          write(fd, "(/, 3A)") "l-shell populations (", quaternionName(iSpin), ")"
           write(fd, "(A5, 1X, A3, 1X, A3, 1X, A16)") " Atom", "Sh.", "  l", " Population"
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
@@ -2944,7 +2944,7 @@ contains
             end do
           end do
           write(fd,*)
-          write(fd, "(/, 3A)") 'Orbital populations (', quaternionName(iSpin) ,')'
+          write(fd, "(/, 3A)") "Orbital populations (", quaternionName(iSpin) ,")"
           write(fd, "(A5, 1X, A3, 1X, A3, 1X, A3, 1X, A16, 1X, A6)") " Atom", "Sh.","  l","  m",&
               & " Population", " Label"
           do ii = 1, size(iAtInCentralRegion)
@@ -2954,7 +2954,7 @@ contains
             do iSh = 1, orb%nShell(iSp)
               ang = orb%angShell(iSh, iSp)
               if (ang > 0) then
-                write(strtmp,"(A)")trim(shellNamesTmp(iSh))//'_'
+                write(strtmp,"(A)")trim(shellNamesTmp(iSh))//"_"
               else
                 write(strtmp,"(A)")trim(shellNamesTmp(iSh))
               end if
@@ -2972,21 +2972,21 @@ contains
 
       if (tDFTBU) then
         do iSpin = 1, 4
-          write(fd, "(3A)") 'Block populations (', quaternionName(iSpin), ')'
+          write(fd, "(3A)") "Block populations (", quaternionName(iSpin), ")"
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
             iSp = species(iAt)
-            write(fd, "(A, 1X, I0)") 'Atom', iAt
+            write(fd, "(A, 1X, I0)") "Atom", iAt
             do iOrb = 1, orb%nOrbSpecies(iSp)
               write(fd, "(16F8.4)") qBlockOut(1:orb%nOrbSpecies(iSp), iOrb, iAt, iSpin)
             end do
             if (orb%nOrbSpecies(iSp) > 1) then
               allocate(ei(orb%nOrbSpecies(iSp)))
               ev = qBlockOut(:orb%nOrbSpecies(iSp), :orb%nOrbSpecies(iSp), iAt, iSpin)
-              call heev(ev, ei, 'l', 'v')
-              write(fd,*)'Eigen-decomposition'
+              call heev(ev, ei, "l", "v")
+              write(fd,*)"Eigen-decomposition"
               do iOrb = 1, orb%nOrbSpecies(iSp)
-                write(fd, "(F8.4,A,16F8.4)") ei(iOrb),':',ev(:, iOrb)
+                write(fd, "(F8.4,A,16F8.4)") ei(iOrb),":",ev(:, iOrb)
               end do
               deallocate(ev, ei)
             end if
@@ -2996,7 +2996,7 @@ contains
       end if
 
       if (tImHam .and. tPrintMulliken) then
-        write(fd, "(/, A)") 'Electron angular momentum (mu_B/hbar)'
+        write(fd, "(/, A)") "Electron angular momentum (mu_B/hbar)"
         write(fd, "(2X, A5, T9, A3, T13, A1, T19, A1, T34, A9)")&
             & "Atom", "Sh.", "l", "S", "Momentum"
         do ii = 1, size(iAtInCentralRegion)
@@ -3010,7 +3010,7 @@ contains
                 & :orb%posShell(iSh + 1, iSp) - 1, iAt, 2:4), dim=1)
           end do
         end do
-        write(fd, "(/, A)") 'Orbital angular momentum (mu_B/hbar)'
+        write(fd, "(/, A)") "Orbital angular momentum (mu_B/hbar)"
         write(fd, "(2X, A5, T9, A3, T13, A1, T19, A1, T34, A9)")&
             & "Atom", "Sh.", "l", "L", "Momentum"
         do ii = 1, size(iAtInCentralRegion)
@@ -3024,7 +3024,7 @@ contains
         end do
 
         write(fd, *)
-        write(fd, "(A)") 'Total angular momentum (mu_B/hbar)'
+        write(fd, "(A)") "Total angular momentum (mu_B/hbar)"
         write(fd, "(2X, A5, T9, A3, T13, A1, T19, A1, T34, A9)")&
             & "Atom", "Sh.", "l", "J", "Momentum"
         angularMomentum(:) = 0.0_dp
@@ -3049,16 +3049,16 @@ contains
     else
       lpSpinPrint2: do iSpin = 1, nSpin
         if (tPrintMulliken) then
-          write(fd, "(3A, F16.8)") 'Nr. of electrons (', trim(spinName(iSpin)), '):',&
+          write(fd, "(3A, F16.8)") "Nr. of electrons (", trim(spinName(iSpin)), "):",&
               & sum(qOutputUpDown(:, iAtInCentralRegion(:), iSpin))
-          write(fd, "(3A)") 'Atom populations (', trim(spinName(iSpin)), ')'
+          write(fd, "(3A)") "Atom populations (", trim(spinName(iSpin)), ")"
           write(fd, "(A5, 1X, A16)") " Atom", " Population"
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
             write(fd, "(I5, 1X, F16.8)") iAt, sum(qOutputUpDown(:, iAt, iSpin))
           end do
           write(fd, *)
-          write(fd, "(3A)") 'l-shell populations (', trim(spinName(iSpin)), ')'
+          write(fd, "(3A)") "l-shell populations (", trim(spinName(iSpin)), ")"
           write(fd, "(A5, 1X, A3, 1X, A3, 1X, A16)")" Atom", "Sh.", "  l", " Population"
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
@@ -3070,7 +3070,7 @@ contains
             end do
           end do
           write(fd, *)
-          write(fd, "(3A)") 'Orbital populations (', trim(spinName(iSpin)), ')'
+          write(fd, "(3A)") "Orbital populations (", trim(spinName(iSpin)), ")"
           write(fd, "(A5, 1X, A3, 1X, A3, 1X, A3, 1X, A16, 1X, A6)")&
               & " Atom", "Sh.", "  l", "  m", " Population", " Label"
           do ii = 1, size(iAtInCentralRegion)
@@ -3080,7 +3080,7 @@ contains
             do iSh = 1, orb%nShell(iSp)
               ang = orb%angShell(iSh, iSp)
               if (ang > 0) then
-                write(strtmp,"(A)")trim(shellNamesTmp(iSh))//'_'
+                write(strtmp,"(A)")trim(shellNamesTmp(iSh))//"_"
               else
                 write(strTmp,"(A)")trim(shellNamesTmp(iSh))
               end if
@@ -3095,21 +3095,21 @@ contains
           write(fd, *)
         end if
         if (tDFTBU .or. tOnSite) then
-          write(fd, "(3A)") 'Block populations (', trim(spinName(iSpin)), ')'
+          write(fd, "(3A)") "Block populations (", trim(spinName(iSpin)), ")"
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
             iSp = species(iAt)
-            write(fd, "(A, 1X, I0)") 'Atom', iAt
+            write(fd, "(A, 1X, I0)") "Atom", iAt
             do iOrb = 1, orb%nOrbSpecies(iSp)
               write(fd, "(16F8.4)") qBlockOutUpDown(1:orb%nOrbSpecies(iSp), iOrb, iAt, iSpin)
             end do
             if (orb%nOrbSpecies(iSp) > 1) then
               allocate(ei(orb%nOrbSpecies(iSp)))
               ev = qBlockOutUpDown(:orb%nOrbSpecies(iSp), :orb%nOrbSpecies(iSp), iAt, iSpin)
-              call heev(ev, ei, 'l', 'v')
-              write(fd,*)'Eigen-decomposition'
+              call heev(ev, ei, "l", "v")
+              write(fd,*)"Eigen-decomposition"
               do iOrb = 1, orb%nOrbSpecies(iSp)
-                write(fd, "(F8.4,A,16F8.4)") ei(iOrb),':',ev(:, iOrb)
+                write(fd, "(F8.4,A,16F8.4)") ei(iOrb),":",ev(:, iOrb)
               end do
               deallocate(ev, ei)
             end if
@@ -3180,7 +3180,7 @@ contains
     call openOutputFile(userOut, tAppendDetailedOut, fdDetailedOut)
 
     if (deltaDftb%iGround > 0) then
-      write(fdDetailedOut%unit, *)'S0 state'
+      write(fdDetailedOut%unit, *)"S0 state"
       if (allocated(qBlockDets)) then
         blockTmp = qBlockDets(:,:,:,:,deltaDftb%iGround)
       end if
@@ -3189,7 +3189,7 @@ contains
           & allocated(blockTmp), iAtInCentralRegion, cm5Cont)
     end if
     if (deltaDftb%iTriplet > 0) then
-      write(fdDetailedOut%unit, *)'T1 state'
+      write(fdDetailedOut%unit, *)"T1 state"
       if (allocated(qBlockDets)) then
         blockTmp = qBlockDets(:,:,:,:,deltaDftb%iTriplet)
       end if
@@ -3198,13 +3198,13 @@ contains
           & allocated(blockTmp), iAtInCentralRegion, cm5Cont)
     end if
     if (deltaDftb%isSpinPurify) then
-      write(fdDetailedOut%unit, *)'S1 state'
+      write(fdDetailedOut%unit, *)"S1 state"
       if (allocated(qBlockDets)) then
         blockTmp = 2.0_dp*qBlockDets(:,:,:,:,deltaDftb%iMixed)&
             & - qBlockDets(:,:,:,:,deltaDftb%iTriplet)
       end if
     else
-      write(fdDetailedOut%unit, *)'Mixed state'
+      write(fdDetailedOut%unit, *)"Mixed state"
       if (allocated(qBlockDets)) then
         blockTmp = qBlockDets(:,:,:,:,deltaDftb%iMixed)
       end if
@@ -3316,38 +3316,38 @@ contains
 
     lpSpinPrint3: do iSpin = 1, nSpinHams
       if (nSpin == 2) then
-        write(fd, "(A, 1X, A)") 'Spin ', trim(spinName(iSpin))
+        write(fd, "(A, 1X, A)") "Spin ", trim(spinName(iSpin))
       end if
       if (electronicSolver%elecChemPotAvailable) then
-        write(fd, format2U) 'Fermi level', Ef(iSpin), "H", Hartree__eV * Ef(iSpin), 'eV'
+        write(fd, format2U) "Fermi level", Ef(iSpin), "H", Hartree__eV * Ef(iSpin), "eV"
       end if
       if (electronicSolver%providesBandEnergy) then
-        write(fd, format2U) 'Band energy', energy%Eband(iSpin), "H",&
-            & Hartree__eV * energy%Eband(iSpin), 'eV'
+        write(fd, format2U) "Band energy", energy%Eband(iSpin), "H",&
+            & Hartree__eV * energy%Eband(iSpin), "eV"
       end if
       if (electronicSolver%providesElectronEntropy) then
-        write(fd, format2U)'TS', energy%TS(iSpin), "H", Hartree__eV * energy%TS(iSpin), 'eV'
+        write(fd, format2U)"TS", energy%TS(iSpin), "H", Hartree__eV * energy%TS(iSpin), "eV"
       end if
       if (electronicSolver%providesFreeEnergy) then
         if (electronicSolver%providesBandEnergy) then
-          write(fd, format2U) 'Band free energy (E-TS)', energy%Eband(iSpin)-energy%TS(iSpin), "H",&
-              & Hartree__eV * (energy%Eband(iSpin) - energy%TS(iSpin)), 'eV'
+          write(fd, format2U) "Band free energy (E-TS)", energy%Eband(iSpin)-energy%TS(iSpin), "H",&
+              & Hartree__eV * (energy%Eband(iSpin) - energy%TS(iSpin)), "eV"
         end if
-        write(fd, format2U) 'Extrapolated E(0K)', energy%E0(iSpin), "H",&
-            & Hartree__eV * (energy%E0(iSpin)), 'eV'
+        write(fd, format2U) "Extrapolated E(0K)", energy%E0(iSpin), "H",&
+            & Hartree__eV * (energy%E0(iSpin)), "eV"
       end if
       if (tPrintMulliken) then
         if (nSpin == 2) then
-          write(fd, "(3A, 2F18.10)") 'Input / Output electrons (', trim(spinName(iSpin)), '):',&
+          write(fd, "(3A, 2F18.10)") "Input / Output electrons (", trim(spinName(iSpin)), "):",&
               & sum(qInputUpDown(:, iAtInCentralRegion(:), iSpin)),&
               & sum(qOutputUpDown(:, iAtInCentralRegion(:), iSpin))
         else
           if (tSCC) then
-            write(fd, "(3A, 2F18.10)") 'Input / Output electrons (', quaternionName(iSpin), '):',&
+            write(fd, "(3A, 2F18.10)") "Input / Output electrons (", quaternionName(iSpin), "):",&
                 & sum(qInputUpDown(:, iAtInCentralRegion(:), iSpin)),&
                 & sum(qOutputUpDown(:, iAtInCentralRegion(:), iSpin))
           else
-            write(fd, "(3A, F18.10)") 'Output electrons (', quaternionName(iSpin), '):',&
+            write(fd, "(3A, F18.10)") "Output electrons (", quaternionName(iSpin), "):",&
                 & sum(qOutputUpDown(:, iAtInCentralRegion(:), iSpin))
           end if
         end if
@@ -3355,18 +3355,18 @@ contains
       write(fd, *)
     end do lpSpinPrint3
 
-    write(fd, format2U) 'Energy H0', energy%EnonSCC, 'H', energy%EnonSCC * Hartree__eV, 'eV'
+    write(fd, format2U) "Energy H0", energy%EnonSCC, "H", energy%EnonSCC * Hartree__eV, "eV"
 
     if (tSCC) then
-      write(fd, format2U) 'Energy SCC', energy%ESCC, 'H', energy%ESCC * Hartree__eV, 'eV'
+      write(fd, format2U) "Energy SCC", energy%ESCC, "H", energy%ESCC * Hartree__eV, "eV"
       if (tSpin) then
-        write(fd, format2U) 'Energy SPIN', energy%Espin, 'H', energy%Espin * Hartree__eV, 'eV'
+        write(fd, format2U) "Energy SPIN", energy%Espin, "H", energy%Espin * Hartree__eV, "eV"
       end if
       if (t3rd) then
-        write(fd, format2U) 'Energy 3rd', energy%e3rd, 'H', energy%e3rd * Hartree__eV, 'eV'
+        write(fd, format2U) "Energy 3rd", energy%e3rd, "H", energy%e3rd * Hartree__eV, "eV"
       end if
       if (tHybridXc) then
-        write(fd, format2U) 'Energy Fock', energy%Efock, 'H', energy%Efock * Hartree__eV, 'eV'
+        write(fd, format2U) "Energy Fock", energy%Efock, "H", energy%Efock * Hartree__eV, "eV"
       end if
 
       if (isMdftb) then
@@ -3374,88 +3374,88 @@ contains
       end if
 
       if (tDFTBU) then
-        write(fd, format2U) 'Energy DFTB+U', energy%Edftbu, 'H', energy%Edftbu * Hartree__eV, 'eV'
+        write(fd, format2U) "Energy DFTB+U", energy%Edftbu, "H", energy%Edftbu * Hartree__eV, "eV"
       end if
       if (tOnSite) then
-        write(fd,format2U) 'Energy onsite', energy%eOnSite, 'H', energy%eOnSite*Hartree__eV, 'eV'
+        write(fd,format2U) "Energy onsite", energy%eOnSite, "H", energy%eOnSite*Hartree__eV, "eV"
       end if
     end if
 
     if (tSpinOrbit) then
-      write(fd, format2U) 'Energy L.S', energy%ELS, 'H', energy%ELS * Hartree__eV, 'eV'
+      write(fd, format2U) "Energy L.S", energy%ELS, "H", energy%ELS * Hartree__eV, "eV"
     end if
 
     if (isExtField) then
-      write(fd, format2U) 'Energy ext. field', energy%Eext, 'H', energy%Eext * Hartree__eV, 'eV'
+      write(fd, format2U) "Energy ext. field", energy%Eext, "H", energy%Eext * Hartree__eV, "eV"
     end if
 
     if (tSolv) then
-      write(fd, format2U) 'Solvation energy', energy%ESolv, 'H', energy%ESolv * Hartree__eV, 'eV'
+      write(fd, format2U) "Solvation energy", energy%ESolv, "H", energy%ESolv * Hartree__eV, "eV"
     end if
 
-    write(fd, format2U) 'Total Electronic energy', energy%Eelec, 'H', energy%Eelec * Hartree__eV,&
-        & 'eV'
-    write(fd, format2U) 'Repulsive energy', energy%Erep, 'H', energy%Erep * Hartree__eV, 'eV'
+    write(fd, format2U) "Total Electronic energy", energy%Eelec, "H", energy%Eelec * Hartree__eV,&
+        & "eV"
+    write(fd, format2U) "Repulsive energy", energy%Erep, "H", energy%Erep * Hartree__eV, "eV"
 
     if (allocated(dispersion)) then
       if (dispersion%energyAvailable()) then
-        write(fd, format2U) 'Dispersion energy', energy%eDisp, 'H', energy%eDisp * Hartree__eV, 'eV'
+        write(fd, format2U) "Dispersion energy", energy%eDisp, "H", energy%eDisp * Hartree__eV, "eV"
       else
-        write(fd, "(A)") 'Dispersion energy not yet evaluated, so also missing from other energies'
+        write(fd, "(A)") "Dispersion energy not yet evaluated, so also missing from other energies"
       end if
     end if
 
     if (tHalogenX) then
-      write(fd, format2U) 'Halogen correction energy', energy%eHalogenX, 'H',&
-          & energy%eHalogenX * Hartree__eV, 'eV'
+      write(fd, format2U) "Halogen correction energy", energy%eHalogenX, "H",&
+          & energy%eHalogenX * Hartree__eV, "eV"
     end if
 
-    write(fd, format2U) 'Total energy', energy%Etotal, 'H', energy%Etotal * Hartree__eV, 'eV'
+    write(fd, format2U) "Total energy", energy%Etotal, "H", energy%Etotal * Hartree__eV, "eV"
     if (electronicSolver%providesElectronEntropy) then
-      write(fd, format2U) 'Extrapolated to 0', energy%Ezero, 'H', energy%Ezero * Hartree__eV, 'eV'
-      write(fd, format2U) 'Total Mermin free energy', energy%Etotal - sum(energy%TS), 'H',&
-          & (energy%Etotal - sum(energy%TS)) * Hartree__eV, 'eV'
+      write(fd, format2U) "Extrapolated to 0", energy%Ezero, "H", energy%Ezero * Hartree__eV, "eV"
+      write(fd, format2U) "Total Mermin free energy", energy%Etotal - sum(energy%TS), "H",&
+          & (energy%Etotal - sum(energy%TS)) * Hartree__eV, "eV"
     end if
     if (electronicSolver%providesFreeEnergy) then
-      write(fd, format2U) 'Force related energy', energy%EForceRelated, 'H',&
-          & energy%EForceRelated * Hartree__eV, 'eV'
+      write(fd, format2U) "Force related energy", energy%EForceRelated, "H",&
+          & energy%EForceRelated * Hartree__eV, "eV"
     end if
     if (tPeriodic .and. pressure /= 0.0_dp) then
-      write(fd, format2U) 'Gibbs free energy', energy%Etotal - sum(energy%TS) + cellVol * pressure,&
-          & 'H', Hartree__eV * (energy%Etotal - sum(energy%TS) + cellVol * pressure), 'eV'
+      write(fd, format2U) "Gibbs free energy", energy%Etotal - sum(energy%TS) + cellVol * pressure,&
+          & "H", Hartree__eV * (energy%Etotal - sum(energy%TS) + cellVol * pressure), "eV"
     end if
     write(fd, *)
 
     if (tAtomicEnergy) then
-      write(fd, "(A)") 'Atom resolved electronic energies'
+      write(fd, "(A)") "Atom resolved electronic energies"
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomElec(iAt), ' H',&
-            & Hartree__eV * energy%atomElec(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomElec(iAt), " H",&
+            & Hartree__eV * energy%atomElec(iAt), " eV"
       end do
       write(fd, *)
 
-      write(fd, "(A)") 'Atom resolved repulsive energies'
+      write(fd, "(A)") "Atom resolved repulsive energies"
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomRep(iAt), ' H',&
-            & Hartree__eV * energy%atomRep(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomRep(iAt), " H",&
+            & Hartree__eV * energy%atomRep(iAt), " eV"
       end do
       write(fd, *)
-      write(fd, "(A)") 'Atom resolved total energies'
+      write(fd, "(A)") "Atom resolved total energies"
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomTotal(iAt), ' H',&
-            & Hartree__eV * energy%atomTotal(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomTotal(iAt), " H",&
+            & Hartree__eV * energy%atomTotal(iAt), " eV"
       end do
       if (allocated(dispersion)) then
         if (dispersion%energyAvailable()) then
           write(fd, *)
-          write(fd, "(A)") 'Atom resolved dispersion energies '
+          write(fd, "(A)") "Atom resolved dispersion energies "
           do ii = 1, size(iAtInCentralRegion)
             iAt = iAtInCentralRegion(ii)
-            write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomDisp(iAt), ' H',&
-                & Hartree__eV * energy%atomDisp(iAt), ' eV'
+            write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomDisp(iAt), " H",&
+                & Hartree__eV * energy%atomDisp(iAt), " eV"
           end do
         end if
       end if
@@ -3580,19 +3580,19 @@ contains
     end if
 
     if (tPrintForces) then
-      write(fd, "(A)") 'Total Forces'
+      write(fd, "(A)") "Total Forces"
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
         write(fd, "(I5, 3F20.12)")iAt, -derivs(:, iAt)
       end do
       write(fd, *)
       if (tStress .and. .not. tMd) then
-        write(fd, "(A)") 'Total stress tensor'
+        write(fd, "(A)") "Total stress tensor"
         do ii = 1, 3
           write(fd, "(3F20.12)") totalStress(:, ii)
         end do
         write(fd, *)
-        write(fd, "(A)") 'Total lattice derivs'
+        write(fd, "(A)") "Total lattice derivs"
         do ii = 1, 3
           write(fd, "(3F20.12)") totalLatDeriv(:, ii)
         end do
@@ -3600,10 +3600,10 @@ contains
       end if
 
       write(fd, format1Ue) "Maximal derivative component",&
-          & maxval(abs(derivs(:,iAtInCentralRegion(:)))), 'au'
+          & maxval(abs(derivs(:,iAtInCentralRegion(:)))), "au"
       if (size(indMovedAtom) > 0) then
         write(fd, format1Ue) "Max force for moved atoms:",&
-            & maxval(abs(derivs(:, indMovedAtom))), 'au'
+            & maxval(abs(derivs(:, indMovedAtom))), "au"
       end if
       write(fd, *)
 
@@ -3616,9 +3616,9 @@ contains
       end if
 
       if (tPeriodic .and. .not. tMd) then
-        write(fd, format1Ue) 'Volume', cellVol, 'au^3'
+        write(fd, format1Ue) "Volume", cellVol, "au^3"
         if (tStress) then
-          write(fd, format2Ue)'Pressure', cellPressure, 'au', cellPressure * au__pascal, 'Pa'
+          write(fd, format2Ue)"Pressure", cellPressure, "au", cellPressure * au__pascal, "Pa"
         end if
         write(fd, *)
       end if
@@ -3670,12 +3670,12 @@ contains
     integer :: ii
 
     if (tStress .and. tPrintForces) then
-      write(fd, "(A)") 'Total stress tensor'
+      write(fd, "(A)") "Total stress tensor"
       do ii = 1, 3
         write(fd, "(3F20.12)") totalStress(:, ii)
       end do
       write(fd, *)
-      write(fd, "(A)") 'Total lattice derivs'
+      write(fd, "(A)") "Total lattice derivs"
       do ii = 1, 3
         write(fd, "(3F20.12)") totalLatDeriv(:, ii)
       end do
@@ -3683,16 +3683,16 @@ contains
     end if
 
     if (tSetFillingTemp) then
-      write(fd, format2U) "Electronic Temperature", tempElec, 'au', tempElec * Hartree__eV,&
-          & 'eV'
+      write(fd, format2U) "Electronic Temperature", tempElec, "au", tempElec * Hartree__eV,&
+          & "eV"
     end if
     write(fd, format1U) "MD Kinetic Energy", energy%EKin, "H"
     write(fd, format1U) "Total MD Energy", energy%EKin + energy%EMermin, "H"
     if (tPeriodic) then
-      write(fd, format2Ue) 'Pressure', cellPressure, 'au', cellPressure * au__pascal, 'Pa'
+      write(fd, format2Ue) "Pressure", cellPressure, "au", cellPressure * au__pascal, "Pa"
       if (pressure /= 0.0_dp) then
-        write(fd, format2U) 'Gibbs free energy including KE', energy%EGibbsKin, 'H',&
-            & Hartree__eV * energy%EGibbsKin, 'eV'
+        write(fd, format2U) "Gibbs free energy including KE", energy%EGibbsKin, "H",&
+            & Hartree__eV * energy%EGibbsKin, "eV"
       end if
     end if
     write(fd, format2U) "MD Temperature", tempIon, "H", tempIon / Boltzmann, "K"
@@ -3764,47 +3764,47 @@ contains
       end if
       if (deltaDftb%isNonAufbau) then
         if (deltaDftb%iGround > 0) then
-          write(fd, "(A, 3F14.8, A)")'S0 Dipole moment:',&
-              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)), ' au'
-          write(fd, "(A, 3F14.8, A)")'S0 Dipole moment:',&
+          write(fd, "(A, 3F14.8, A)")"S0 Dipole moment:",&
+              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)), " au"
+          write(fd, "(A, 3F14.8, A)")"S0 Dipole moment:",&
               & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)) * au__Debye,&
-              & ' Debye'
+              & " Debye"
           write(fd, *)
         end if
         if (deltaDftb%iTriplet > 0) then
-          write(fd, "(A, 3F14.8, A)")'T1 Dipole moment:',&
-              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iTriplet)), ' au'
-          write(fd, "(A, 3F14.8, A)")'T1 Dipole moment:',&
+          write(fd, "(A, 3F14.8, A)")"T1 Dipole moment:",&
+              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iTriplet)), " au"
+          write(fd, "(A, 3F14.8, A)")"T1 Dipole moment:",&
               & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iTriplet)) * au__Debye,&
-              & ' Debye'
+              & " Debye"
           write(fd, *)
         end if
         if (deltaDftb%isSpinPurify) then
-          write(fd, "(A, 3F14.8, A)")'S1 Dipole moment:',&
-              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iFinal)), ' au'
-          write(fd, "(A, 3F14.8, A)")'S1 Dipole moment:',&
+          write(fd, "(A, 3F14.8, A)")"S1 Dipole moment:",&
+              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iFinal)), " au"
+          write(fd, "(A, 3F14.8, A)")"S1 Dipole moment:",&
               & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iFinal)) * au__Debye,&
-              & ' Debye'
+              & " Debye"
           write(fd, *)
           if (deltaDftb%isSpinPurify .and. deltaDftb%iGround > 0) then
-            write(fd, "(A, 3F14.8, A)")'S0 -> S1 transition dipole:',&
+            write(fd, "(A, 3F14.8, A)")"S0 -> S1 transition dipole:",&
                 & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iFinal))&
-                & -eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)), ' au'
+                & -eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)), " au"
           end if
         else
-          write(fd, "(A, 3F14.8, A)")'Mixed state Dipole moment:',&
-              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iMixed)), ' au'
-          write(fd, "(A, 3F14.8, A)")'Mixed state Dipole moment:',&
+          write(fd, "(A, 3F14.8, A)")"Mixed state Dipole moment:",&
+              & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iMixed)), " au"
+          write(fd, "(A, 3F14.8, A)")"Mixed state Dipole moment:",&
               & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iMixed))&
-              & * au__Debye, ' Debye'
+              & * au__Debye, " Debye"
           write(fd, *)
         end if
       else
-        write(fd, "(A, 3F14.8, A)")'Dipole moment:',&
-            & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)), ' au'
-        write(fd, "(A, 3F14.8, A)")'Dipole moment:',&
+        write(fd, "(A, 3F14.8, A)")"Dipole moment:",&
+            & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)), " au"
+        write(fd, "(A, 3F14.8, A)")"Dipole moment:",&
             & eFieldScaling%scaledSoluteDipole(dipoleMoment(:,deltaDftb%iGround)) * au__Debye,&
-            & ' Debye'
+            & " Debye"
         write(fd, *)
       end if
     end if
@@ -3816,11 +3816,11 @@ contains
     if (allocated(eField)) then
       if (allocated(eField%EFieldStrength)) then
         if (eFieldScaling%isRescaled) then
-          write(fd, format1U1e) 'Effective external E field', eField%absEField, 'au',&
-              & eField%absEField * au__V_m, 'V/m'
+          write(fd, format1U1e) "Effective external E field", eField%absEField, "au",&
+              & eField%absEField * au__V_m, "V/m"
         else
-          write(fd, format1U1e) 'External E field', eField%absEField, 'au',&
-              & eField%absEField * au__V_m, 'V/m'
+          write(fd, format1U1e) "External E field", eField%absEField, "au",&
+              & eField%absEField * au__V_m, "V/m"
         end if
       end if
     end if
@@ -3859,9 +3859,9 @@ contains
 
     integer :: ii
 
-    write(fd,*)'Born charges/dipole derivatives wrt. atom positions (e)'
+    write(fd,*)"Born charges/dipole derivatives wrt. atom positions (e)"
     do ii = 1, size(born,dim=2), 3
-      write(fd,"(A,1X,I0)")'Atom',ii/3+1
+      write(fd,"(A,1X,I0)")"Atom",ii/3+1
       write(fd,"(3F12.6)")born(:,ii:ii+2)
     end do
 
@@ -3878,9 +3878,9 @@ contains
     real(dp), allocatable, intent(in) :: neFermi(:)
 
     if (allocated(neFermi)) then
-      write(fd,"(A)", advance='no')'Density of states at the Fermi energy (a.u.): '
+      write(fd,"(A)", advance="no")"Density of states at the Fermi energy (a.u.): "
       if (size(neFermi)==2) then
-        write(fd,"(E13.6,A,E13.6,A)")neFermi(1), ' (up) ', neFermi(2), ' (down)'
+        write(fd,"(E13.6,A,E13.6,A)")neFermi(1), " (up) ", neFermi(2), " (down)"
       else
         write(fd,"(E13.6)")neFermi
       end if
@@ -3916,8 +3916,8 @@ contains
       nAtom = size(dqOut, dim=2)
       nSpin = size(dqOut, dim=3)
       do iCart = 1, 3
-        write(fd,"(A)")'Atomic charge derivatives (a.u.), d q / d E_' //&
-            & trim(quaternionName(iCart+1)) //':'
+        write(fd,"(A)")"Atomic charge derivatives (a.u.), d q / d E_" //&
+            & trim(quaternionName(iCart+1)) //":"
         select case(nSpin)
         case(1)
           do iAt = 1, nAtom
@@ -3925,10 +3925,10 @@ contains
           end do
         case(2)
           do iAt = 1, nAtom
-            write(fd,"(I4,1X,A,4E20.12)")iAt, 'u',&
+            write(fd,"(I4,1X,A,4E20.12)")iAt, "u",&
                 & 0.5_dp*(sum(dqOut(:orb%nOrbAtom(iAt), iAt, 1, iCart))&
                 & + sum(dqOut(:orb%nOrbAtom(iAt), iAt, 2, iCart)))
-            write(fd,"(5X,A,4E20.12)")'d',&
+            write(fd,"(5X,A,4E20.12)")"d",&
                 & 0.5_dp*(sum(dqOut(:orb%nOrbAtom(iAt), iAt, 1, iCart))&
                 & - sum(dqOut(:orb%nOrbAtom(iAt), iAt, 2, iCart)))
           end do
@@ -3950,9 +3950,9 @@ contains
     end if
 
     if (allocated(dEfdE)) then
-      write(fd,"(A)")'Derivative of Fermi energy with respect to electric field'
+      write(fd,"(A)")"Derivative of Fermi energy with respect to electric field"
       do iCart = 1, 3
-        write(fd,"(1X,A,2E20.12)")'d E_f / d E_'//trim(quaternionName(iCart+1))//':',&
+        write(fd,"(1X,A,2E20.12)")"d E_f / d E_"//trim(quaternionName(iCart+1))//":",&
             & dEfdE(:,iCart)
       end do
     end if
@@ -3980,12 +3980,12 @@ contains
     integer :: iCart, iOmega
 
     write(fd,*)
-    write(fd,*)'Electric field polarisability (a.u.)'
+    write(fd,*)"Electric field polarisability (a.u.)"
     do iOmega = 1, size(omega)
       write(fd,*)
       if (abs(omega(iOmega)) > epsilon(0.0_dp)) then
-        write(fd, format2U)"Polarisability at omega = ", omega(iOmega), ' H ',&
-            & omega(iOmega) * Hartree__eV, ' eV'
+        write(fd, format2U)"Polarisability at omega = ", omega(iOmega), " H ",&
+            & omega(iOmega) * Hartree__eV, " eV"
       else
         write(fd, *)"Static polarisability:"
       end if
@@ -4189,11 +4189,11 @@ contains
     end if
 
     if (mdOutput%printAtomEnergies) then
-      write(fd, "(A)") 'Atom resolved ground state total energies'
+      write(fd, "(A)") "Atom resolved ground state total energies"
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, dftbEnergy(iDet)%atomTotal(iAt), ' H',&
-            & Hartree__eV * dftbEnergy(iDet)%atomTotal(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, dftbEnergy(iDet)%atomTotal(iAt), " H",&
+            & Hartree__eV * dftbEnergy(iDet)%atomTotal(iAt), " eV"
       end do
     end if
 
@@ -4255,9 +4255,9 @@ contains
         & tRealHS, nAtInCentralRegion, hybridXcAlg, coeffsAndShifts=coeffsAndShifts,&
         & multipoles=multipoles)
     if (tWriteAscii) then
-      write(stdOut, "(A,A)") '>> Charges saved for restart in ', trim(fCharges) // '.dat'
+      write(stdOut, "(A,A)") ">> Charges saved for restart in ", trim(fCharges) // ".dat"
     else
-      write(stdOut, "(A,A)") '>> Charges saved for restart in ', trim(fCharges) // '.bin'
+      write(stdOut, "(A,A)") ">> Charges saved for restart in ", trim(fCharges) // ".bin"
     end if
 
   end subroutine writeCharges
@@ -4319,7 +4319,7 @@ contains
 
     ! Consistent with functionality? Although this should have been caught in initprogram already.
     if (nSpin == 4) then
-      call error('Internal error: Hamiltonian writing for Pauli-Hamiltoninan not implemented')
+      call error("Internal error: Hamiltonian writing for Pauli-Hamiltoninan not implemented")
     end if
 
     hamUpDown = ham
@@ -4578,12 +4578,12 @@ contains
     integer, intent(in) :: iLatGeoStep
 
     if (tLatOpt) then
-      write(comment, "(A, I0, A, I0)") '** Geometry step: ', iGeoStep, ', Lattice step: ',&
+      write(comment, "(A, I0, A, I0)") "** Geometry step: ", iGeoStep, ", Lattice step: ",&
           & iLatGeoStep
     else if (tMD) then
-      write(comment, "(A, I0)") 'MD iter: ', iGeoStep
+      write(comment, "(A, I0)") "MD iter: ", iGeoStep
     else
-      write(comment,"(A, I0)") 'Geometry Step: ', iGeoStep
+      write(comment,"(A, I0)") "Geometry Step: ", iGeoStep
     end if
 
   end subroutine geometryComment_
@@ -4642,12 +4642,12 @@ contains
     !> How many lattice optimisation steps have occurred
     integer, intent(in) :: iLatGeoStep
 
-    write(stdOut, '(/, A)') repeat('-', 80)
+    write(stdOut, "(/, A)") repeat("-", 80)
     if (tCoordOpt .and. tLatOpt) then
-      write(stdOut, "(/, A, I0, A, I0,/)") '***  Geometry step: ', iGeoStep, ', Lattice step: ',&
+      write(stdOut, "(/, A, I0, A, I0,/)") "***  Geometry step: ", iGeoStep, ", Lattice step: ",&
           & iLatGeoStep
     else
-      write(stdOut, "(/, A, I0, /)") '***  Geometry step: ', iGeoStep
+      write(stdOut, "(/, A, I0, /)") "***  Geometry step: ", iGeoStep
     end if
 
   end subroutine printGeoStepInfo
@@ -4822,9 +4822,9 @@ contains
               & Hartree__eV * energy(deltaDftb%iGround)%EMermin, "eV"
         end if
         if (electronicSolver%providesFreeEnergy) then
-          write(iUnit, format2U) 'Ground State Force related egy',&
-              & energy(deltaDftb%iGround)%EForceRelated, 'H',&
-              & energy(deltaDftb%iGround)%EForceRelated * Hartree__eV, 'eV'
+          write(iUnit, format2U) "Ground State Force related egy",&
+              & energy(deltaDftb%iGround)%EForceRelated, "H",&
+              & energy(deltaDftb%iGround)%EForceRelated * Hartree__eV, "eV"
         end if
       else
         write(iUnit, format2U) "Total Energy", energy(deltaDftb%iGround)%Etotal,"H",&
@@ -4838,8 +4838,8 @@ contains
               & "H", Hartree__eV * energy(deltaDftb%iGround)%EMermin, "eV"
         end if
         if (electronicSolver%providesFreeEnergy) then
-          write(iUnit, format2U) 'Force related energy', energy(deltaDftb%iGround)%EForceRelated,&
-              & 'H', energy(deltaDftb%iGround)%EForceRelated * Hartree__eV, 'eV'
+          write(iUnit, format2U) "Force related energy", energy(deltaDftb%iGround)%EForceRelated,&
+              & "H", energy(deltaDftb%iGround)%EForceRelated * Hartree__eV, "eV"
         end if
       end if
       write(iUnit,*)
@@ -4860,9 +4860,9 @@ contains
             & Hartree__eV * energy(deltaDftb%iTriplet)%EMermin, "eV"
       end if
       if (electronicSolver%providesFreeEnergy) then
-        write(iUnit, format2U) 'Triplet State Force related egy',&
-            & energy(deltaDftb%iTriplet)%EForceRelated, 'H',&
-            & energy(deltaDftb%iTriplet)%EForceRelated * Hartree__eV, 'eV'
+        write(iUnit, format2U) "Triplet State Force related egy",&
+            & energy(deltaDftb%iTriplet)%EForceRelated, "H",&
+            & energy(deltaDftb%iTriplet)%EForceRelated * Hartree__eV, "eV"
       end if
       write(iUnit,*)
     end if
@@ -4884,23 +4884,23 @@ contains
               & Hartree__eV * energy(deltaDftb%iFinal)%EMermin, "eV"
         end if
         if (electronicSolver%providesFreeEnergy) then
-          write(iUnit, format2U) 'Purified Force related egy',&
-              & energy(deltaDftb%iFinal)%EForceRelated, 'H',&
-              & energy(deltaDftb%iFinal)%EForceRelated * Hartree__eV, 'eV'
+          write(iUnit, format2U) "Purified Force related egy",&
+              & energy(deltaDftb%iFinal)%EForceRelated, "H",&
+              & energy(deltaDftb%iFinal)%EForceRelated * Hartree__eV, "eV"
         end if
 
         if (deltaDftb%iGround > 0) then
           write(iUnit, *)
-          write(iUnit, format2U) 'S0 -> T1',&
+          write(iUnit, format2U) "S0 -> T1",&
               & energy(deltaDftb%iTriplet)%EForceRelated&
-              & - energy(deltaDftb%iGround)%EForceRelated, 'H',&
+              & - energy(deltaDftb%iGround)%EForceRelated, "H",&
               & (energy(deltaDftb%iTriplet)%EForceRelated&
-              & - energy(deltaDftb%iGround)%EForceRelated) * Hartree__eV, 'eV'
-          write(iUnit, format2U) 'S0 -> S1',&
+              & - energy(deltaDftb%iGround)%EForceRelated) * Hartree__eV, "eV"
+          write(iUnit, format2U) "S0 -> S1",&
               & energy(deltaDftb%iFinal)%EForceRelated - energy(deltaDftb%iGround)%EForceRelated,&
-              & 'H',&
+              & "H",&
               & (energy(deltaDftb%iFinal)%EForceRelated - energy(deltaDftb%iGround)%EForceRelated)&
-              & * Hartree__eV, 'eV'
+              & * Hartree__eV, "eV"
         end if
 
       else
@@ -4918,9 +4918,9 @@ contains
               & Hartree__eV * energy(deltaDftb%iMixed)%EMermin, "eV"
         end if
         if (electronicSolver%providesFreeEnergy) then
-          write(iUnit, format2U) 'Mixed State Force related egy',&
-              & energy(deltaDftb%iMixed)%EForceRelated, 'H',&
-              & energy(deltaDftb%iMixed)%EForceRelated * Hartree__eV, 'eV'
+          write(iUnit, format2U) "Mixed State Force related egy",&
+              & energy(deltaDftb%iMixed)%EForceRelated, "H",&
+              & energy(deltaDftb%iMixed)%EForceRelated * Hartree__eV, "eV"
         end if
 
       end if
@@ -4938,7 +4938,7 @@ contains
     !> unit cell volume
     real(dp), intent(in) :: cellVol
 
-    write(stdOut, format2Ue) 'Volume', cellVol, 'au^3', (Bohr__AA**3) * cellVol, 'A^3'
+    write(stdOut, format2Ue) "Volume", cellVol, "au^3", (Bohr__AA**3) * cellVol, "A^3"
 
   end subroutine printVolume
 
@@ -4955,9 +4955,9 @@ contains
     !> Gibbs free energy (E -TS_elec +pV)
     real(dp), intent(in) :: EGibbs
 
-    write(stdOut, format2Ue) 'Pressure', cellPressure, 'au', cellPressure * au__pascal, 'Pa'
+    write(stdOut, format2Ue) "Pressure", cellPressure, "au", cellPressure * au__pascal, "Pa"
     if (abs(pressure) > epsilon(1.0_dp)) then
-      write(stdOut, format2U) "Gibbs free energy", EGibbs, 'H', Hartree__eV * EGibbs, 'eV'
+      write(stdOut, format2U) "Gibbs free energy", EGibbs, "H", Hartree__eV * EGibbs, "eV"
     end if
 
   end subroutine printPressureAndFreeEnergy
@@ -4991,7 +4991,7 @@ contains
     !> Maximum energy derivative with respect to lattice vectors
     real(dp), intent(in) :: maxLattForce
 
-    write(stdOut, format1Ue) "Maximal Lattice force component", maxLattForce, 'au'
+    write(stdOut, format1Ue) "Maximal Lattice force component", maxLattForce, "au"
 
   end subroutine printMaxLatticeForce
 
@@ -5002,7 +5002,7 @@ contains
     !> Norm of the lattice force
     real(dp), intent(in) :: lattForceNorm
 
-    write(stdOut, format1Ue) "Averaged lattice force norm", lattForceNorm, 'au'
+    write(stdOut, format1Ue) "Averaged lattice force norm", lattForceNorm, "au"
 
   end subroutine printLatticeForceNorm
 
@@ -5036,12 +5036,12 @@ contains
     type(TEnergies), intent(in) :: energy
 
     if (tSetFillingTemp) then
-      write(stdOut, format2U) 'Electronic Temperature', tempElec, 'H', tempElec / Boltzmann, 'K'
+      write(stdOut, format2U) "Electronic Temperature", tempElec, "H", tempElec / Boltzmann, "K"
     end if
     if (allocated(eField)) then
       if (allocated(eField%EFieldStrength)) then
-        write(stdOut, format1U1e) 'External E field', eField%absEField, 'au',&
-            & eField%absEField * au__V_m, 'V/m'
+        write(stdOut, format1U1e) "External E field", eField%absEField, "au",&
+            & eField%absEField * au__V_m, "V/m"
       end if
     end if
     write(stdOut, format2U) "MD Temperature", tempIon, "H", tempIon / Boltzmann, "K"
@@ -5049,10 +5049,10 @@ contains
     write(stdOut, format2U) "Total MD Energy", energy%EMerminKin, "H",&
         & Hartree__eV * energy%EMerminKin, "eV"
     if (tPeriodic) then
-      write(stdOut, format2Ue) 'Pressure', cellPressure, 'au', cellPressure * au__pascal, 'Pa'
+      write(stdOut, format2Ue) "Pressure", cellPressure, "au", cellPressure * au__pascal, "Pa"
       if (abs(pressure) < epsilon(1.0_dp)) then
-        write(stdOut, format2U) 'Gibbs free energy including KE', energy%EGibbsKin, 'H',&
-            & Hartree__eV * energy%EGibbsKin, 'eV'
+        write(stdOut, format2U) "Gibbs free energy including KE", energy%EGibbsKin, "H",&
+            & Hartree__eV * energy%EGibbsKin, "eV"
       end if
     end if
 
@@ -5213,7 +5213,7 @@ contains
       do iSh = 1, orb%nShell(iSp)
         ang = orb%angShell(iSh, iSp)
         if (ang > 0) then
-          write(strTmp,"(A)")trim(shellNamesTmp(iSh))//'_'
+          write(strTmp,"(A)")trim(shellNamesTmp(iSh))//"_"
         else
           write(strTmp,"(A)")trim(shellNamesTmp(iSh))
         end if
@@ -5284,7 +5284,7 @@ contains
       do iSh = 1, orb%nShell(iSp)
         ang = orb%angShell(iSh, iSp)
         if (ang > 0) then
-          write(strTmp,"(A)")trim(shellNamesTmp(iSh))//'_'
+          write(strTmp,"(A)")trim(shellNamesTmp(iSh))//"_"
         else
           write(strTmp,"(A)")trim(shellNamesTmp(iSh))
         end if
@@ -5354,7 +5354,7 @@ contains
       do iSh = 1, orb%nShell(iSp)
         ang = orb%angShell(iSh,iSp)
         if (ang > 0) then
-          write(strTmp,"(A)")trim(shellNamesTmp(iSh))//'_'
+          write(strTmp,"(A)")trim(shellNamesTmp(iSh))//"_"
         else
           write(strTmp,"(A)")trim(shellNamesTmp(iSh))
         end if
@@ -5460,9 +5460,9 @@ contains
 
     do iReg = 1, size(fd)
       if (present(iK)) then
-        write(fd(iReg)%unit, formatHeader) 'KPT', iK, 'SPIN', iS, 'KWEIGHT', kWeight
+        write(fd(iReg)%unit, formatHeader) "KPT", iK, "SPIN", iS, "KWEIGHT", kWeight
       else
-        write(fd(iReg)%unit, formatHeader) 'KPT', 1, 'SPIN', iS, 'KWEIGHT', 1.0_dp
+        write(fd(iReg)%unit, formatHeader) "KPT", 1, "SPIN", iS, "KWEIGHT", 1.0_dp
       end if
     end do
 
@@ -5565,9 +5565,9 @@ contains
       if (.not.esp%tAppendEsp .or. iGeoStep == 0) then
         write(fdEsp%unit, "(A)") trim(tmpStr)
         if (all(esp%gridDimensioning > 0)) then
-          write(fdEsp%unit, "(A,3E20.12)") '#', esp%origin * Bohr__AA
+          write(fdEsp%unit, "(A,3E20.12)") "#", esp%origin * Bohr__AA
           do ii = 1, 3
-            write(fdEsp%unit, "(A,3E20.12)") '#', esp%axes(:,ii) * Bohr__AA
+            write(fdEsp%unit, "(A,3E20.12)") "#", esp%axes(:,ii) * Bohr__AA
           end do
         end if
       end if
@@ -5583,13 +5583,13 @@ contains
       if (all(esp%gridDimensioning > 0)) then
         ! Regular point distribution, do not print positions
         if (allocated(esp%extPotential)) then
-          write(fdEsp%unit, "(A,A)") '# Internal (V)        External (V)', trim(tmpStr)
+          write(fdEsp%unit, "(A,A)") "# Internal (V)        External (V)", trim(tmpStr)
           do ii = 1, size(esp%espGrid,dim=2)
             write(fdEsp%unit, "(2E20.12)") -esp%intPotential(ii) * Hartree__eV,&
                 & -esp%extPotential(ii) * Hartree__eV
           end do
         else
-          write(fdEsp%unit, "(A,A)") '# Internal (V)', trim(tmpStr)
+          write(fdEsp%unit, "(A,A)") "# Internal (V)", trim(tmpStr)
           do ii = 1, size(esp%espGrid,dim=2)
             write(fdEsp%unit, "(E20.12)") -esp%intPotential(ii) * Hartree__eV
           end do
@@ -5598,14 +5598,14 @@ contains
         ! Scattered points, print locations
         if (allocated(esp%extPotential)) then
           write(fdEsp%unit ,"(A,A)")&
-              & '#           Location (AA)             Internal (V)        External (V)',&
+              & "#           Location (AA)             Internal (V)        External (V)",&
               & trim(tmpStr)
           do ii = 1, size(esp%espGrid,dim=2)
             write(fdEsp%unit, "(3E12.4,2E20.12)") esp%espGrid(:,ii) * Bohr__AA,&
                 & -esp%intPotential(ii) * Hartree__eV, -esp%extPotential(ii) * Hartree__eV
           end do
         else
-          write(fdEsp%unit, "(A,A)") '#           Location (AA)             Internal (V)',&
+          write(fdEsp%unit, "(A,A)") "#           Location (AA)             Internal (V)",&
               & trim(tmpStr)
           do ii = 1, size(esp%espGrid,dim=2)
             write(fdEsp%unit, "(3E12.4,E20.12)") esp%espGrid(:,ii) * Bohr__AA,&
@@ -5644,7 +5644,7 @@ contains
 
     call openFile(file, eigvecBin, mode="rb", ioStat=ioStat)
     if (ioStat /= 0) then
-      call error('no ' // eigvecBin // ' file!')
+      call error("no " // eigvecBin // " file!")
     end if
     read(file%unit) dummy
     if (present(jobId)) then
@@ -5787,7 +5787,7 @@ contains
       if (tMD) then
         write(fd, "(A, I0)") "MD step: ", iGeoStep
       else if (tDerivs) then
-        write(fd, "(A, I0)") 'Difference derivative step: ', iGeoStep
+        write(fd, "(A, I0)") "Difference derivative step: ", iGeoStep
       else
         if (tCoordOpt .and. tLatOpt) then
           write(fd, "(A, I0, A, I0)") "Geometry optimization step: ", &
@@ -5880,16 +5880,16 @@ contains
 
     lpSpinPrint2_REKS: do iSpin = 1, 1
       if (tPrintMulliken) then
-        write(fd, "(3A, F16.8)") 'Nr. of electrons (', trim(spinName(iSpin)), '):',&
+        write(fd, "(3A, F16.8)") "Nr. of electrons (", trim(spinName(iSpin)), "):",&
             & sum(qOutput(:, iAtInCentralRegion(:), iSpin))
-        write(fd, "(3A)") 'Atom populations (', trim(spinName(iSpin)), ')'
+        write(fd, "(3A)") "Atom populations (", trim(spinName(iSpin)), ")"
         write(fd, "(A5, 1X, A16)") " Atom", " Population"
         do ii = 1, size(iAtInCentralRegion)
           iAt = iAtInCentralRegion(ii)
           write(fd, "(I5, 1X, F16.8)") iAt, sum(qOutput(:, iAt, iSpin))
         end do
         write(fd, *)
-        write(fd, "(3A)") 'l-shell populations (', trim(spinName(iSpin)), ')'
+        write(fd, "(3A)") "l-shell populations (", trim(spinName(iSpin)), ")"
         write(fd, "(A5, 1X, A3, 1X, A3, 1X, A16)")" Atom", "Sh.", "  l", " Population"
         do ii = 1, size(iAtInCentralRegion)
           iAt = iAtInCentralRegion(ii)
@@ -5901,7 +5901,7 @@ contains
           end do
         end do
         write(fd, *)
-        write(fd, "(3A)") 'Orbital populations (', trim(spinName(iSpin)), ')'
+        write(fd, "(3A)") "Orbital populations (", trim(spinName(iSpin)), ")"
         write(fd, "(A5, 1X, A3, 1X, A3, 1X, A3, 1X, A16, 1X, A6)")&
             & " Atom", "Sh.", "  l", "  m", " Population", " Label"
         do ii = 1, size(iAtInCentralRegion)
@@ -5911,7 +5911,7 @@ contains
           do iSh = 1, orb%nShell(iSp)
             ang = orb%angShell(iSh, iSp)
             if (ang > 0) then
-              write(strtmp,"(A)")trim(shellNamesTmp(iSh))//'_'
+              write(strtmp,"(A)")trim(shellNamesTmp(iSh))//"_"
             else
               write(strTmp,"(A)")trim(shellNamesTmp(iSh))
             end if
@@ -5929,7 +5929,7 @@ contains
 
     lpSpinPrint3_REKS: do iSpin = 1, 1
       if (tPrintMulliken) then
-        write(fd, "(3A, F18.10)") 'Input / Output electrons (', quaternionName(iSpin), '):',&
+        write(fd, "(3A, F18.10)") "Input / Output electrons (", quaternionName(iSpin), "):",&
             & sum(qOutput(:, iAtInCentralRegion(:), iSpin))
       end if
       write(fd, *)
@@ -5937,15 +5937,15 @@ contains
 
     call setReksTargetEnergy(reks, energy, cellVol, pressure)
 
-    write(fd, format2U) 'Energy H0', energy%EnonSCC, 'H', energy%EnonSCC * Hartree__eV, 'eV'
+    write(fd, format2U) "Energy H0", energy%EnonSCC, "H", energy%EnonSCC * Hartree__eV, "eV"
     if (tSCC) then
-      write(fd, format2U) 'Energy SCC', energy%ESCC, 'H', energy%ESCC * Hartree__eV, 'eV'
-      write(fd, format2U) 'Energy SPIN', energy%Espin, 'H', energy%Espin * Hartree__eV, 'eV'
+      write(fd, format2U) "Energy SCC", energy%ESCC, "H", energy%ESCC * Hartree__eV, "eV"
+      write(fd, format2U) "Energy SPIN", energy%Espin, "H", energy%Espin * Hartree__eV, "eV"
       if (t3rd) then
-        write(fd,format2U) 'Energy 3rd', energy%e3rd, 'H', energy%e3rd*Hartree__eV, 'eV'
+        write(fd,format2U) "Energy 3rd", energy%e3rd, "H", energy%e3rd*Hartree__eV, "eV"
       end if
       if (isHybridXc) then
-        write(fd, format2U) 'Energy Fock', energy%Efock, 'H', energy%Efock * Hartree__eV, 'eV'
+        write(fd, format2U) "Energy Fock", energy%Efock, "H", energy%Efock * Hartree__eV, "eV"
       end if
 
       if (isMdftb) then
@@ -5954,15 +5954,15 @@ contains
 
     end if
 
-    write(fd, format2U) 'Total Electronic energy', energy%Eelec, 'H', &
-        & energy%Eelec * Hartree__eV, 'eV'
-    write(fd, format2U) 'Repulsive energy', energy%Erep, 'H', energy%Erep * Hartree__eV, 'eV'
+    write(fd, format2U) "Total Electronic energy", energy%Eelec, "H", &
+        & energy%Eelec * Hartree__eV, "eV"
+    write(fd, format2U) "Repulsive energy", energy%Erep, "H", energy%Erep * Hartree__eV, "eV"
 
     if (allocated(dispersion)) then
       if (dispersion%energyAvailable()) then
-        write(fd, format2U) 'Dispersion energy', energy%eDisp, 'H', energy%eDisp * Hartree__eV, 'eV'
+        write(fd, format2U) "Dispersion energy", energy%eDisp, "H", energy%eDisp * Hartree__eV, "eV"
       else
-        write(fd, "(A)") 'Dispersion energy not yet evaluated, so also missing from other energies'
+        write(fd, "(A)") "Dispersion energy not yet evaluated, so also missing from other energies"
       end if
     end if
 
@@ -5973,43 +5973,43 @@ contains
       write(fd, *)
     end if
 
-    write(fd, format2U) 'Total energy', energy%Etotal, 'H', energy%Etotal * Hartree__eV, 'eV'
+    write(fd, format2U) "Total energy", energy%Etotal, "H", energy%Etotal * Hartree__eV, "eV"
     if (electronicSolver%providesElectronEntropy) then
-      write(fd, format2U) 'Extrapolated to 0', energy%Ezero, 'H', energy%Ezero * Hartree__eV, 'eV'
-      write(fd, format2U) 'Total Mermin free energy', energy%Emermin, 'H',&
-          & energy%Emermin * Hartree__eV, 'eV'
+      write(fd, format2U) "Extrapolated to 0", energy%Ezero, "H", energy%Ezero * Hartree__eV, "eV"
+      write(fd, format2U) "Total Mermin free energy", energy%Emermin, "H",&
+          & energy%Emermin * Hartree__eV, "eV"
     end if
     if (electronicSolver%providesFreeEnergy) then
-      write(fd, format2U) 'Force related energy', energy%EForceRelated, 'H',&
-          & energy%EForceRelated * Hartree__eV, 'eV'
+      write(fd, format2U) "Force related energy", energy%EForceRelated, "H",&
+          & energy%EForceRelated * Hartree__eV, "eV"
     end if
     if (tPeriodic .and. pressure /= 0.0_dp) then
-      write(fd, format2U) 'Gibbs free energy', energy%EGibbs,&
-          & 'H', Hartree__eV * energy%EGibbs, 'eV'
+      write(fd, format2U) "Gibbs free energy", energy%EGibbs,&
+          & "H", Hartree__eV * energy%EGibbs, "eV"
     end if
     write(fd, *)
 
     if (tAtomicEnergy) then
-      write(fd, "(A)") 'Atom resolved electronic energies '
+      write(fd, "(A)") "Atom resolved electronic energies "
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomElec(iAt), ' H',&
-            & Hartree__eV * energy%atomElec(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomElec(iAt), " H",&
+            & Hartree__eV * energy%atomElec(iAt), " eV"
       end do
       write(fd, *)
 
-      write(fd, "(A)") 'Atom resolved repulsive energies '
+      write(fd, "(A)") "Atom resolved repulsive energies "
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomRep(iAt), ' H',&
-            & Hartree__eV * energy%atomRep(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomRep(iAt), " H",&
+            & Hartree__eV * energy%atomRep(iAt), " eV"
       end do
       write(fd, *)
-      write(fd, "(A)") 'Atom resolved total energies '
+      write(fd, "(A)") "Atom resolved total energies "
       do ii = 1, size(iAtInCentralRegion)
         iAt = iAtInCentralRegion(ii)
-        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomTotal(iAt), ' H',&
-            & Hartree__eV * energy%atomTotal(iAt), ' eV'
+        write(fd, "(I5, F16.8, A, F16.6, A)") iAt, energy%atomTotal(iAt), " H",&
+            & Hartree__eV * energy%atomTotal(iAt), " eV"
       end do
       write(fd, *)
     end if
@@ -6039,7 +6039,7 @@ contains
 
     select type(solvation)
     class is (TCosmo)
-      write(stdOut, '(*(a:, 1x))') "Cavity information written to", cosmoFile
+      write(stdOut, "(*(a:, 1x))") "Cavity information written to", cosmoFile
       call openFile(file, cosmoFile, mode="w")
       call solvation%writeCosmoFile(file%unit, species0, speciesNames, coords0, energy)
       call closeFile(file)
@@ -6065,20 +6065,20 @@ contains
       iUnit = stdOut
     end if
 
-    write(iUnit, "(A)") ' Traceless Quadrupole moment in au'
-    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") ' XX', quadrupoleMoment(1,1), ' YY',&
-        & quadrupoleMoment(2,2), ' ZZ', quadrupoleMoment(3,3)
-    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") ' XY', quadrupoleMoment(1,2), ' XZ',&
-        & quadrupoleMoment(1,3), ' YZ', quadrupoleMoment(2,3)
+    write(iUnit, "(A)") " Traceless Quadrupole moment in au"
+    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") " XX", quadrupoleMoment(1,1), " YY",&
+        & quadrupoleMoment(2,2), " ZZ", quadrupoleMoment(3,3)
+    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") " XY", quadrupoleMoment(1,2), " XZ",&
+        & quadrupoleMoment(1,3), " YZ", quadrupoleMoment(2,3)
 
-    write(iUnit, "(A)") ' Traceless Quadrupole moment in Buckingham or Debye*Ang'
-    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") ' XX',&
-        & quadrupoleMoment(1,1) * au__Debye * Bohr__AA, ' YY',&
-        & quadrupoleMoment(2,2) * au__Debye * Bohr__AA, ' ZZ',&
+    write(iUnit, "(A)") " Traceless Quadrupole moment in Buckingham or Debye*Ang"
+    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") " XX",&
+        & quadrupoleMoment(1,1) * au__Debye * Bohr__AA, " YY",&
+        & quadrupoleMoment(2,2) * au__Debye * Bohr__AA, " ZZ",&
         & quadrupoleMoment(3,3) * au__Debye * Bohr__AA
-    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") ' XY',&
-        & quadrupoleMoment(1,2) * au__Debye * Bohr__AA, ' XZ',&
-        & quadrupoleMoment(1,3) * au__Debye * Bohr__AA, ' YZ',&
+    write(iUnit, "(A, F14.8, A, F14.8, A, F14.8)") " XY",&
+        & quadrupoleMoment(1,2) * au__Debye * Bohr__AA, " XZ",&
+        & quadrupoleMoment(1,3) * au__Debye * Bohr__AA, " YZ",&
         & quadrupoleMoment(2,3) * au__Debye * Bohr__AA
     write(iUnit, *)
 
@@ -6095,23 +6095,23 @@ contains
     integer, intent(in) :: iUnit
 
 
-    write(iUnit, format2U) 'Energy Monopole-Dipole', energy%EMdftbMD, 'H',&
-        & energy%EMdftbMD * Hartree__eV, 'eV'
+    write(iUnit, format2U) "Energy Monopole-Dipole", energy%EMdftbMD, "H",&
+        & energy%EMdftbMD * Hartree__eV, "eV"
 
-    write(iUnit, format2U) 'Energy Dipole-Dipole', energy%EMdftbDD, 'H',&
-        & energy%EMdftbDD * Hartree__eV, 'eV'
+    write(iUnit, format2U) "Energy Dipole-Dipole", energy%EMdftbDD, "H",&
+        & energy%EMdftbDD * Hartree__eV, "eV"
 
-    write(iUnit, format2U) 'Energy Monopole-Quadrupole', energy%EMdftbMQ, 'H',&
-        & energy%EMdftbMQ * Hartree__eV, 'eV'
+    write(iUnit, format2U) "Energy Monopole-Quadrupole", energy%EMdftbMQ, "H",&
+        & energy%EMdftbMQ * Hartree__eV, "eV"
 
-    write(iUnit, format2U) 'Energy Dipole-Quadrupole', energy%EMdftbDQ, 'H',&
-        & energy%EMdftbDQ * Hartree__eV, 'eV'
+    write(iUnit, format2U) "Energy Dipole-Quadrupole", energy%EMdftbDQ, "H",&
+        & energy%EMdftbDQ * Hartree__eV, "eV"
 
-    write(iUnit, format2U) 'Energy Quadrupole-Quadrupole', energy%EMdftbQQ, 'H',&
-        & energy%EMdftbQQ * Hartree__eV, 'eV'
+    write(iUnit, format2U) "Energy Quadrupole-Quadrupole", energy%EMdftbQQ, "H",&
+        & energy%EMdftbQQ * Hartree__eV, "eV"
 
-    write(iUnit, format2U) 'Energy Multipole', energy%EMdftb, 'H',&
-        & energy%EMdftb * Hartree__eV, 'eV'
+    write(iUnit, format2U) "Energy Multipole", energy%EMdftb, "H",&
+        & energy%EMdftb * Hartree__eV, "eV"
 
   end subroutine writeMdftbEnergies
 

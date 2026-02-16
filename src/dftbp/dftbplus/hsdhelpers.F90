@@ -82,7 +82,7 @@ contains
     ! Dump processed tree in HSD and XML format
     if (tIoProc .and. parserFlags%tWriteHSD) then
       call dumpHSD(hsdTree, hsdProcFileName)
-      write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
+      write(stdout, "(/,/,A)") "Processed input in HSD format written to '" // hsdProcFileName&
           & // "'"
     end if
 

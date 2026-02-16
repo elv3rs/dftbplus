@@ -1123,7 +1123,7 @@ contains
       tmpMat(:,:) = 0.0_dp
       call gemm(tmpMat, ZdelL(:,:,iL), eigenvecs(:,:,1))
       Zmo(:,:) = 0.0_dp
-      call gemm(Zmo, eigenvecs(:,:,1), tmpMat, transA='T')
+      call gemm(Zmo, eigenvecs(:,:,1), tmpMat, transA="T")
       do ij = 1, superN
         ! assign index p and q from pq
         call assignIndex(Nc, Na, Nv, reksAlg, ij, i, j)
@@ -1633,7 +1633,7 @@ contains
       tmpMat(:,:) = 0.0_dp
       Zmo(:,:) = 0.0_dp
       call gemm(tmpMat, ZmatL(:,:,iL), eigenvecs(:,:,1))
-      call gemm(Zmo, eigenvecs(:,:,1), tmpMat, transA='T')
+      call gemm(Zmo, eigenvecs(:,:,1), tmpMat, transA="T")
       do p = 1, nOrb
         do q = p, nOrb
           fac = 2.0_dp * weight(iL) * Zmo(p,q) * (fillingL(p,1,iL) + fillingL(q,1,iL))
@@ -3249,7 +3249,7 @@ contains
 
       ! check singularity for preconditioner
       if (abs(A1ePre(ij,ij)) <= epsilon(1.0_dp)) then
-        write(stdOut,'(A,f15.8)') " Current preconditioner value = ", A1ePre(ij,ij)
+        write(stdOut,"(A,f15.8)") " Current preconditioner value = ", A1ePre(ij,ij)
         call error("A singularity exists in preconditioner for PCG, set Preconditioner = No")
       end if
 
@@ -3451,11 +3451,11 @@ contains
     do i = 1, nOrb
     do j = 1, nOrb
       tmpMat(:,:) = 0.0_dp
-      call gemm(tmpMat,HxcSqrS(:,:,i,j),eigenvecs,1.0_dp,0.0_dp,'N','N')
-      call gemm(HxcSmo(:,:,i,j),eigenvecs,tmpMat,1.0_dp,0.0_dp,'T','N')
+      call gemm(tmpMat,HxcSqrS(:,:,i,j),eigenvecs,1.0_dp,0.0_dp,"N","N")
+      call gemm(HxcSmo(:,:,i,j),eigenvecs,tmpMat,1.0_dp,0.0_dp,"T","N")
       tmpMat(:,:) = 0.0_dp
-      call gemm(tmpMat,HxcSqrD(:,:,i,j),eigenvecs,1.0_dp,0.0_dp,'N','N')
-      call gemm(HxcDmo(:,:,i,j),eigenvecs,tmpMat,1.0_dp,0.0_dp,'T','N')
+      call gemm(tmpMat,HxcSqrD(:,:,i,j),eigenvecs,1.0_dp,0.0_dp,"N","N")
+      call gemm(HxcDmo(:,:,i,j),eigenvecs,tmpMat,1.0_dp,0.0_dp,"T","N")
     end do
     end do
 !$OMP END PARALLEL DO
@@ -3463,11 +3463,11 @@ contains
     do i = 1, nOrb
     do j = 1, nOrb
       tmpMat(:,:) = 0.0_dp
-      call gemm(tmpMat,HxcSmo(i,j,:,:),eigenvecs,1.0_dp,0.0_dp,'N','N')
-      call gemm(HxcSmo(i,j,:,:),eigenvecs,tmpMat,1.0_dp,0.0_dp,'T','N')
+      call gemm(tmpMat,HxcSmo(i,j,:,:),eigenvecs,1.0_dp,0.0_dp,"N","N")
+      call gemm(HxcSmo(i,j,:,:),eigenvecs,tmpMat,1.0_dp,0.0_dp,"T","N")
       tmpMat(:,:) = 0.0_dp
-      call gemm(tmpMat,HxcDmo(i,j,:,:),eigenvecs,1.0_dp,0.0_dp,'N','N')
-      call gemm(HxcDmo(i,j,:,:),eigenvecs,tmpMat,1.0_dp,0.0_dp,'T','N')
+      call gemm(tmpMat,HxcDmo(i,j,:,:),eigenvecs,1.0_dp,0.0_dp,"N","N")
+      call gemm(HxcDmo(i,j,:,:),eigenvecs,tmpMat,1.0_dp,0.0_dp,"T","N")
     end do
     end do
 !$OMP END PARALLEL DO
@@ -3682,7 +3682,7 @@ contains
         end if
       end do
       tmpMat(:,:) = 0.0_dp
-      call gemm(tmpMat, tmpZT, eigenvecs(:,:,1), transB='T')
+      call gemm(tmpMat, tmpZT, eigenvecs(:,:,1), transB="T")
       call gemm(RmatL(:,:,iL), eigenvecs(:,:,1), tmpMat)
     end do
 

@@ -579,7 +579,7 @@ contains
     end if
     call mpifx_allreduceip(env%mpi%groupComm, this%shiftPerAtom_, MPI_SUM)
   #:else
-    call hemv(this%shiftPerAtom_, this%invRMat, this%deltaQAtom_, 'L')
+    call hemv(this%shiftPerAtom_, this%invRMat, this%deltaQAtom_, "L")
   #:endif
 
   end subroutine updateShifts
@@ -1847,7 +1847,7 @@ contains
 
     if (iError /= 0) then
       ! alpha = exp(-0.310104 * log(volume) + 0.786382) / 2.0
-99000 format ('Failure in determining optimal alpha for Ewaldsum.', ' Error code: ',I3)
+99000 format ("Failure in determining optimal alpha for Ewaldsum.", " Error code: ",I3)
       write(errorString, 99000) iError
       call error(errorString)
     end if
@@ -1914,7 +1914,7 @@ contains
     end if
 
     if (iError /= 0) then
-99010 format ('Failure in getMaxGEwald.', ' Error nr: ',I3)
+99010 format ("Failure in getMaxGEwald.", " Error nr: ",I3)
       write(errorString, 99010) iError
       call error(errorString)
     end if
@@ -1978,7 +1978,7 @@ contains
     end if
 
     if (iError /= 0) then
-99020 format ('Failure in getMaxREwald.', ' Error nr: ',I3)
+99020 format ("Failure in getMaxREwald.", " Error nr: ",I3)
       write(errorString, 99020) iError
       call error(errorString)
     end if

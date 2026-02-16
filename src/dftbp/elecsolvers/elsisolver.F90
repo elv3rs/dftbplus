@@ -556,7 +556,7 @@ contains
           & behaviour for PEXSI at 2.6.0")
     end if
 
-    write(stdOut,"(A,T30,I0,'.',I0,'.',I0)") 'ELSI library version :', version%numbers
+    write(stdOut,"(A,T30,I0,'.',I0,'.',I0)") "ELSI library version :", version%numbers
 
   end subroutine supportedVersionNumber
 

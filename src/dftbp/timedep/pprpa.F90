@@ -211,8 +211,8 @@ contains
     ! Excitation energies  output file
     call openFile(fdExc, excitationsOut, mode="w")
     write(fdExc%unit, *)
-    write(fdExc%unit, '(5x,a,6x,a,14x,a,6x,a,12x,a)') 'w [eV]', 'Transitions', 'Weight', 'KS [eV]',&
-        & 'Symm.'
+    write(fdExc%unit, "(5x,a,6x,a,14x,a,6x,a,12x,a)") "w [eV]", "Transitions", "Weight", "KS [eV]",&
+        & "Symm."
     write(fdExc%unit, *)
     write(fdExc%unit, '(1x,80("="))')
     write(fdExc%unit, *)
@@ -709,13 +709,13 @@ contains
 
       ! Double excitations
       if (diff_b /= -1) then
-        write(fdExc%unit, '(1x,f10.3,6x,a,i2,a,i2,5x,f6.3,6x,f7.3,a,f7.3,7x,a)')&
+        write(fdExc%unit, "(1x,f10.3,6x,a,i2,a,i2,5x,f6.3,6x,f7.3,a,f7.3,7x,a)")&
             & Hartree__eV * (pp_eval(i) - eval_0),&
-            & 'HOMO -> LUMO +', diff_b,',', diff_a, weight, ks_ener_b, ',', ks_ener_a, sym
+            & "HOMO -> LUMO +", diff_b,",", diff_a, weight, ks_ener_b, ",", ks_ener_a, sym
       else
-        write(fdExc%unit, '(1x,f10.3,6x,a,i2,8x,f6.3,6x,f7.3,15x,a)')&
+        write(fdExc%unit, "(1x,f10.3,6x,a,i2,8x,f6.3,6x,f7.3,15x,a)")&
             & Hartree__eV * (pp_eval(i) - eval_0),&
-            & 'HOMO -> LUMO +', diff_a, weight, ks_ener_a, sym
+            & "HOMO -> LUMO +", diff_a, weight, ks_ener_a, sym
       end if
 
       if (((ii > nExc) .and. (sym == "S")) .or. ((ii == nExc) .and. (sym == "T"))) exit RPA

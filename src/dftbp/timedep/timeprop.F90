@@ -700,11 +700,11 @@ module dftbp_timedep_timeprop
 
 
   !> Prefix for dump files for restart
-  character(*), parameter :: restartFileName = 'tddump'
+  character(*), parameter :: restartFileName = "tddump"
 
 
   !> Prefix for dump files for pump-probe
-  character(*), parameter :: pumpFilesDir = 'pump_frames'
+  character(*), parameter :: pumpFilesDir = "pump_frames"
 
 
 contains
@@ -860,11 +860,11 @@ contains
 
     if (this%tLaser) then
       if (tPeriodic) then
-        call warning('Polarization components of the laser in a periodic direction do not work. &
-            & Make sure you are polarizing the field in non-periodic directions.')
+        call warning("Polarization components of the laser in a periodic direction do not work. &
+            & Make sure you are polarizing the field in non-periodic directions.")
         if (any(inp%imFieldPolVec > epsilon(1.0_dp))) then
-          call warning('Using circular or elliptical polarization with periodic structures might&
-              & not work.')
+          call warning("Using circular or elliptical polarization with periodic structures might&
+              & not work.")
         end if
       end if
       this%omega = inp%omega
@@ -1367,7 +1367,7 @@ contains
     call loopTime%start()
 
     write(stdOut, "(A)")
-    write(stdOut, "(A)") 'Starting electronic dynamics...'
+    write(stdOut, "(A)") "Starting electronic dynamics..."
     write(stdOut, "(A80)") repeat("-", 80)
 
     ! Main loop
@@ -1383,13 +1383,13 @@ contains
       if (mod(iStep, max(this%nSteps / 10, 1)) == 0) then
         call loopTime%stop()
         timeElec  = loopTime%getWallClockTime()
-        write(stdOut, "(A,2x,I6,2(2x,A,F10.6))") 'Step ', iStep, 'elapsed loop time: ',&
-            & timeElec, 'average time per loop ', timeElec / (iStep + 1)
+        write(stdOut, "(A,2x,I6,2(2x,A,F10.6))") "Step ", iStep, "elapsed loop time: ",&
+            & timeElec, "average time per loop ", timeElec / (iStep + 1)
       end if
 
     end do
 
-    write(stdOut, "(A)") 'Dynamics finished OK!'
+    write(stdOut, "(A)") "Dynamics finished OK!"
     call env%globalTimer%stopTimer(globalTimers%elecDynLoop)
 
     if (tWriteAutotest) then
@@ -1685,7 +1685,7 @@ contains
     integer :: iAt, iStart, iEnd, iKS, iSpin, iOrb, iOrbStart, nOrb
     real(dp) :: pkick(this%nSpin)
     integer :: nLocalCols, nLocalRows
-    character(1), parameter :: localDir(3) = ['x', 'y', 'z']
+    character(1), parameter :: localDir(3) = ["x", "y", "z"]
 
   #:if WITH_SCALAPACK
     nLocalRows = size(rho, dim=1)
@@ -1770,11 +1770,11 @@ contains
       call gemm(T4, T2, Ssqr(:,:,iKS), cmplx(1, 0, dp))
       call gemm(T2, T4, T3(:,:,iKS))
       call gemm(rho(:,:,iKS), T2, Sinv(:,:,iKS), cmplx(0.5, 0, dp))
-      call gemm(rho(:,:,iKS), Sinv(:,:,iKS), T2, cmplx(0.5, 0, dp), cmplx(1, 0, dp), 'N', 'C')
+      call gemm(rho(:,:,iKS), Sinv(:,:,iKS), T2, cmplx(0.5, 0, dp), cmplx(1, 0, dp), "N", "C")
     end do
 
   #:endif
-    write(stdout,"(A)")'Density kicked along ' // localDir(this%currPolDir) //'!'
+    write(stdout,"(A)")"Density kicked along " // localDir(this%currPolDir) //"!"
 
   end subroutine kickDM
 
@@ -1825,7 +1825,7 @@ contains
         end do
       else
         if (this%tVerboseDyn) then
-        call openOutputFile(this, env, laserDat, 'laser.dat')
+        call openOutputFile(this, env, laserDat, "laser.dat")
           write(laserDat%unit, "(A)") "#     time (fs)  |  E_x (eV/ang)  | E_y (eV/ang) | E_z (eV/ang)"
         end if
       end if
@@ -2461,7 +2461,7 @@ contains
       end do
     #:endif
 
-      write(stdOut,"(A)")'S inverted'
+      write(stdOut,"(A)")"S inverted"
 
 
     #:if WITH_SCALAPACK
@@ -2576,10 +2576,10 @@ contains
       allocate(bondWork(this%nAtom, this%nAtom))
     end if
     if (this%tBondE) then
-      call openOutputFile(this, env, fdBondEnergy, 'bondenergy.bin', isBinary=.true.)
+      call openOutputFile(this, env, fdBondEnergy, "bondenergy.bin", isBinary=.true.)
     end if
     if (this%tBondP) then
-      call openOutputFile(this, env, fdBondPopul, 'bondpop.bin', isBinary=.true.)
+      call openOutputFile(this, env, fdBondPopul, "bondpop.bin", isBinary=.true.)
     end if
     call getBondPopulAndEnergy(this, bondWork, lastBondPopul, rhoPrim, ham0, ints, iNeighbour,&
         & nNeighbourSK, iSparseStart, img2CentCell, iSquare, fdBondEnergy, fdBondPopul, time, env)
@@ -2703,7 +2703,7 @@ contains
     T1(:,:) = 0.0_dp
     call gemm(T1, Sinv, H1)
     call gemm(rhoOld, T1, rho, cmplx(-step, 0, dp), cmplx(1, 0, dp))
-    call gemm(rhoOld, rho, T1, cmplx(-step, 0, dp), cmplx(1, 0, dp), 'N', 'C')
+    call gemm(rhoOld, rho, T1, cmplx(-step, 0, dp), cmplx(1, 0, dp), "N", "C")
 
   end subroutine propagateRho
 
@@ -2849,14 +2849,14 @@ contains
 
     if (this%tKick) then
       if (this%currPolDir == 1) then
-        dipoleFileName = 'mux.dat'
+        dipoleFileName = "mux.dat"
       else if (this%currPolDir == 2) then
-        dipoleFileName = 'muy.dat'
+        dipoleFileName = "muy.dat"
       else if (this%currPolDir == 3) then
-        dipoleFileName = 'muz.dat'
+        dipoleFileName = "muz.dat"
       end if
     else
-      dipoleFileName = 'mu.dat'
+      dipoleFileName = "mu.dat"
     end if
     call openOutputFile(this, env, dipoleDat, dipoleFileName)
 
@@ -2877,7 +2877,7 @@ contains
     write(dipoleDat%unit, "(A)")
 
     if (this%tdWriteExtras) then
-      call openOutputFile(this, env, qDat, 'qsvst.dat')
+      call openOutputFile(this, env, qDat, "qsvst.dat")
       write(qDat%unit, "(A)", advance = "NO")"#             time (fs)      |"
       write(qDat%unit, "(A)", advance = "NO")"   total net charge (e)  |"
       write(qDat%unit, "(A)", advance = "NO")"   charge (atom_1) (e)   |"
@@ -2886,7 +2886,7 @@ contains
       write(qDat%unit, "(A)", advance = "NO")"   charge (atom_N) (e)   |"
       write(qDat%unit, "(A)")
 
-      call openOutputFile(this, env, energyDat, 'energyvst.dat')
+      call openOutputFile(this, env, energyDat, "energyvst.dat")
       write(energyDat%unit, "(A)", advance = "NO")"#                  time (fs)         |"
       write(energyDat%unit, "(A)", advance = "NO")"        E total (H)         |"
       write(energyDat%unit, "(A)", advance = "NO")"        E non-SCC (H)       |"
@@ -2899,7 +2899,7 @@ contains
       write(energyDat%unit, "(A)")
 
       if (this%tForces) then
-        call openOutputFile(this, env, forceDat, 'forcesvst.dat')
+        call openOutputFile(this, env, forceDat, "forcesvst.dat")
         write(forceDat%unit, "(A)", advance = "NO")"#           time (fs)       |"
         write(forceDat%unit, "(A)", advance = "NO")&
             & " force (atom_1) (H/b)   |  force (atom_2) (H/b)  |"
@@ -2909,23 +2909,23 @@ contains
       end if
 
       if (this%tIons) then
-        call openOutputFile(this, env, coorDat, 'tdcoords.xyz')
+        call openOutputFile(this, env, coorDat, "tdcoords.xyz")
       end if
     end if
 
     if (this%tPopulations) then
       do iKS = 1, this%parallelKS%nLocalKS
         iSpin = this%parallelKS%localKS(2, iKS)
-        write(strSpin,'(i1)')iSpin
+        write(strSpin,"(i1)")iSpin
         if (this%tRealHS) then
-          call openOutputFile(this, env, populDat(iKS), 'molpopul' // trim(strSpin) // '.dat')
+          call openOutputFile(this, env, populDat(iKS), "molpopul" // trim(strSpin) // ".dat")
           write(populDat(iKS)%unit, "(A,A)")&
               & "#  GS molecular orbital populations, spin channel : ", trim(strSpin)
         else
           iK = this%parallelKS%localKS(1, iKS)
-          write(strK,'(i0.3)')iK
+          write(strK,"(i0.3)")iK
           call openOutputFile(this, env, populDat(iKS),&
-              & 'molpopul' // trim(strSpin) // '-' // trim(strK) // '.dat')
+              & "molpopul" // trim(strSpin) // "-" // trim(strK) // ".dat")
           write(populDat(iKS)%unit, "(A,A,A,A)")&
               & "#  GS molecular orbital populations, spin channel : ", trim(strSpin), ",&
               & k-point number: ", trim(strK)
@@ -2943,12 +2943,12 @@ contains
     if (this%tPump) then
       call execute_command_line("mkdir "//trim(pumpFilesDir), exitstat=iErr)
       if (iErr /= 0) then
-        write (stdOut,*) 'cannot create '//trim(pumpFilesDir)//', error status of mkdir: ', iErr
+        write (stdOut,*) "cannot create "//trim(pumpFilesDir)//", error status of mkdir: ", iErr
       end if
     end if
 
     if (this%tWriteAtomEnergies) then
-      call openOutputFile(this, env, atomEnergyDat, 'atomenergies.dat')
+      call openOutputFile(this, env, atomEnergyDat, "atomenergies.dat")
       write(atomEnergyDat%unit, "(A)", advance = "NO")"#             time (fs)      |"
       write(atomEnergyDat%unit, "(A)", advance = "NO")"   E total (H)  |"
       write(atomEnergyDat%unit, "(A)", advance = "NO")"   E (atom_1) (H)   |"
@@ -3034,7 +3034,7 @@ contains
       inquire(file=fileName, exist=exist)
       iCount = 1
       do while (exist)
-        write(strCount,'(I0)') iCount
+        write(strCount,"(I0)") iCount
         newName = "rest" // trim(strCount) // "_" // fileName
         inquire(file=newName, exist=exist)
         iCount = iCount + 1
@@ -3118,11 +3118,11 @@ contains
     if (.not. env%mpi%tGlobalLead) return
 #:endif
 
-    write(dipoleDat%unit, '(7F25.15)') time * au__fs, ((dipole(iDir, iSpin) * Bohr__AA, iDir=1, 3),&
+    write(dipoleDat%unit, "(7F25.15)") time * au__fs, ((dipole(iDir, iSpin) * Bohr__AA, iDir=1, 3),&
         & iSpin=1, this%nSpin)
 
     if (this%tdWriteExtras) then
-      write(energydat%unit, '(9F30.15)') time * au__fs, energy%Etotal, energy%EnonSCC, energy%eSCC,&
+      write(energydat%unit, "(9F30.15)") time * au__fs, energy%Etotal, energy%EnonSCC, energy%eSCC,&
           & energy%Espin, energy%Eext, energy%Erep, energyKin, energy%eDisp
     end if
 
@@ -3140,10 +3140,10 @@ contains
       if (this%tdWriteExtras) then
         auxVeloc = 0.0_dp
         auxVeloc(:, this%indMovedAtom) = this%movedVelo
-        write(coorDat%unit,'(I5)')this%nAtom
-        write(coorDat%unit,*) 'MD step:', iStep, 'time', time * au__fs
+        write(coorDat%unit,"(I5)")this%nAtom
+        write(coorDat%unit,*) "MD step:", iStep, "time", time * au__fs
         do iAtom=1,this%nAtom
-          write(coorDat%unit, '(A2, 6F16.8)') trim(this%speciesName(this%species0(iAtom))), &
+          write(coorDat%unit, "(A2, 6F16.8)") trim(this%speciesName(this%species0(iAtom))), &
               &coord(:, iAtom) * Bohr__AA, auxVeloc(:, iAtom) * Bohr__AA / au__fs
         end do
       end if
@@ -3328,7 +3328,7 @@ contains
     do iKS = 1, this%parallelKS%nLocalKS
       !check if this works with both complex and real
       T1(:,:) = H1(:,:,iKS)
-      call diagDenseMtx(env, electronicSolver, 'V', T1, Ssqr(:,:,iKS), eigen, errStatus)
+      call diagDenseMtx(env, electronicSolver, "V", T1, Ssqr(:,:,iKS), eigen, errStatus)
       @:PROPAGATE_ERROR(errStatus)
       if (this%tRealHS) then
         T2(:,:) = real(T1, dp)
@@ -3433,9 +3433,9 @@ contains
     T1 = transpose(Eiginv(:,:,iKS)) * T1
 
     occ = real(sum(T1,dim=1), dp)
-    write(populDat(iKS)%unit,'(*(2x,F25.15))', advance='no') time * au__fs
+    write(populDat(iKS)%unit,"(*(2x,F25.15))", advance="no") time * au__fs
     do ii = 1, size(occ)
-      write(populDat(iKS)%unit,'(*(2x,F25.15))', advance='no')occ(ii)
+      write(populDat(iKS)%unit,"(*(2x,F25.15))", advance="no")occ(ii)
     end do
     write(populDat(iKS)%unit, *)
   #:endif
@@ -4582,7 +4582,7 @@ contains
       allocate(velInternal(3,size(this%movedVelo, dim=2)))
         velInternal(:,:) = 0.0_dp
       call writeRestartFile(this%trho, this%trho, coord, velInternal, this%startTime, this%dt,&
-          & trim(pumpFilesDir) // '/0ppdump', this%tWriteRestartAscii, errStatus)
+          & trim(pumpFilesDir) // "/0ppdump", this%tWriteRestartAscii, errStatus)
       @:PROPAGATE_ERROR(errStatus)
       deallocate(velInternal)
     end if
@@ -4979,7 +4979,7 @@ contains
     tProbeFrameWrite = this%tPump .and. (iStep >= this%PpIni) .and. (iStep <= this%PpEnd)&
         & .and. (mod(iStep-this%PpIni, max(this%PpFreq,1)) == 0)
     if (tProbeFrameWrite) then
-      write(dumpIdx,'(I0)')int((iStep-this%PpIni)/this%PpFreq)
+      write(dumpIdx,"(I0)")int((iStep-this%PpIni)/this%PpFreq)
       allocate(velInternal(3, size(this%movedVelo, dim=2)))
       if (this%tIons) then
         call state(this%pMDIntegrator, velocities=velInternal)
@@ -4987,7 +4987,7 @@ contains
         velInternal(:,:) = 0.0_dp
       end if
       call writeRestartFile(this%rho, this%rhoOld, coord, velInternal, this%time, this%dt,&
-          & trim(pumpFilesDir) // '/' // trim(dumpIdx) // 'ppdump', this%tWriteRestartAscii,&
+          & trim(pumpFilesDir) // "/" // trim(dumpIdx) // "ppdump", this%tWriteRestartAscii,&
           & errStatus)
       @:PROPAGATE_ERROR(errStatus)
       deallocate(velInternal)

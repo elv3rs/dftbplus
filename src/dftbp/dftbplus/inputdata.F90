@@ -333,7 +333,7 @@ module dftbp_dftbplus_inputdata
     integer :: nrConstr = 0
     integer, allocatable :: conAtom(:)
     real(dp), allocatable :: conVec(:,:)
-    character(lc) :: outFile = ''
+    character(lc) :: outFile = ""
 
     !> Do we have MD velocities
     logical :: tReadMDVelocities = .false.

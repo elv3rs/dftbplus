@@ -522,7 +522,7 @@ contains
 
     if (.not. lr%tSpin) then  !-----------spin-unpolarized systems--------------
 
-      if (sym == 'S') then
+      if (sym == "S") then
 
         call hemv(gtmp, frGamma, otmp)
 
@@ -638,7 +638,7 @@ contains
         end do
 
         otmp(:) = qv(:,myja)
-        call hemv(qv(:,myja), lrGamma, otmp, uplo='U')
+        call hemv(qv(:,myja), lrGamma, otmp, uplo="U")
 
         do ii = 1, rpa%nocc_ud(ss)
           ijs = rpa%iaTrans(ii, jj, ss)
@@ -663,7 +663,7 @@ contains
         end do
 
         otmp(:) = qv(:,myab)
-        call hemv(qv(:,myab), lrGamma, otmp, uplo='U')
+        call hemv(qv(:,myab), lrGamma, otmp, uplo="U")
 
         do ii = 1, rpa%nocc_ud(ss)
           ibs = rpa%iaTrans(ii, bb, ss)
@@ -820,7 +820,7 @@ contains
         end do
 
         otmp(:) = qv(:,myja)
-        call hemv(qv(:,myja), lrGamma, otmp, uplo='U')
+        call hemv(qv(:,myja), lrGamma, otmp, uplo="U")
 
         do ii = 1, rpa%nocc_ud(ss)
           ijs = rpa%iaTrans(ii, jj, ss)
@@ -845,7 +845,7 @@ contains
         end do
 
         otmp(:) = qv(:,myab)
-        call hemv(qv(:,myab), lrGamma, otmp, uplo='U')
+        call hemv(qv(:,myab), lrGamma, otmp, uplo="U")
 
         do ii = 1, rpa%nocc_ud(ss)
           ibs = rpa%iaTrans(ii, bb, ss)
@@ -965,7 +965,7 @@ contains
     !-----------spin-unpolarized systems--------------
     if (.not. lr%tSpin) then
 
-      if (sym == 'S') then
+      if (sym == "S") then
 
         ! Full range coupling matrix contribution: 4 * sum_A q^ia_A sum_B gamma_AB q^jb_B
         do jb = 1, initDim
@@ -1178,7 +1178,7 @@ contains
 
     fact = 1.0_dp
     if (.not. lr%tSpin) then
-      if (sym == 'T') then
+      if (sym == "T") then
         fact = -1.0_dp
       end if
     end if
@@ -1657,7 +1657,7 @@ contains
       ! Single particle excitations
       call openFile(fdSPTrans, singlePartOut, mode="w")
       write(fdSPTrans%unit, *)
-      write(fdSPTrans%unit, '(7x,a,7x,a,8x,a)') '#      w [eV]', 'Osc.Str.', 'Transition'
+      write(fdSPTrans%unit, "(7x,a,7x,a,8x,a)") "#      w [eV]", "Osc.Str.", "Transition"
       write(fdSPTrans%unit, *)
       write(fdSPTrans%unit, '(1x,58("="))')
       write(fdSPTrans%unit, *)
@@ -1673,8 +1673,8 @@ contains
           end if
         end if
         write(fdSPTrans%unit,&
-            & '(1x,i7,3x,f8.3,3x,f13.7,4x,i5,3x,a,1x,i5,1x,1a)')&
-            & indm, Hartree__eV * rpa%wij(indm), sposz(indm), m, '->', n, sign
+            & "(1x,i7,3x,f8.3,3x,f13.7,4x,i5,3x,a,1x,i5,1x,1a)")&
+            & indm, Hartree__eV * rpa%wij(indm), sposz(indm), m, "->", n, sign
       end do
       write(fdSPTrans%unit, *)
       call closeFile(fdSPTrans)
@@ -1717,8 +1717,8 @@ contains
     ! Output of excited state Mulliken charges
     call openFile(fdMulliken, excitedQOut, mode="a")
     write(fdMulliken%unit, "(a,a,i2)") "# MULLIKEN CHARGES of excited state ", sym, nstat
-    write(fdMulliken%unit, "(a,2x,A,i4)") "#", 'Natoms =',natom
-    write(fdMulliken%unit, "('#',1X,A4,T15,A)")'Atom','netCharge'
+    write(fdMulliken%unit, "(a,2x,A,i4)") "#", "Natoms =",natom
+    write(fdMulliken%unit, "('#',1X,A4,T15,A)")"Atom","netCharge"
     write(fdMulliken%unit,'("#",41("="))')
     do m = 1, natom
       write(fdMulliken%unit,"(i5,1x,f16.8)") m, -dq(m) - dqex(m)

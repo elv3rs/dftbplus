@@ -46,7 +46,7 @@ module dftbp_capi
 contains
 
   !> Finalises a DFTB+ input instance
-  subroutine c_DftbPlusInput_final(handler) bind(C, name='dftbp_input_final')
+  subroutine c_DftbPlusInput_final(handler) bind(C, name="dftbp_input_final")
 
     !> DFTB+ handler
     type(c_DftbPlusInput), intent(inout) :: handler
@@ -63,7 +63,7 @@ contains
 
 
   !> Returns the current API version
-  subroutine c_DftbPlus_api(major, minor, patch) bind(C, name='dftbp_api')
+  subroutine c_DftbPlus_api(major, minor, patch) bind(C, name="dftbp_api")
 
     !> major.minor.patch
     integer(c_int), intent(out) :: major, minor, patch
@@ -76,7 +76,7 @@ contains
 
 
   !> Queries, whether library is instance safe (allowing for concurrent DFTB+ instances)
-  function c_DftbPlus_is_instance_safe() result(instSafe) bind(C, name='dftbp_is_instance_safe')
+  function c_DftbPlus_is_instance_safe() result(instSafe) bind(C, name="dftbp_is_instance_safe")
 
     !> Whether library was built ensuring instance safety (multiple instances supported)
     logical(c_bool) :: instSafe
@@ -87,7 +87,7 @@ contains
 
 
   !> Initialises a DFTB+ calculation with output sent to to some location
-  subroutine c_DftbPlus_init(handler, outputFileName) bind(C, name='dftbp_init')
+  subroutine c_DftbPlus_init(handler, outputFileName) bind(C, name="dftbp_init")
 
     !> DFTB+ handler
     type(c_DftbPlus), intent(out) :: handler
@@ -106,7 +106,7 @@ contains
 
 
   !> Initialises a DFTB+ calculator (MPI-version)
-  subroutine c_DftbPlus_init_mpi(handler, outputFileName, mpiComm) bind(C, name='dftbp_init_mpi')
+  subroutine c_DftbPlus_init_mpi(handler, outputFileName, mpiComm) bind(C, name="dftbp_init_mpi")
 
     !> DFTB+ handler
     type(c_DftbPlus), intent(out) :: handler
@@ -128,7 +128,7 @@ contains
 
 
   !> Finalises a DFTB+ instance
-  subroutine c_DftbPlus_final(handler) bind(C, name='dftbp_final')
+  subroutine c_DftbPlus_final(handler) bind(C, name="dftbp_final")
 
     !> DFTB+ handler
     type(c_DftbPlus), intent(inout) :: handler
@@ -146,7 +146,7 @@ contains
 
   !> Read input for DFTB+ from a specified file
   subroutine c_DftbPlus_getInputFromFile(handler, fileName, inputHandler)&
-      & bind(C, name='dftbp_get_input_from_file')
+      & bind(C, name="dftbp_get_input_from_file")
 
     !> Handler for the input
     type(c_DftbPlus), intent(inout) :: handler
@@ -171,7 +171,7 @@ contains
 
 
   !> Process a document tree to get settings for the calculation
-  subroutine c_DftbPlus_processInput(handler, inputHandler) bind(C, name='dftbp_process_input')
+  subroutine c_DftbPlus_processInput(handler, inputHandler) bind(C, name="dftbp_process_input")
 
     !> Handler for the calculation instance
     type(c_DftbPlus), intent(inout) :: handler
@@ -191,7 +191,7 @@ contains
 
   !> Get electrostatic potential from DFTB+ at specified points
   subroutine c_DftbPlus_get_elstat_potential(handler, nLocations, pot, locations)&
-      & bind(C, name='dftbp_get_elstat_potential')
+      & bind(C, name="dftbp_get_elstat_potential")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -216,7 +216,7 @@ contains
 
   !> Set an external potential on the DFTB+ calculation
   subroutine c_DftbPlus_setExternalPotential(handler, extPot, extPotGrad)&
-      & bind(C, name='dftbp_set_external_potential')
+      & bind(C, name="dftbp_set_external_potential")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -246,7 +246,7 @@ contains
 
   !> Register a generator for an external potential
   subroutine c_DftbPlus_registerExtPotGenerator(handler, refPtr, extPotFunc, extPotGradFunc)&
-      & bind(C, name='dftbp_register_ext_pot_generator')
+      & bind(C, name="dftbp_register_ext_pot_generator")
 
     !> Handler for the potential
     type(c_DftbPlus), intent(inout) :: handler
@@ -276,7 +276,7 @@ contains
 
   !> Register a density matrix exporting callback
   subroutine c_DftbPlus_registerDMCallback(handler, callback, aux_ptr)&
-      & bind(C, name='dftbp_register_dm_callback')
+      & bind(C, name="dftbp_register_dm_callback")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -305,7 +305,7 @@ contains
 
   !> Register overlap matrix exporting callback
   subroutine c_DftbPlus_registerSCallback(handler, callback, aux_ptr)&
-      & bind(C, name='dftbp_register_s_callback')
+      & bind(C, name="dftbp_register_s_callback")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -335,7 +335,7 @@ contains
 
   !> Register overlap matrix importing callback
   subroutine c_DftbPlus_registerSetSCallback(handler, callback, aux_ptr)&
-      & bind(C, name='dftbp_register_set_s_callback')
+      & bind(C, name="dftbp_register_set_s_callback")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -365,7 +365,7 @@ contains
 
   !> Register hamiltonian exporting callback
   subroutine c_DftbPlus_registerHCallback(handler, callback, aux_ptr)&
-      & bind(C, name='dftbp_register_h_callback')
+      & bind(C, name="dftbp_register_h_callback")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -394,7 +394,7 @@ contains
 
   !> Register hamiltonian importing callback
   subroutine c_DftbPlus_registerSetHCallback(handler, callback, aux_ptr)&
-      & bind(C, name='dftbp_register_set_h_callback')
+      & bind(C, name="dftbp_register_set_h_callback")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -422,7 +422,7 @@ contains
 
 
   !> Set/replace the coordinates in a DFTB+ calculation instance
-  subroutine c_DftbPlus_setCoords(handler, coords) bind(C, name='dftbp_set_coords')
+  subroutine c_DftbPlus_setCoords(handler, coords) bind(C, name="dftbp_set_coords")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -442,7 +442,7 @@ contains
 
   !> Set both the coordinates and lattice vectors
   subroutine c_DftbPlus_setCoordsAndLatticeVecs(handler, coords, latVecs)&
-      & bind(C, name='dftbp_set_coords_and_lattice_vecs')
+      & bind(C, name="dftbp_set_coords_and_lattice_vecs")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -465,7 +465,7 @@ contains
 
   !> Set the coordinates and lattice vectors with an origin
   subroutine c_DftbPlus_setCoordsLatticeVecsOrigin(handler, coords, latVecs, origin)&
-      & bind(C, name='dftbp_set_coords_lattice_origin')
+      & bind(C, name="dftbp_set_coords_lattice_origin")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -492,7 +492,7 @@ contains
   !> Set the neighbour list instead of computing it in DFTB+
   subroutine c_DftbPlus_setNeighbourList(handler, nAllAtom, nMaxNeighbours, nNeighbour,&
       & iNeighbour, neighDist, cutOff, coordNeighbours, neighbour2CentCell)&
-      & bind(C, name='dftbp_set_neighbour_list')
+      & bind(C, name="dftbp_set_neighbour_list")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -534,7 +534,7 @@ contains
 
 
   !> Obtain nr. of atoms.
-  function c_DftbPlus_nrOfAtoms(handler) result(nAtom) bind(C, name='dftbp_get_nr_atoms')
+  function c_DftbPlus_nrOfAtoms(handler) result(nAtom) bind(C, name="dftbp_get_nr_atoms")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -551,7 +551,7 @@ contains
 
 
   !> Obtain nr. of spin channels.
-  function c_DftbPlus_nrOfSpin(handler) result(nSpin) bind(C, name='dftbp_get_nr_spin')
+  function c_DftbPlus_nrOfSpin(handler) result(nSpin) bind(C, name="dftbp_get_nr_spin")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -568,7 +568,7 @@ contains
 
 
   !> Obtain nr. of (k-point,spin chanel) pairs in current process group.
-  function c_DftbPlus_nrOfLocalKS(handler) result(nLocalKS) bind(C, name='dftbp_get_nr_local_ks')
+  function c_DftbPlus_nrOfLocalKS(handler) result(nLocalKS) bind(C, name="dftbp_get_nr_local_ks")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -586,7 +586,7 @@ contains
 
   !> Get (k-point,spin chanel) pairs in current process group, returns number of pairs
   function c_DftbPlus_getLocalKS(handler, localKS) result(nLocalKS)&
-      & bind(C, name='dftbp_get_local_ks')
+      & bind(C, name="dftbp_get_local_ks")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -608,7 +608,7 @@ contains
 
 
   !> Queries weights of k-points
-  subroutine c_DftbPlus_getKWeights(handler, kweights)  bind(C, name='dftbp_get_kweights')
+  subroutine c_DftbPlus_getKWeights(handler, kweights)  bind(C, name="dftbp_get_kweights")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -628,7 +628,7 @@ contains
 
 
   !> Obtain total size of the basis set
-  function c_DftbPlus_getBasisSize(handler) result(BasisSize) bind(C, name='dftbp_get_basis_size')
+  function c_DftbPlus_getBasisSize(handler) result(BasisSize) bind(C, name="dftbp_get_basis_size")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -646,7 +646,7 @@ contains
 
 
   !> Whether the system is described with real matrices
-  function c_DftbPlus_isHSReal(handler) result(HSReal) bind(C, name='dftbp_is_hs_real')
+  function c_DftbPlus_isHSReal(handler) result(HSReal) bind(C, name="dftbp_is_hs_real")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -664,7 +664,7 @@ contains
 
 
   !> Obtain total nr. of k-points.
-  function c_DftbPlus_nrOfKPoints(handler) result(nKPoints) bind(C, name='dftbp_nr_kpoints')
+  function c_DftbPlus_nrOfKPoints(handler) result(nKPoints) bind(C, name="dftbp_nr_kpoints")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -681,7 +681,7 @@ contains
 
 
   !> Obtain masses of atoms in the DFTB+ calculation.
-  subroutine c_DftbPlus_get_atom_masses(handler, masses) bind(C, name='dftbp_get_masses')
+  subroutine c_DftbPlus_get_atom_masses(handler, masses) bind(C, name="dftbp_get_masses")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -700,7 +700,7 @@ contains
 
 
   !> Obtain nr. basis functions at each atoms in the DFTB+ calculation.
-  subroutine c_DftbPlus_get_atom_nr_basis(handler, nOrbitals) bind(C, name='dftbp_get_nr_orbitals')
+  subroutine c_DftbPlus_get_atom_nr_basis(handler, nOrbitals) bind(C, name="dftbp_get_nr_orbitals")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -719,7 +719,7 @@ contains
 
 
   !> Retrieve the maximum cutoff distance that is being used for all interactions
-  function c_DftbPlus_getCutOff(handler) result(cutOff) bind(C, name='dftbp_get_cutoff')
+  function c_DftbPlus_getCutOff(handler) result(cutOff) bind(C, name="dftbp_get_cutoff")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -736,7 +736,7 @@ contains
 
 
   !> Obtain the DFTB+ energy
-  subroutine c_DftbPlus_getEnergy(handler, merminEnergy) bind(C, name='dftbp_get_energy')
+  subroutine c_DftbPlus_getEnergy(handler, merminEnergy) bind(C, name="dftbp_get_energy")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -753,7 +753,7 @@ contains
 
 
   !> Obtain the gradients wrt DFTB atom positions
-  subroutine c_DftbPlus_getGradients(handler, gradients) bind(C, name='dftbp_get_gradients')
+  subroutine c_DftbPlus_getGradients(handler, gradients) bind(C, name="dftbp_get_gradients")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -773,7 +773,7 @@ contains
 
   !> Obtain the stress tensor of the periodic system
   subroutine c_DftbPlus_getStressTensor(handler, stresstensor)&
-      & bind(C, name='dftbp_get_stress_tensor')
+      & bind(C, name="dftbp_get_stress_tensor")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -792,7 +792,7 @@ contains
 
   !> Obtain gross (Mulliken) charges for atoms wrt to neutral references
   subroutine c_DftbPlus_getGrossCharges(handler, atomCharges)&
-      & bind(C, name='dftbp_get_gross_charges')
+      & bind(C, name="dftbp_get_gross_charges")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -812,7 +812,7 @@ contains
 
   !> Obtain CM5 charges
   subroutine c_DftbPlus_getCM5Charges(handler, atomCharges)&
-      & bind(C, name='dftbp_get_cm5_charges')
+      & bind(C, name="dftbp_get_cm5_charges")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -836,7 +836,7 @@ contains
 
   !> Obtain reference atomic charge, the effective Z for the valence orbitals
   subroutine c_DftbPlus_getRefCharges(handler, refCharges)&
-      & bind(C, name='dftbp_get_ref_charges')
+      & bind(C, name="dftbp_get_ref_charges")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler
@@ -860,7 +860,7 @@ contains
 
   !> Set reference atomic charge, the effective Z for the valence orbitals
   subroutine c_DftbPlus_setRefCharge(handler, refCharges)&
-      & bind(C, name='dftbp_set_ref_charges')
+      & bind(C, name="dftbp_set_ref_charges")
 
     !> Handler for the calculation
     type(c_DftbPlus), intent(inout) :: handler

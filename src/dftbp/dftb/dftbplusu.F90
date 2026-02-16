@@ -98,7 +98,7 @@ module dftbp_dftb_dftbplusu
     integer :: indices(2) = [1, 2]
 
     !> Functional names (to be used in output)
-    character(sc) :: names(2) = [character(sc) :: 'FLL', 'pSIC']
+    character(sc) :: names(2) = [character(sc) :: "FLL", "pSIC"]
 
   end type TPlusUFuncHelper
 

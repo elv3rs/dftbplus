@@ -773,7 +773,7 @@ contains
 
     call getDescendant(root, "Transport", ch1)
     if (associated(ch1)) then
-      call getChildValue(root, "Transport/Task", ch1, child=ch2, default='uploadcontacts')
+      call getChildValue(root, "Transport/Task", ch1, child=ch2, default="uploadcontacts")
       call getNodeName(ch1, buffer)
       if (char(buffer) /= "contacthamiltonian") then
       #:for LABEL in [("xTB"), ("DFTB")]

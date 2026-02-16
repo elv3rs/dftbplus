@@ -170,23 +170,23 @@ module dftbp_common_constants
 
   !> Symbols of the periodic system of elements, up to 118
   character(len=2), parameter :: elementSymbol(1:118) = [&
-      & 'h ','he',&
-      & 'li','be','b ','c ','n ','o ','f ','ne',&
-      & 'na','mg','al','si','p ','s ','cl','ar',&
-      & 'k ','ca',&
-      & 'sc','ti','v ','cr','mn','fe','co','ni','cu','zn',&
-      &           'ga','ge','as','se','br','kr',&
-      & 'rb','sr',&
-      & 'y ','zr','nb','mo','tc','ru','rh','pd','ag','cd',&
-      &           'in','sn','sb','te','i ','xe',&
-      & 'cs','ba','la',&
-      & 'ce','pr','nd','pm','sm','eu','gd','tb','dy','ho','er','tm','yb',&
-      & 'lu','hf','ta','w ','re','os','ir','pt','au','hg',&
-      &           'tl','pb','bi','po','at','rn',&
-      & 'fr','ra','ac',&
-      & 'th','pa','u ','np','pu','am','cm','bk','cf','es','fm','md','no',&
-      & 'lr','rf','db','sg','bh','hs','mt','ds','rg','cn',&
-      &           'nh','fl','mc','lv','ts','og']
+      & "h ","he",&
+      & "li","be","b ","c ","n ","o ","f ","ne",&
+      & "na","mg","al","si","p ","s ","cl","ar",&
+      & "k ","ca",&
+      & "sc","ti","v ","cr","mn","fe","co","ni","cu","zn",&
+      &           "ga","ge","as","se","br","kr",&
+      & "rb","sr",&
+      & "y ","zr","nb","mo","tc","ru","rh","pd","ag","cd",&
+      &           "in","sn","sb","te","i ","xe",&
+      & "cs","ba","la",&
+      & "ce","pr","nd","pm","sm","eu","gd","tb","dy","ho","er","tm","yb",&
+      & "lu","hf","ta","w ","re","os","ir","pt","au","hg",&
+      &           "tl","pb","bi","po","at","rn",&
+      & "fr","ra","ac",&
+      & "th","pa","u ","np","pu","am","cm","bk","cf","es","fm","md","no",&
+      & "lr","rf","db","sg","bh","hs","mt","ds","rg","cn",&
+      &           "nh","fl","mc","lv","ts","og"]
 
 contains
 
@@ -200,22 +200,22 @@ contains
     !> Atomic number
     integer :: number
 
-    integer, parameter :: offset = iachar('a') - iachar('A')
+    integer, parameter :: offset = iachar("a") - iachar("A")
 
     character(len=2) :: lcSymbol
     integer :: i, j, k, l
 
     number = 0
-    lcSymbol = '  '
+    lcSymbol = "  "
 
     k = 0
     do j = 1, len_trim(symbol)
       if (k > 2) exit
       l = iachar(symbol(j:j))
-      if (k >= 1 .and. l == iachar(' ')) exit
+      if (k >= 1 .and. l == iachar(" ")) exit
       if (k >= 1 .and. l == 9) exit
-      if (l >= iachar('A') .and. l <= iachar('Z')) l = l + offset
-      if (l >= iachar('a') .and. l <= iachar('z')) then
+      if (l >= iachar("A") .and. l <= iachar("Z")) l = l + offset
+      if (l >= iachar("a") .and. l <= iachar("z")) then
         k = k+1
         lcSymbol(k:k) = achar(l)
       end if

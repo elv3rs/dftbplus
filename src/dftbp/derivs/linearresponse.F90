@@ -431,7 +431,7 @@ contains
     end if
 
     ! form | H' |c>
-    call symm(workLocal, 'l', dRho, eigVecsReal(:,:,iS))
+    call symm(workLocal, "l", dRho, eigVecsReal(:,:,iS))
     if (allocated(dOver)) then
       ! include | - e_i S' |c_i>
       dRho(:,:) = 0.0_dp
@@ -442,7 +442,7 @@ contains
         call unpackHS(dRho, dOver, neighbourList%iNeighbour, nNeighbourSK, denseDesc%iAtomStart,&
             & iSparseStart, img2CentCell)
       end if
-      call symm(workLocal, 'l', dRho, eCiReal(:,:,iS), alpha=-1.0_dp, beta=1.0_dp)
+      call symm(workLocal, "l", dRho, eCiReal(:,:,iS), alpha=-1.0_dp, beta=1.0_dp)
     end if
 
     ! form <c| H' |c> or <c| H' - e_i S' |c> depending on whether the overlap is changing
@@ -515,7 +515,7 @@ contains
         dRho(:,:) = 0.0_dp
         call unpackHS(dRho, dOver, neighbourList%iNeighbour, nNeighbourSK, denseDesc%iAtomStart,&
             & iSparseStart, img2CentCell)
-        call symm(work2Local, 'l', dRho, eigvecsTransformed)
+        call symm(work2Local, "l", dRho, eigvecsTransformed)
         work2Local(:,:) = work2Local * eigvecsTransformed
         call weight_dx(workLocal, work2Local, nFilled, nOrb, 1, iS, degenTransform, eigvals,&
             & filling, maxFill)
@@ -1056,7 +1056,7 @@ contains
     end if
 
     ! form |c> H' <c|
-    call hemm(workLocal, 'l', dRho, eigVecsCplx(:,:,iKS))
+    call hemm(workLocal, "l", dRho, eigVecsCplx(:,:,iKS))
     workLocal(:,:) = matmul(transpose(conjg(eigVecsCplx(:,:,iKS))), workLocal)
 
     ! orthogonalise degenerate states against perturbation
@@ -1611,7 +1611,7 @@ contains
         & denseDesc%iAtomStart, img2CentCell, iCellVec, cellVec, dRho, idHam)
 
     ! form |c> H' <c|
-    call hemm(cWorkLocal, 'l', dRho, eigVecsCplx(:,:,iKS))
+    call hemm(cWorkLocal, "l", dRho, eigVecsCplx(:,:,iKS))
     cWorkLocal(:,:) = matmul(transpose(conjg(eigVecsCplx(:,:,iKS))), cWorkLocal)
 
     ! orthogonalise degenerate states against perturbation

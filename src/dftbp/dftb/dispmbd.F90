@@ -135,7 +135,7 @@ contains
     end do
     if (any(this%izp == 0)) then
       this%errCode = -1
-      this%errMessage = 'Only standard elements are supported'
+      this%errMessage = "Only standard elements are supported"
     end if
 
   end subroutine TDispMbd_init
@@ -409,7 +409,7 @@ contains
     !> Message
     character(len=*), intent(in) :: str
 
-    write(stdOut, "(A,A)") '* Libmbd: ', str
+    write(stdOut, "(A,A)") "* Libmbd: ", str
 
   end subroutine mbdPrinter
 

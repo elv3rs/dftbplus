@@ -301,9 +301,9 @@ contains
   #:endblock DEBUG_CODE
 
     if (tReadAscii) then
-      call openFile(file, trim(fileName) // '.dat', mode="r", iostat=iErr)
+      call openFile(file, trim(fileName) // ".dat", mode="r", iostat=iErr)
     else
-      call openFile(file, file=trim(fileName) // '.bin', mode="rb", iostat=iErr)
+      call openFile(file, file=trim(fileName) // ".bin", mode="rb", iostat=iErr)
     end if
     if (iErr /= 0) then
       write(error_string, *) "Failure to open external file of charge data"
@@ -397,7 +397,7 @@ contains
     if (present(nEl)) then
       if (abs(nEl - sumQ) >= 1e-3_dp) then
         write(error_string, 99000) sumQ, nEl
-99000   format ('External file of charges has a total charge:', F18.6,', instead of ',F18.6)
+99000   format ("External file of charges has a total charge:", F18.6,", instead of ",F18.6)
         call error(error_string)
       end if
     end if
@@ -405,7 +405,7 @@ contains
       sumQ = sum(qq(:,:,2))
       if (abs(sumQ - magnetisation) >= 1e-3_dp) then
         write(error_string, 99010) sumQ, magnetisation
-99010   format ('External file of charges has a total magnetisation:', F18.6,', instead of ',F18.6)
+99010   format ("External file of charges has a total magnetisation:", F18.6,", instead of ",F18.6)
         call error(error_string)
       end if
     end if
@@ -604,7 +604,7 @@ contains
           end do
         end if
         if (iErr /= 0) then
-          write(error_string, *) 'Failure to read file for delta density matrix.'
+          write(error_string, *) "Failure to read file for delta density matrix."
           call error(error_string)
         end if
       end if
@@ -710,10 +710,10 @@ contains
   #:endblock DEBUG_CODE
 
     if (tWriteAscii) then
-      call openFile(fd, trim(fileName) // '.dat', mode="w")
+      call openFile(fd, trim(fileName) // ".dat", mode="w")
       write(fd%unit, *, iostat=iErr) restartFormat
     else
-      call openFile(fd, trim(fileName) // '.bin', mode="wb")
+      call openFile(fd, trim(fileName) // ".bin", mode="wb")
       write(fd%unit, iostat=iErr) restartFormat
     end if
 

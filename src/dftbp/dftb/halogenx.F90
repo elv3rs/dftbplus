@@ -44,11 +44,11 @@ module dftbp_dftb_halogenx
 
   !> Possible types for the first species in the interaction
   character(*), parameter :: halogenXSpecies1(2) = [character(1) :: &
-      & 'O', 'N']
+      & "O", "N"]
 
   !> Possible types for the second species in the interaction
   character(*), parameter :: halogenXSpecies2(3) = [character(2) :: &
-      & 'Cl', 'Br', 'I']
+      & "Cl", "Br", "I"]
 
   !> Energy (in kcal/mol) for pair truncation
   real(dp), parameter :: minInteraction = 1.0E-14_dp
@@ -110,17 +110,17 @@ contains
           cycle
         end if
         select case(trim(spName1) // trim(spName2))
-        case('OCl')
+        case("OCl")
           this%interactionType(iSp1,iSp2) = 1
-        case('OBr')
+        case("OBr")
           this%interactionType(iSp1,iSp2) = 2
-        case('OI')
+        case("OI")
           this%interactionType(iSp1,iSp2) = 3
-        case('NCl')
+        case("NCl")
           this%interactionType(iSp1,iSp2) = 4
-        case('NBr')
+        case("NBr")
           this%interactionType(iSp1,iSp2) = 5
-        case('NI')
+        case("NI")
           this%interactionType(iSp1,iSp2) = 6
         end select
         this%interactionType(iSp2, iSp1) = this%interactionType(iSp1, iSp2)

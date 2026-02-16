@@ -168,7 +168,7 @@ contains
     fp = this%unit
     write(fp, *)
     write(fp, "(A)") repeat("-", 80)
-    write(fp, "(A,T46,A,T66,A)") this%header, 'cpu [s]', 'wall clock [s]'
+    write(fp, "(A,T46,A,T66,A)") this%header, "cpu [s]", "wall clock [s]"
     write(fp, "(A)") repeat("-", 80)
     allCpu = 0.0
     allWall = 0.0

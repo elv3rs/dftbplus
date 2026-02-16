@@ -462,7 +462,7 @@ contains
         cycle
       end if
       subBlock(:nInBlock, :nInBlock) = matrixToProcess(iStart:iEnd, iStart:iEnd)
-      call heev(subBlock(:nInBlock, :nInBlock), eigenvals(:nInBlock), 'L', 'V')
+      call heev(subBlock(:nInBlock, :nInBlock), eigenvals(:nInBlock), "L", "V")
       if (self%isFullMatrixProcessed) then
         if (self%areEigvalsReversed) then
           self%${LABEL}$U(iStart:iEnd, iStart:iEnd) = subBlock(:nInBlock, nInBlock:1:-1)
@@ -495,7 +495,7 @@ contains
 
     if (self%isFullMatrixProcessed) then
 
-      call makeSimilarityTrans(matrixToProcess, self%${LABEL}$U, 'R')
+      call makeSimilarityTrans(matrixToProcess, self%${LABEL}$U, "R")
 
     else if (allocated(self%${LABEL}$UBlock)) then
 

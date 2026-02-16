@@ -447,7 +447,7 @@ module dftbp_reks_rekscommon
 
     tmpMat(:,:) = 0.0_dp
     call gemm(tmpMat, mat, eigenvecs)
-    call gemm(mat, eigenvecs, tmpMat, transA='T')
+    call gemm(mat, eigenvecs, tmpMat, transA="T")
 
   end subroutine matAO2MO
 
@@ -469,7 +469,7 @@ module dftbp_reks_rekscommon
     allocate(tmpMat(nOrb,nOrb))
 
     tmpMat(:,:) = 0.0_dp
-    call gemm(tmpMat, mat, eigenvecs, transB='T')
+    call gemm(tmpMat, mat, eigenvecs, transB="T")
     call gemm(mat, eigenvecs, tmpMat)
 
   end subroutine matMO2AO
@@ -485,13 +485,13 @@ module dftbp_reks_rekscommon
     character(len=1), intent(inout) :: st
 
     if (ii == 1) then
-      write(st,'(A1)') "a"
+      write(st,"(A1)") "a"
     else if (ii == 2) then
-      write(st,'(A1)') "b"
+      write(st,"(A1)") "b"
     else if (ii == 3) then
-      write(st,'(A1)') "c"
+      write(st,"(A1)") "c"
     else if (ii == 4) then
-      write(st,'(A1)') "d"
+      write(st,"(A1)") "d"
     end if
 
   end subroutine getSpaceSym

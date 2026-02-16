@@ -69,11 +69,11 @@ contains
     character(len=120) :: error_string
 
     if (isAsciiFile) then
-      call openFile(fd, trim(fileNamePrefix) // '.dat', mode="w", iostat=iErr)
+      call openFile(fd, trim(fileNamePrefix) // ".dat", mode="w", iostat=iErr)
     else
       ! Set to stream explicitely, as it was written as stream from the beginning
-      call openFile(fd, trim(fileNamePrefix) // '.bin',&
-          & options=TOpenOptions(form='unformatted', access='stream', action='write'), iostat=iErr)
+      call openFile(fd, trim(fileNamePrefix) // ".bin",&
+          & options=TOpenOptions(form="unformatted", access="stream", action="write"), iostat=iErr)
     end if
 
     if (iErr /= 0) then
@@ -163,25 +163,25 @@ contains
     character(len=120) :: error_string
 
     if (isAsciiFile) then
-      inquire(file=trim(fileNamePrefix)//'.dat', exist=isExisting)
+      inquire(file=trim(fileNamePrefix)//".dat", exist=isExisting)
       if (.not. isExisting) then
-        error_string = "TD restart file " // trim(fileNamePrefix)//'.dat' // " is missing"
+        error_string = "TD restart file " // trim(fileNamePrefix)//".dat" // " is missing"
         @:RAISE_ERROR(errStatus, -1, error_string)
       end if
     else
-      inquire(file=trim(fileNamePrefix)//'.bin', exist=isExisting)
+      inquire(file=trim(fileNamePrefix)//".bin", exist=isExisting)
       if (.not. isExisting) then
-        error_string = "TD restart file " // trim(fileNamePrefix)//'.bin' // " is missing"
+        error_string = "TD restart file " // trim(fileNamePrefix)//".bin" // " is missing"
         @:RAISE_ERROR(errStatus, -1, error_string)
       end if
     end if
 
     if (isAsciiFile) then
-      call openFile(fd, trim(fileNamePrefix)//'.dat', mode="r", iostat=iErr)
+      call openFile(fd, trim(fileNamePrefix)//".dat", mode="r", iostat=iErr)
     else
       ! Set to stream explicitely, as it was written as stream from the beginning
-      call openFile(fd, file=trim(fileNamePrefix)//'.bin',&
-          & options=TOpenOptions(form='unformatted', access='stream', action='read',&
+      call openFile(fd, file=trim(fileNamePrefix)//".bin",&
+          & options=TOpenOptions(form="unformatted", access="stream", action="read",&
           & position="rewind"), iostat=iErr)
     end if
 

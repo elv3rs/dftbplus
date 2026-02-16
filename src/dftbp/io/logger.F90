@@ -114,7 +114,7 @@ contains
     !> Format string for a single item
     character(*), intent(in), optional :: formStr
 
-    character(*), parameter :: DEFAULT_FORM_STR = '(A)'
+    character(*), parameter :: DEFAULT_FORM_STR = "(A)"
     character(:), allocatable :: formStr0
     integer :: verbosity0
 
@@ -146,7 +146,7 @@ contains
     !> Format string for a single item
     character(*), intent(in), optional :: formStr
 
-    character(*), parameter :: DEFAULT_FORM_STR = '(I0)'
+    character(*), parameter :: DEFAULT_FORM_STR = "(I0)"
     character(:), allocatable :: formStr0
     integer :: verbosity0
 
@@ -178,7 +178,7 @@ contains
     !> Format string for a single item
     character(*), intent(in), optional :: formStr
 
-    character(*), parameter :: DEFAULT_FORM_STR = '(ES23.15)'
+    character(*), parameter :: DEFAULT_FORM_STR = "(ES23.15)"
     character(:), allocatable :: formStr0
     integer :: verbosity0
 
@@ -214,7 +214,7 @@ contains
     !> Whether column vectors should be written columnwise (default: rowwise)
     logical, intent(in), optional :: columnwise
 
-    character(*), parameter :: DEFAULT_FORM_STR = '(ES23.15)'
+    character(*), parameter :: DEFAULT_FORM_STR = "(ES23.15)"
     character(:), allocatable :: formStr0, formStrRow
     integer :: verbosity0
     logical :: columnwise0
@@ -290,10 +290,10 @@ contains
     character(200) :: dummy
     integer :: nn
 
-    write(dummy, '(I0)') nItems
+    write(dummy, "(I0)") nItems
     nn = len_trim(formStr) + 2 + len_trim(dummy)
     allocate(character(nn) :: formStrRow)
-    write(formStrRow, '(A,I0,A,A)') '(', nItems, trim(formStr), ')'
+    write(formStrRow, "(A,I0,A,A)") "(", nItems, trim(formStr), ")"
 
   end subroutine getRowFormat
 

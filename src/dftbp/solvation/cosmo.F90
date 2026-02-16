@@ -244,12 +244,12 @@ contains
         & size(solvation%angWeight, dim=1), "per atom"
     write(unit, '(a, ":", t30, a)') "Solver", "domain decomposition"
 
-    write(unit, '(a, ":", t30)', advance='no') "SASA model"
+    write(unit, '(a, ":", t30)', advance="no") "SASA model"
     if (allocated(solvation%sasaCont)) then
-      write(unit, '(a)') "Yes"
+      write(unit, "(a)") "Yes"
       call writeSASAContInfo(unit, solvation%sasaCont)
     else
-      write(unit, '(a)') "No"
+      write(unit, "(a)") "No"
     end if
 
   end subroutine writeCosmoInfo
@@ -579,7 +579,7 @@ contains
     call getZeta(this%ddCosmo, this%keps, this%s, this%phi)
     ! and contract with the Coulomb matrix
     call gemv(shiftPerAtom, this%jmat, this%phi, alpha=-1.0_dp, &
-      & beta=1.0_dp, trans='t')
+      & beta=1.0_dp, trans="t")
 
   end subroutine getShifts
 
@@ -1061,31 +1061,31 @@ contains
     ! Dielectric energy is the energy on the dielectric continuum
     dielEnergy = this%keps * dot_product(zeta, phi)
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$info", &
         & "prog.: dftb+"
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$cosmo"
     write(unit, '(2x, a:, "=", g0)') &
         & "epsilon", this%dielectricConst
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$cosmo_data"
     write(unit, '(2x, a:, "=", g0)') &
         & "fepsi", this%keps, &
         & "area", sum(area)
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$coord_rad", &
         & "#atom   x                  y                  z             element  radius [A]"
     do iat = 1, size(coords0, 2)
-      write(unit, '(i4, 3(1x, f18.14), 2x, a4, 1x, f9.5)') &
+      write(unit, "(i4, 3(1x, f18.14), 2x, a4, 1x, f9.5)") &
           & iat, coords0(:, iat), trim(tolower(speciesNames(species0(iat)))), &
           & this%vdwRad(iat)*Bohr__AA
     end do
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$coord_car", &
         & "!BIOSYM archive 3", &
         & "PBC=OFF", &
@@ -1096,17 +1096,17 @@ contains
           & trim(speciesNames(species0(iat))), iat, coords0(:, iat)*Bohr__AA, &
           & tolower(speciesNames(species0(iat))), speciesNames(species0(iat)), 0.0_dp
     end do
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "end", "end"
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$screening_charge"
     write(unit, '(2x, a:, "=", g0)') &
         & "cosmo", sum(zeta), &
         & "correction", 0.0_dp, &
         & "total", sum(zeta)
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$cosmo_energy"
     write(unit, '(2x, a:, "=", f21.10)') &
         & "Total energy [a.u.]            ", energy, &
@@ -1115,7 +1115,7 @@ contains
         & "Dielectric energy [a.u.]       ", dielEnergy, &
         & "Diel. energy + OC corr. [a.u.] ", dielEnergy
 
-    write(unit, '(a)') &
+    write(unit, "(a)") &
         & "$segment_information", &
         & "# n             - segment number", &
         & "# atom          - atom associated with segment n", &
@@ -1134,7 +1134,7 @@ contains
       do ig = 1, this%ddCosmo%ngrid
         if (this%ddCosmo%ui(ig, iat) > 0.0_dp) then
           ii = ii + 1
-          write(unit, '(2i5, 7(1x, f14.9))') &
+          write(unit, "(2i5, 7(1x, f14.9))") &
               & ii, iat, this%ddCosmo%ccav(:, ii), &
               & zeta(ii), area(ii), zeta(ii)/area(ii), phi(ii)/Bohr__AA
         end if

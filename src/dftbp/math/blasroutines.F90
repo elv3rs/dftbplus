@@ -170,7 +170,7 @@ contains
     if (present(uplo)) then
       iuplo = uplo
     else
-      iuplo = 'l'
+      iuplo = "l"
     end if
     @:ASSERT(iuplo == 'u' .or. iuplo == 'U' .or. iuplo == 'l' .or. iuplo == 'L')
     n = size(x)
@@ -201,7 +201,7 @@ contains
     if (present(uplo)) then
       iuplo = uplo
     else
-      iuplo = 'l'
+      iuplo = "l"
     end if
     @:ASSERT(iuplo == 'u' .or. iuplo == 'U' .or. iuplo == 'l' .or. iuplo == 'L')
     n = size(x)
@@ -231,7 +231,7 @@ contains
     if (present(uplo)) then
       iuplo = uplo
     else
-      iuplo = 'l'
+      iuplo = "l"
     end if
     @:ASSERT(iuplo == 'u' .or. iuplo == 'U' .or. iuplo == 'l' .or. iuplo == 'L')
     n = size(x)
@@ -261,7 +261,7 @@ contains
     if (present(uplo)) then
       iuplo = uplo
     else
-      iuplo = 'l'
+      iuplo = "l"
     end if
     @:ASSERT(iuplo == 'u' .or. iuplo == 'U' .or. iuplo == 'l' .or. iuplo == 'L')
     n = size(x)
@@ -393,7 +393,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -444,7 +444,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -495,7 +495,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -546,7 +546,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -597,7 +597,7 @@ contains
     if (present(trans)) then
       iTrans = trans
     else
-      iTrans = 'n'
+      iTrans = "n"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -653,7 +653,7 @@ contains
     if (present(trans)) then
       iTrans = trans
     else
-      iTrans = 'n'
+      iTrans = "n"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -782,7 +782,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -835,7 +835,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -895,7 +895,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -925,7 +925,7 @@ contains
     else
       im = size(C,dim=1)
     end if
-    if (iUplo=='l'.or.iUplo=='L') then
+    if (iUplo=="l".or.iUplo=="L") then
       ka = im
     else
       ka = in
@@ -983,7 +983,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -1013,7 +1013,7 @@ contains
     else
       im = size(C,dim=1)
     end if
-    if (iUplo=='l'.or.iUplo=='L') then
+    if (iUplo=="l".or.iUplo=="L") then
       ka = im
     else
       ka = in
@@ -1079,12 +1079,12 @@ contains
     if (present(transA)) then
       iTransA = transA
     else
-      iTransA = 'n'
+      iTransA = "n"
     end if
     if (present(transB)) then
       iTransB = transB
     else
-      iTransB = 'n'
+      iTransB = "n"
     end if
 
     @:ASSERT(iTransA == 'n' .or. iTransA == 'N' .or. iTransA == 't'&
@@ -1114,7 +1114,7 @@ contains
     if (present(m)) then
       im = m
     else
-      if (iTransA == 'n' .or. iTransA == 'N') then
+      if (iTransA == "n" .or. iTransA == "N") then
         im = size(A,dim=1)
       else
         im = size(A,dim=2)
@@ -1128,7 +1128,7 @@ contains
     if (present(k)) then
       ik = k
     else
-      if (iTransA == 'n' .or. iTransA == 'N') then
+      if (iTransA == "n" .or. iTransA == "N") then
         ik = size(A,dim=2)
       else
         ik = size(A,dim=1)
@@ -1199,12 +1199,12 @@ contains
     if (present(transA)) then
       iTransA = transA
     else
-      iTransA = 'n'
+      iTransA = "n"
     end if
     if (present(transB)) then
       iTransB = transB
     else
-      iTransB = 'n'
+      iTransB = "n"
     end if
 
     @:ASSERT(iTransA == 'n' .or. iTransA == 'N' .or. iTransA == 't'&
@@ -1230,7 +1230,7 @@ contains
     if (present(m)) then
       im = m
     else
-      if (iTransA == 'n' .or. iTransA == 'N') then
+      if (iTransA == "n" .or. iTransA == "N") then
         im = size(A,dim=1)
       else
         im = size(A,dim=2)
@@ -1244,7 +1244,7 @@ contains
     if (present(k)) then
       ik = k
     else
-      if (iTransA == 'n' .or. iTransA == 'N') then
+      if (iTransA == "n" .or. iTransA == "N") then
         ik = size(A,dim=2)
       else
         ik = size(A,dim=1)
@@ -1313,12 +1313,12 @@ contains
     if (present(transA)) then
       iTransA = transA
     else
-      iTransA = 'n'
+      iTransA = "n"
     end if
     if (present(transB)) then
       iTransB = transB
     else
-      iTransB = 'n'
+      iTransB = "n"
     end if
 
     @:ASSERT(iTransA == 'n' .or. iTransA == 'N' .or. iTransA == 't'&
@@ -1344,7 +1344,7 @@ contains
     if (present(m)) then
       im = m
     else
-      if (iTransA == 'n' .or. iTransA == 'N') then
+      if (iTransA == "n" .or. iTransA == "N") then
         im = size(A,dim=1)
       else
         im = size(A,dim=2)
@@ -1358,7 +1358,7 @@ contains
     if (present(k)) then
       ik = k
     else
-      if (iTransA == 'n' .or. iTransA == 'N') then
+      if (iTransA == "n" .or. iTransA == "N") then
         ik = size(A,dim=2)
       else
         ik = size(A,dim=1)
@@ -1462,14 +1462,14 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
 
     if (present(trans)) then
       iTrans = trans
     else
-      iTrans = 'n'
+      iTrans = "n"
     end if
 
     @:ASSERT(any(iTrans == ['n','N','t','T','h','C']))
@@ -1496,7 +1496,7 @@ contains
     if (present(k)) then
       ik = k
     else
-      if (iTrans == 'n' .or. iTrans == 'N') then
+      if (iTrans == "n" .or. iTrans == "N") then
         ik = size(A,dim=2)
       else
         ik = size(A,dim=1)
@@ -1558,14 +1558,14 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     @:ASSERT(iUplo == 'u' .or. iUplo == 'U' .or. iUplo == 'l' .or. iUplo == 'L')
 
     if (present(trans)) then
       iTrans = trans
     else
-      iTrans = 'n'
+      iTrans = "n"
     end if
 
     @:ASSERT(any(iTrans == ['n','N','t','T','h','C']))
@@ -1593,7 +1593,7 @@ contains
     if (present(k)) then
       ik = k
     else
-      if (iTrans == 'n' .or. iTrans == 'N') then
+      if (iTrans == "n" .or. iTrans == "N") then
         ik = size(A,dim=2)
       else
         ik = size(A,dim=1)
@@ -1651,7 +1651,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -1681,7 +1681,7 @@ contains
     else
       im = size(C,dim=1)
     end if
-    if (iUplo=='l'.or.iUplo=='L') then
+    if (iUplo=="l".or.iUplo=="L") then
       ka = im
     else
       ka = in
@@ -1739,7 +1739,7 @@ contains
     if (present(uplo)) then
       iUplo = uplo
     else
-      iUplo = 'L'
+      iUplo = "L"
     end if
     if (present(alpha)) then
       iAlpha = alpha
@@ -1769,7 +1769,7 @@ contains
     else
       im = size(C,dim=1)
     end if
-    if (iUplo=='l'.or.iUplo=='L') then
+    if (iUplo=="l".or.iUplo=="L") then
       ka = im
     else
       ka = in
@@ -1873,7 +1873,7 @@ contains
     if (present(uplo)) then
       ula = uplo
     else
-      ula = 'u'
+      ula = "u"
     end if
     incx = 1
     incy = 1

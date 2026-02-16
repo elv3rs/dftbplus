@@ -1048,8 +1048,8 @@ contains
 
     ! Issue warning, if cutoff is bigger than used for the neighbourlist.
     if (cutoff > neigh%cutoff) then
-99010 format ('Cutoff (', E16.6, ') greater than last cutoff ', '(', E13.6,&
-          & ') passed to updateNeighbourList!')
+99010 format ("Cutoff (", E16.6, ") greater than last cutoff ", "(", E13.6,&
+          & ") passed to updateNeighbourList!")
       write (strError, 99010) cutoff, neigh%cutoff
       call warning(strError)
     end if

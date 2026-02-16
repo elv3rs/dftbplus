@@ -157,13 +157,13 @@ contains
     ! pg 1124 'For typical simulations, nc can be taken to be one.'
     this%nresn = input%nExpSteps
     if (this%nresn < 1) then
-      call error('Nose-Hoover propagation steps must be at least 1.')
+      call error("Nose-Hoover propagation steps must be at least 1.")
     end if
 
     ! particles in the chain
     this%nnos = input%chainLength
     if (this%nnos < 1) then
-      call error('Nose-Hoover chains must contain at least one mass.')
+      call error("Nose-Hoover chains must contain at least one mass.")
     end if
 
     ! current choice of order
@@ -318,12 +318,12 @@ contains
     !> File unit to write thermostat state out to
     integer, intent(in) :: fd
 
-    write(fd,"(a)") 'Nose-Hoover chain variables'
-    write(fd,"(a)") 'x:'
+    write(fd,"(a)") "Nose-Hoover chain variables"
+    write(fd,"(a)") "x:"
     write(fd,"(3e20.10)") this%xnose
-    write(fd,"(a)") 'v:'
+    write(fd,"(a)") "v:"
     write(fd,"(3e20.10)") this%vnose
-    write(fd,"(a)") 'g:'
+    write(fd,"(a)") "g:"
     write(fd,"(3e20.10)") this%gnose
 
   end subroutine TNhcTherm_writeState

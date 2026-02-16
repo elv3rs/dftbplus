@@ -48,8 +48,8 @@ contains
     !> Warning message to print to standard out.
     character (len=*), intent(in) :: message
 
-    write(stdOut, '(1a)') 'WARNING!'
-    write(stdOut, '(2a)') '-> ', trim(message)
+    write(stdOut, "(1a)") "WARNING!"
+    write(stdOut, "(2a)") "-> ", trim(message)
 
   end subroutine warning_single
 
@@ -62,9 +62,9 @@ contains
 
     integer :: ii
 
-    write(stdOut, '(1a)') 'WARNING!'
+    write(stdOut, "(1a)") "WARNING!"
     do ii = 1, size(messages)
-      write(stdOut, '(2a)') '-> ', trim(messages(ii))
+      write(stdOut, "(2a)") "-> ", trim(messages(ii))
     end do
 
   end subroutine warning_array
@@ -76,8 +76,8 @@ contains
     !> Error message to print to standard out.
     character (len=*), intent(in) :: message
 
-    write(stdOut, '(1a)') 'ERROR!'
-    write(stdOut, '(2a)') '-> ', trim(message)
+    write(stdOut, "(1a)") "ERROR!"
+    write(stdOut, "(2a)") "-> ", trim(message)
     flush(stdOut)
     call abortProgram()
 
@@ -92,9 +92,9 @@ contains
 
     integer :: ii
 
-    write(stdOut, '(1a)') 'ERROR!'
+    write(stdOut, "(1a)") "ERROR!"
     do ii = 1, size(messages)
-      write(stdOut, '(2a)') '-> ', trim(messages(ii))
+      write(stdOut, "(2a)") "-> ", trim(messages(ii))
     end do
     flush(stdOut)
     call abortProgram()
@@ -108,7 +108,7 @@ contains
     !> Shutdown message to print to standard out.
     character (len=*), intent(in) :: message
 
-    write(stdOut, '(A)') trim(message)
+    write(stdOut, "(A)") trim(message)
     flush(stdOut)
     call synchronizeAll()
     call abortProgram()
@@ -125,7 +125,7 @@ contains
     integer :: ii
 
     do ii = 1, size(messages)
-      write(stdOut, '(A)') trim(messages(ii))
+      write(stdOut, "(A)") trim(messages(ii))
     end do
     flush(stdOut)
     call synchronizeAll()

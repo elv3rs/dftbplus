@@ -373,8 +373,8 @@ module dftbp_reks_reksinterface
 
             write(stdOut,"(A)")
             write(stdOut,"(A)") repeat("-", 82)
-            write(stdOut,'(1x,a,1x,I2,1x,a)') &
-                & 'Solving CP-REKS equation for', ist, 'state vector...'
+            write(stdOut,"(1x,a,1x,I2,1x,a)") &
+                & "Solving CP-REKS equation for", ist, "state vector..."
 
             ! solve CP-REKS equation for SA-REKS state
             ! save information about ZT, RmatL
@@ -398,8 +398,8 @@ module dftbp_reks_reksinterface
           call getTwoIndices(this%nstates, ist, ia, ib, 1)
           write(stdOut,"(A)")
           write(stdOut,"(A)") repeat("-", 82)
-          write(stdOut,'(1x,a,1x,I2,1x,a,1x,I2,1x,a)') &
-              & 'Solving CP-REKS equation for SI between', ia, 'and', ib, 'state vectors...'
+          write(stdOut,"(1x,a,1x,I2,1x,a,1x,I2,1x,a)") &
+              & "Solving CP-REKS equation for SI between", ia, "and", ib, "state vectors..."
 
           ! solve CP-REKS equation for state-interaction term
           ! save information about ZTdel, tmpRL
@@ -426,8 +426,8 @@ module dftbp_reks_reksinterface
 
           write(stdOut,"(A)")
           write(stdOut,"(A)") repeat("-", 82)
-          write(stdOut,'(1x,a,1x,I2,1x,a)') &
-              & 'Solving CP-REKS equation for', this%rstate, 'state vector...'
+          write(stdOut,"(1x,a,1x,I2,1x,a)") &
+              & "Solving CP-REKS equation for", this%rstate, "state vector..."
 
           ! solve CP-REKS equation for SSR state
           ! save information about ZT, RmatL, ZmatL, Q1mat, Q2mat
@@ -447,11 +447,11 @@ module dftbp_reks_reksinterface
           write(stdOut,"(A)")
           write(stdOut,"(A)") repeat("-", 82)
           if (this%Lstate == 0) then
-            write(stdOut,'(1x,a,1x,I2,1x,a)') &
-                & 'Solving CP-REKS equation for', this%rstate, 'state vector...'
+            write(stdOut,"(1x,a,1x,I2,1x,a)") &
+                & "Solving CP-REKS equation for", this%rstate, "state vector..."
           else
-            write(stdOut,'(1x,a,1x,I2,1x,a)') &
-                & 'Solving CP-REKS equation for', this%Lstate, 'microstate vector...'
+            write(stdOut,"(1x,a,1x,I2,1x,a)") &
+                & "Solving CP-REKS equation for", this%Lstate, "microstate vector..."
           end if
 
           ! solve CP-REKS equation for SA-REKS or L state
@@ -1218,10 +1218,10 @@ module dftbp_reks_reksinterface
       ! get converged R, Z, Q2 matrices & ZT vector
       ! RmatL : AO index, ZmatL : AO index, Q2mat : MO index
       if (optionQMMM) then
-        write(stdOut,'(a)') &
-            & ' Warning! For calculating relaxed density for SSR state,'
-        write(stdOut,'(a)') &
-            & '          run CG again to obtain ZT solution in (nac) case.'
+        write(stdOut,"(a)") &
+            & " Warning! For calculating relaxed density for SSR state,"
+        write(stdOut,"(a)") &
+            & "          run CG again to obtain ZT solution in (nac) case."
       end if
       call CGgrad(env, denseDesc, neighbourList, nNeighbourSK, iSparseStart, &
           & img2CentCell, orb, XT, this%A1e, this%A1ePre, this%HxcSqrS, &

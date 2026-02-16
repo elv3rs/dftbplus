@@ -155,22 +155,22 @@ module dftbp_reks_reksfon
       ! Update eps value
       eps = (Const - grad) / hess
       if (opt >= 2) then
-        write(stdOut,'(2x,a,1x,i4,4x,a,F18.14,1x,a,F18.14)') &
-       & 'NR solver: Iteration', iter, 'X =', x1, 'Eps =', eps
+        write(stdOut,"(2x,a,1x,i4,4x,a,F18.14,1x,a,F18.14)") &
+       & "NR solver: Iteration", iter, "X =", x1, "Eps =", eps
       end if
 
       ! Convergence check
       if (abs(eps) > ConvergeLimit) then
         x0 = x1
         if (iter == maxIter) then
-          write(stdOut,'(2x,a,i4,a)') &
-         & 'Warning! Maximum number of iterations (', maxIter, &
-         & ') is exceeded in NR solver'
+          write(stdOut,"(2x,a,i4,a)") &
+         & "Warning! Maximum number of iterations (", maxIter, &
+         & ") is exceeded in NR solver"
         end if
       else
         if (opt >= 2) then
-          write(stdOut,'(2x,a,1x,i4,1x,a)') &
-         & 'Convergence reached in NR solver after', iter, 'iterations'
+          write(stdOut,"(2x,a,1x,i4,1x,a)") &
+         & "Convergence reached in NR solver after", iter, "iterations"
         end if
         exit NRsolver
       end if

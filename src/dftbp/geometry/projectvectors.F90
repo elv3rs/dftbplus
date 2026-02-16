@@ -94,7 +94,7 @@ contains
     end do
     !$OMP END PARALLEL DO
 
-    call heev(inertia, ei, 'L', 'V')
+    call heev(inertia, ei, "L", "V")
 
   end subroutine getPrincipleAxes
 

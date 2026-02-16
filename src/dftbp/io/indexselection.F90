@@ -331,8 +331,8 @@ contains
     selected(:) = .false.
 
     ! Numerical index value
-    if (iFirstChar  >= ichar('0') .and. iFirstChar <= ichar('9') .or. firstChar == '-') then
-      seppos = index(selector, ':')
+    if (iFirstChar  >= ichar("0") .and. iFirstChar <= ichar("9") .or. firstChar == "-") then
+      seppos = index(selector, ":")
       if (seppos > 0) then
         read(selector(: seppos - 1), *, iostat=iostat) iFirst
         if (iostat /= 0) then

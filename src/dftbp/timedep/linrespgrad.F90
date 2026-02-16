@@ -303,7 +303,7 @@ contains
       end do
     end do
     if (tFracOcc .and. tHybridXc) then
-      call error('Fractional occupations not implemented for TD-LC-DFTB.')
+      call error("Fractional occupations not implemented for TD-LC-DFTB.")
     end if
 
     ! count initial number of transitions from occupied to empty states
@@ -568,7 +568,7 @@ contains
     if (this%writeTransDip) then
       call openFile(fdTransDip, transDipOut, mode="w")
       write(fdTransDip%unit, *)
-      write(fdTransDip%unit, '(5x,a,5x,a,2x,a)') "#", 'w [eV]', 'Transition dipole (x,y,z) [Debye]'
+      write(fdTransDip%unit, "(5x,a,5x,a,2x,a)") "#", "w [eV]", "Transition dipole (x,y,z) [Debye]"
       write(fdTransDip%unit, *)
       write(fdTransDip%unit, '(1x,60("="))')
      write(fdTransDip%unit, *)
@@ -579,11 +579,11 @@ contains
       call openFile(fdExc, excitationsOut, mode="w")
       write(fdExc%unit, *)
       if (this%tSpin) then
-        write(fdExc%unit, '(5x,a,7x,a,9x,a,9x,a,6x,a,4x,a)') 'w [eV]', 'Osc.Str.', 'Transition',&
-            & 'Weight', 'KS [eV]','D<S*S>'
+        write(fdExc%unit, "(5x,a,7x,a,9x,a,9x,a,6x,a,4x,a)") "w [eV]", "Osc.Str.", "Transition",&
+            & "Weight", "KS [eV]","D<S*S>"
       else
-        write(fdExc%unit, '(5x,a,7x,a,9x,a,9x,a,6x,a,4x,a)') 'w [eV]','Osc.Str.', 'Transition',&
-            & 'Weight', 'KS [eV]','Sym.'
+        write(fdExc%unit, "(5x,a,7x,a,9x,a,9x,a,6x,a,4x,a)") "w [eV]","Osc.Str.", "Transition",&
+            & "Weight", "KS [eV]","Sym."
       end if
 
       write(fdExc%unit, *)
@@ -1093,8 +1093,8 @@ contains
       allocate(orthnorm(rpa%nxov_rd,rpa%nxov_rd))
       orthnorm = matmul(transpose(xpy(:,:nExc)),xpy(:,:nExc))
 
-      write(fdArnoldiTest%unit,"(A)")'State Ei deviation    Evec deviation  Norm deviation  Max&
-          & non-orthog'
+      write(fdArnoldiTest%unit,"(A)")"State Ei deviation    Evec deviation  Norm deviation  Max&
+          & non-orthog"
       do iState = 1, nExc
 
         call actionAplusB(iGlobal, fGlobal, env, orb, lr, rpa, transChrg, sym, denseDesc, species0,&
@@ -1217,7 +1217,7 @@ contains
     nLoc = fGlobal - iGlobal + 1
 
     if (allocated(lr%onSiteMatrixElements)) then
-      write(tmpStr,'(A)') 'Onsite corrections not available in Stratmann diagonaliser.'
+      write(tmpStr,"(A)") "Onsite corrections not available in Stratmann diagonaliser."
       call error(tmpStr)
     end if
 
@@ -1229,15 +1229,15 @@ contains
     ! Small subSpaceDim is faster but leads to convergence problems
     ! if large number of excited states is needed
     if (lr%subSpaceFactorStratmann < 2) then
-      write(tmpStr,'(A)') 'SubSpaceFactor for Stratmann solver must be larger than one.'
+      write(tmpStr,"(A)") "SubSpaceFactor for Stratmann solver must be larger than one."
       call error(tmpStr)
     end if
     subSpaceDim = min(lr%subSpaceFactorStratmann * nExc, rpa%nxov_rd)
     iterStrat = 1
 
-    write(stdOut,'(A)')
-    write(stdOut,'(A)') '>> Stratmann diagonalisation of response matrix'
-    write(stdOut,'(3x,A,i6,A,i6)') 'Total dimension of A+B: ', rpa%nxov_rd, ' inital subspace: ',&
+    write(stdOut,"(A)")
+    write(stdOut,"(A)") ">> Stratmann diagonalisation of response matrix"
+    write(stdOut,"(3x,A,i6,A,i6)") "Total dimension of A+B: ", rpa%nxov_rd, " inital subspace: ",&
       & subSpaceDim
 
     allocate(mP(subSpaceDim, subSpaceDim))
@@ -1310,11 +1310,11 @@ contains
 
       call calcMatrixSqrt(mM, mMsqrt, mMsqrtInv)
 
-      call symm(dummyM, 'L', mP, mMsqrt, uplo='U')
-      call symm(mH, 'L', mMsqrt, dummyM, uplo='U')
+      call symm(dummyM, "L", mP, mMsqrt, uplo="U")
+      call symm(mH, "L", mMsqrt, dummyM, uplo="U")
 
       ! Diagonalise in subspace
-      call heev(mH, evalInt, 'U', 'V', info)
+      call heev(mH, evalInt, "U", "V", info)
 
     #:if WITH_SCALAPACK
       ! required for coherence between processors, as slices of eigenvectors are processed on
@@ -1324,10 +1324,10 @@ contains
 
       if (info /= 0) then
         if (lr%subSpaceFactorStratmann * nExc < rpa%nxov_rd) then
-          write(tmpStr,'(A)') 'TDDFT diagonalisation failure. Increase SubSpaceFactor.'
+          write(tmpStr,"(A)") "TDDFT diagonalisation failure. Increase SubSpaceFactor."
         else
-          write(tmpStr,'(A)') 'TDDFT diagonalisation failure. Insufficient transitions available to&
-              & converge.'
+          write(tmpStr,"(A)") "TDDFT diagonalisation failure. Insufficient transitions available to&
+              & converge."
         end if
         call error(tmpStr)
       end if
@@ -1336,8 +1336,8 @@ contains
       ! Calc. |R_n>=|X+Y>=(A-B)^(1/2)T and |L_n>=|X-Y>=(A-B)^(-1/2)T.
       ! Transformation preserves orthonormality.
       ! Only compute up to nExc index, because only that much needed.
-      call symm(evecR, 'L', Mmsqrt, Mh, uplo='U')
-      call symm(evecL, 'L', Mmsqrtinv, Mh, uplo='U')
+      call symm(evecR, "L", Mmsqrt, Mh, uplo="U")
+      call symm(evecL, "L", Mmsqrtinv, Mh, uplo="U")
 
       ! Need |X-Y>=sqrt(w)(A-B)^(-1/2)T, |X+Y>=(A-B)^(1/2)T/sqrt(w) for proper solution to original
       ! EV problem, only use first nExc vectors
@@ -1376,8 +1376,8 @@ contains
       didConverge = all(vecNorm < convThreshStrat)
 
       if ((.not. didConverge) .and. (subSpaceDim > rpa%nxov_rd)) then
-        write(tmpStr,'(A)') 'Linear Response calculation in subspace did not converge!&
-             & Increase SubspaceFactor.'
+        write(tmpStr,"(A)") "Linear Response calculation in subspace did not converge!&
+             & Increase SubspaceFactor."
         call error(tmpStr)
       end if
 
@@ -1397,7 +1397,7 @@ contains
           call assembleChunks(env, xmy)
         end if
 
-        write(stdOut,'(A)') '>> Stratmann converged'
+        write(stdOut,"(A)") ">> Stratmann converged"
         exit solveLinResp  ! terminate diag. routine
 
       end if
@@ -1446,9 +1446,9 @@ contains
       subSpaceDim = subSpaceDim + newVec
 
       if(iterStrat == 1) then
-        write(stdOut,'(3x,A)') 'Iteration  Subspace dimension'
+        write(stdOut,"(3x,A)") "Iteration  Subspace dimension"
       end if
-      write(stdOut,'(3x,i6,10x,i6)') iterStrat, subSpaceDim
+      write(stdOut,"(3x,i6,10x,i6)") iterStrat, subSpaceDim
 
       iterStrat = iterStrat + 1
 
@@ -2028,7 +2028,7 @@ contains
 
     ! action of matrix on vector
     ! we need the singlet action even for triplet excitations!
-    call actionAplusB(iGlobal, fGlobal, env, orb, lr, rpa, transChrg, 'S', denseDesc, species0,&
+    call actionAplusB(iGlobal, fGlobal, env, orb, lr, rpa, transChrg, "S", denseDesc, species0,&
         & ovrXev, grndEigVecs, gammaMat, .true., rhs2, rkm1, lrGamma)
 
     rkm1(:) = rhs - rkm1
@@ -2039,7 +2039,7 @@ contains
     do kk = 1, nxov**2
 
       ! action of matrix on vector
-      call actionAplusB(iGlobal, fGlobal, env, orb, lr, rpa, transChrg, 'S', denseDesc, species0,&
+      call actionAplusB(iGlobal, fGlobal, env, orb, lr, rpa, transChrg, "S", denseDesc, species0,&
           & ovrXev, grndEigVecs, gammaMat, .true., pkm1, apk, lrGamma)
 
       tmp1 = dot_product(rkm1, zkm1)
@@ -2571,16 +2571,16 @@ contains
       end if
 
       do iSpin = 1, nSpin
-        call symm(PS(:,:,iSpin), 'R', overlap, pc(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(SPS(:,:,iSpin), 'L', overlap, PS(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(DS(:,:,iSpin), 'R', overlap, deltaRho(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(SDS(:,:,iSpin), 'L', overlap, DS(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(XS(:,:,iSpin), 'R', overlap, xpyas(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(SX(:,:,iSpin), 'L', overlap, xpyas(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(SXS(:,:,iSpin), 'L', overlap, XS(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(YS(:,:,iSpin), 'R', overlap, xmyas(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(SY(:,:,iSpin), 'L', overlap, xmyas(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-        call symm(SYS(:,:,iSpin), 'L', overlap, YS(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(PS(:,:,iSpin), "R", overlap, pc(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(SPS(:,:,iSpin), "L", overlap, PS(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(DS(:,:,iSpin), "R", overlap, deltaRho(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(SDS(:,:,iSpin), "L", overlap, DS(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(XS(:,:,iSpin), "R", overlap, xpyas(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(SX(:,:,iSpin), "L", overlap, xpyas(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(SXS(:,:,iSpin), "L", overlap, XS(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(YS(:,:,iSpin), "R", overlap, xmyas(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(SY(:,:,iSpin), "L", overlap, xmyas(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+        call symm(SYS(:,:,iSpin), "L", overlap, YS(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
       end do
     end if
 
@@ -2867,22 +2867,22 @@ contains
       ! compatibility at the moment
       if (tCoeffs) then
         call openFile(fdCoeffs, excitedCoefsOut, mode="a")
-        write(fdCoeffs%unit,*) 'T F'
+        write(fdCoeffs%unit,*) "T F"
         if (.not. tSpin) then
           do ii = 1, norb
             jj = norb - ii + 1
-            write(fdCoeffs%unit, '(1x,i3,1x,f13.10,1x,f13.10)') ii, occtmp(jj,1), 2.0_dp
-            write(fdCoeffs%unit, '(6(f13.10,1x))') (cmplx(t2(mm,jj,1), kind=dp),&
+            write(fdCoeffs%unit, "(1x,i3,1x,f13.10,1x,f13.10)") ii, occtmp(jj,1), 2.0_dp
+            write(fdCoeffs%unit, "(6(f13.10,1x))") (cmplx(t2(mm,jj,1), kind=dp),&
                 & mm = 1, norb)
           end do
         else
           do iSpin = 1, nSpin
             write(fdCoeffs%unit,*)
-            write(fdCoeffs%unit, '(1x,a,1x,i1)') 'SPIN', iSpin
+            write(fdCoeffs%unit, "(1x,a,1x,i1)") "SPIN", iSpin
             do ii = 1, norb
               jj = norb - ii + 1
-              write(fdCoeffs%unit, '(1x,i3,1x,f13.10,1x,f13.10)') ii, occtmp(jj,iSpin), 1.0_dp
-              write(fdCoeffs%unit, '(6(f13.10,1x))') (cmplx(t2(mm,jj,iSpin), kind=dp),&
+              write(fdCoeffs%unit, "(1x,i3,1x,f13.10,1x,f13.10)") ii, occtmp(jj,iSpin), 1.0_dp
+              write(fdCoeffs%unit, "(6(f13.10,1x))") (cmplx(t2(mm,jj,iSpin), kind=dp),&
                   & mm = 1, norb)
             end do
           end do
@@ -2912,7 +2912,7 @@ contains
 
     allocate(coeffs(size(occ),size(occ)))
 
-    call heev(t2, occ, 'U', 'V')
+    call heev(t2, occ, "U", "V")
     call gemm(coeffs, eig, t2)
     t2 = coeffs
 
@@ -3008,14 +3008,14 @@ contains
           if (lr%tSpin) then
             sign = " "
             write(fdExc%unit,&
-                & '(1x,f10.3,4x,f14.8,2x,i5,3x,a,1x,i5,7x,f6.3,2x,f10.3,4x,&
-                & f6.3)')&
-                & Hartree__eV * sqrt(eval(ii)), osz(ii), m, '->', n, weight,&
+                & "(1x,f10.3,4x,f14.8,2x,i5,3x,a,1x,i5,7x,f6.3,2x,f10.3,4x,&
+                & f6.3)")&
+                & Hartree__eV * sqrt(eval(ii)), osz(ii), m, "->", n, weight,&
                 & Hartree__eV * rpa%wij(iWeight), Ssq(ii)
           else
             write(fdExc%unit,&
-                & '(1x,f10.3,4x,f14.8,5x,i5,3x,a,1x,i5,7x,f6.3,2x,f10.3,6x,a)')&
-                & Hartree__eV * sqrt(eval(ii)), osz(ii), m, '->', n, weight,&
+                & "(1x,f10.3,4x,f14.8,5x,i5,3x,a,1x,i5,7x,f6.3,2x,f10.3,6x,a)")&
+                & Hartree__eV * sqrt(eval(ii)), osz(ii), m, "->", n, weight,&
                 & Hartree__eV * rpa%wij(iWeight), sign
           end if
         end if
@@ -3026,15 +3026,15 @@ contains
             sign = "D"
             if (updwn) sign = "U"
           end if
-          write(fdXPlusY%unit, '(1x,i5,3x,a,3x,ES17.10)') ii, sign, sqrt(eval(ii))
-          write(fdXPlusY%unit, '(6(1x,ES17.10))') xpy(:,ii)
+          write(fdXPlusY%unit, "(1x,i5,3x,a,3x,ES17.10)") ii, sign, sqrt(eval(ii))
+          write(fdXPlusY%unit, "(6(1x,ES17.10))") xpy(:,ii)
         end if
 
         if (fdTrans%isConnected()) then
-          write(fdTrans%unit, '(2x,a,T12,i5,T21,ES17.10,1x,a,2x,a)')&
-              & 'Energy ', ii,  Hartree__eV * sqrt(eval(ii)), 'eV', sign
+          write(fdTrans%unit, "(2x,a,T12,i5,T21,ES17.10,1x,a,2x,a)")&
+              & "Energy ", ii,  Hartree__eV * sqrt(eval(ii)), "eV", sign
           write(fdTrans%unit,*)
-          write(fdTrans%unit,'(2x,a,9x,a,8x,a)')'Transition', 'Weight', 'KS [eV]'
+          write(fdTrans%unit,"(2x,a,9x,a,8x,a)")"Transition", "Weight", "KS [eV]"
           write(fdTrans%unit,'(1x,45("="))')
 
           sign = " "
@@ -3047,14 +3047,14 @@ contains
               sign = "D"
               if (updwn) sign = "U"
             end if
-            write(fdTrans%unit, '(i5,3x,a,1x,i5,1x,1a,T22,f10.8,T33,f14.8)')&
-                & m, '->', n, sign, wvec(jj), Hartree__eV * rpa%wij(wvin(jj))
+            write(fdTrans%unit, "(i5,3x,a,1x,i5,1x,1a,T22,f10.8,T33,f14.8)")&
+                & m, "->", n, sign, wvec(jj), Hartree__eV * rpa%wij(wvin(jj))
           end do
           write(fdTrans%unit,*)
         end if
 
         if (fdTransDip%isConnected()) then
-          write(fdTransDip%unit, '(1x,i5,1x,f10.3,2x,3(ES14.6))')&
+          write(fdTransDip%unit, "(1x,i5,1x,f10.3,2x,3(ES14.6))")&
               & ii, Hartree__eV * sqrt(eval(ii)), (transitionDipoles(ii,jj)&
               & * au__Debye, jj=1,3)
         end if
@@ -3075,13 +3075,13 @@ contains
           if (lr%tSpin) then
             sign = " "
             write(fdExc%unit,&
-                & '(6x,A,T12,4x,f14.8,2x,i5,3x,a,1x,i5,7x,A,2x,f10.3,4x,f6.3)')&
-                & '< 0', osz(ii), m, '->', n, '-', Hartree__eV * rpa%wij(iWeight),&
+                & "(6x,A,T12,4x,f14.8,2x,i5,3x,a,1x,i5,7x,A,2x,f10.3,4x,f6.3)")&
+                & "< 0", osz(ii), m, "->", n, "-", Hartree__eV * rpa%wij(iWeight),&
                 & Ssq(ii)
           else
             write(fdExc%unit,&
-                & '(6x,A,T12,4x,f14.8,2x,i5,3x,a,1x,i5,7x,f6.3,2x,f10.3,6x,a)')&
-                & '< 0', osz(ii), m, '->', n, weight, Hartree__eV * rpa%wij(iWeight), sign
+                & "(6x,A,T12,4x,f14.8,2x,i5,3x,a,1x,i5,7x,f6.3,2x,f10.3,6x,a)")&
+                & "< 0", osz(ii), m, "->", n, weight, Hartree__eV * rpa%wij(iWeight), sign
           end if
         end if
 
@@ -3091,16 +3091,16 @@ contains
             sign = "D"
             if (updwn) sign = "U"
           end if
-          write(fdXPlusY%unit, '(1x,i5,3x,a,3x,A)') ii,sign, '-'
+          write(fdXPlusY%unit, "(1x,i5,3x,a,3x,A)") ii,sign, "-"
         end if
 
         if (fdTrans%isConnected()) then
-          write(fdTrans%unit, '(2x,a,1x,i5,5x,a,1x,a,3x,a)') 'Energy ', ii,  '-', 'eV', sign
+          write(fdTrans%unit, "(2x,a,1x,i5,5x,a,1x,a,3x,a)") "Energy ", ii,  "-", "eV", sign
           write(fdTrans%unit,*)
         end if
 
         if (fdTransDip%isConnected()) then
-          write(fdTransDip%unit, '(1x,i5,1x,A)') ii, '-'
+          write(fdTransDip%unit, "(1x,i5,1x,A)") ii, "-"
         end if
 
       end if
@@ -3242,7 +3242,7 @@ contains
     Gq(:,:) = 0.0_dp
     do ias = 1, rpa%nxov_rd
       qIJ(:) = transChrg%qTransIA(ias, env, denseDesc, ovrXev, grndEigVecs, rpa%getIA, rpa%win)
-      call hemv(gqIJ, lrGamma, qIJ, uplo='U')
+      call hemv(gqIJ, lrGamma, qIJ, uplo="U")
       Gq(:,ias) = gqIJ(:)
     end do
 
@@ -3325,7 +3325,7 @@ contains
     do ias = 1, rpa%nxov_rd
       call indXov(rpa%win, ias, rpa%getIA, i, a, s)
       qIJ(:) = transChrg%qTransIA(ias, env, denseDesc, ovrXev, grndEigVecs, rpa%getIA, rpa%win)
-      call hemv(gqIJ, lrGamma, qIJ, uplo='U')
+      call hemv(gqIJ, lrGamma, qIJ, uplo="U")
       Gq(:,ias) = gqIJ
     end do
 
@@ -3403,7 +3403,7 @@ contains
     Gq(:,:) = 0.0_dp
     do abs = 1, sum(rpa%nxvv_ud)
       qIJ(:) = transChrg%qTransAB(abs, env, denseDesc, ovrXev, grndEigVecs, rpa%getAB)
-      call hemv(gqIJ, lrGamma, qIJ, uplo='U')
+      call hemv(gqIJ, lrGamma, qIJ, uplo="U")
       Gq(:,abs) = gqIJ
     end do
 
@@ -3433,7 +3433,7 @@ contains
       j = rpa%getIJ(ijs, 2)
       s = rpa%getIJ(ijs, 3)
       qIJ(:) = transChrg%qTransIJ(ijs, env, denseDesc, ovrXev, grndEigVecs, rpa%getIJ)
-      call hemv(gqIJ, lrGamma, qIJ, uplo='U')
+      call hemv(gqIJ, lrGamma, qIJ, uplo="U")
       Gq(:,ijs) = gqIJ
     end do
 
@@ -3511,7 +3511,7 @@ contains
     Gq(:,:) = 0.0_dp
     do ias = 1, rpa%nxov_rd
       qIJ(:) = transChrg%qTransIA(ias, env, denseDesc, ovrXev, grndEigVecs, rpa%getIA, rpa%win)
-      call hemv(gqIJ, lrGamma, qIJ, uplo='U')
+      call hemv(gqIJ, lrGamma, qIJ, uplo="U")
       Gq(:,ias) = gqIJ
     end do
 
@@ -3532,7 +3532,7 @@ contains
     Gq(:,:) = 0.0_dp
     do ijs = 1, sum(rpa%nxoo_ud)
       qIJ = transChrg%qTransIJ(ijs, env, denseDesc, ovrXev, grndEigVecs, rpa%getIJ)
-      call hemv(gqIJ, lrGamma, qIJ, uplo='U')
+      call hemv(gqIJ, lrGamma, qIJ, uplo="U")
       Gq(:,ijs) = gqIJ(:)
     end do
 
@@ -4236,9 +4236,9 @@ contains
     do nCoupLev = iLev, jLev-1
       do mCoupLev = nCoupLev+1, jLev
          iNac = iNac + 1
-         write(fdNaCoupl%unit, '(2(I4,2x))') nCoupLev, mCoupLev
+         write(fdNaCoupl%unit, "(2(I4,2x))") nCoupLev, mCoupLev
          do ii = 1, size(nacv, dim=2)
-           write(fdNaCoupl%unit, '(3(E20.12,2x))') nacv(1,ii,iNac), nacv(2,ii,iNac), nacv(3,ii,iNac)
+           write(fdNaCoupl%unit, "(3(E20.12,2x))") nacv(1,ii,iNac), nacv(2,ii,iNac), nacv(3,ii,iNac)
          end do
       end do
     end do
@@ -4542,22 +4542,22 @@ contains
         end if
 
         do iSpin = 1, nSpin
-          call symm(PS(:,:,iSpin), 'R', overlap, pc(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-          call symm(SPS(:,:,iSpin), 'L', overlap, PS(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-          call symm(DS(:,:,iSpin), 'R', overlap, deltaRho(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb,&
+          call symm(PS(:,:,iSpin), "R", overlap, pc(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+          call symm(SPS(:,:,iSpin), "L", overlap, PS(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+          call symm(DS(:,:,iSpin), "R", overlap, deltaRho(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb,&
               & nOrb)
-          call symm(SDS(:,:,iSpin), 'L', overlap, DS(:,:,iSpin), 'U', 1.0_dp, 0.0_dp, nOrb, nOrb)
-          call symm(XS(:,:,iSpin,iState), 'R', overlap, xpyas(:,:,iSpin,iState), 'U', 1.0_dp,&
+          call symm(SDS(:,:,iSpin), "L", overlap, DS(:,:,iSpin), "U", 1.0_dp, 0.0_dp, nOrb, nOrb)
+          call symm(XS(:,:,iSpin,iState), "R", overlap, xpyas(:,:,iSpin,iState), "U", 1.0_dp,&
               & 0.0_dp, nOrb, nOrb)
-          call symm(SX(:,:,iSpin,iState), 'L', overlap, xpyas(:,:,iSpin,iState), 'U', 1.0_dp,&
+          call symm(SX(:,:,iSpin,iState), "L", overlap, xpyas(:,:,iSpin,iState), "U", 1.0_dp,&
               & 0.0_dp, nOrb, nOrb)
-          call symm(SXS(:,:,iSpin,iState), 'L', overlap, XS(:,:,iSpin,iState), 'U', 1.0_dp, 0.0_dp,&
+          call symm(SXS(:,:,iSpin,iState), "L", overlap, XS(:,:,iSpin,iState), "U", 1.0_dp, 0.0_dp,&
               & nOrb, nOrb)
-          call symm(YS(:,:,iSpin,iState), 'R', overlap, xmyas(:,:,iSpin,iState), 'U', 1.0_dp,&
+          call symm(YS(:,:,iSpin,iState), "R", overlap, xmyas(:,:,iSpin,iState), "U", 1.0_dp,&
               & 0.0_dp, nOrb, nOrb)
-          call symm(SY(:,:,iSpin,iState), 'L', overlap, xmyas(:,:,iSpin,iState), 'U', 1.0_dp,&
+          call symm(SY(:,:,iSpin,iState), "L", overlap, xmyas(:,:,iSpin,iState), "U", 1.0_dp,&
               & 0.0_dp, nOrb, nOrb)
-          call symm(SYS(:,:,iSpin,iState), 'L', overlap, YS(:,:,iSpin,iState), 'U', 1.0_dp, 0.0_dp,&
+          call symm(SYS(:,:,iSpin,iState), "L", overlap, YS(:,:,iSpin,iState), "U", 1.0_dp, 0.0_dp,&
               & nOrb, nOrb)
         end do
       end do
@@ -5285,7 +5285,7 @@ contains
 
     derivs(:,:) = reshape(gpf, [3, nAtoms])
 
-    write(stdOut, format2U) "Energy gap CI", deltaE, 'H', Hartree__eV * deltaE, 'eV'
+    write(stdOut, format2U) "Energy gap CI", deltaE, "H", Hartree__eV * deltaE, "eV"
 
   end subroutine conicalIntersectionOptimizer
 
@@ -5357,12 +5357,12 @@ contains
     call openfile(fdTransQ, transChrgOut, mode="w")
 
 
-    write(fdTransQ%unit, '(a)') "#"
-    write(fdTransQ%unit, '(a,2x,a,5x,a)') "#", "atom", "transition charge"
-    write(fdTransQ%unit, '(a)') "#"
+    write(fdTransQ%unit, "(a)") "#"
+    write(fdTransQ%unit, "(a,2x,a,5x,a)") "#", "atom", "transition charge"
+    write(fdTransQ%unit, "(a)") "#"
 
     do i = 1, lr%nAtom
-      write(fdTransQ%unit, '(2x,i5,5x,f12.9)') i, atomicTransQ(i)
+      write(fdTransQ%unit, "(2x,i5,5x,f12.9)") i, atomicTransQ(i)
     end do
 
     call closeFile(fdTransQ)

@@ -117,7 +117,7 @@ contains
       call getParamSearchPaths(searchPath)
       call findFile(searchPath, paramFile, paramTmp)
       if (allocated(paramTmp)) call move_alloc(paramTmp, paramFile)
-      write(stdOut, '(a)') "Reading GBSA parameter file '" // paramFile // "'"
+      write(stdOut, "(a)") "Reading GBSA parameter file '" // paramFile // "'"
       call readParamGBSA(paramFile, defaults, solvent, geo%speciesNames, node=child)
     else
       call readSolvent(node, solvent)
@@ -474,13 +474,13 @@ contains
     select case(char(buffer))
     case default
       call detailedError(child, "Invalid solvent method '" // char(buffer) // "'")
-    case('fromname')
+    case("fromname")
       call getChildValue(value1, "", buffer)
       call SolventFromName(solvent, unquote(char(buffer)), found)
       if (.not. found) then
         call detailedError(value1, "Invalid solvent " // char(buffer))
       end if
-    case('fromconstants')
+    case("fromconstants")
       call getChildValue(value1, "Epsilon", buffer)
       if (unquote(char(buffer)) == "Inf") then
          if (ieee_support_inf(solvent%dielectricConstant)) then
@@ -614,7 +614,7 @@ contains
       call detailedError(child, "Illegal number of grid points for numerical integration")
     end if
     if (gridSize(angGrid) /= gridPoints) then
-      write(errorStr, '(a, *(1x, i0, 1x, a))')&
+      write(errorStr, "(a, *(1x, i0, 1x, a))")&
           & "No angular integration grid with", gridPoints, "points available, using",&
           &  gridSize(angGrid), "points instead"
       call detailedWarning(child, trim(errorStr))

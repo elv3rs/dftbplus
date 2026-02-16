@@ -317,7 +317,7 @@ contains
     ! LU decomposition
     call getrf(beta, ipiv)
     ! Solve system of linear equations by using the LU decomposition
-    call getrs(beta, ipiv, cc, trans='t')
+    call getrs(beta, ipiv, cc, trans="t")
 
     ! Store |dF(m-1)>
     dF(:, nn_1) = dF_uu

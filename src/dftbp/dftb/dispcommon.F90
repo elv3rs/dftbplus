@@ -426,7 +426,7 @@ contains
     end if
 
     if (iError /= 0) then
-99020 format ('Failure in getMaxRDispersion_.', ' Error nr: ',I3)
+99020 format ("Failure in getMaxRDispersion_.", " Error nr: ",I3)
       write(strError, 99020) iError
       call error(strError)
     end if
@@ -493,7 +493,7 @@ contains
     end if
 
     if (iError /= 0) then
-99010 format ('Failure in getMaxGDispersion_.', ' Error nr: ',I3)
+99010 format ("Failure in getMaxGDispersion_.", " Error nr: ",I3)
       write(strError, 99010) iError
       call error(strError)
     end if

@@ -57,10 +57,10 @@ module dftbp_type_orbitals
   !> general set for f orbitals (not cubic), see
   !> http://winter.group.shef.ac.uk/orbitron/AOs/4f/equations.html
   character(lenOrbitalNames), parameter :: orbitalNames(-3:3,0:3) = reshape([&
-      & '         ','         ','         ','         ','         ','         ','         ',&
-      & '         ','         ','y        ','z        ','x        ','         ','         ',&
-      & '         ','xy       ','yz       ','z2       ','xz       ','x2-y2    ','         ',&
-      & 'y(3x2-y2)','x2+y2+z2 ','yz2      ','z3       ','xz2      ','z(x2-y2) ','x(x2-3y2)'&
+      & "         ","         ","         ","         ","         ","         ","         ",&
+      & "         ","         ","y        ","z        ","x        ","         ","         ",&
+      & "         ","xy       ","yz       ","z2       ","xz       ","x2-y2    ","         ",&
+      & "y(3x2-y2)","x2+y2+z2 ","yz2      ","z3       ","xz2      ","z(x2-y2) ","x(x2-3y2)"&
       &], [7,4])
 
 contains
@@ -89,7 +89,7 @@ contains
       if (ind > 0) then
         ! at least one example of this shell already
         ! start count at 2 for repeating orbitals:
-        write(sindx,'(I0)') ind + 1
+        write(sindx,"(I0)") ind + 1
         if (len(trim(adjustl(shellNamesTmp(ii)))) + len(trim(sindx)) > sc) then
           call error("Shell labels are too long: "//trim(adjustl(shellNamesTmp(ii)))//trim(sindx))
         else

@@ -126,11 +126,11 @@ contains
     end if
 
     if (present(node)) then
-      write(fp0, "(A,1X,I5.5,A,1X,A,T48,A,1X,F8.2,5X,A,1X,F8.2)") 'NODE', node, '|TIME',&
-          & trim(msg), 'CPU:', this%getCpuTime(), 'WALL:', this%getWallClockTime()
+      write(fp0, "(A,1X,I5.5,A,1X,A,T48,A,1X,F8.2,5X,A,1X,F8.2)") "NODE", node, "|TIME",&
+          & trim(msg), "CPU:", this%getCpuTime(), "WALL:", this%getWallClockTime()
     else
-      write(fp0, "(A,1X,A,T48,A,1X,F8.2,5X,A,1X,F8.2)") 'TIME', trim(msg), 'CPU:',&
-          & this%getCpuTime(), 'WALL:', this%getWallClockTime()
+      write(fp0, "(A,1X,A,T48,A,1X,F8.2,5X,A,1X,F8.2)") "TIME", trim(msg), "CPU:",&
+          & this%getCpuTime(), "WALL:", this%getWallClockTime()
     end if
 
   end subroutine writeTimes
