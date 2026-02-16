@@ -222,7 +222,7 @@ module dftbp_dftb_coordnumber
 
   abstract interface
     !> Abstract interface for the counting function (and its derivative)
-    pure function countFunction(k, r, r0)
+    pure function countFunction(k, r, r0) result(res)
       import :: dp
 
       !> Constant for counting function
@@ -235,7 +235,7 @@ module dftbp_dftb_coordnumber
       real(dp), intent(in) :: r0
 
       !> Value of the counting function in the range of [0,1]
-      real(dp) :: countFunction
+      real(dp) :: res
     end function countFunction
   end interface
 

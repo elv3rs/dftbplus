@@ -67,13 +67,13 @@ contains
 
   !> Figures out how much larger an array should be to minimize reallocations in future if the array
   !! grows more
-  pure function incrmntOfArray(currentSize)
-    integer :: incrmntOfArray
+  pure function incrmntOfArray(currentSize) result(res)
+    integer :: res
 
     !> Current array size
     integer, intent(in) :: currentSize
 
-    incrmntOfArray = currentSize + currentSize  / 2 + 1
+    res = currentSize + currentSize  / 2 + 1
 
   end function incrmntOfArray
 

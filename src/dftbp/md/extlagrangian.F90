@@ -252,12 +252,12 @@ contains
   end subroutine getNextInput
 
   !> helper function
-  pure function modIndex(ind, nTimeSteps)
+  pure function modIndex(ind, nTimeSteps) result(res)
     integer, intent(in) :: ind
     integer, intent(in) :: nTimeSteps
-    integer :: modIndex
+    integer :: res
 
-    modIndex = modulo(ind - 1, nTimeSteps + 1) + 1
+    res = modulo(ind - 1, nTimeSteps + 1) + 1
 
   end function modIndex
 

@@ -41,29 +41,29 @@ contains
 
 
   !> string of up to mc characters extraction from character array
-  function charMc(string)
+  function charMc(string) result(res)
 
     !> full string
     character(*), intent(in) :: string
 
     !> resulting characters
-    character(mc) :: charMC
+    character(mc) :: res
 
-    charMc = string(1:min(mc, len(string)))
+    res = string(1:min(mc, len(string)))
 
   end function charMc
 
 
   !> string of up to lc characters extraction from character array
-  function charLc(string)
+  function charLc(string) result(res)
 
     !> full string
     character(*), intent(in) :: string
 
     !> resulting characters
-    character(lc) :: charLc
+    character(lc) :: res
 
-    charLc = string(1:min(lc, len(string)))
+    res = string(1:min(lc, len(string)))
 
   end function charLc
 

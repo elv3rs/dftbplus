@@ -901,7 +901,7 @@ contains
 
 
   !> Converts a 0-char terminated C-type string into a Fortran string.
-  function fortranChar(cstring, maxlen)
+  function fortranChar(cstring, maxlen) result(res)
 
     !> C-type string as array
     character(kind=c_char), intent(in) :: cstring(*)
@@ -910,7 +910,7 @@ contains
     integer, intent(in), optional  :: maxlen
 
     !> Resulting Fortran string
-    character(:, kind=c_char), allocatable :: fortranChar
+    character(:, kind=c_char), allocatable :: res
 
     integer :: ii, maxlen0
 
@@ -925,8 +925,8 @@ contains
         exit
       end if
     end do
-    allocate(character(ii - 1) :: fortranChar)
-    fortranChar = transfer(cstring(1 : ii - 1), fortranChar)
+    allocate(character(ii - 1) :: res)
+    res = transfer(cstring(1 : ii - 1), res)
 
   end function fortranChar
 

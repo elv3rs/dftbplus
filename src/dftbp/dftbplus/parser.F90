@@ -781,7 +781,7 @@ contains
 
 
   !> checks that the array subindices is contained in indices
-  function containsAll(indices, subindices)
+  function containsAll(indices, subindices) result(res)
 
     !> Array of atomic indices to check against
     integer, intent(in) :: indices(:)
@@ -790,15 +790,15 @@ contains
     integer, intent(in) :: subindices(:)
 
     !> whether indices are contigous
-    logical :: containsAll
+    logical :: res
 
     integer :: kk
 
-    containsAll = .false.
+    res = .false.
     do kk = 1, size(subindices)
       if (.not. any(indices == subindices(kk))) return
     end do
-    containsAll = .true.
+    res = .true.
 
   end function containsAll
 
@@ -2908,7 +2908,7 @@ contains
 
 
   !> Tries to infer whether the k-point sampling is restricted to the Gamma-point.
-  pure function isGammaOnly(nKPoint, kPoint, kWeight)
+  pure function isGammaOnly(nKPoint, kPoint, kWeight) result(res)
 
     !> Number of k-points for the calculation
     integer, intent(in) :: nKPoint
@@ -2920,12 +2920,12 @@ contains
     real(dp), intent(in) :: kWeight(:)
 
     !> True, if this appears to be a Gamma-only calculation
-    logical :: isGammaOnly
+    logical :: res
 
     if (.not. nKPoint == 1) then
-      isGammaOnly = .false.
+      res = .false.
     else
-      isGammaOnly = .not. ((.not. all(abs(kPoint(:, 1)) < 1.0e-08_dp))&
+      res = .not. ((.not. all(abs(kPoint(:, 1)) < 1.0e-08_dp))&
           & .or. (.not. abs(kWeight(1)) - 1.0_dp < 1.0e-08_dp))
     end if
 

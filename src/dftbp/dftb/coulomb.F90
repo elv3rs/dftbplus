@@ -1991,7 +1991,7 @@ contains
 
 
   !> Returns the Ewald sum for a given lattice in a given point.
-  function ewald(rr, rVec, gVec, alpha, vol, blurWidth, epsSoften)
+  function ewald(rr, rVec, gVec, alpha, vol, blurWidth, epsSoften) result(res)
 
     !> Vector where to calculate the Ewald sum
     real(dp), intent(in) :: rr(:)
@@ -2016,13 +2016,13 @@ contains
     real(dp), intent(in), optional :: epsSoften
 
     !> Result
-    real(dp) :: ewald
+    real(dp) :: res
 
-    ewald = ewaldReciprocal(rr, gVec, alpha, vol)&
+    res = ewaldReciprocal(rr, gVec, alpha, vol)&
         & + ewaldReal(rr, rVec, alpha, blurWidth=blurWidth, epsSoften=epsSoften)&
         & - pi / (vol*alpha**2)
     if (sum(rr**2) < tolSameDist2) then
-      ewald = ewald - 2.0_dp * alpha / sqrt(pi)
+      res = res - 2.0_dp * alpha / sqrt(pi)
     end if
 
   end function ewald
@@ -2303,7 +2303,7 @@ contains
 
   !> Returns the max. value of a term in the reciprocal space part of the Ewald summation for a
   !! given vector length.
-  function gTerm(gg, alpha, vol)
+  function gTerm(gg, alpha, vol) result(res)
 
     !> Length of the reciprocal space vector
     real(dp), intent(in) :: gg
@@ -2315,16 +2315,16 @@ contains
     real(dp), intent(in) :: vol
 
     !> Reciprocal term
-    real(dp) :: gTerm
+    real(dp) :: res
 
-    gTerm = 4.0_dp * pi * (exp(-0.25_dp * gg**2 / (alpha**2)) / (vol * gg**2))
+    res = 4.0_dp * pi * (exp(-0.25_dp * gg**2 / (alpha**2)) / (vol * gg**2))
 
   end function gTerm
 
 
   !> Returns the max. value of a term in the real space part of the Ewald summation for a given
   !! vector length.
-  function rTerm(rr, alpha)
+  function rTerm(rr, alpha) result(res)
 
     !> Length of the real space vector
     real(dp), intent(in) :: rr
@@ -2333,18 +2333,18 @@ contains
     real(dp), intent(in) :: alpha
 
     !> Real space term
-    real(dp) :: rTerm
+    real(dp) :: res
 
     @:ASSERT(rr >= epsilon(1.0_dp))
 
-    rTerm = erfcwrap(alpha * rr) / rr
+    res = erfcwrap(alpha * rr) / rr
 
   end function rTerm
 
 
   !> Returns the derivative of a term in the real space part of the Ewald summation for a given
   !! vector length.
-  function derivRTerm(r, alpha)
+  function derivRTerm(r, alpha) result(res)
 
     !> Length of the real space vector
     real(dp), intent(in) :: r(3)
@@ -2353,7 +2353,7 @@ contains
     real(dp), intent(in) :: alpha
 
     !> Real space derivative term
-    real(dp) :: derivRTerm(3)
+    real(dp) :: res(3)
 
     real(dp) :: rr, factor
 
@@ -2362,7 +2362,7 @@ contains
     @:ASSERT(rr >= epsilon(1.0_dp))
 
     factor = alpha * rr
-    derivRTerm(:) = r * (-2.0_dp / sqrt(pi) * exp(-factor * factor)&
+    res(:) = r * (-2.0_dp / sqrt(pi) * exp(-factor * factor)&
         & * factor - erfcwrap(factor)) / (rr * rr * rr)
 
   end function derivRTerm

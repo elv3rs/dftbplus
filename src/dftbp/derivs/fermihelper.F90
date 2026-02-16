@@ -24,7 +24,7 @@ module dftbp_derivs_fermihelper
 contains
 
   !> Fermi function at energy En for a level at energy Em
-  pure function theta(En, Em, sigma)
+  pure function theta(En, Em, sigma) result(res)
 
     !> Virtual energy
     real(dp), intent(in) :: En
@@ -36,7 +36,7 @@ contains
     real(dp), intent(in) :: sigma
 
     !> Resulting occupation value
-    real(dp) :: theta
+    real(dp) :: res
 
     real(dp) :: x
 
@@ -50,14 +50,14 @@ contains
       theta = 1.0_dp / (1.0_dp + exp(x))
     endif
   #:else
-    theta = 1.0_dp / (1.0_dp + exp(x))
+    res = 1.0_dp / (1.0_dp + exp(x))
   #:endif
 
   end function theta
 
 
   !> Expression limit aware evaluation of (Theta(occ) - Theta(empty))/(Eempty-Efilled)
-  pure function invDiffStatic(En, Em, Ef, sigma)
+  pure function invDiffStatic(En, Em, Ef, sigma) result(res)
 
     !> Empty level energy
     real(dp), intent(in) :: En
@@ -72,19 +72,19 @@ contains
     real(dp), intent(in) :: sigma
 
     !> Resulting value
-    real(dp) :: invDiffStatic
+    real(dp) :: res
 
     if (abs(En - Em) > 10.0_dp * epsilon(1.0_dp)) then
-      invDiffStatic = (theta(En, Ef, sigma) - theta(Em, Ef, sigma)) / (En - Em)
+      res = (theta(En, Ef, sigma) - theta(Em, Ef, sigma)) / (En - Em)
     else
-      invDiffStatic = -deltamn(En, Ef, sigma)
+      res = -deltamn(En, Ef, sigma)
     end if
 
   end function invDiffStatic
 
 
   !> Expression limit aware evaluation of (Theta(occ) - Theta(empty))/(Eempty-Efilled + omega)
-  pure function invDiffDynamic(En, Em, Ef, sigma, omega)
+  pure function invDiffDynamic(En, Em, Ef, sigma, omega) result(res)
 
     !> Empty level energy
     real(dp), intent(in) :: En
@@ -102,15 +102,15 @@ contains
     complex(dp), intent(in) :: omega
 
     !> Resulting value
-    complex(dp) :: invDiffDynamic
+    complex(dp) :: res
 
-    invDiffDynamic = (theta(En, Ef, sigma) - theta(Em, Ef, sigma)) / (En - Em + omega)
+    res = (theta(En, Ef, sigma) - theta(Em, Ef, sigma)) / (En - Em + omega)
 
   end function invDiffDynamic
 
 
   !> Limit of function occurring in perturbation expression sum over states
-  pure function deltamn(En,Em,sigma)
+  pure function deltamn(En,Em,sigma) result(res)
 
     !> Energy at which to measure the smeared level
     real(dp), intent(in) :: En
@@ -122,13 +122,13 @@ contains
     real(dp), intent(in) :: sigma
 
     !> Resulting contribution
-    real(dp) :: deltamn
+    real(dp) :: res
 
     real(dp) :: invSigma
 
     invSigma = 1.0_dp / sigma
 
-    deltamn = deltatilde((En - Em) * invSigma) * invSigma
+    res = deltatilde((En - Em) * invSigma) * invSigma
 
   end function deltamn
 
@@ -149,7 +149,7 @@ contains
 
   !> Evaluates the derivative of the Fermi energy given derivatives of eigenvalues with respect to a
   !! perturbation
-  pure function dEfda(f, dei)
+  pure function dEfda(f, dei) result(res)
 
     !> Occupations
     real(dp), intent(in) :: f(:)
@@ -158,9 +158,9 @@ contains
     real(dp), intent(in) :: dei(:)
 
     !> Derivative of Fermi energy
-    real(dp) :: dEfda
+    real(dp) :: res
 
-    dEfda = sum(f * (1.0_dp - f) * dei) / sum(f * (1.0_dp - f))
+    res = sum(f * (1.0_dp - f) * dei) / sum(f * (1.0_dp - f))
 
   end function dEfda
 

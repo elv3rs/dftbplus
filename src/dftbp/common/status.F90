@@ -68,29 +68,29 @@ contains
 
 
   !> Whether status contains an error.
-  function hasError(this)
+  function hasError(this) result(res)
 
     !> Instance
     class(TStatus), intent(in) :: this
 
     !> True if an error occurred
-    logical :: hasError
+    logical :: res
 
-    hasError = this%code /= 0
+    res = this%code /= 0
 
   end function hasError
 
 
   !> Whether status is OK (contains no error).
-  function isOk(this)
+  function isOk(this) result(res)
 
     !> Instance
     class(TStatus), intent(in) :: this
 
     !> Whether status is error-free
-    logical :: isOk
+    logical :: res
 
-    isOk = .not. this%hasError()
+    res = .not. this%hasError()
 
   end function isOk
 

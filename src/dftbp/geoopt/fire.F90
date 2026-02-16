@@ -286,15 +286,15 @@ contains
 
 
   !> magnitude of a vector
-  pure function mag(v)
+  pure function mag(v) result(res)
 
     !> Vector
     real(dp), intent(in) :: v(:)
 
     !> Its magnitude
-    real(dp) :: mag
+    real(dp) :: res
 
-    mag = sqrt(sum(v**2))
+    res = sqrt(sum(v**2))
 
   end function mag
 

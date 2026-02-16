@@ -1036,18 +1036,18 @@ contains
 
 
   !> Helper function for matrix triangle options to choose optional triangle
-  pure function uploHelper(uplo)
+  pure function uploHelper(uplo) result(res)
 
     !> upper or lower triangle of the matrix, defaults to lower if not present
     character, intent(in), optional :: uplo
 
     !> Resulting triangle to use
-    character :: uploHelper
+    character :: res
 
     if (present(uplo)) then
-      uploHelper = uplo
+      res = uplo
     else
-      uploHelper = "L"
+      res = "L"
     end if
 
   end function uploHelper

@@ -16,13 +16,13 @@ module dftbp_math_duplicate
 contains
 
   !> Is there a repeated entry in an array
-  function isRepeated(array)
+  function isRepeated(array) result(res)
 
     !> Array to check
     integer, intent(in) :: array(:)
 
     !> Are there repeating elements in the array
-    logical :: isRepeated
+    logical :: res
 
     integer :: work(size(array))
     integer :: nUnique
@@ -31,7 +31,7 @@ contains
     call heap_sort(work)
     nUnique = unique(work)
 
-    isRepeated = .not.(nUnique == size(array))
+    res = .not.(nUnique == size(array))
 
   end function isRepeated
 

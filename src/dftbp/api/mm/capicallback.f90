@@ -61,7 +61,7 @@ module dftbp_capicallback
   !> C-style wrapper for TSetDMHSCallbackFunc
   abstract interface
     integer function set_dmhs_callback_c_t(auxPtr, iKpoint, iSpin, blacsDescr, dataPtr,&
-        & matrixDescr) bind(c)
+        & matrixDescr) bind(c) result(res)
       use, intrinsic :: iso_c_binding, only: c_int, c_ptr
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       type(c_ptr), value :: auxPtr
@@ -136,7 +136,7 @@ contains
 
   !> Wrapper for C callbacks to be invoked for matrix import.
   integer function set_dmhs_callback_c_wrapper(auxObj, iKpoint, iSpin, blacsDescr, dataBufReal, &
-      & dataBufCplx)
+      & dataBufCplx) result(res)
 
     !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
     class(*), intent(inout) :: auxObj
@@ -182,7 +182,7 @@ contains
     select type(auxObj)
     type is (TCAuxWrapper)
       call c_f_procpointer(auxObj%callback, callbackProc)
-      set_dmhs_callback_c_wrapper = callbackProc(auxObj%auxPtr, iKpoint, iSpin, blacsDescrPtr,&
+      res = callbackProc(auxObj%auxPtr, iKpoint, iSpin, blacsDescrPtr,&
           & dataPtr, c_loc(mdescr))
     end select
 

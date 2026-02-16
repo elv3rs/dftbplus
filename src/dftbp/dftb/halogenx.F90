@@ -140,15 +140,15 @@ contains
 
 
   !> Returns the distance over which the halogen correction decays
-  function getRCutOff(this)
+  function getRCutOff(this) result(res)
 
     !> Instance of the correction
     class(THalogenX), intent(inout) :: this
 
     !> Returned distance
-    real(dp) :: getRCutOff
+    real(dp) :: res
 
-    getRCutOff = this%cutoff
+    res = this%cutoff
 
   end function getRCutOff
 
@@ -362,10 +362,10 @@ contains
 
 
   !> DFTB3-X term (Eqn. 5 of doi: 10.1021/ct5009137)
-  pure function fx(R, dab)
+  pure function fx(R, dab) result(res)
 
     !> Result in kcal/mol
-    real(dp) :: fx
+    real(dp) :: res
 
     !> Distance in AA
     real(dp), intent(in) :: R
@@ -373,16 +373,16 @@ contains
     !> Distance cut-off in AA
     real(dp), intent(in) :: dab
 
-    fx = 0.5_dp * c(1) * exp(-c(2) * ((R - dab)**c(3)))
+    res = 0.5_dp * c(1) * exp(-c(2) * ((R - dab)**c(3)))
 
   end function fx
 
 
   !> Derivative of DFTB3-X term wrt. R
-  pure function dfx(R, dab)
+  pure function dfx(R, dab) result(res)
 
     !> Result in kcal/mol AA
-    real(dp) :: dfx
+    real(dp) :: res
 
     !> Distance in AA
     real(dp), intent(in) :: R
@@ -390,8 +390,8 @@ contains
     !> Distance cut-off in AA
     real(dp), intent(in) :: dab
 
-    dfx = fx(R, dab)
-    dfx = dfx * c(2) * c(3) * (R - dab)**(c(3)-1.0_dp)
+    res = fx(R, dab)
+    res = res * c(2) * c(3) * (R - dab)**(c(3)-1.0_dp)
 
   end function dfx
 

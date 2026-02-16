@@ -148,15 +148,15 @@ contains
 
 
   !> Does the electronic solver provide eigenvalues of the hamiltonian
-  pure function providesEigenvalues(iSolver)
+  pure function providesEigenvalues(iSolver) result(res)
 
     !> Electronic solver in use
     integer, intent(in) :: iSolver
 
     !> Are eigenvalues available?
-    logical :: providesEigenvalues
+    logical :: res
 
-    providesEigenvalues = any(iSolver ==&
+    res = any(iSolver ==&
         & [electronicSolverTypes%qr, electronicSolverTypes%divideandconquer,&
         & electronicSolverTypes%relativelyrobust, electronicSolverTypes%elpa,&
         & electronicSolverTypes%magmaGvd])

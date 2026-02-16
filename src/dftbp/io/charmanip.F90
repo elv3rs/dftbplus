@@ -364,28 +364,28 @@ contains
 
 
   !> Length of a trimmed string if CR, LF and TAB count as trimmed characters.
-  pure function len_trim2(string)
+  pure function len_trim2(string) result(res)
 
     !> String to investigate
     character(len=*), intent(in) :: string
 
     !> Length of the string
-    integer :: len_trim2
+    integer :: res
 
-    len_trim2 = complementaryScan(string, whiteSpaces, back=.true.)
+    res = complementaryScan(string, whiteSpaces, back=.true.)
 
   end function len_trim2
 
 
   !> Returns a trimmed string if CR, LF and TAB count as trimmed characters.
-  function trim2(string)
+  function trim2(string) result(res)
 
     !> String to trim
     character(len=*), intent(in) :: string
 
-    character(:), allocatable :: trim2
+    character(:), allocatable :: res
 
-    trim2 = string(:len_trim2(string))
+    res = string(:len_trim2(string))
 
   end function trim2
 
@@ -437,18 +437,18 @@ contains
 
 
   !> Converts an integer to a character string
-  pure function i2c(number)
+  pure function i2c(number) result(res)
 
     !> Integer to convert
     integer, intent(in) :: number
 
     !> converted string
-    character(:), allocatable :: i2c
+    character(:), allocatable :: res
 
     character(len=maxIntLen) :: buffer
 
     write(buffer, "(I0)") number
-    i2c = trim(buffer)
+    res = trim(buffer)
 
   end function i2c
 
@@ -471,7 +471,7 @@ contains
 
 
   !> Tests if a string ends with a specified suffix.
-  pure function endsWith(str, suffix)
+  pure function endsWith(str, suffix) result(res)
 
     !> String to check
     character(len=*), intent(in) :: str
@@ -480,7 +480,7 @@ contains
     character(len=*), intent(in) :: suffix
 
     !> True, if string ends with suffix, otherwise false
-    logical :: endsWith
+    logical :: res
 
     !! Length of str
     integer :: lenStr
@@ -492,9 +492,9 @@ contains
     iSuffixStart = lenStr - len(suffix) + 1
 
     if (iSuffixStart < 1) then
-      endsWith = .false.
+      res = .false.
     else
-      endsWith = (str(iSuffixStart:lenStr) == suffix)
+      res = (str(iSuffixStart:lenStr) == suffix)
     end if
 
   end function endsWith

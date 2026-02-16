@@ -637,7 +637,7 @@ contains
 
 
   !> Returns whether states are in the same degenerate group
-  pure function isDegenerate(self, ii, jj)
+  pure function isDegenerate(self, ii, jj) result(res)
 
     !> Instance
     class(TRotateDegen), intent(in) :: self
@@ -649,15 +649,15 @@ contains
     integer, intent(in) :: jj
 
     !> Resulting test
-    logical :: isDegenerate
+    logical :: res
 
-    isDegenerate = (self%degenerateGroup(ii) == self%degenerateGroup(jj))
+    res = (self%degenerateGroup(ii) == self%degenerateGroup(jj))
 
   end function isDegenerate
 
 
   !> Returns whether any states are degenerate
-  pure function isAnyDegenerate(self, ei)
+  pure function isAnyDegenerate(self, ei) result(res)
 
     !> Instance
     class(TRotateDegen), intent(in) :: self
@@ -666,7 +666,7 @@ contains
     real(dp), intent(in) :: ei(:)
 
     !> Resulting test
-    logical :: isAnyDegenerate
+    logical :: res
 
     integer :: ii, nOrb
     integer :: eiRange(2)
@@ -678,11 +678,11 @@ contains
       eiRange(:) = self%eiRange
     end if
 
-    isAnyDegenerate = .false.
+    res = .false.
     do ii = eiRange(1)+1, eiRange(2)
       ! assumes sorted:
       if (ei(ii) - ei(ii-1) < self%tolerance) then
-        isAnyDegenerate = .true.
+        res = .true.
         return
       end if
     end do

@@ -42,13 +42,13 @@ contains
 
 
   !> Signed determinant of a 3x3 matrix
-  function determinant33(matrix)
+  function determinant33(matrix) result(res)
 
     !> The matrix for which to calculate the determinant.
     real(dp), intent(in) :: matrix(:,:)
 
     !> Resulting det|matrix|
-    real(dp) :: determinant33
+    real(dp) :: res
 
     real(dp) :: tmp
 
@@ -61,7 +61,7 @@ contains
     tmp = tmp + matrix(1, 3) &
         &* (matrix(2, 1) * matrix(3, 2) - matrix(3, 1) * matrix(2, 2))
 
-    determinant33 = tmp
+    res = tmp
 
   end function determinant33
 
@@ -145,18 +145,18 @@ contains
 
 
   !> Extract diagonal of a 3x3 matrix
-  pure function diagonal(A)
+  pure function diagonal(A) result(res)
 
     !> Matrix
     real(dp), intent(in) :: A(3,3)
 
     !> Diagonal entries
-    real(dp) :: diagonal(3)
+    real(dp) :: res(3)
 
     integer :: ii
 
     do ii = 1, size(A,dim=1)
-      diagonal(ii) = A(ii,ii)
+      res(ii) = A(ii,ii)
     end do
 
   end function diagonal

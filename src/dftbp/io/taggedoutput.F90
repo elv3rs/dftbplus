@@ -365,22 +365,22 @@ contains
 
 
   !> Extracts the label for a tag
-  function getLabel(tag)
+  function getLabel(tag) result(res)
 
     !> relevant tag
     character(len=*), intent(in) :: tag
 
     !> Label
-    character(len=20) :: getLabel
+    character(len=20) :: res
 
     integer :: lentrim
 
     lentrim = len_trim(tag)
     if (lentrim >= lenLabel) then
-      getLabel(:) = tag(1:lenLabel)
+      res(:) = tag(1:lenLabel)
     else
-      getLabel(1:lentrim) = tag(1:lentrim)
-      getLabel(lentrim+1:lenLabel) = " "
+      res(1:lentrim) = tag(1:lentrim)
+      res(lentrim+1:lenLabel) = " "
     end if
 
   end function getLabel

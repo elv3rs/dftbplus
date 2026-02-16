@@ -519,57 +519,57 @@ contains
 
 
   !> Obtains number of atoms in the system
-  function nrOfAtoms(main)
+  function nrOfAtoms(main) result(res)
 
     !> Instance
     type(TDftbPlusMain), intent(in) :: main
 
     !> Resulting atom count
-    integer :: nrOfAtoms
+    integer :: res
 
-    nrOfAtoms = main%nAtom
+    res = main%nAtom
 
   end function nrOfAtoms
 
 
   !> Obtains number of spin channels in the system
-  function nrOfSpin(main)
+  function nrOfSpin(main) result(res)
 
     !> Instance
     type(TDftbPlusMain), intent(in) :: main
 
     !> Spin channel count (1 for spin free, 2 conventional z-spin, 4 non-collinear)
-    integer :: nrOfSpin
+    integer :: res
 
-    nrOfSpin = main%nSpin
+    res = main%nSpin
 
   end function nrOfSpin
 
 
   !> Obtains number of k-points in the system (1 if not a repeating structure)
-  function nrOfKPoints(main)
+  function nrOfKPoints(main) result(res)
 
     !> Instance
     type(TDftbPlusMain), intent(in) :: main
 
     !> Number of k-points present
-    integer :: nrOfKPoints
+    integer :: res
 
-    nrOfKPoints = main%nKPoint
+    res = main%nKPoint
 
   end function nrOfKPoints
 
 
   !> Obtains number of (k-point,spin chanel) pairs in current process group
-  function nrOfLocalKS(main)
+  function nrOfLocalKS(main) result(res)
 
     !> Instance
     type(TDftbPlusMain), intent(in) :: main
 
     !> k-points and spin on the local processor group
-    integer :: nrOfLocalKS
+    integer :: res
 
-    nrOfLocalKS = main%parallelKS%nLocalKS
+    res = main%parallelKS%nLocalKS
 
   end function nrOfLocalKS
 

@@ -217,10 +217,10 @@ contains
 
 
   !> Calculates the number of electrons for a given Fermi energy and distribution function
-  function electronCount(Ef,eigenvals,kT,distrib,kWeight)
+  function electronCount(Ef,eigenvals,kT,distrib,kWeight) result(res)
 
     !> Electrons for this Fermi energy
-    real(dp) :: electronCount
+    real(dp) :: res
 
     !> Fermi energy for given distribution
     real(dp), intent(in) :: Ef
@@ -247,7 +247,7 @@ contains
     real(dp) :: occ, x
 
     w = 1.0_dp/kT
-    electronCount=0.0_dp
+    res=0.0_dp
     if (distrib /= fillingTypes%Fermi) then
       MPorder = distrib - fillingTypes%Methfessel
       allocate(A(0:MPorder))
@@ -259,7 +259,7 @@ contains
             if (eigenvals(j,i,ispin)>(Ef-3.0_dp*w)) then
               exit
             end if
-            electronCount=electronCount+kWeight(i)
+            res=res+kWeight(i)
           end do
           do k = j, size(eigenvals,dim=1)
             if (eigenvals(k,i,ispin)>(Ef+3.0_dp*w)) then
@@ -271,7 +271,7 @@ contains
             do l=1, MPorder
               occ = occ + A(l) * hermites(2*l-1) * exp(-x**2)
             end do
-            electronCount = electronCount + occ * kWeight(i)
+            res = res + occ * kWeight(i)
           end do
         end do
       end do
@@ -287,7 +287,7 @@ contains
               electronCount = electronCount + kWeight(i)/(1.0_dp + exp(x))
             end if
           #:else
-            electronCount = electronCount + kWeight(i)/(1.0_dp + exp(x))
+            res = res + kWeight(i)/(1.0_dp + exp(x))
           #:endif
           end do
         end do
@@ -300,10 +300,10 @@ contains
   !> function
   !>
   !> To do: support Methfestle-Paxton
-  function derivElectronCount(Ef,eigenvals,kT,distrib,kWeight)
+  function derivElectronCount(Ef,eigenvals,kT,distrib,kWeight) result(res)
 
     !> Derivative of electrons wrt to Ef
-    real(dp) :: derivElectronCount
+    real(dp) :: res
 
     !> Fermi energy for given distribution
     real(dp), intent(in) :: Ef
@@ -327,7 +327,7 @@ contains
     real(dp) :: x
 
     w = 1.0_dp/kT
-    derivElectronCount=0.0_dp
+    res=0.0_dp
     if (distrib /= fillingTypes%Fermi) then
       call error("Fermi distribution only supported")
     else
@@ -344,7 +344,7 @@ contains
                     & (w*kWeight(i)) * (exp(x)/((1.0_dp + exp(x))**2))
               end if
             #:else
-              derivElectronCount = derivElectronCount + &
+              res = res + &
                   & (w*kWeight(i)) * (exp(x)/((1.0_dp + exp(x))**2))
             #:endif
             end if
@@ -517,7 +517,7 @@ contains
 
 
   !> Middle gap position, assuming aufbau principle for the filling
-  function middleGap(eigenvals, kWeight, nElectrons)
+  function middleGap(eigenvals, kWeight, nElectrons) result(res)
 
     !> Eigenvalues of states
     real(dp), intent(in) :: eigenvals(:,:,:)
@@ -529,7 +529,7 @@ contains
     real(dp), intent(in) :: nElectrons
 
     !> Resulting mid gap position
-    real(dp) :: middleGap
+    real(dp) :: res
 
     integer, allocatable :: tmpIndx(:)
     integer :: size1, size2
@@ -559,7 +559,7 @@ contains
     jOrb = mod(iLev - 1, size1) + 1
     jKpt = mod((iLev - 1) / size1, size2) + 1
     jSpin = (iLev - 1) / (size1 * size2) + 1
-    middleGap = 0.5_dp * (eigenvals(jOrb, jKpt, jSpin) + eigenvals(iOrb, iKpt, iSpin))
+    res = 0.5_dp * (eigenvals(jOrb, jKpt, jSpin) + eigenvals(iOrb, iKpt, iSpin))
 
   end function middleGap
 

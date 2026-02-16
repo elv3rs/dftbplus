@@ -127,7 +127,7 @@ contains
 
 
   !> Returns whether states are in the same degenerate group
-  pure function areDegenerate(this, ii, jj)
+  pure function areDegenerate(this, ii, jj) result(res)
 
     !> Instance
     class(TDegeneracyFind), intent(in) :: this
@@ -139,37 +139,37 @@ contains
     integer, intent(in) :: jj
 
     !> Resulting test
-    logical :: areDegenerate
+    logical :: res
 
-    areDegenerate = (this%degenerateGroup(ii) == this%degenerateGroup(jj))
+    res = (this%degenerateGroup(ii) == this%degenerateGroup(jj))
 
   end function areDegenerate
 
 
   !> Count of degenerate groups of levels
-  pure function degenerateGroups(this)
+  pure function degenerateGroups(this) result(res)
 
     !> Instance
     class(TDegeneracyFind), intent(in) :: this
 
     !> Number of degenerate groups of levels
-    integer :: degenerateGroups
+    integer :: res
 
-    degenerateGroups = this%nGrp
+    res = this%nGrp
 
   end function degenerateGroups
 
 
   !> Returns ranges of levels in degenerate groups (lower:upper, groups)
-  pure function degenerateRanges(this)
+  pure function degenerateRanges(this) result(res)
 
     !> Instance
     class(TDegeneracyFind), intent(in) :: this
 
     !> Number of degenerate groups of levels
-    integer :: degenerateRanges(2,this%nGrp)
+    integer :: res(2,this%nGrp)
 
-    degenerateRanges(:,:) = this%levelRange(:2,:this%nGrp)
+    res(:,:) = this%levelRange(:2,:this%nGrp)
 
   end function degenerateRanges
 

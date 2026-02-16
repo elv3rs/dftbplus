@@ -24,7 +24,7 @@ module dftbp_dftb_shortgammafuncs
 contains
 
   !> Determines the cut off where the short range part goes to zero (a small constant).
-  function expGammaCutoff(U2, U1, minValue)
+  function expGammaCutoff(U2, U1, minValue) result(res)
 
     !> Hubbard U value in a.u.
     real(dp), intent(in) :: U2
@@ -37,13 +37,13 @@ contains
     real(dp), intent(in), optional :: minValue
 
     !> Returned cut off distance
-    real(dp) :: expGammaCutoff
+    real(dp) :: res
 
     real(dp) :: cutValue
     real(dp) :: rab, maxGamma, MinGamma, lowerGamma, gamma
     real(dp) :: cut, maxCutOff, minCutOff
 
-    expGammaCutoff = 0.0_dp
+    res = 0.0_dp
 
     if (present(minValue)) then
       cutValue = minValue
@@ -88,13 +88,13 @@ contains
         gamma = expGamma(cut, U2, U1)
       end if
     end do
-    expGammaCutoff = minCutOff
+    res = minCutOff
 
   end function expGammaCutoff
 
 
   !> Determines the value of the short range contribution to gamma with the exponential form.
-  function expGamma(rab, Ua, Ub)
+  function expGamma(rab, Ua, Ub) result(res)
 
     !> Separation of sites a and b
     real(dp), intent(in) :: rab
@@ -106,7 +106,7 @@ contains
     real(dp), intent(in) :: Ub
 
     !> Contribution
-    real(dp) :: expGamma
+    real(dp) :: res
 
     real(dp) :: tauA, tauB, tauMean
 
@@ -128,21 +128,21 @@ contains
       ! on-site case with R~0
       if (abs(Ua - Ub) < minHubDiff) then
         ! same Hubbard U values, onsite , NOTE SIGN CHANGE!
-        expGamma = -0.5_dp * (Ua + Ub)
+        res = -0.5_dp * (Ua + Ub)
       else
         ! Ua /= Ub Hubbard U values - limiting case, NOTE SIGN CHANGE!
-        expGamma = -0.5_dp * ((tauA * tauB) / (tauA + tauB) + (tauA * tauB)**2 / (tauA + tauB)**3)
+        res = -0.5_dp * ((tauA * tauB) / (tauA + tauB) + (tauA * tauB)**2 / (tauA + tauB)**3)
       end if
     else if (abs(Ua - Ub) < minHubDiff) then
       ! R > 0 and same Hubbard U values
       tauMean = 0.5_dp * (tauA + tauB)
-      expGamma = &
+      res = &
           & exp(-tauMean * rab) * (1.0_dp / rab + 0.6875_dp * tauMean + 0.1875_dp * rab&
           & * tauMean**2 + 0.02083333333333333333_dp * rab**2 * tauMean**3)
     else
       ! using the sign convention in the review articles, not Joachim Elstner's thesis
       ! (there's a typo there)
-      expGamma = gammaSubExprn_(rab, tauA, tauB) + gammaSubExprn_(rab, tauB, tauA)
+      res = gammaSubExprn_(rab, tauA, tauB) + gammaSubExprn_(rab, tauB, tauA)
     end if
 
   end function expGamma
@@ -150,7 +150,7 @@ contains
 
   !> Determines the value of the derivative of the short range contribution to gamma with the
   !! exponential form.
-  function expGammaPrime(rab,Ua,Ub)
+  function expGammaPrime(rab,Ua,Ub) result(res)
 
     !> Separation of sites a and b
     real(dp), intent(in) :: rab
@@ -162,7 +162,7 @@ contains
     real(dp), intent(in) :: Ub
 
     !> Returned contribution
-    real(dp) :: expGammaPrime
+    real(dp) :: res
 
     real(dp) :: tauA, tauB, tauMean
 
@@ -179,12 +179,12 @@ contains
 
     ! on-site case with R~0
     if (rab < tolSameDist) then
-      expGammaPrime = 0.0_dp
+      res = 0.0_dp
     else if (abs(Ua - Ub) < minHubDiff) then
       ! R > 0 and same Hubbard U values
       ! 16/5 * U, see review papers
       tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-      expGammaPrime = &
+      res = &
           & -tauMean * exp(-tauMean * rab) * (1.0_dp / rab + 0.6875_dp * tauMean + 0.1875_dp * rab&
           & * tauMean**2 + 0.02083333333333333333_dp * rab**2 * tauMean**3)&
           & + exp(-tauMean*rab) * (-1.0_dp / rab**2 + 0.1875_dp * tauMean**2 + 2.0_dp&
@@ -195,7 +195,7 @@ contains
       tauB = 3.2_dp * Ub
       ! using the sign convention in the review articles, not Joachim Elstner's thesis
       ! (there's a typo there)
-      expGammaPrime = gammaSubExprnPrime_(rab, tauA, tauB) + gammaSubExprnPrime_(rab, tauB, tauA)
+      res = gammaSubExprnPrime_(rab, tauA, tauB) + gammaSubExprnPrime_(rab, tauB, tauA)
     end if
 
   end function expGammaPrime
@@ -204,7 +204,7 @@ contains
   !> Determines the value of the short range contribution to gamma with the exponential form with
   !! damping.
   !! See J. Phys. Chem. A, 111, 10865 (2007).
-  function expGammaDamped(rab, Ua, Ub, dampExp)
+  function expGammaDamped(rab, Ua, Ub, dampExp) result(res)
 
     !> Separation of sites a and b
     real(dp), intent(in) :: rab
@@ -219,19 +219,19 @@ contains
     real(dp), intent(in) :: dampExp
 
     !> Returned contribution
-    real(dp) :: expGammaDamped
+    real(dp) :: res
 
     real(dp) :: rTmp
 
     rTmp = -1.0_dp * (0.5_dp * (Ua + Ub))**dampExp
-    expGammaDamped = expGamma(rab, Ua, Ub) * exp(rTmp * rab**2)
+    res = expGamma(rab, Ua, Ub) * exp(rTmp * rab**2)
 
   end function expGammaDamped
 
 
   !> Determines the value of the derivative of the short range contribution to gamma with the
   !! exponential form with damping.
-  function expGammaDampedPrime(rab, Ua, Ub, dampExp)
+  function expGammaDampedPrime(rab, Ua, Ub, dampExp) result(res)
 
     !> Separation of sites a and b
     real(dp), intent(in) :: rab
@@ -246,12 +246,12 @@ contains
     real(dp), intent(in) :: dampExp
 
     !> Returned contribution
-    real(dp) :: expGammaDampedPrime
+    real(dp) :: res
 
     real(dp) :: rTmp
 
     rTmp = -1.0_dp * (0.5_dp *(Ua + Ub))**dampExp
-    expGammaDampedPrime = expGammaPrime(rab, Ua, Ub) * exp(rTmp * rab**2)&
+    res = expGammaPrime(rab, Ua, Ub) * exp(rTmp * rab**2)&
         & + 2.0_dp * expGamma(rab, Ua, Ub) * exp(rTmp * rab**2) * rab * rTmp
 
   end function expGammaDampedPrime
@@ -334,7 +334,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubfExprn(rab,tau1,tau2)
+  function gammaSubfExprn(rab,tau1,tau2) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -346,7 +346,7 @@ contains
     real(dp), intent(in) :: tau2
 
     !> contribution
-    real(dp) :: gammaSubfExprn
+    real(dp) :: res
 
     if (abs(tau1 - tau2) < 3.2_dp*MinHubDiff) then
       write(errorString, "('Failure in gammaSubfExprn, both tau degenerate ',f12.6,f12.6)") tau1,&
@@ -357,7 +357,7 @@ contains
       call error(errorString)
     end if
 
-    gammaSubfExprn = &
+    res = &
         & (0.5_dp * tau2**4 * tau1 / (tau1**2 - tau2**2)**2) &
         & - ((tau2**6 - 3.0_dp * tau2**4 * tau1**2) / (rab * (tau1**2 - tau2**2)**3))
 
@@ -366,7 +366,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubgExprn(rab,tauMean)
+  function gammaSubgExprn(rab,tauMean) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -375,14 +375,14 @@ contains
     real(dp), intent(in) :: tauMean
 
     !> contribution
-    real(dp) :: gammaSubgExprn
+    real(dp) :: res
 
     if (rab < tolSameDist) then
       write(errorString, "('Atoms on top of each other in gammaSubgExprn')")
       call error(errorString)
     end if
 
-    gammaSubgExprn = &
+    res = &
        & 1.0_dp / rab + 0.6875_dp * tauMean &
        & + 0.1875_dp * rab * (tauMean**2) &
        & + 0.02083333333333333333_dp * (rab**2) * (tauMean**3)
@@ -392,7 +392,7 @@ contains
 
   !> Determines the derivative of the value of a part of the short range contribution to the
   !! exponential gamma, when Ua /= Ub and R > 0
-  function gammaSubfExprnPrime(rab, tau1, tau2)
+  function gammaSubfExprnPrime(rab, tau1, tau2) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -404,7 +404,7 @@ contains
     real(dp), intent(in) :: tau2
 
     !> contribution
-    real(dp) :: gammaSubfExprnPrime
+    real(dp) :: res
 
     if (abs(tau1 - tau2) < 3.2_dp*MinHubDiff) then
       write(errorString, "('Failure in gammaSubfExprnPrime, both tau degenerate ',f12.6,f12.6)")&
@@ -415,7 +415,7 @@ contains
       call error(errorString)
     end if
 
-    gammaSubfExprnPrime = &
+    res = &
         & (tau2**6 - 3.0_dp * tau2**4 * tau1**2) &
         & / (rab**2 *(tau1**2 - tau2**2)**3)
 
@@ -424,7 +424,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubgExprnPrime(rab, tauMean)
+  function gammaSubgExprnPrime(rab, tauMean) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -433,14 +433,14 @@ contains
     real(dp), intent(in) :: tauMean
 
     !> contribution
-    real(dp) :: gammaSubgExprnPrime
+    real(dp) :: res
 
     if (rab < tolSameDist) then
       write(errorString, "('Atoms on top of each other in gammaSubgExprnPrime')")
       call error(errorString)
     end if
 
-    gammaSubgExprnPrime = &
+    res = &
         & - 1.0_dp / rab**2 + 0.1875_dp * (tauMean**2) &
         & + 2.0_dp * 0.02083333333333333333_dp * rab * (tauMean**3)
 
@@ -449,7 +449,7 @@ contains
 
   !> Determines the seconde derivative of the value of a part of the short range contribution to the
   !! exponential gamma, when Ua /= Ub and R > 0
-  function gammaSubfExprnDoublePrime(rab, tau1, tau2)
+  function gammaSubfExprnDoublePrime(rab, tau1, tau2) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -461,7 +461,7 @@ contains
     real(dp), intent(in) :: tau2
 
     !> contribution
-    real(dp) :: gammaSubfExprnDoublePrime
+    real(dp) :: res
 
     if (abs(tau1 - tau2) < 3.2_dp*MinHubDiff) then
       write(errorString, "('Failure in gammaSubfExprnDoublePrime, both tau degenerate ',&
@@ -472,7 +472,7 @@ contains
       call error(errorString)
     end if
 
-    gammaSubfExprnDoublePrime = &
+    res = &
         & -2.0_dp * (tau2**6 - 3.0_dp * tau2**4 * tau1**2) &
         & / (rab**3 * (tau1**2 - tau2**2)**3)
   end function gammaSubfExprnDoublePrime
@@ -480,7 +480,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubgExprnDoublePrime(rab, tauMean)
+  function gammaSubgExprnDoublePrime(rab, tauMean) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -489,14 +489,14 @@ contains
     real(dp), intent(in) :: tauMean
 
     !> contribution
-    real(dp) :: gammaSubgExprnDoublePrime
+    real(dp) :: res
 
     if (rab < tolSameDist) then
       write(errorString, "('Atoms on top of each other in gammaSubgExprnDoublePrime')")
       call error(errorString)
     end if
 
-    gammaSubgExprnDoublePrime = &
+    res = &
         & 2.0_dp / rab**3 + 2.0_dp * 0.02083333333333333333_dp * (tauMean**3)
 
   end function gammaSubgExprnDoublePrime
@@ -504,7 +504,7 @@ contains
 
   !> Determines the second derivative of the value of a part of the short range contribution to the
   !> exponential gamma, when Ua /= Ub and R > 0
-  function gammaSubfExprnTriplePrime(rab, tau1, tau2)
+  function gammaSubfExprnTriplePrime(rab, tau1, tau2) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -516,7 +516,7 @@ contains
     real(dp), intent(in) :: tau2
 
     !> contribution
-    real(dp) :: gammaSubfExprnTriplePrime
+    real(dp) :: res
 
     if (abs(tau1 - tau2) < 3.2_dp*MinHubDiff) then
       write(errorString, "('Failure in gammaSubfExprnTriplePrime, both tau degenerate ',&
@@ -527,7 +527,7 @@ contains
       call error(errorString)
     end if
 
-    gammaSubfExprnTriplePrime = &
+    res = &
         & 6.0_dp * (tau2**6 - 3.0_dp * tau2**4 * tau1**2) &
         & / (rab**4 * (tau1**2 - tau2**2)**3)
   end function gammaSubfExprnTriplePrime
@@ -535,7 +535,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubgExprnTriplePrime(rab, tauMean)
+  function gammaSubgExprnTriplePrime(rab, tauMean) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -544,21 +544,21 @@ contains
     real(dp), intent(in) :: tauMean
 
     !> contribution
-    real(dp) :: gammaSubgExprnTriplePrime
+    real(dp) :: res
 
     if (rab < tolSameDist) then
       write(errorString, "('Atoms on top of each other in gammaSubgExprnTriplePrime')")
       call error(errorString)
     end if
 
-    gammaSubgExprnTriplePrime = -6.0_dp / rab**4
+    res = -6.0_dp / rab**4
 
   end function gammaSubgExprnTriplePrime
 
 
   !> Determines the second derivative of the value of a part of the short range contribution to the
   !> exponential gamma, when Ua /= Ub and R > 0
-  function gammaSubfExprnQuadruplePrime(rab, tau1, tau2)
+  function gammaSubfExprnQuadruplePrime(rab, tau1, tau2) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -570,7 +570,7 @@ contains
     real(dp), intent(in) :: tau2
 
     !> contribution
-    real(dp) :: gammaSubfExprnQuadruplePrime
+    real(dp) :: res
 
     if (abs(tau1 - tau2) < 3.2_dp*MinHubDiff) then
       write(errorString, "('Failure in gammaSubfExprnQuadruplePrime, both tau degenerate ',&
@@ -581,7 +581,7 @@ contains
       call error(errorString)
     end if
 
-    gammaSubfExprnQuadruplePrime = &
+    res = &
         & -24.0_dp * (tau2**6 - 3.0_dp * tau2**4 * tau1**2) &
         & / (rab**5 * (tau1**2 - tau2**2)**3)
   end function gammaSubfExprnQuadruplePrime
@@ -589,7 +589,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubgExprnQuadruplePrime(rab, tauMean)
+  function gammaSubgExprnQuadruplePrime(rab, tauMean) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -598,21 +598,21 @@ contains
     real(dp), intent(in) :: tauMean
 
     !> contribution
-    real(dp) :: gammaSubgExprnQuadruplePrime
+    real(dp) :: res
 
     if (rab < tolSameDist) then
       write(errorString, "('Atoms on top of each other in gammaSubgExprnQuadruplePrime')")
       call error(errorString)
     end if
 
-    gammaSubgExprnQuadruplePrime = 24.0_dp / rab**5
+    res = 24.0_dp / rab**5
 
   end function gammaSubgExprnQuadruplePrime
 
 
   !> Determines the second derivative of the value of a part of the short range contribution to the
   !> exponential gamma, when Ua /= Ub and R > 0
-  function gammaSubfExprnQuintuplePrime(rab, tau1, tau2)
+  function gammaSubfExprnQuintuplePrime(rab, tau1, tau2) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -624,7 +624,7 @@ contains
     real(dp), intent(in) :: tau2
 
     !> contribution
-    real(dp) :: gammaSubfExprnQuintuplePrime
+    real(dp) :: res
 
     if (abs(tau1 - tau2) < 3.2_dp*MinHubDiff) then
       write(errorString, "('Failure in gammaSubfExprnQuintuplePrime, both tau degenerate ',&
@@ -635,7 +635,7 @@ contains
       call error(errorString)
     end if
 
-    gammaSubfExprnQuintuplePrime = &
+    res = &
         & 120.0_dp * (tau2**6 - 3.0_dp * tau2**4 * tau1**2) &
         & / (rab**6 * (tau1**2 - tau2**2)**3)
   end function gammaSubfExprnQuintuplePrime
@@ -643,7 +643,7 @@ contains
 
   !> Determines the value of a part of the short range contribution to the exponential gamma, when
   !! Ua /= Ub and R > 0
-  function gammaSubgExprnQuintuplePrime(rab, tauMean)
+  function gammaSubgExprnQuintuplePrime(rab, tauMean) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -652,21 +652,21 @@ contains
     real(dp), intent(in) :: tauMean
 
     !> contribution
-    real(dp) :: gammaSubgExprnQuintuplePrime
+    real(dp) :: res
 
     if (rab < tolSameDist) then
       write(errorString, "('Atoms on top of each other in gammaSubgExprnQuintuplePrime')")
       call error(errorString)
     end if
 
-    gammaSubgExprnQuintuplePrime = -120.0_dp / rab**6
+    res = -120.0_dp / rab**6
 
   end function gammaSubgExprnQuintuplePrime
 
 
   !> Determines the value of the second derivative of the short range contribution to gamma with the
   !! exponential form
-  function expGammaDoublePrime(rab, Ua, Ub)
+  function expGammaDoublePrime(rab, Ua, Ub) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -678,7 +678,7 @@ contains
     real(dp), intent(in) :: Ub
 
     !> returned contribution
-    real(dp) :: expGammaDoublePrime
+    real(dp) :: res
 
     real(dp) :: tauA, tauB, tauMean
 
@@ -698,16 +698,16 @@ contains
       if (abs(Ua - Ub) < MinHubDiff) then
         ! same Hubbard U values, onsite , NOTE SIGN CHANGE!
         tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-        expGammaDoublePrime = -tauMean**3 / 48.0_dp
+        res = -tauMean**3 / 48.0_dp
       else
         ! Ua /= Ub Hubbard U values - limiting case, NOTE SIGN CHANGE!
-        expGammaDoublePrime = 0.0_dp
+        res = 0.0_dp
       end if
     else if (abs(Ua - Ub) < MinHubDiff) then
       ! R > 0 and same Hubbard U values
       ! 16/5 * U, see review papers
       tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-      expGammaDoublePrime = &
+      res = &
           & exp(-tauMean * rab) * gammaSubgExprnDoublePrime(rab, tauMean) &
           & - 2.0_dp * tauMean * exp(-tauMean * rab) * gammaSubgExprnPrime(rab, tauMean) &
           & + tauMean**2 * exp(-tauMean * rab) * gammaSubgExprn(rab, tauMean)
@@ -715,7 +715,7 @@ contains
       ! 16/5 * U, see review papers
       tauA = 3.2_dp*Ua
       tauB = 3.2_dp*Ub
-      expGammaDoublePrime = &
+      res = &
           & exp(-tauA * rab) * gammaSubfExprnDoublePrime(rab, tauA, tauB) &
           & - 2.0_dp * tauA * exp(-tauA * rab) * gammaSubfExprnPrime(rab, tauA, tauB) &
           & + tauA**2 * exp(-tauA * rab) * gammaSubfExprn(rab, tauA, tauB) &
@@ -728,7 +728,7 @@ contains
 
   !> Determines the value of the third derivative of the short range contribution to gamma with the
   !! exponential form
-  function expGammaTriplePrime(rab, Ua, Ub)
+  function expGammaTriplePrime(rab, Ua, Ub) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -740,7 +740,7 @@ contains
     real(dp), intent(in) :: Ub
 
     !> returned contribution
-    real(dp) :: expGammaTriplePrime
+    real(dp) :: res
 
     real(dp) :: tauA, tauB, tauMean
 
@@ -757,12 +757,12 @@ contains
 
     ! on-site case with R~0
     if (rab < tolSameDist) then
-      expGammaTriplePrime = 0.0_dp
+      res = 0.0_dp
     else if (abs(Ua - Ub) < MinHubDiff) then
       ! R > 0 and same Hubbard U values
       ! 16/5 * U
       tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-      expGammaTriplePrime = &
+      res = &
           & exp(-tauMean * rab) * gammaSubgExprnTriplePrime(rab, tauMean) &
           & - 3.0_dp * tauMean * exp(-tauMean * rab) * gammaSubgExprnDoublePrime(rab, tauMean) &
           & + 3.0_dp * tauMean**2 * exp(-tauMean * rab) * gammaSubgExprnPrime(rab, tauMean) &
@@ -771,7 +771,7 @@ contains
       ! 16/5 * U
       tauA = 3.2_dp*Ua
       tauB = 3.2_dp*Ub
-      expGammaTriplePrime = &
+      res = &
           & exp(-tauA * rab) * gammaSubfExprnTriplePrime(rab, tauA, tauB) &
           & - 3.0_dp * tauA * exp(-tauA * rab) * gammaSubfExprnDoublePrime(rab, tauA, tauB) &
           & + 3.0_dp * tauA**2 * exp(-tauA * rab) * gammaSubfExprnPrime(rab, tauA, tauB) &
@@ -786,7 +786,7 @@ contains
 
   !> Determines the value of the fourth derivative of the short range contribution to gamma with the
   !! exponential form
-  function expGammaQuadruplePrime(rab, Ua, Ub)
+  function expGammaQuadruplePrime(rab, Ua, Ub) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -798,7 +798,7 @@ contains
     real(dp), intent(in) :: Ub
 
     !> returned contribution
-    real(dp) :: expGammaQuadruplePrime
+    real(dp) :: res
 
     real(dp) :: tauA, tauB, tauMean
 
@@ -817,16 +817,16 @@ contains
     if (rab < tolSameDist) then
       if (abs(Ua - Ub) < MinHubDiff) then
         tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-        expGammaQuadruplePrime = tauMean**5 / 80.0_dp
+        res = tauMean**5 / 80.0_dp
       else
         ! Ua /= Ub Hubbard U values - limiting case, NOTE SIGN CHANGE!
-        expGammaQuadruplePrime = 0.0_dp
+        res = 0.0_dp
       end if
     else if (abs(Ua - Ub) < MinHubDiff) then
       ! R > 0 and same Hubbard U values
       ! 16/5 * U
       tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-      expGammaQuadruplePrime = &
+      res = &
           & exp(-tauMean * rab) * gammaSubgExprnQuadruplePrime(rab, tauMean) &
           & - 4.0_dp * tauMean * exp(-tauMean * rab) * gammaSubgExprnTriplePrime(rab, tauMean) &
           & + 6.0_dp * tauMean**2 * exp(-tauMean * rab) * gammaSubgExprnDoublePrime(rab, tauMean) &
@@ -836,7 +836,7 @@ contains
       ! 16/5 * U
       tauA = 3.2_dp*Ua
       tauB = 3.2_dp*Ub
-      expGammaQuadruplePrime = &
+      res = &
           & exp(-tauA * rab) * gammaSubfExprnQuadruplePrime(rab, tauA, tauB) &
           & - 4.0_dp * tauA * exp(-tauA * rab) * gammaSubfExprnTriplePrime(rab, tauA, tauB) &
           & + 6.0_dp * tauA**2 * exp(-tauA * rab) * gammaSubfExprnDoublePrime(rab, tauA, tauB) &
@@ -854,7 +854,7 @@ contains
 
   !> Determines the value of the fifth derivative of the short range contribution to gamma with the
   !! exponential form
-  function expGammaQuintuplePrime(rab, Ua, Ub)
+  function expGammaQuintuplePrime(rab, Ua, Ub) result(res)
 
     !> separation of sites a and b
     real(dp), intent(in) :: rab
@@ -866,7 +866,7 @@ contains
     real(dp), intent(in) :: Ub
 
     !> returned contribution
-    real(dp) :: expGammaQuintuplePrime
+    real(dp) :: res
 
     real(dp) :: tauA, tauB, tauMean
 
@@ -883,12 +883,12 @@ contains
 
     ! on-site case with R~0
     if (rab < tolSameDist) then
-      expGammaQuintuplePrime = 0.0_dp
+      res = 0.0_dp
     else if (abs(Ua - Ub) < MinHubDiff) then
       ! R > 0 and same Hubbard U values
       ! 16/5 * U
       tauMean = 3.2_dp * 0.5_dp * (Ua + Ub)
-      expGammaQuintuplePrime = &
+      res = &
           & exp(-tauMean * rab) * gammaSubgExprnQuintuplePrime(rab, tauMean) &
           & - 5.0_dp * tauMean * exp(-tauMean * rab) * gammaSubgExprnQuadruplePrime(rab, tauMean) &
           & + 10.0_dp * tauMean**2 * exp(-tauMean * rab) * gammaSubgExprnTriplePrime(rab, tauMean) &
@@ -899,7 +899,7 @@ contains
       ! 16/5 * U
       tauA = 3.2_dp * Ua
       tauB = 3.2_dp * Ub
-      expGammaQuintuplePrime = &
+      res = &
           & exp(-tauA * rab) * gammaSubfExprnQuintuplePrime(rab, tauA, tauB) &
           & - 5.0_dp * tauA * exp(-tauA * rab) * gammaSubfExprnQuadruplePrime(rab, tauA, tauB) &
           & + 10.0_dp * tauA**2 * exp(-tauA * rab) * gammaSubfExprnTriplePrime(rab, tauA, tauB) &

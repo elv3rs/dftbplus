@@ -375,15 +375,15 @@ contains
 
 
   !> Is the dispersion energy available for use in the main code after calling getEnergies
-  function energyAvailable(this)
+  function energyAvailable(this) result(res)
 
     !> Data structure
     class(TDispMbd), intent(in) :: this
 
     !> Result (dummy for most dispersion models)
-    logical :: energyAvailable
+    logical :: res
 
-    energyAvailable = this%energyUpdated
+    res = this%energyUpdated
 
   end function energyAvailable
 

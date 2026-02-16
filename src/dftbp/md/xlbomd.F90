@@ -152,15 +152,15 @@ contains
 
 
   !> Signals whether XLBOMD integration is active.
-  function isActive(this)
+  function isActive(this) result(res)
 
     !> Instance.
     class(TXLBOMD), intent(in) :: this
 
     !> True if XLBOMD integration is active (no SCC convergence needed)
-    logical :: isActive
+    logical :: res
 
-    isActive = this%extLagr%needsConvergedValues()
+    res = this%extLagr%needsConvergedValues()
 
   end function isActive
 
