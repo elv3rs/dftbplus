@@ -55,7 +55,7 @@ ignore = [
 
     # --- Coding conventions (too many to fix now, track for gradual cleanup) ---
     "C101",    # missing-default-pointer-initialisation — 49 violations, needs careful review
-    "C081",    # initialisation-in-declaration — 18 violations (autofix now available via --unsafe-fixes)
-    "C131",    # missing-accessibility-statement — 6 violations, mostly in small utility modules
-    "C132",    # default-public-accessibility — 5 violations, paired with C131
+    "C081",    # initialisation-in-declaration — 18 violations (autofix available: --unsafe-fixes adds `save`)
+    "C131",    # missing-accessibility-statement — 6 violations (autofix available but would break: modules lack explicit `public ::`)
+    "C132",    # default-public-accessibility — 5 violations (autofix available but would break: modules lack explicit `public ::`)
 ]
