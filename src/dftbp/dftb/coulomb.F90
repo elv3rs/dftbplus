@@ -711,7 +711,8 @@ contains
     real(dp), intent(out) :: invRMat(:,:)
 
     integer :: ii, jj, iAt1, iAt2
-    real(dp) :: dist, vect(3)
+    real(dp) :: dist
+    real(dp) :: vect(3)
 
     invRMat(:,:) = 0.0_dp
 
@@ -765,7 +766,8 @@ contains
     real(dp), intent(in), optional :: epsSoften
 
     integer :: iAt0, iAt1
-    real(dp) :: dist, vect(3), fTmp, epsSoften2
+    real(dp) :: dist, fTmp, epsSoften2
+    real(dp) :: vect(3)
     integer :: iAtFirst0, iAtLast0, iAtFirst1, iAtLast1
 
     if (present(epsSoften)) then
@@ -1098,7 +1100,8 @@ contains
     real(dp), intent(in), optional :: epsSoften
 
     integer :: iAt0, iAt1
-    real(dp) :: rTmp, rr(3)
+    real(dp) :: rTmp
+    real(dp) :: rr(3)
     integer :: iAtFirst0, iAtLast0, iAtFirst1, iAtLast1
 
     @:ASSERT(volume > 0.0_dp)
@@ -1156,7 +1159,8 @@ contains
     real(dp), intent(inout) :: deriv(:,:)
 
     integer :: ii, jj
-    real(dp) :: dist, vect(3), fTmp
+    real(dp) :: dist, fTmp
+    real(dp) :: vect(3)
     real(dp), allocatable :: localDeriv(:,:)
     integer :: iAtFirst, iAtLast
 
@@ -1208,7 +1212,8 @@ contains
     real(dp), intent(inout) :: deriv(:,:)
 
     integer :: iAt1, iAt2
-    real(dp) :: dist, vect(3), fTmp, prefac
+    real(dp) :: dist, fTmp, prefac
+    real(dp) :: vect(3)
     real(dp), allocatable :: localDeriv(:,:)
     integer :: iAtFirst, iAtLast
 
@@ -2132,7 +2137,8 @@ contains
         & [1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp], [3, 3])
 
     integer :: iG
-    real(dp) :: gg(3), g2, rg, eTerm, sTmp
+    real(dp) :: g2, rg, eTerm, sTmp
+    real(dp) :: gg(3)
 
     recSum(:) = 0.0_dp
     sigma(:,:) = 0.0_dp
@@ -2392,7 +2398,8 @@ contains
 
     type(TDynNeighList), pointer :: pNeighList
     integer :: iAtom1, iInv, ii, jj, kk
-    real(dp) :: g(3), g2, intermed, intermed2
+    real(dp) :: g2, intermed, intermed2
+    real(dp) :: g(3)
     real(dp) :: stressTmp(3,3), localStress(3,3)
     integer :: iFirst, iLast
 
@@ -2508,7 +2515,8 @@ contains
     !> Derivative of inverse R matrix
     real(dp), intent(inout) :: invRDeriv(:,:,:)
 
-    real(dp) :: dist, vect(3)
+    real(dp) :: dist
+    real(dp) :: vect(3)
     integer :: nAtom, iAtFirst, iAtLast
     integer :: ii, jj
 
@@ -2749,7 +2757,8 @@ contains
     real(dp), intent(inout) :: vprime(:)
 
     integer :: jj
-    real(dp) :: dist, vect(3), fTmp
+    real(dp) :: dist, fTmp
+    real(dp) :: vect(3)
 
     do jj = 1, nAtom
 

@@ -361,7 +361,8 @@ contains
 
     integer :: nAtom, iOrig, ii, jj, iNeigh, iAtom1, iAtom2, iAtom2f, nOrb1, nOrb2
     real(dp) :: rotZ(orb%mOrb,orb%mOrb), theta, tmpSqr(orb%mOrb,orb%mOrb)
-    integer :: lShellVals(orb%mShell), iSh, iSp
+    integer :: iSh, iSp
+    integer :: lShellVals(orb%mShell)
 
     nAtom = size(iNeighbour, dim=2)
     square(:,:) = 0.0_dp
@@ -959,7 +960,8 @@ contains
 
     complex(dp) :: phase
     integer :: nAtom, iOrig, ii, jj, kk, iNeigh, iOldVec, iVec, iAtom1, iAtom2, iAtom2f
-    integer :: nOrb1, nOrb2, lShellVals(orb%mShell), iSh, iSp
+    integer :: nOrb1, nOrb2, iSh, iSp
+    integer :: lShellVals(orb%mShell)
     real(dp) :: kPoint2p(2), tmpSqrR(mOrb, mOrb), rotZ(orb%mOrb,orb%mOrb), theta
     complex(dp) :: tmpSqr(mOrb, mOrb)
 
@@ -1042,7 +1044,8 @@ contains
     real(dp), intent(in) :: coord(:,:)
 
     integer :: nAtom, iOrig, ii, jj, kk, iNeigh, iAtom1, iAtom2, iAtom2f
-    integer :: nOrb1, nOrb2, iSp, iSh, lShellVals(orb%mShell)
+    integer :: nOrb1, nOrb2, iSp, iSh
+    integer :: lShellVals(orb%mShell)
     real(dp) :: tmpSqr(orb%mOrb, orb%mOrb), rotZ(orb%mOrb,orb%mOrb), theta
 
     nAtom = size(iNeighbour, dim=2)

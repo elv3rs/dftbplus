@@ -294,7 +294,8 @@ contains
     !> True, if gradient got below the specified tolerance.
     logical,  intent(out) :: tConverged
 
-    real(dp) :: dxTemp(this%nElem), dxMax
+    real(dp) :: dxMax
+    real(dp) :: dxTemp(this%nElem)
     logical :: tLineConverged
 
     @:ASSERT(size(xNew) == this%nElem)

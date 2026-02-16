@@ -630,7 +630,8 @@ contains
       integer :: nUnique
 
       !! Auxiliary variables
-      integer :: ii, jj, tmp(size(array))
+      integer :: ii, jj
+      integer :: tmp(size(array))
 
       tmp(:) = array
       call heap_sort(tmp)
@@ -4525,7 +4526,8 @@ contains
     integer :: iSp1, iSp2
 
     !! Distance(-vector) of the two atoms
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
 
     grad(:) = 0.0_dp
 
@@ -4570,7 +4572,8 @@ contains
     integer :: iSp1, iSp2
 
     !! Distance(-vector) of the two atoms
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
 
     grad(:) = 0.0_dp
 

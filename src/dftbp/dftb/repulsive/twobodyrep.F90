@@ -247,7 +247,8 @@ contains
     real(dp), intent(out) :: energy(:)
 
     integer :: iAt1, iNeigh, iAt2, iAt2f
-    real(dp) :: vect(3), dist, intermed
+    real(dp) :: dist, intermed
+    real(dp) :: vect(3)
 
     @:ASSERT(size(energy) == size(nNeighbours))
 

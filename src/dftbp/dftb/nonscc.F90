@@ -372,7 +372,8 @@ contains
     real(dp), intent(inout) :: out(:)
 
     real(dp) :: tmp(orb%mOrb,orb%mOrb)
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
     real(dp) :: interSK(getMIntegrals(skCont))
     integer :: nOrb1, nOrb2
     integer :: iAt1, iAt2, iSp1, iSp2, iNeigh1, ind
@@ -414,7 +415,8 @@ contains
     ! interpolated H integs.
     real(dp) :: interSk(getMIntegrals(skCont))
 
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
     integer :: ii, jj
     integer :: sp1, sp2
     real(dp) :: tmp(size(deriv,dim=1), size(deriv,dim=2),2,3)
@@ -458,7 +460,8 @@ contains
     real(dp), parameter :: tol = 1.0E-11_dp  ! epsilon ?
 
     real(dp) :: interSk(getMIntegrals(skCont))  ! interpolated S integs.
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
     integer :: sp1, sp2
     real(dp) :: tmp(size(deriv, dim=1), size(deriv, dim=2),2)
     real(dp) :: diff
@@ -557,7 +560,8 @@ contains
     real(dp), intent(in) :: deltaXDiff
 
     real(dp) :: interSk(getMIntegrals(skCont))   ! interpolated integs.
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
     integer :: ii, jj, kk, ll
     integer :: sp1, sp2
     real(dp) :: tmp(size(deriv, dim=1), size(deriv, dim=2))

@@ -119,7 +119,8 @@ contains
     integer :: nShell
     integer :: ii, iGrid
     real(dp) :: rDummy
-    real(dp) :: coeffs(2:9), polyCutoff
+    real(dp) :: polyCutoff
+    real(dp) :: coeffs(2:9)
     integer :: iostat
 
     @:ASSERT(present(splineRepInp) .eqv. present(iSp1))

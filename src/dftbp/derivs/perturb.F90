@@ -1992,7 +1992,8 @@ contains
     real(dp) :: dqOut(orb%mOrb, nAtom, size(ham, dim=2), 3, nAtom)
     real(dp) :: dqUpDown(orb%mOrb, size(ham, dim=2))
     real(dp) :: dqInpRed(nMixElements), dqOutRed(nMixElements)
-    real(dp) :: dqDiffRed(nMixElements), sccErrorQ
+    real(dp) :: sccErrorQ
+    real(dp) :: dqDiffRed(nMixElements)
     real(dp) :: dqPerShell(orb%mShell,nAtom,size(ham, dim=2))
 
     ! eigenvalue weighted vectors

@@ -177,7 +177,8 @@ contains
     real(dp), intent(out), optional :: naturalOrbs(:,:,:)
 
 
-    real(dp) :: Ssq(this%nExc), omegaDif, omegaAvg
+    real(dp) :: omegaDif, omegaAvg
+    real(dp) :: Ssq(this%nExc)
     real(dp), allocatable :: gammaMat(:,:), lrGamma(:,:), snglPartTransDip(:,:)
     real(dp), allocatable :: ovrXev(:,:,:), wij(:)
     real(dp), allocatable :: dqex(:,:), sposz(:), osz(:), pc(:,:,:)
@@ -1490,7 +1491,8 @@ contains
     !> Resulting transition dipoles
     real(dp), intent(out) :: transitionDipoles(:,:)
 
-    integer :: ii, nmat, oszLoc(1)
+    integer :: ii, nmat
+    integer :: oszLoc(1)
 
     nmat = size(xpy, dim=1)
 
@@ -3482,7 +3484,8 @@ contains
     real(dp), intent(out) :: vecHooT(:)
 
     real(dp), allocatable :: qIJ(:), gqIJ(:), qX(:,:), Gq(:,:), qXa(:,:,:)
-    integer :: nOrb, iSpin, nSpin, iMx, soo(2)
+    integer :: nOrb, iSpin, nSpin, iMx
+    integer :: soo(2)
     integer :: i, j, k, a, b, s, ij, ias, ibs, ijs, jas, iks, jks
 
     nOrb = size(ovrXev, dim=1)
@@ -3682,7 +3685,8 @@ contains
     real(dp), intent(out) :: Sblock(:,:)
 
     real(dp) :: interSKOver(getMIntegrals(skOverCont))
-    real(dp) :: vect(3), dist
+    real(dp) :: dist
+    real(dp) :: vect(3)
 
     @:ASSERT(size(coords1) == 3)
     @:ASSERT(size(coords2) == 3)
@@ -3759,7 +3763,8 @@ contains
     real(dp), intent(out) :: woo(:,:)
 
     real(dp), allocatable :: p(:), vecHoo(:)
-    integer :: soo(2), i, a, s, ias, j, ij, ijs, nSpin, nOrb
+    integer :: i, a, s, ias, j, ij, ijs, nSpin, nOrb
+    integer :: soo(2)
 
 
     nOrb = size(ovrXev, dim=1)

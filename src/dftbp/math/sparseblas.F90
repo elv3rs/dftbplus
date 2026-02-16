@@ -317,7 +317,8 @@ contains
     complex(dp), optional, intent(in) :: beta
 
     integer :: iOrig, ix, iy, jx, jy, iNeigh, nAtom, iAtom1, iAtom2, iAtom2f, nOrb1, nOrb2, ii, iVec
-    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb), alphaTmp, phase
+    complex(dp) :: alphaTmp, phase
+    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb)
     real(dp) :: kPoint2p(3)
 
     @:ASSERT(size(x) == size(y))
@@ -431,7 +432,8 @@ contains
     complex(dp), optional, intent(in) :: beta
 
     integer :: iOrig, ix, iy, jx, jy, iNeigh, nAtom, iAtom1, iAtom2, iAtom2f, nOrb1, nOrb2, ii, iVec
-    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb), alphaTmp, phase
+    complex(dp) :: alphaTmp, phase
+    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb)
     real(dp) :: kPoint2p(2)
 
     @:ASSERT(size(x) == size(y))
@@ -830,7 +832,8 @@ contains
     complex(dp), optional, intent(in) :: beta
 
     integer :: iOrig, iB, iC, jB, jC, iNeigh, nAtom, iAtom1, iAtom2, iAtom2f, nOrb1, nOrb2, ii, iVec
-    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb), alphaTmp, phase
+    complex(dp) :: alphaTmp, phase
+    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb)
     real(dp) :: kPoint2p(3)
 
     @:ASSERT(all(shape(C) == shape(B)))
@@ -994,7 +997,8 @@ contains
     complex(dp), optional, intent(in) :: beta
 
     integer :: iOrig, iB, iC, jB, jC, iNeigh, nAtom, iAtom1, iAtom2, iAtom2f, nOrb1, nOrb2, ii, iVec
-    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb), alphaTmp, phase
+    complex(dp) :: alphaTmp, phase
+    complex(dp) :: sqrTmp(orb%mOrb, orb%mOrb)
     real(dp) :: kPoint2p(2)
 
     @:ASSERT(all(shape(C) == shape(B)))

@@ -502,7 +502,8 @@ contains
     real(dp) :: dist2
     real(dp) :: rCell(3), rr(3)
     integer :: ii, iAtom1, oldIAtom1, iAtom2, startAtom, endAtom
-    integer :: nn1, iAtom2End, pairError(2)
+    integer :: nn1, iAtom2End
+    integer :: pairError(2)
     logical :: symm, isParallel, isSetupError
     real(dp), allocatable :: neighDist2(:,:)
     integer, allocatable :: indx(:), iNeighbour(:,:)

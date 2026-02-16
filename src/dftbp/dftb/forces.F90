@@ -466,7 +466,8 @@ contains
     real(dp) :: sqrDMTmp(orb%mOrb,orb%mOrb), sqrEDMTmp(orb%mOrb,orb%mOrb)
     real(dp) :: shiftSprime(orb%mOrb,orb%mOrb)
     real(dp) :: hPrimeTmp(orb%mOrb,orb%mOrb,3), sPrimeTmp(orb%mOrb,orb%mOrb,3)
-    real(dp) :: derivTmp(3), theta
+    real(dp) :: theta
+    real(dp) :: derivTmp(3)
     integer, allocatable :: iterIndices(:)
 
     nAtom = size(orb%nOrbAtom)

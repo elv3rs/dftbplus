@@ -180,7 +180,8 @@ contains
 
   !> Calculates the exponential head of the repulsive
   subroutine getExponentialHead(coeffs, rr, energy, dEnergy, d2Energy)
-    real(dp), intent(in) :: coeffs(:), rr
+    real(dp), intent(in) :: rr
+    real(dp), intent(in) :: coeffs(:)
     real(dp), optional, intent(out) :: energy, dEnergy, d2Energy
 
     if (present(energy)) energy = exp(-coeffs(1) * rr + coeffs(2)) + coeffs(3)
@@ -192,7 +193,8 @@ contains
 
   !> Calculates the 5ht order polynomial tail
   subroutine getPolynomialTail(coeffs, dr, energy, dEnergy, d2Energy)
-    real(dp), intent(in) :: coeffs(:), dr
+    real(dp), intent(in) :: dr
+    real(dp), intent(in) :: coeffs(:)
     real(dp), optional, intent(out) :: energy, dEnergy, d2Energy
 
     real(dp) :: xh
@@ -230,7 +232,8 @@ contains
 
   !> Calculates the cubic spline
   subroutine getSpline(coeffs, dr, energy, dEnergy, d2Energy)
-    real(dp), intent(in) :: coeffs(:), dr
+    real(dp), intent(in) :: dr
+    real(dp), intent(in) :: coeffs(:)
     real(dp), optional, intent(out) :: energy, dEnergy, d2Energy
 
     real(dp) :: xh

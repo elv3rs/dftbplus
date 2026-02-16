@@ -818,7 +818,8 @@ contains
 
     integer :: nAtom, iIter, iAt1, iNeigh, iAt2, iAt2f, iSp1, iSp2
     logical :: tOvij, tOvji
-    real(dp) :: vec(3), dist, rhoi, rhoj
+    real(dp) :: dist, rhoi, rhoj
+    real(dp) :: vec(3)
     real(dp) :: gi, gj, ap, am, lnab, rhab, ab, dgi, dgj
     real(dp) :: dGr(3)
     real(dp) :: rh1, rhr1, r24, r1, aprh1, r12
@@ -1423,7 +1424,8 @@ contains
     real(dp), intent(inout) :: dEdbr(:)
 
     integer :: iAt1, iAt2
-    real(dp) :: vec(3), r2, r1, ab, arg1, arg16, qq, fgb, dfgb, dfgb2
+    real(dp) :: r2, r1, ab, arg1, arg16, qq, fgb, dfgb, dfgb2
+    real(dp) :: vec(3)
     real(dp) :: dEdbr1, dEdbr2, dG(3), ap, bp, dS(3, 3)
 
     !$omp parallel do default(none) reduction(+:energies, derivs, dEdbr, sigma) &
@@ -1502,8 +1504,10 @@ contains
     real(dp), intent(out) :: inertia(:, :)
 
     integer :: iAt, iSp
-    real(dp) :: r2, rad2, rad3, vec(3)
-    real(dp), parameter :: tof = 2.0_dp/5.0_dp, unity(3, 3) = reshape(&
+    real(dp) :: r2, rad2, rad3
+    real(dp) :: vec(3)
+    real(dp), parameter :: tof = 2.0_dp/5.0_dp
+    real(dp), parameter :: unity(3, 3) = reshape(&
         & [1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp], &
         & [3, 3])
 
@@ -1586,7 +1590,8 @@ contains
 
     integer :: iAt, iSp
     real(dp) :: rad2, rad3, totRad3, vec(3), center(3), inertia(3, 3), aDet
-    real(dp) :: aDeriv(3, 3), qtotal
+    real(dp) :: qtotal
+    real(dp) :: aDeriv(3, 3)
 
     qtotal = 0.0_dp
     totRad3 = 0.0_dp

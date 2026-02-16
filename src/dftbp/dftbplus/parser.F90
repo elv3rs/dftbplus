@@ -1967,7 +1967,8 @@ contains
     integer :: nShell
     character(1) :: tmpCh
     type(TListString) :: lStr
-    logical :: tShellIncl(4), tFound
+    logical :: tFound
+    logical :: tShellIncl(4)
     integer :: angShell(maxL+1), angShellOrdered(maxL+1)
 
     do ii = 1, maxL+1
@@ -3127,7 +3128,8 @@ contains
     type(fnode), pointer :: value1, child
     type(TListRealR1) :: lr1
     real(dp) :: rTmp3(3), rTmp22(2,2)
-    integer :: iTmp, iTmp2(2), kk, ii, jj
+    integer :: iTmp, kk, ii, jj
+    integer :: iTmp2(2)
     real(dp), allocatable :: kPts(:,:)
     character(lc) :: errorStr
 
@@ -3604,7 +3606,8 @@ contains
     type(THybridXcSKTag), intent(inout), optional :: hybridXcSK
 
     integer :: iSp1, iSp2, nSK1, nSK2, iSK1, iSK2, ind, nInteract, iSh1
-    integer :: angShell(maxL+1), nShell
+    integer :: nShell
+    integer :: angShell(maxL+1)
     logical :: readRep, readAtomic
     character(lc) :: fileName
     real(dp), allocatable, target :: skHam(:,:), skOver(:,:)
@@ -4200,7 +4203,8 @@ contains
     type(TDispSlaKirkInp), intent(out) :: input
 
     type(fnode), pointer :: value1, value2, child, child2, child3
-    type(string) :: buffer, modifier, modifier2, modifiers(3)
+    type(string) :: buffer, modifier, modifier2
+    type(string) :: modifiers(3)
     real(dp), allocatable :: tmpR2(:,:), tmp2R2(:,:), rCutoffs(:)
     real(dp) :: mCutoff, rTmp
     integer :: iAt1, iAt2f, iSp1, iSp2, iNeigh
@@ -7836,7 +7840,8 @@ contains
 
     type(fnode), pointer :: child
     real(dp) :: r3Tmp(3), r3Tmpb(3)
-    integer :: i3Tmp(3), iPt, ii, jj, kk
+    integer :: iPt, ii, jj, kk
+    integer :: i3Tmp(3)
     logical :: tPeriodic
     real(dp) :: axes_(3,3), r33Tmp(3,3)
 

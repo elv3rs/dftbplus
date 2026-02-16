@@ -237,7 +237,8 @@ contains
     ! Local variables
     integer, allocatable :: nNeigh(:)
     integer :: iAt1, iNeigh, iAt2, iAt2f, iSp1, iSp2
-    real(dp) :: rvdw, fTmp(3)
+    real(dp) :: rvdw
+    real(dp) :: fTmp(3)
 
     allocate(nNeigh(this%nAtom))
     call getNrOfNeighboursForAll(nNeigh, neigh, this%cutoff)

@@ -82,7 +82,8 @@ contains
     integer :: iAt1, iNeigh, iAt2, iAt2f, iG, ii
     real(dp) :: rSum, rSum3(3), gSum, gSum3(3), gg(3), ggAbs, vec(3)
     real(dp) :: aam2, bb, bbm2, rTmp, rTmp2, rTmp3, rc, r3c, gc, g3c, ddp
-    real(dp) :: etam3, rTmp33, gsum33(3,3)
+    real(dp) :: etam3, rTmp33
+    real(dp) :: gsum33(3,3)
     real(dp), allocatable :: localDeriv(:,:), localStress(:, :), localEnergies(:)
 
     @:ASSERT(size(energies) == nAtom)

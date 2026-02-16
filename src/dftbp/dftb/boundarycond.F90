@@ -181,8 +181,10 @@ contains
     !> Data type for atomic orbital information
     type(TOrbitals), intent(in) :: orb
 
-    integer :: iAt2f, iSp, iSh, nOrb1, nOrb2, lShellVals(orb%mShell)
-    real(dp) :: theta, rotZ(orb%mOrb,orb%mOrb)
+    integer :: iAt2f, iSp, iSh, nOrb1, nOrb2
+    integer :: lShellVals(orb%mShell)
+    real(dp) :: theta
+    real(dp) :: rotZ(orb%mOrb,orb%mOrb)
 
     select case(this%iBoundaryCondition)
 
@@ -241,8 +243,10 @@ contains
     !> Data type for atomic orbital information
     type(TOrbitals), intent(in) :: orb
 
-    integer :: iAt2f, iSp, iSh, nOrb1, nOrb2, lShellVals(orb%mShell)
-    real(dp) :: theta, rotZ(orb%mOrb,orb%mOrb)
+    integer :: iAt2f, iSp, iSh, nOrb1, nOrb2
+    integer :: lShellVals(orb%mShell)
+    real(dp) :: theta
+    real(dp) :: rotZ(orb%mOrb,orb%mOrb)
 
     select case(this%iBoundaryCondition)
 

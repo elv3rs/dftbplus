@@ -626,7 +626,8 @@ contains
     real(dp), intent(inout) :: jmat(:, :)
 
     integer :: ic, j
-    real(dp) :: vec(3), d2, d
+    real(dp) :: d2, d
+    real(dp) :: vec(3)
 
     jmat(:, :) = 0.0_dp
     !$omp parallel do default(none) schedule(runtime) collapse(2) &
@@ -990,7 +991,8 @@ contains
     real(dp), intent(inout) :: ef(:, :)
 
     integer :: i, j
-    real(dp) :: vec(3), r2, rr, r3, f
+    real(dp) :: r2, rr, r3, f
+    real(dp) :: vec(3)
     real(dp), parameter :: zero=0.0_dp
 
     @:ASSERT(size(src) == size(csrc, 2))

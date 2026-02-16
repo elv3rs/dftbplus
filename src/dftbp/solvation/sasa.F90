@@ -540,7 +540,8 @@ contains
 
     integer :: iAt1, iSp1, iAt2, iAt2f, iSp2, iNeigh, ip
     integer :: iAtFirst, iAtLast, nAtom, mNeighbour, nEval
-    real(dp) :: vec(3), dist2, dist
+    real(dp) :: dist2, dist
+    real(dp) :: vec(3)
     real(dp) :: uj, ah3uj2
     real(dp) :: sasaij, dsasaij
     real(dp) :: rsas, sasai, point(3), sasap, wsa, dGr(3)

@@ -103,13 +103,16 @@ contains
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
 
-    type(string) :: modifier, modifs(2)
+    type(string) :: modifier
+    type(string) :: modifs(2)
     type(TListString) :: stringBuffer
     type(TListRealR1) :: realBuffer
     type(TListIntR1) :: intBuffer
     type(fnode), pointer :: child, typesAndCoords
     integer, allocatable :: tmpInt(:,:)
-    real(dp) :: latvec(9), det, helVec(3)
+    real(dp) :: det
+    real(dp) :: helVec(3)
+    real(dp) :: latvec(9)
 
     call getChildValue(node, "Periodic", geo%tPeriodic, default=.false.)
     call getChildValue(node, "Helical", geo%tHelical, default=.false.)
@@ -542,7 +545,9 @@ contains
     character(mc), allocatable :: vaspNames(:)
     integer :: iStart, iOldStart, iErr, iEnd
     integer :: ii, iSp, iTmp
-    real(dp) :: coords(3), latVec(3), rScale
+    real(dp) :: rScale
+    real(dp) :: latVec(3)
+    real(dp) :: coords(3)
     integer, allocatable :: vaspSp(:)
     integer, allocatable :: countSp(:)
     type(TListString) :: speciesNames
@@ -749,9 +754,11 @@ contains
     character(len=*), intent(in) :: dataInput
 
     integer :: iStart, iEnd, iErr, intValue, skipItemsForCoords, i, j
-    real(dp) :: realValue(3), toAngstrom, toAtomicMassUnit
+    real(dp) :: toAngstrom, toAtomicMassUnit
+    real(dp) :: realValue(3)
     type(string) :: text, command
-    logical :: haveMasses, haveAtoms, skipMoleculeId, readIntValue, readRealValue(3)
+    logical :: haveMasses, haveAtoms, skipMoleculeId, readIntValue
+    logical :: readRealValue(3)
 
     haveMasses = .false.
     haveAtoms = .false.

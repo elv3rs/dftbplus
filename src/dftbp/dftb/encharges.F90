@@ -289,7 +289,8 @@ contains
     !> New lattice vectors
     real(dp), intent(in) :: latVecs(:, :)
 
-    real(dp) :: recVecs(3, 3), maxGEwald
+    real(dp) :: maxGEwald
+    real(dp) :: recVecs(3, 3)
 
     @:ASSERT(this%tPeriodic)
     @:ASSERT(all(shape(latVecs) == shape(this%latVecs)))
@@ -486,7 +487,8 @@ contains
     real(dp), intent(out) :: aMat(:, :)
 
     integer :: iAt1, iSp1, iAt2f, iSp2
-    real(dp) :: dist, vec(3), eta12
+    real(dp) :: dist, eta12
+    real(dp) :: vec(3)
 
     aMat(:, :) = 0.0_dp
 
@@ -719,7 +721,8 @@ contains
     real(dp), intent(inout) :: aMat(:, :)
 
     integer :: iAt1, iAt2f
-    real(dp) :: vec(3), rTerm
+    real(dp) :: rTerm
+    real(dp) :: vec(3)
 
     @:ASSERT(volume > 0.0_dp)
 

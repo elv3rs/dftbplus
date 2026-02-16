@@ -507,7 +507,8 @@ contains
     integer :: nSpecies
     integer :: iZp1, iSec, iCN, iRef1, iRef2, iSp1, iSp2
     integer :: cncount(0:18)
-    real(dp) :: alpha(imagFrequencies), zEff1, c6, eta1
+    real(dp) :: zEff1, c6, eta1
+    real(dp) :: alpha(imagFrequencies)
     real(dp) :: tmp_hq(maxReferences, maxElementD4)
 
     real(dp), parameter :: thopi = 3.0_dp/pi

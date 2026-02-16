@@ -4850,7 +4850,8 @@ contains
     type(TStatus), intent(inout) :: errStatus
 
     real(dp), allocatable :: velInternal(:,:)
-    real(dp) :: new3Coord(3, this%nMovedAtom), propStep
+    real(dp) :: propStep
+    real(dp) :: new3Coord(3, this%nMovedAtom)
     character(sc) :: dumpIdx
     logical :: tProbeFrameWrite
     integer :: iKS

@@ -860,7 +860,8 @@ contains
     integer :: iLev1, iLev2, nLev
     integer :: iAtom1, nAtom, nIter
     integer :: iOrb1, iOrb2, nOrb
-    integer :: iIter, iLoc(1), ii
+    integer :: iIter, ii
+    integer :: iLoc(1)
     real(dp) :: Ast, Bst, C4A, AB
     real(dp) :: sina, cosa
     complex(dp) :: Pst, Pss, Ptt

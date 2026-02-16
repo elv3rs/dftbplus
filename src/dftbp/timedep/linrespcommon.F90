@@ -1146,7 +1146,8 @@ contains
     real(dp) :: qq_ij(orb%mOrb,orb%mOrb)
     logical :: updwn
     integer :: nmat, nOrb, iOff
-    integer :: ia, iAGlb, iAt, iSp, iSh, iOrb, ii, jj, ss, sindx(2), iSpin, nSpin
+    integer :: ia, iAGlb, iAt, iSp, iSh, iOrb, ii, jj, ss, iSpin, nSpin
+    integer :: sindx(2)
     real(dp) :: degeneracy, partTrace
 
     if (present(indexOffSet)) then
@@ -1705,7 +1706,8 @@ contains
 
     type(TFileDescr) :: fdMulliken
     integer :: natom, m
-    real(dp) :: dipol(3), dipabs
+    real(dp) :: dipabs
+    real(dp) :: dipol(3)
 
     natom = size(dq)
 

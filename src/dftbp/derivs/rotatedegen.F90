@@ -668,7 +668,8 @@ contains
     !> Resulting test
     logical :: isAnyDegenerate
 
-    integer :: ii, nOrb, eiRange(2)
+    integer :: ii, nOrb
+    integer :: eiRange(2)
 
     nOrb = size(ei)
     if (all(self%eiRange == [-1,-1])) then

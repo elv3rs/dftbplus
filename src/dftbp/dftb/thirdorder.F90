@@ -486,7 +486,8 @@ contains
     real(dp), intent(inout) :: derivs(:,:)
 
     integer :: iAt1, iAt2, iAt2f, iSp1, iSp2, iSh1, iSh2, iNeigh
-    real(dp) :: rab, tmp, tmp3(3)
+    real(dp) :: rab, tmp
+    real(dp) :: tmp3(3)
     logical :: damping
 
     do iAt1 = 1, this%nAtoms

@@ -505,7 +505,8 @@ contains
     !> workspace of at least (N+1)/2 size
     integer, intent (out) :: T(:,:)
 
-    integer :: NA, NB, V(2)
+    integer :: NA, NB
+    integer :: V(2)
 
     @:ASSERT(size(A,dim=2) == 2)
     @:ASSERT(size(T,dim=2) == 2)
