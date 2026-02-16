@@ -2719,6 +2719,8 @@ contains
         iTmp = 20
       case(3)
         iTmp = 30
+      case default
+        continue
       end select
       call getChildValue(value1, "Poles", ctrl%solver%elsi%pexsiNPole, iTmp)
       if (ctrl%solver%elsi%pexsiNPole < 10) then
@@ -2733,6 +2735,8 @@ contains
         if (mod(ctrl%solver%elsi%pexsiNPole,5) /= 0 .or. ctrl%solver%elsi%pexsiNPole > 40) then
           call detailedError(value1, "Unsupported number of PEXSI poles for this method")
         end if
+      case default
+        continue
       end select
       call getChildValue(value1, "ProcsPerPole", ctrl%solver%elsi%pexsiNpPerPole, 1)
       call getChildValue(value1, "muPoints", ctrl%solver%elsi%pexsiNMu, 2)
@@ -3339,6 +3343,8 @@ contains
         truncationCutOff = truncationCutOff - distFudgeOld
       case(skEqGridNew)
         truncationCutOff = truncationCutOff - distFudge
+      case default
+        continue
       end select
     end if
     if (truncationCutOff < epsilon(0.0_dp)) then
@@ -5659,6 +5665,8 @@ contains
       call readFilling(hamNode, ctrl, geo, 300.0_dp*Boltzmann)
     case(hamiltonianTypes%dftb)
       call readFilling(hamNode, ctrl, geo, 0.0_dp)
+    case default
+      continue
     end select
 
   end subroutine readElectronicFilling
