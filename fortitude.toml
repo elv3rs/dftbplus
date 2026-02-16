@@ -43,7 +43,6 @@ ignore = [
     "C061",    # missing-intent — 388 violations, would need gradual enforcement
 
     # --- Scientific / domain idioms (false positives for scientific code) ---
-    "C011",    # missing-default-case — 51 violations remaining (all fypp-expanded)
     "C021",    # no-real-suffix — 61 violations, scientific code uses bare literals
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 
