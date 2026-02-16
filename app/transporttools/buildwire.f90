@@ -50,7 +50,7 @@ program buildwire
     end if
   end if
 
-  open(newunit=fp, file=trim(gen_file))
+  open(newunit=fp, file=trim(gen_file), action="read")
 
   read(fp,*) pl_atm, period
   read(fp,'(A)') atm_spec
@@ -86,7 +86,7 @@ program buildwire
   tot_atm=pl_atm * (num_pl + 4)
 
 
-  open(newunit=fp,file='Ordered_'//trim(gen_file))
+  open(newunit=fp,file='Ordered_'//trim(gen_file), action="write")
 
   if (.not.do_super) then
      period = "C"

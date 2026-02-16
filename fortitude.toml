@@ -47,7 +47,6 @@ ignore = [
     "C021",    # no-real-suffix — 62 violations, scientific code uses bare literals
     "C022",    # implicit-real-kind — 12 violations, overlaps with C021
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
-    "C043",    # missing-action-specifier — 13 violations, minor
 
     # --- Legacy interfaces (cannot be changed without API breaks) ---
     "C071",    # assumed-size-array — 28 violations, legacy interfaces

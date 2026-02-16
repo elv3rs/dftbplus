@@ -67,7 +67,7 @@ program flux
     end if
   end do
 
-  open(fp, file=trim(filename1))
+  open(fp, file=trim(filename1), action="read")
   read(fp, *) nat
   allocate(neig(nat,n))
   allocate(nn(nat))
@@ -80,7 +80,7 @@ program flux
   close(fp)
 
   ! Figure out the number of atoms
-  open(fp,file=trim(filename2))
+  open(fp,file=trim(filename2), action="read")
   Inm = 0.d0
   do m=1, nat
     read(fp,*, iostat=io) itmp, rtmp(1:3), nn(m), (neig(m,i), Inm(m,i), i=1,nn(m))

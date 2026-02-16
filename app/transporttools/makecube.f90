@@ -56,7 +56,7 @@ program makecube
   endif
 
 
-  open(newunit=fp,file=trim(filebox))
+  open(newunit=fp,file=trim(filebox), action="read")
   read(fp,*) nx,ny,nz
   close(fp)
 
@@ -66,19 +66,19 @@ program makecube
   allocate(phi3d(nx,ny,nz))
   if (refpot) allocate(phi3d_0(nx,ny,nz))
 
-  open(newunit=fp,file=filex)
+  open(newunit=fp,file=filex, action="read")
   read(fp,*) x
   close(fp)
 
-  open(newunit=fp,file=filey)
+  open(newunit=fp,file=filey, action="read")
   read(fp,*) y
   close(fp)
 
-  open(newunit=fp,file=filez)
+  open(newunit=fp,file=filez, action="read")
   read(fp,*) z
   close(fp)
 
-  open(newunit=fp,file=filename)
+  open(newunit=fp,file=filename, action="read")
 
   do i=1,nx
     do j=1,ny
@@ -90,7 +90,7 @@ program makecube
   close(fp)
 
   if (refpot) then
-    open(newunit=fp,file=refname)
+    open(newunit=fp,file=refname, action="read")
 
     do i=1,nx
       do j=1,ny
@@ -129,7 +129,7 @@ program makecube
     enddo
   enddo
 
-  open(newunit=fp,file="poissonbox.jmol")
+  open(newunit=fp,file="poissonbox.jmol", action="write")
 
   write(fp,'(a,3(F10.4),a,3(F10.4),a,3(F10.4),a,3(F10.4),a)') &
       "draw p1 PLANE {",x(1),y(1),z(1),"}{", x(nx),y(1),z(1),"}{", &

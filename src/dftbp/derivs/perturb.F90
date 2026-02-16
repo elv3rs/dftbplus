@@ -2592,12 +2592,12 @@ contains
       call writeBorn(stdOut, bornCharges)
 
       if (isAutotestWritten) then
-        open(newunit=fdResults, file=autoTestTagFile, position="append")
+        open(newunit=fdResults, file=autoTestTagFile, position="append", action="write")
         call taggedWriter%write(fdResults, tagLabels%dqdx, dqOut)
         close(fdResults)
       end if
       if (isTagResultsWritten) then
-        open(newunit=fdResults, file=taggedResultsFile, position="append")
+        open(newunit=fdResults, file=taggedResultsFile, position="append", action="write")
         call taggedWriter%write(fdResults, tagLabels%dqdx, dqOut)
         call taggedWriter%write(fdResults, tagLabels%borncharges, bornCharges)
         close(fdResults)
