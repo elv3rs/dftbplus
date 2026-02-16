@@ -173,11 +173,11 @@ contains
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
       call detailedError(child, "Invalid parser version (" // i2c(inputVersion)&
           &// ")")
-    elseif (inputVersion < minVersion) then
+    else if (inputVersion < minVersion) then
       call detailedError(child, &
           &"Sorry, no compatibility mode for parser version " &
           &// i2c(inputVersion) // " (too old)")
-    elseif (inputVersion /= parserVersion) then
+    else if (inputVersion /= parserVersion) then
       write(stdout, "(A,I2,A,I2,A)") "***  Converting input from version ", &
           &inputVersion, " to version ", parserVersion, " ..."
       call convertOldHSD(root, inputVersion, parserVersion)

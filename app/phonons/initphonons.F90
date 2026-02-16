@@ -303,8 +303,8 @@ contains
         call readSKfiles(value, geo, speciesMass)
       else
         call readMasses(node, geo, speciesMass)
-      endif
-    endif
+      end if
+    end if
     allocate(atomicMasses(nMovedAtom))
     do iAt = 1, nMovedAtom
       atomicMasses(iAt) = speciesMass(geo%species(iMovedAtoms(iAt)))
@@ -361,7 +361,7 @@ contains
          call detailedError(root, "Analysis and PhononDispersion cannot coexist")
       end if
       call readAnalysis(child, geo, pdos, tundos, transpar, atTemperature)
-    endif
+    end if
 
     !! Issue warning about unprocessed nodes
     write(stdOut, "(/, A)") "check unprocessed nodes..."
@@ -413,7 +413,7 @@ contains
     call getChildValue(node, "ParserVersion", inputVersion, parserVersion, child=child)
     if (inputVersion < 1 .or. inputVersion > parserVersion) then
       call detailedError(child, "Invalid parser version (" // i2c(inputVersion) // ")")
-    elseif (inputVersion < minVersion) then
+    else if (inputVersion < minVersion) then
       call detailedError(child, "Sorry, no compatibility mode for parser version "&
           & // i2c(inputVersion) // " (too old)")
     end if
@@ -607,7 +607,7 @@ contains
         contacts(ii)%eFermi=0.d0
       end if
 
-    enddo
+    end do
 
   end subroutine readContacts
 
@@ -1202,7 +1202,7 @@ contains
         call detailedError(node, "Tunneling requires Transport block")
       end if
       call readTunAndDos(child, geo, tundos, transpar, maxval(transpar%contacts(:)%kbT))
-    endif
+    end if
 
     !call readKPoints(node, geo, tBadKpoints)
     call getChild(node, "Conductance", child, requested=.false.)
@@ -1224,7 +1224,7 @@ contains
        TempMin = 0.0_dp
        TempMax = 0.0_dp
        TempStep = 1.0_dp
-    endif
+    end if
 
   end subroutine readAnalysis
 
@@ -1587,10 +1587,10 @@ contains
     end do
     if (iAt>=transpar%PL(transpar%nPLs) .and. iAt<=transpar%idxdevice(2)) then
       PL = transpar%nPLs
-    endif
+    end if
     if (iAt > transpar%idxdevice(2)) then
       PL = transpar%nPLs + 1
-    endif
+    end if
 
   end function getPL
 

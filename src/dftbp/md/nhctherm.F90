@@ -286,7 +286,7 @@ contains
         ! update thermostat positions
         do inos = 1, this%nnos
           this%xnose(inos) = this%xnose(inos) + this%vnose(inos) * wdti2(iyosh)
-        enddo
+        end do
 
         ! update thermostat velocities
         do inos = 1, this%nnos - 1
@@ -294,7 +294,7 @@ contains
           this%vnose(inos) = this%vnose(inos) * aa * aa + wdti4(iyosh) * this%gnose(inos) * aa
           this%gnose(inos + 1) = (qmass(inos) * this%vnose(inos) * this%vnose(inos) - gkt)&
               & / qmass(inos+1)
-        enddo
+        end do
 
         this%vnose(this%nnos) = this%vnose(this%nnos) + this%gnose(this%nnos) * wdti4(iyosh)
       end do

@@ -236,7 +236,7 @@ contains
       if (iostat /= 0) then
         hasspline = .false.
         exit
-      elseif (chdummy == "Spline") then
+      else if (chdummy == "Spline") then
         hasspline = .true.
         exit
       end if
@@ -339,7 +339,7 @@ contains
       if (iErr /= 0) then
         isHybridXcTag = .false.
         exit
-      elseif (strDummy == "RangeSep") then
+      else if (strDummy == "RangeSep") then
         isHybridXcTag = .true.
         exit
       end if
@@ -379,10 +379,10 @@ contains
       if (abs(hybridXcSK_%camAlpha) < epsilon(1.0_dp)&
           & .and. abs(hybridXcSK_%camBeta) < epsilon(1.0_dp)) then
         hybridXcType_ = hybridXcFunc%none
-      elseif (abs(hybridXcSK_%camAlpha) < epsilon(1.0_dp)&
+      else if (abs(hybridXcSK_%camAlpha) < epsilon(1.0_dp)&
           & .and. abs(hybridXcSK_%camBeta - 1.0_dp) < epsilon(1.0_dp)) then
         hybridXcType_ = hybridXcFunc%lc
-      elseif (abs(hybridXcSK_%camBeta) < epsilon(1.0_dp)) then
+      else if (abs(hybridXcSK_%camBeta) < epsilon(1.0_dp)) then
         hybridXcType_ = hybridXcFunc%hyb
       else
         hybridXcType_ = hybridXcFunc%cam

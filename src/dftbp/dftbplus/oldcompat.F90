@@ -889,7 +889,7 @@ contains
           write(strtmp,"(A,I0,A,I0,A)")"Older Methfessel-Paxton requested order of ", iOrder,&
               & " is now equivalent to ", (iOrder -1), " from parser version 14."
           call detailedWarning(ch2, strTmp)
-        elseif (iOrder == 1) then
+        else if (iOrder == 1) then
           write(strtmp,"(A)")"Older Methfessel-Paxton requested order of 1 is now&
               & equivalent to Gaussian smearing (order 0) from parser version 14." // newline //&
               & "   Please test your calculation carefully, due to a (corrected) error for array&

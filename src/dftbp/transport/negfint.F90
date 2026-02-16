@@ -150,7 +150,7 @@ contains
       ncont = transpar%ncont
     else
       ncont = 0
-    endif
+    end if
 
     do i = 1, ncont
       do iAt = transpar%contacts(i)%idxrange(1), transpar%contacts(i)%idxrange(2)
@@ -192,7 +192,7 @@ contains
           params%verbose = tundos%verbose
        else
           params%verbose = greendens%verbose
-       endif
+       end if
     else
       if (tundos%defined) then
         params%verbose = tundos%verbose
@@ -293,7 +293,7 @@ contains
           write(stdOut,*)
         end if
 
-      enddo
+      end do
 
       deallocate(pot)
 
@@ -398,7 +398,7 @@ contains
       ! For the moment tunneling and ldos SGFs are always recomputed
       params%readOldT_SGFs = COMP_SGF
 
-    endif
+    end if
 
     ! Energy conversion only affects output units.
     ! The library writes energies as (E * negf%eneconv)
@@ -633,7 +633,7 @@ contains
        nDevicePLs = transpar%nPLs
     else if (greendens%defined) then
        nDevicePLs = greendens%nPLs
-    endif
+    end if
 
     if (nDevicePLs==0) then
       call error('Internal ERROR: nDevicePLs = 0 ?!')
@@ -660,23 +660,23 @@ contains
        cont_end(ii) = ind(transpar%contacts(ii)%idxrange(2)+1)
        surf_start(ii) = ind(transpar%contacts(ii)%idxrange(1))+1
        surf_end(ii) = ind(transpar%contacts(ii)%idxrange(1))
-    enddo
+    end do
 
     if (transpar%defined) then
       do ii = 1, nDevicePLs-1
         PL_end(ii) = ind(transpar%PL(ii+1))
-      enddo
+      end do
       atomStart(:nDevicePLs) = transpar%PL(:nDevicePLs)
       PL_end(nDevicePLs) = ind(transpar%idxdevice(2)+1)
       atomStart(nDevicePLs+1) = iatm2 + 1
     else if (greendens%defined) then
       do ii = 1, nDevicePLs-1
         PL_end(ii) = ind(greendens%PL(ii+1))
-      enddo
+      end do
       atomStart(:nDevicePLs) = greendens%PL(:nDevicePLs)
       PL_end(nDevicePLs) = ind(nAtom+1)
       atomStart(nDevicePLs+1) = nAtom + 1
-    endif
+    end if
 
     if (transpar%defined .and. ncont > .0) then
 
@@ -700,7 +700,7 @@ contains
                   & img2CentCell(iNeigh(:nNeigh(ii),ii)) <= iAtContEnd))
               if (i1 >= iAtContStart .and. i1 <= iAtContEnd) then
                 minv(m, j1) = j1
-              endif
+              end if
             end do
           end do
         end do
@@ -788,7 +788,7 @@ contains
        nbl = transpar%nPLs
     else if (greendens%defined) then
        nbl = greendens%nPLs
-    endif
+    end if
 
     if (nbl==0) then
       call error('Internal ERROR: nbl = 0 ?!')
@@ -802,7 +802,7 @@ contains
     else if (greendens%defined) then
       atomst(:nbl) = greendens%PL(:nbl)
       atomst(nbl+1) = natoms + 1
-    endif
+    end if
 
     info = 0
     do mm = 1, nbl-1
@@ -873,17 +873,17 @@ contains
        params%DorE = 'D'
        call set_params(negf,params)
        call pass_DM(negf,rho=DensMat)
-    endif
+    end if
     if(present(EnMat)) then
        params%DorE = 'E'
        call set_params(negf,params)
        call pass_DM(negf,rhoE=EnMat)
-    endif
+    end if
     if (present(DensMat).and.present(EnMat)) then
        params%DorE  = 'B'
        call set_params(negf,params)
        call error('UNSUPPORTED CASE in negf_density')
-    endif
+    end if
 
     if (params%DorE=='N') then
       return
@@ -1170,8 +1170,8 @@ contains
         call set_readOldDMsgf(this%negf, COMPSAVE_SGF)  ! compute and save SGF on files
       else
         call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
-      endif
-    endif
+      end if
+    end if
     ! We need this now for different fermi levels in colinear spin
     ! Note: the spin polirized does not work with
     ! built-int potentials (the unpolarized does) in the poisson
@@ -1317,8 +1317,8 @@ contains
         call set_readOldDMsgf(this%negf, COMPSAVE_SGF)  ! compute and save SGF on files
       else
         call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
-      endif
-    endif
+      end if
+    end if
 
     ! We need this now for different Fermi energies in colinear spin
     ! Note: the spin polarised does not work with
@@ -1553,7 +1553,7 @@ contains
           call error('Allocation error (currTot)')
         end if
         currLead(:) = 0.0_dp
-      endif
+      end if
       currLead(:) = currLead + currPVec
 
       !GUIDE: tunnPMat libNEGF output stores Transmission, T(iE, i->j)
@@ -1590,7 +1590,7 @@ contains
       write(stdOut, *)
       write(stdOut, '(1x,a,i3,i3,a,ES14.5,a,a)') ' contacts: ',params%ni(ii),params%nf(ii),&
           & ' current: ', currLead(ii),' ',unitsOfCurrent%name
-    enddo
+    end do
 
     ! Write Total transmission, T(E), on a separate file (optional)
     if (allocated(tunnMat)) then
@@ -1615,7 +1615,7 @@ contains
     else
       ! needed to avoid some segfault
       allocate(currMat(0,0))
-    endif
+    end if
     if (allocated(currSKRes)) then
       deallocate(currSKRes)
     end if
@@ -1703,7 +1703,7 @@ contains
           end if
 
           matSKRes(:,:,:) = 0.0_dp
-        endif
+        end if
 #:if WITH_MPI
         matSKRes(:,:,iK) = tmpMat
 #:else
@@ -1782,9 +1782,9 @@ contains
       write(fd%unit,'(F20.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
       do jj = 1, size(matTot, dim=2)
         write(fd%unit,'(ES20.8)',ADVANCE='NO') matTot(ii,jj)
-      enddo
+      end do
       write(fd%unit,*)
-    enddo
+    end do
     call closeFile(fd)
 
     if (nK*nS > 1) then
@@ -1814,10 +1814,10 @@ contains
           do jj = 1, size(matSKRes(:,:,:), dim=2)
             do iKS = 1, nK*nS
               write(fd%unit, '(es20.8)',ADVANCE='NO') matSKRes(ii,jj, iKS)
-            enddo
+            end do
             write(fd%unit, *)
-          enddo
-        enddo
+          end do
+        end do
       end if
       call closeFile(fd)
 
@@ -1865,9 +1865,9 @@ contains
       do ii=1,size(matTot, dim=1)
         write(fd%unit,'(F12.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
         write(fd%unit,'(ES20.8)') matTot(ii,jj)
-      enddo
+      end do
       call closeFile(fd)
-    enddo
+    end do
 
     if (allocated(matSKRes)) then
       if (nKS > 1) then
@@ -1890,11 +1890,11 @@ contains
             write(fd%unit, '(f20.6)',ADVANCE='NO') (params%Emin+(ii-1)*params%Estep) * Hartree__eV
             do iKS = 1,nKS
               write(fd%unit, '(es20.8)',ADVANCE='NO') matSKRes(ii,jj, iKS)
-            enddo
+            end do
             write(fd%unit, *)
-          enddo
+          end do
           call closeFile(fd)
-        enddo
+        end do
       end if
     end if
 
@@ -2010,8 +2010,8 @@ contains
         call set_readOldDMsgf(this%negf, COMPSAVE_SGF)  ! compute and save SGF on files
       else
         call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
-      endif
-    endif
+      end if
+    end if
 
     write(stdOut, *)
     write(stdOut, '(80("="))')

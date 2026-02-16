@@ -258,7 +258,7 @@ contains
       list%pCache => pCur
     else
       ind = 0
-    endif
+    end if
 
   end function ${TYPE_NAME}$_find
 

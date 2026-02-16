@@ -106,7 +106,7 @@ contains
     end if
     if (present(iostat)) then
       iostat = iError
-    elseif (iError /= TOKEN_OK) then
+    else if (iError /= TOKEN_OK) then
       call error("Integer reading error")
     end if
 
@@ -160,7 +160,7 @@ contains
 
     if (present(iostat)) then
       iostat = iError
-    elseif (iError /= TOKEN_OK) then
+    else if (iError /= TOKEN_OK) then
       call error("Integer reading error")
     end if
 
@@ -291,7 +291,7 @@ contains
 
     if (present(iostat)) then
       iostat = iError
-    elseif (iError /= TOKEN_OK) then
+    else if (iError /= TOKEN_OK) then
       call error("Real reading error")
     end if
 
@@ -424,7 +424,7 @@ contains
 
     if (present(iostat)) then
       iostat = iError
-    elseif (iError /= TOKEN_OK) then
+    else if (iError /= TOKEN_OK) then
       call error("Complex reading error")
     end if
 
@@ -460,7 +460,7 @@ contains
       buffer = tolower(str(tokStart:tokEnd))
       if (trim(buffer) == LOGICAL_TRUE_LO) then
         tokenValue = .true.
-      elseif (trim(buffer) == LOGICAL_FALSE_LO) then
+      else if (trim(buffer) == LOGICAL_FALSE_LO) then
         tokenValue = .false.
       else
         iError = TOKEN_ERROR
@@ -526,7 +526,7 @@ contains
 
     if (present(iostat)) then
       iostat = iError
-    elseif (iError /= TOKEN_OK) then
+    else if (iError /= TOKEN_OK) then
       call error("Logical reading error")
     end if
 

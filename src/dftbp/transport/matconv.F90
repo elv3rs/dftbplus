@@ -269,7 +269,7 @@ contains
         jj = csr%rowpnt(iCol + iOrb1) - 1
         do kk=ii,jj
           csr%nzval(kk) = tmpCol(csr%colind(kk), iOrb1)
-        enddo
+        end do
       end do
     end do lpAt1
     deallocate(tmpCol)
@@ -591,7 +591,7 @@ contains
         jj = csr%rowpnt(iCol + iOrb1) - 1
         do kk=ii,jj
           csr%nzval(kk) = conjg(tmpCol(csr%colind(kk), iOrb1))
-        enddo
+        end do
       end do
     end do lpAt1
     deallocate(tmpCol)

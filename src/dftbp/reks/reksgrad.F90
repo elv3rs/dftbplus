@@ -365,8 +365,8 @@ contains
             deriv(:,iAtom2f) = deriv(:,iAtom2f) - derivTmp(:)
 
           end if
-        enddo
-      enddo
+        end do
+      end do
       !$OMP END PARALLEL DO
 
       if (iL == 1) then

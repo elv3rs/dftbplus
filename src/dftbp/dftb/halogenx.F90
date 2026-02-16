@@ -409,7 +409,7 @@ contains
 
     if (R < R0*rvdw) then
       out = 0.0_dp
-    elseif (R > R1*rvdw) then
+    else if (R > R1*rvdw) then
       out = 1.0_dp
     else
       x = (R - R0*rvdw) / ((R1 - R0)*rvdw)

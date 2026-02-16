@@ -1193,7 +1193,7 @@ contains
           & results.' // newline // 'Instead call destruct and then fully re-initialize.')
     else
        continue
-    endif
+    end if
 
   end subroutine TDftbPlus_checkSpeciesNames
 

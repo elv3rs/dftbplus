@@ -96,7 +96,7 @@ contains
 
         ! Substring occurs after quotation start but before quotation end -> Look for next
         ! occurrence. (If not found, no unquoted occurrence exists.)
-      elseif (strPos > quoteStart) then
+      else if (strPos > quoteStart) then
         shift = strPos
         strPos = index(string(strPos+1:lenStr), substring)
         if (strPos == 0) then
@@ -343,7 +343,7 @@ contains
 
         ! Char occurs after quotation start but before quotation end ->
         ! Look for next occurrence. (If not found, no unquoted occurrence exists.)
-      elseif (strPos > quoteStart) then
+      else if (strPos > quoteStart) then
         shift = strPos
         strPos = scan(string(shift+1:), set)
         if (strPos == 0) then

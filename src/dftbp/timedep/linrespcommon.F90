@@ -507,7 +507,7 @@ contains
       vLoc(:) = vin
     else
       vLoc(:) = vin * sqrt(rpa%wij(iGlobal:fGlobal))
-    endif
+    end if
 
     ! Compute w_ia = q^ia_A G_AB q^jb v_jb
 
@@ -516,7 +516,7 @@ contains
       myia = ia - iGlobal + 1
       qij(:) = transChrg%qTransIA(ia, env, denseDesc, ovrXev, grndEigVecs, rpa%getIA, rpa%win)
       otmp(:) = otmp(:) + qij(:) * vLoc(myia) * rpa%sqrOccIA(ia)
-    enddo
+    end do
 
     call assembleChunks(env, otmp)
 
@@ -532,7 +532,7 @@ contains
           myia = ia - iGlobal + 1
           qij(:) = transChrg%qTransIA(ia, env, denseDesc, ovrXev, grndEigVecs, rpa%getIA, rpa%win)
           vOut(myia) = 4.0_dp * rpa%sqrOccIA(ia) * dot_product(qij, gTmp)
-        enddo
+        end do
 
       else
 
@@ -694,7 +694,7 @@ contains
 
     if (.not. tAplusB) then
       vOut(:) = vOut * sqrt(rpa%wij(iGlobal:fGlobal))
-    endif
+    end if
 
   end subroutine actionAplusB
 
@@ -863,7 +863,7 @@ contains
         vout(myja) = vout(myja) +  vGlb2(jas)
       end do
 
-    endif
+    end if
 
     ! orb. energy difference diagonal contribution
     vout(:) = vout + rpa%wij(iGlobal:fGlobal) * vin

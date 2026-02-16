@@ -25,14 +25,14 @@ program makecube
     write(*,*) 'usage:'
     write(*,*) 'makecube pot_file [-r refpot] [-b boxfile xfile yfile zfile] '
     stop
-  endif
+  end if
 
   call get_command_argument(1,filename,ln,err)
 
   call get_command(filebox, ln, err)
   if (ln<0 .or. err>0) then
     stop 'Internal error: command line too long'
-  endif
+  end if
 
   k = index(filebox,"-r")
   if (k > 0) then
@@ -40,7 +40,7 @@ program makecube
     call get_command_argument(3,refname,ln,err)
   else
     refpot = .false.
-  endif
+  end if
 
   k = index(filebox,"-b")
   if (k==0) then
@@ -53,7 +53,7 @@ program makecube
     call get_command_argument(narg-2,filex,ln,err)
     call get_command_argument(narg-1,filey,ln,err)
     call get_command_argument(narg,filez,ln,err)
-  endif
+  end if
 
 
   open(newunit=fp,file=trim(filebox), action="read")
@@ -84,9 +84,9 @@ program makecube
     do j=1,ny
       do k=1,nz
         read(fp,*) phi3d(i,j,k)
-      enddo
-    enddo
-  enddo
+      end do
+    end do
+  end do
   close(fp)
 
   if (refpot) then
@@ -96,11 +96,11 @@ program makecube
       do j=1,ny
         do k=1,nz
           read(fp,*) phi3d_0(i,j,k)
-        enddo
-      enddo
-    enddo
+        end do
+      end do
+    end do
     close(fp)
-  endif
+  end if
 
   or(1) = x(1)  !(x(1) - x(nx))/2.d0
   or(2) = y(1)  !(y(1) - y(ny))/2.d0
@@ -122,12 +122,12 @@ program makecube
           write(*,'(E13.5)',advance='NO') phi3d(i,j,k)-phi3d_0(i,j,k)
         else
           write(*,'(E13.5)',advance='NO') phi3d(i,j,k)
-        endif
+        end if
         if (mod(k-1,6) == 5) write(*,*)
-      enddo
+      end do
       write(*,*)
-    enddo
-  enddo
+    end do
+  end do
 
   open(newunit=fp,file="poissonbox.jmol", action="write")
 

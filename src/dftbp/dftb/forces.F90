@@ -534,8 +534,8 @@ contains
           end if
 
         end if
-      enddo
-    enddo
+      end do
+    end do
     !$OMP END PARALLEL DO
 
     call assembleChunks(env, deriv)
@@ -660,8 +660,8 @@ contains
           deriv(:,iAtom2f) = deriv(:,iAtom2f) - derivTmp
 
         end if
-      enddo
-    enddo
+      end do
+    end do
     !$OMP END PARALLEL DO
 
     call assembleChunks(env, deriv)
@@ -809,8 +809,8 @@ contains
           deriv(:,iAtom2f) = deriv(:,iAtom2f) - derivTmp
 
         end if
-      enddo
-    enddo
+      end do
+    end do
     !$OMP END PARALLEL DO
 
     call assembleChunks(env, deriv)

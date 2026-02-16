@@ -2840,7 +2840,7 @@ contains
     if (geo%tPeriodic) then
       call getEuclideanKSampling(ctrl, node, geo, errStatus)
       @:PROPAGATE_ERROR(errStatus)
-    elseif (geo%tHelical) then
+    else if (geo%tHelical) then
       call getHelicalKSampling(ctrl, node, geo)
     end if
 
@@ -3652,7 +3652,7 @@ contains
             if (.not. present(hybridXcSK)) then
               if (readRep .and. repPoly(iSp2, iSp1)) then
                 call readFromFile(skData12(iSK2,iSK1), fileName, readAtomic, polyRepInp=repPolyIn1)
-              elseif (readRep) then
+              else if (readRep) then
                 call readFromFile(skData12(iSK2,iSK1), fileName, readAtomic, iSp1, iSp2,&
                     & splineRepInp=repSplineIn1)
               else
@@ -3662,7 +3662,7 @@ contains
               if (readRep .and. repPoly(iSp2, iSp1)) then
                 call readFromFile(skData12(iSK2,iSK1), fileName, readAtomic, polyRepInp=repPolyIn1,&
                     & hybridXcSK=hybridXcSK)
-              elseif (readRep) then
+              else if (readRep) then
                 call readFromFile(skData12(iSK2,iSK1), fileName, readAtomic, iSp1, iSp2,&
                     & splineRepInp=repSplineIn1, hybridXcSK=hybridXcSK)
               else
@@ -3705,7 +3705,7 @@ contains
               if (readRep .and. repPoly(iSp1, iSp2)) then
                 call readFromFile(skData21(iSK1,iSK2), fileName, readAtomic, &
                     &polyRepInp=repPolyIn2)
-              elseif (readRep) then
+              else if (readRep) then
                 call readFromFile(skData21(iSK1,iSK2), fileName, readAtomic, &
                     &iSp2, iSp1, splineRepInp=repSplineIn2)
               else
@@ -4989,7 +4989,7 @@ contains
           call getChildValue(child2, "", ctrl%lrespini%nstat)
           if (ctrl%lrespini%nstat > ctrl%lrespini%nexc) then
             call detailedError(child2, "Invalid value, must be within range of NrOfExcitations")
-          elseif (ctrl%lrespini%sym == "B" .and. ctrl%lrespini%nstat /= 0) then
+          else if (ctrl%lrespini%sym == "B" .and. ctrl%lrespini%nstat /= 0) then
             call detailedError(child2, "You cannot specify a particular excited state if symmetry&
                 & is 'B'")
           end if
@@ -7991,7 +7991,7 @@ contains
     if (isHybridInp .and. .not. isHybridSk) then
       call error("Hybrid input block present, but SK-file '" // trim(fileName)&
           & // "'" // newline // "   appears to be (semi-)local.")
-    elseif (isHybridSk .and. .not. isHybridInp) then
+    else if (isHybridSk .and. .not. isHybridInp) then
       call error("Hybrid SK-file '" // trim(fileName) // "' provided," // newline //&
           & "   but the hybrid block is missing from the HSD input file.")
     end if

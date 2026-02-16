@@ -295,14 +295,14 @@ contains
     if (associated(this%s_callback)) then
       ! Expose the DFTB+ S matrix to the external code (assumes they do not modify it!)
       call this%s_callback(this%sAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr, dataBufReal=dataBuf)
-    endif
+    end if
 
     status = -1
     if (associated(this%set_s_callback)) then
       ! Allow the external code to (potentially) modify the S matrix, status on return
       status = this%set_s_callback(this%set_sAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr,&
           & dataBufReal=dataBuf)
-    endif
+    end if
 
   end subroutine TAPICallback_invokeS_real
 
@@ -329,14 +329,14 @@ contains
     if (associated(this%s_callback)) then
       ! Expose the DFTB+ S matrix to the external code (assumes they do not modify it!)
       call this%s_callback(this%sAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr, dataBufCplx=dataBuf)
-    endif
+    end if
 
     status = -1
     if (associated(this%set_s_callback)) then
       ! Expose the DFTB+ S matrix to the external code, possibly with modification happening
       status = this%set_s_callback(this%set_sAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr,&
           & dataBufCplx=dataBuf)
-    endif
+    end if
 
   end subroutine TAPICallback_invokeS_cplx
 
@@ -402,14 +402,14 @@ contains
     if (associated(this%h_callback)) then
       ! Expose the DFTB+ H matrix to the external code (assumes they do not modify it!)
       call this%h_callback(this%hAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr, dataBufReal=dataBuf)
-    endif
+    end if
 
     status = -1
     if (associated(this%set_h_callback)) then
       ! Expose the DFTB+ H matrix to the external code, possibly with modification happening
       status = this%set_h_callback(this%set_hAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr,&
           & dataBufReal=dataBuf)
-    endif
+    end if
 
   end subroutine TAPICallback_invokeH_real
 
@@ -439,14 +439,14 @@ contains
     if (associated(this%h_callback)) then
       ! Expose the DFTB+ H matrix to the external code (assumes they do not modify it!)
       call this%h_callback(this%hAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr, dataBufCplx=dataBuf)
-    endif
+    end if
 
     status = -1
     if (associated(this%set_h_callback)) then
       ! Expose the DFTB+ H matrix to the external code, possibly with modification happening
       status = this%set_h_callback(this%set_hAuxPtr, iKpoint, iSpin, blacsDescr=blacsDescr,&
           & dataBufCplx=dataBuf)
-    endif
+    end if
 
   end subroutine TAPICallback_invokeH_cplx
 

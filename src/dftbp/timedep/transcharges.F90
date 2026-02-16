@@ -317,7 +317,7 @@ contains
         updwn = (ij <= nXooUD(1))
         this%qCacheOccOcc(:,ij) = transq(ii, jj, env, denseDesc, updwn,  sTimesGrndEigVecs,&
              & grndEigVecs)
-      enddo
+      end do
       !!$OMP END PARALLEL DO
 
       !!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ab,aa,bb,updwn) SCHEDULE(RUNTIME)

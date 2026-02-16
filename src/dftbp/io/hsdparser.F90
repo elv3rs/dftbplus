@@ -424,10 +424,10 @@ contains
         if (len_trim(word) == 0) then
           call parsingError("Missing field name on the left of the &
               &assignment.", curFile, curLine)
-        elseif (len_trim(strLine) == 0) then
+        else if (len_trim(strLine) == 0) then
           call parsingError("Missing value on the right of the assignment.", &
               &curFile, curLine)
-        elseif (nTextLine > 0) then
+        else if (nTextLine > 0) then
           call parsingError("Unparsed text before current node", curFile, &
               &curLine)
         end if
@@ -580,7 +580,7 @@ contains
         if (iType == 4) then
           newChild => null()
           return
-        elseif (iType == 5) then
+        else if (iType == 5) then
           dummy => removeChild(parentNode, sameChild)
           call destroyNode(sameChild)
           tCreate = .true.
@@ -804,7 +804,7 @@ contains
         if (associated(attr) .or. associated(getNextSibling(child))) then
           !! RHS has many children or is signed as block -> open a block
           tOpenBlock = .true.
-        elseif (getNodeType(child) == TEXT_NODE) then
+        else if (getNodeType(child) == TEXT_NODE) then
           !! RHS's child is text -> open block if it contains several tokens
           call getNodeValue(child, buffer)
           tOpenBlock = (unquotedScan(trim2(char(buffer)), whiteSpaces) /= 0)
@@ -881,7 +881,7 @@ contains
     parent => getParentNode(node)
     if (associated(parent)) then
       call getHSDPath_recursive(parent, path, inclRoot, buffer)
-    elseif (.not. inclRoot) then
+    else if (.not. inclRoot) then
       path = ""
     end if
 

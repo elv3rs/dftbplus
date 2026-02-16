@@ -1269,7 +1269,7 @@ contains
         end do
         @:PROPAGATE_ERROR(errStatus)
 
-      elseif (nSpin > 2) then
+      else if (nSpin > 2) then
 
         do iKS = 1, parallelKS%nLocalKS
 
@@ -1350,7 +1350,7 @@ contains
                   & nEmpty, eigVecsReal, orb, denseDesc, tempElec, eigVals, dRhoOutSqr, species,&
                   & coord, isHelical)
 
-            elseif (nSpin > 2) then
+            else if (nSpin > 2) then
 
               ! two component wavefunction cases
               call dRhoFermiChangePauli(dRhoExtra, idRhoExtra, env, parallelKS, iKS,&
@@ -2372,7 +2372,7 @@ contains
               dEi(:, :, :, iCart, iAt) = dEiTmp
             end do
 
-          elseif (nSpin > 2) then
+          else if (nSpin > 2) then
 
             do iKS = 1, parallelKS%nLocalKS
 

@@ -313,7 +313,7 @@ contains
       else
         !! Minimum bracketed -> Secant interpolation for root of derivative
         state = st_3
-      endif
+      end if
     end if
 
     if (state == st_3) then

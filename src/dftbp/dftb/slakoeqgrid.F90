@@ -213,7 +213,7 @@ contains
     if (rr >= rMax) then
       !! Beyond last grid point + distFudge => no interaction
       dd(:) = 0.0_dp
-    elseif (ind < leng) then
+    else if (ind < leng) then
       !! Closer to origin than last grid point => polynomial fit
       iLast = min(leng, ind + nRightInterNew_)
       iLast = max(iLast, nInterNew_)
@@ -285,7 +285,7 @@ contains
       end do
       yb = transpose(this%skTab(iLast-nInterOld_+1:iLast,:this%nInteg))
       dd(:this%nInteg) = polyInterUniform(xa, yb, rr)
-    elseif (ind < leng) then
+    else if (ind < leng) then
       !! Distance between penultimate and last grid point => free cubic spline
       dr = rr - real(leng - 1, dp) * incr
       do ii = 1, this%nInteg
@@ -296,7 +296,7 @@ contains
         y1pp = (y2 + y0 - 2.0_dp * y1) / incr**2
         call freeCubicSpline(y1, y1p, y1pp, incr, y2, dr, dd(ii))
       end do
-    elseif (ind < mInd - 1) then
+    else if (ind < mInd - 1) then
       !! Extrapolation
       dr = rr - real(mInd - 1, dp) * incr
       do ii = 1, this%nInteg

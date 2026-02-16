@@ -574,7 +574,7 @@ contains
       write(fd1%unit,*) geom%natom, 'S'
     else
       write(fd1%unit,*) geom%natom, 'C'
-    endif
+    end if
     do ii = 1, geom%nSpecies
       write(fd1%unit,'(1x,A,1x)',advance='No') trim(geom%SpeciesNames(ii))
     end do

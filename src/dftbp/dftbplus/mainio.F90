@@ -2143,7 +2143,7 @@ contains
 
     if (electronicSolver%providesFreeEnergy) then
       call taggedWriter%write(fd%unit, tagLabels%freeEgy, energy%EForceRelated)
-    elseif (electronicSolver%providesElectronEntropy) then
+    else if (electronicSolver%providesElectronEntropy) then
       call taggedWriter%write(fd%unit, tagLabels%freeEgy, energy%EMermin)
     else
       call taggedWriter%write(fd%unit, tagLabels%egyTotal, energy%ETotal)
@@ -2771,7 +2771,7 @@ contains
     if (nGeoSteps > 0) then
       if (tMD) then
         write(fd, "(A, I0)") "MD step: ", iGeoStep
-      elseif (tDerivs) then
+      else if (tDerivs) then
         write(fd, "(A, I0)") 'Difference derivative step: ', iGeoStep
       else
         if (tCoordOpt .and. tLatOpt) then
@@ -2781,7 +2781,7 @@ contains
           write(fd, "(A, I0)") "Geometry optimization step: ", iGeoStep
         end if
       end if
-    elseif (tScc) then
+    else if (tScc) then
       ! Only written if scc is on, to be compatible with old output
       write(fd, "(A)") "Calculation with static geometry"
     end if
@@ -3831,13 +3831,13 @@ contains
       else
         write(fd, "(A)") "!!! Geometry did NOT converge!"
       end if
-    elseif (tMD) then
+    else if (tMD) then
       if (tGeomEnd) then
         write(fd, "(A)") "Molecular dynamics completed"
       else
         write(fd, "(A)") "!!! Molecular dynamics terminated abnormally!"
       end if
-    elseif (tDerivs) then
+    else if (tDerivs) then
       if (tGeomEnd) then
         write(fd, "(A)") "Second derivatives completed"
       else
@@ -4580,7 +4580,7 @@ contains
     if (tLatOpt) then
       write(comment, "(A, I0, A, I0)") '** Geometry step: ', iGeoStep, ', Lattice step: ',&
           & iLatGeoStep
-    elseif (tMD) then
+    else if (tMD) then
       write(comment, "(A, I0)") 'MD iter: ', iGeoStep
     else
       write(comment,"(A, I0)") 'Geometry Step: ', iGeoStep
@@ -4610,13 +4610,13 @@ contains
       else
         call warning("!!! Geometry did NOT converge!")
       end if
-    elseif (tMD) then
+    else if (tMD) then
       if (tGeomEnd) then
         write(stdOut, "(/, A)") "Molecular dynamics completed"
       else
         call warning("!!! Molecular dynamics terminated abnormally!")
       end if
-    elseif (tDerivs) then
+    else if (tDerivs) then
       if (tGeomEnd) then
         write(stdOut, "(/, A)") "Second derivatives completed"
       else
@@ -5786,7 +5786,7 @@ contains
     if (nGeoSteps > 0) then
       if (tMD) then
         write(fd, "(A, I0)") "MD step: ", iGeoStep
-      elseif (tDerivs) then
+      else if (tDerivs) then
         write(fd, "(A, I0)") 'Difference derivative step: ', iGeoStep
       else
         if (tCoordOpt .and. tLatOpt) then
@@ -5796,7 +5796,7 @@ contains
           write(fd, "(A, I0)") "Geometry optimization step: ", iGeoStep
         end if
       end if
-    elseif (tScc) then
+    else if (tScc) then
       ! Only written if scc is on, to be compatible with old output
       write(fd, "(A)") "Calculation with static geometry"
     end if

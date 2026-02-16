@@ -396,7 +396,7 @@ contains
     end do
     if (xx > huge(1.0_dp)) then
       iError = 1
-    elseif (xx == rInit) then
+    else if (xx == rInit) then
       iError = 2
     end if
 
@@ -463,7 +463,7 @@ contains
     end do
     if (xx > huge(1.0_dp)) then
       iError = 1
-    elseif (xx == gInit) then
+    else if (xx == gInit) then
       iError = 2
     end if
 

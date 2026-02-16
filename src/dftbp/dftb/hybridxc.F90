@@ -3720,7 +3720,7 @@ contains
       gamma = poly5zero(this%lrGammaAtDamping(iSp1, iSp2), this%lrdGammaAtDamping(iSp1, iSp2),&
           & this%lrddGammaAtDamping(iSp1, iSp2), dist, this%gammaDamping, this%gammaCutoff,&
           & tDerivative=.false.)
-    elseif (dist >= this%gammaCutoff) then
+    else if (dist >= this%gammaCutoff) then
       gamma = 0.0_dp
     else
       gamma = getLrAnalyticalGammaValue_workhorse(this%hubbu(iSp1), this%hubbu(iSp2), this%omega,&
@@ -3802,7 +3802,7 @@ contains
       gamma = poly5zero(this%hfGammaAtDamping(iSp1, iSp2), this%hfdGammaAtDamping(iSp1, iSp2),&
           & this%hfddGammaAtDamping(iSp1, iSp2), dist, this%gammaDamping, this%gammaCutoff,&
           & tDerivative=.false.)
-    elseif (dist >= this%gammaCutoff) then
+    else if (dist >= this%gammaCutoff) then
       gamma = 0.0_dp
     else
       gamma = getHfAnalyticalGammaValue_workhorse(this%hubbu(iSp1), this%hubbu(iSp2), dist)
@@ -4338,7 +4338,7 @@ contains
       dGamma = poly5zero(this%lrGammaAtDamping(iSp1, iSp2), this%lrdGammaAtDamping(iSp1, iSp2),&
           & this%lrddGammaAtDamping(iSp1, iSp2), dist, this%gammaDamping, this%gammaCutoff,&
           & tDerivative=.true.)
-    elseif (dist >= this%gammaCutoff) then
+    else if (dist >= this%gammaCutoff) then
       dGamma = 0.0_dp
     else
       dGamma = getdLrAnalyticalGammaValue_workhorse(this%hubbu(iSp1), this%hubbu(iSp2), this%omega,&
@@ -4371,7 +4371,7 @@ contains
       dGamma = poly5zero(this%lrGammaAtDamping(iSp1, iSp2), this%lrdGammaAtDamping(iSp1, iSp2),&
           & this%lrddGammaAtDamping(iSp1, iSp2), dist, this%gammaDamping, this%gammaCutoff,&
           & tDerivative=.true.)
-    elseif (dist >= this%gammaCutoff) then
+    else if (dist >= this%gammaCutoff) then
       dGamma = 0.0_dp
     else
       dGamma = getdHfAnalyticalGammaValue_workhorse(this%hubbu(iSp1), this%hubbu(iSp2), dist)

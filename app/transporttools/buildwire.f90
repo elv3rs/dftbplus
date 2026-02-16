@@ -101,7 +101,7 @@ program buildwire
                                Y(i)+(k-1)*cell(2,2)*d(2), &
                                Z(i)+(k-1)*cell(3,3)*d(3)
      end do
-  enddo
+  end do
 
   ! build I contact
   do k = num_pl+1,num_pl+2
@@ -111,7 +111,7 @@ program buildwire
                                Y(i)+(k-1)*cell(2,2)*d(2), &
                                Z(i)+(k-1)*cell(3,3)*d(3)
      end do
-  enddo
+  end do
 
   ! build II contact
   do k = 0,-1,-1
@@ -121,7 +121,7 @@ program buildwire
                                Y(i)+(k-1)*cell(2,2)*d(2), &
                                Z(i)+(k-1)*cell(3,3)*d(3)
      end do
-  enddo
+  end do
 
   if (do_super) then
     write(fp,'(A)') cell_centre

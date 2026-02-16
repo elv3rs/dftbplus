@@ -118,13 +118,13 @@ contains
       blacsDescrPtr = c_loc(blacsDescr(1))
     else
       blacsDescrPtr = c_null_ptr
-    endif
+    end if
 
     if (present(dataBufReal)) then
       dataPtr = c_loc(dataBufReal(1,1))
     else
       dataPtr = c_loc(dataBufCplx(1,1))
-    endif
+    end if
     select type(auxObj)
     type is (TCAuxWrapper)
       call c_f_procpointer(auxObj%callback, callbackProc)
@@ -172,13 +172,13 @@ contains
       blacsDescrPtr = c_loc(blacsDescr(1))
     else
       blacsDescrPtr = c_null_ptr
-    endif
+    end if
 
     if (present(dataBufReal)) then
       dataPtr = c_loc(dataBufReal(1,1))
     else
       dataPtr = c_loc(dataBufCplx(1,1))
-    endif
+    end if
     select type(auxObj)
     type is (TCAuxWrapper)
       call c_f_procpointer(auxObj%callback, callbackProc)

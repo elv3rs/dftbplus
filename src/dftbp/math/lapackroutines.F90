@@ -339,7 +339,7 @@ contains
     else
       if (present(iError)) then
         iError = info
-      elseif (info > 0) then
+      else if (info > 0) then
 99050   format ('Factor U is exactly zero in sgetrf,', &
             & ' info flag is ',i10)
         write (error_string, 99050) info
@@ -398,7 +398,7 @@ contains
     else
       if (present(iError)) then
         iError = info
-      elseif (info > 0) then
+      else if (info > 0) then
 99070   format ('Factor U is exactly zero in dgetrf,', &
             & ' info flag is ',i10)
         write (error_string, 99070) info
@@ -457,7 +457,7 @@ contains
     else
       if (present(iError)) then
         iError = info
-      elseif (info > 0) then
+      else if (info > 0) then
 99055   format ('Factor U is exactly zero in sgetrf,', &
             & ' info flag is ',i10)
         write (error_string, 99055) info
@@ -516,7 +516,7 @@ contains
     else
       if (present(iError)) then
         iError = info
-      elseif (info > 0) then
+      else if (info > 0) then
 99075   format ('Factor U is exactly zero in dgetrf,', &
             & ' info flag is ',i10)
         write (error_string, 99075) info
@@ -574,7 +574,7 @@ contains
     else
       if (present(iError)) then
         iError = info
-      elseif (info > 0) then
+      else if (info > 0) then
 99090   format ('Factor U is exactly zero in sgetri,', &
             & ' info flag is ',i10)
         write (error_string, 99090) info
@@ -632,7 +632,7 @@ contains
     else
       if (present(iError)) then
         iError = info
-      elseif (info > 0) then
+      else if (info > 0) then
 99110   format ('Factor U is exactly zero in dgetri,', &
             & ' info flag is ',i10)
         write (error_string, 99110) info
@@ -968,7 +968,7 @@ contains
     call ${kind}$potrf(uplo0, n, b, ldb, info0)
     if (present(info)) then
       info = info0
-    elseif (info0 /= 0) then
+    else if (info0 /= 0) then
       write(error_string, "(A,I10)") "Routine ${kind}$potrf failed. Info: ", info0
       call error(error_string)
     end if
@@ -1081,7 +1081,7 @@ contains
       atr = trans
     else
       atr = 'n'
-    endif
+    end if
     lda = max(1, size(amat, 1))
     ldb = max(1, size(bmat, 1))
     nn = size(amat, 2)
@@ -1093,7 +1093,7 @@ contains
       if (info /= 0) then
         call error("Failed to solve linear system by diagonal pivoting")
       end if
-    endif
+    end if
 
   end subroutine getrs_dble
 
@@ -1152,7 +1152,7 @@ contains
       atr = trans
     else
       atr = 'n'
-    endif
+    end if
     lda = max(1, size(amat, 1))
     ldb = max(1, size(bmat, 1))
     nn = size(amat, 2)
@@ -1164,7 +1164,7 @@ contains
       if (info /= 0) then
         call error("Failed to solve linear system by diagonal pivoting")
       end if
-    endif
+    end if
 
   end subroutine getrs_real
 

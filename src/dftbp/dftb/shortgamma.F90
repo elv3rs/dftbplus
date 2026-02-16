@@ -733,7 +733,7 @@ contains
           end do
         end do
       end do
-    endif
+    end if
 
     shiftShellPrime(:,iAt,1) = -shiftShellPrime(:,iAt,1)
 

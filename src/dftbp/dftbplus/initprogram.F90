@@ -2227,7 +2227,7 @@ contains
         end if
         call move_alloc(slaKirk, this%dispersion)
 
-      elseif (allocated(input%ctrl%dispInp%uff)) then
+      else if (allocated(input%ctrl%dispInp%uff)) then
         allocate(uff)
         if (this%tPeriodic .and. this%transpar%nCont == 0) then
           call DispUff_init(uff, input%ctrl%dispInp%uff, this%nAtom, this%species0, this%latVec)
@@ -2736,14 +2736,14 @@ contains
     if (this%isXlbomd) then
       if (input%ctrl%thermostatInp%thermostatType /= thermostatTypes%dummy) then
         call error("XLBOMD does not work with thermostats yet")
-      elseif (this%tBarostat) then
+      else if (this%tBarostat) then
         call error("XLBOMD does not work with barostats yet")
-      elseif (this%nSpin /= 1 .or. allocated(this%dftbU) .or. allocated(this%onSiteElements)) then
+      else if (this%nSpin /= 1 .or. allocated(this%dftbU) .or. allocated(this%onSiteElements)) then
         call error("XLBOMD does not work for spin, DFTB+U or onsites yet")
-      elseif (this%forceType /= forceTypes%dynamicT0 .and. this%forceType /=&
+      else if (this%forceType /= forceTypes%dynamicT0 .and. this%forceType /=&
           & forceTypes%dynamicTFinite) then
         call error("Force evaluation method incompatible with XLBOMD")
-      elseif (this%iDistribFn /= fillingTypes%Fermi) then
+      else if (this%iDistribFn /= fillingTypes%Fermi) then
         call error("Choice of filling function incompatible with XLBOMD")
       end if
       if (this%tExtChrg .or. this%isExtField) then
@@ -2912,7 +2912,7 @@ contains
             & input%ctrl%hybridXcInp%cutoffRed, errStatus,&
             & gSummationCutoff=input%ctrl%hybridXcInp%gSummationCutoff,&
             & gammaCutoff=input%ctrl%hybridXcInp%gammaCutoff)
-      elseif (.not. this%tRealHS) then
+      else if (.not. this%tRealHS) then
         ! Dense Hamiltonian and overlap are complex-valued (general k-point case)
         call getHybridXcCutOff_kpts(this%cutOff, input%geom%latVecs,&
             & input%ctrl%hybridXcInp%cutoffRed, this%supercellFoldingDiag, errStatus,&
@@ -3302,7 +3302,7 @@ contains
         call error("Unknown thermostat mode")
       end select
 
-    elseif (this%isGeoOpt .or. allocated(this%geoOpt)) then
+    else if (this%isGeoOpt .or. allocated(this%geoOpt)) then
 
       if (allocated(this%conAtom)) then
         strTmp = "with constraints"
@@ -3332,7 +3332,7 @@ contains
         call warning("This geometry optimisation method requires force related energies for&
             & accurate minimisation.")
       end if
-    elseif (this%tDerivs) then
+    else if (this%tDerivs) then
       write(stdOut, "('Mode:',T30,A)") "2nd derivatives calculation"
       write(stdOut, "('Mode:',T30,A)") "Calculated for atoms:"
       write(stdOut, *) this%indDerivAtom
@@ -3340,7 +3340,7 @@ contains
         write(stdOut, "('Mode:',T30,A)") "Moved atoms:"
         write(stdOut, *) this%indMovedAtom
       end if
-    elseif (this%tSocket) then
+    else if (this%tSocket) then
       write(stdOut, "('Mode:',T30,A)") "Socket controlled calculation"
     else
       write(stdOut, "('Mode:',T30,A)") "Static calculation"
@@ -3434,7 +3434,7 @@ contains
       #:else
         call error("Magma-solver selected, but program was compiled without MAGMA")
       #:endif
-    endif
+    end if
 
     if(this%isLinResp) then
       select case(input%ctrl%lrespini%iLinRespSolver)
@@ -3740,11 +3740,11 @@ contains
         write(stdOut, "(A,':',T30,A)") "Global hybrid", "Yes"
         write(stdOut, "(2X,A,':',T30,E14.6)") "Fraction of exchange",&
             & input%ctrl%hybridXcInp%camAlpha
-      elseif (input%ctrl%hybridXcInp%hybridXcType == hybridXcFunc%lc) then
+      else if (input%ctrl%hybridXcInp%hybridXcType == hybridXcFunc%lc) then
         write(stdOut, "(A,':',T30,A)") "Long-range corrected hybrid", "Yes"
         write(stdOut, "(2X,A,':',T30,E14.6)") "Screening parameter omega",&
             & input%ctrl%hybridXcInp%omega
-      elseif (input%ctrl%hybridXcInp%hybridXcType == hybridXcFunc%cam) then
+      else if (input%ctrl%hybridXcInp%hybridXcType == hybridXcFunc%cam) then
         write(stdOut, "(A,':',T30,A)") "CAM range-separated hybrid", "Yes"
         write(stdOut, "(2X,A,':',T30,E14.6)") "Screening parameter omega",&
             & input%ctrl%hybridXcInp%omega
@@ -3754,13 +3754,13 @@ contains
       if (this%tPeriodic) then
         if (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%full) then
           write(stdOut, "(2X,A,':',T30,2X,A)") "Gamma function", "full"
-        elseif (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%mic) then
+        else if (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%mic) then
           write(stdOut, "(2X,A,':',T30,2X,A)") "Gamma function", "minimum image convention"
           write(stdOut, "(2X,A,':',T30,2X,I0,A)") "Wigner-Seitz cell reduction",&
               & this%cutOff%wignerSeitzReduction, " primitive cell(s)"
-        elseif (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%truncated) then
+        else if (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%truncated) then
           write(stdOut, "(2X,A,':',T30,2X,A)") "Gamma function", "truncated"
-        elseif (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%truncatedAndDamped) then
+        else if (input%ctrl%hybridXcInp%gammaType == hybridXcGammaTypes%truncatedAndDamped) then
           write(stdOut, "(2X,A,':',T30,2X,A)") "Gamma function", "truncated+poly5zero"
         end if
         if (input%ctrl%hybridXcInp%gammaType /= hybridXcGammaTypes%mic) then
@@ -4192,7 +4192,7 @@ contains
          & "the type of calculation, SCC, in initProgramVariables")
     do iSp = 1, size(speciesName)
        call checkExactCoherence(env, speciesName(iSp), "species names in initProgramVariables")
-    enddo
+    end do
 
     if (tPeriodic) then
        call checkExactCoherence(env, tFracCoord, "tFracCoord in initProgramVariables")
@@ -4200,7 +4200,7 @@ contains
             & "lattice vectors in initProgramVariables", tol=1.e-10_dp)
        call checkToleranceCoherence(env, origin, &
             & "coordinate origin in initProgramVariables", tol=1.e-10_dp)
-    endif
+    end if
 
   end subroutine inputCoherenceCheck
 
@@ -4234,7 +4234,7 @@ contains
     if (this%tSccCalc) then
       if(.not. allocated(this%iEqOrbitals)) then
         allocate(this%iEqOrbitals(this%orb%mOrb, this%nAtom, this%nSpin))
-      endif
+      end if
       if (.not.allocated(this%iEqDipole)) then
         allocate(this%iEqDipole(this%nDipole, this%nAtom))
       end if
@@ -4318,11 +4318,11 @@ contains
         ! all onsite blocks are full of unique elements
         if(.not. allocated(this%iEqBlockOnSite)) then
           allocate(this%iEqBlockOnSite(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-        endif
+        end if
         if (this%tImHam) then
           if(.not. allocated(this%iEqBlockOnSiteLS))then
             allocate(this%iEqBlockOnSiteLS(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-          endif
+          end if
         end if
         call Ons_blockIndx(this%iEqBlockOnSite, this%iEqBlockOnSiteLS, this%nIneqOrb, this%orb)
         this%nMixElements = max(this%nMixElements, maxval(this%iEqBlockOnSite))
@@ -4333,7 +4333,7 @@ contains
         ! only a sub-set of onsite blocks are reduced/expanded
         if(.not. allocated(this%iEqBlockDFTBU))then
           allocate(this%iEqBlockDFTBU(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-        endif
+        end if
         call this%dftbU%blockIndx(this%iEqBlockDFTBU, this%nIneqOrb, this%orb, this%species0)
         this%nMixElements = max(this%nMixElements, maxval(this%iEqBlockDFTBU))  ! as
         !  iEqBlockDFTBU does not include diagonal elements, so in the case of
@@ -4342,7 +4342,7 @@ contains
         if (this%tImHam) then
           if(.not. allocated(this%iEqBlockDFTBULS))then
             allocate(this%iEqBlockDFTBULS(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-          endif
+          end if
           call this%dftbU%blockIndx(this%iEqBlockDFTBULS, this%nMixElements, this%orb,&
               & this%species0)
           this%nMixElements = max(this%nMixElements, maxval(this%iEqBlockDFTBULS))
@@ -4387,20 +4387,20 @@ contains
 
     if (.not. allocated(this%qInput)) then
       allocate(this%qInput(this%orb%mOrb, this%nAtom, this%nSpin))
-    endif
+    end if
     this%qInput(:,:,:) = 0.0_dp
 
     if (.not. allocated(this%qOutput)) then
       allocate(this%qOutput(this%orb%mOrb, this%nAtom, this%nSpin))
-    endif
+    end if
     this%qOutput(:,:,:) = 0.0_dp
 
     if (allocated(this%reks)) then
       if (.not. allocated(this%qDiff)) then
         allocate(this%qDiff(this%orb%mOrb, this%nAtom, this%nSpin))
-      endif
+      end if
       this%qDiff(:,:,:) = 0.0_dp
-    endif
+    end if
 
     this%isQNetAllocated = .false.
   #:if WITH_MBD
@@ -4415,7 +4415,7 @@ contains
     if (this%isQNetAllocated) then
       if (.not. allocated(this%qNetAtom)) then
         allocate(this%qNetAtom(this%nAtom))
-      endif
+      end if
       this%qNetAtom(:) = 0.0_dp
     end if
 
@@ -4423,17 +4423,17 @@ contains
       if (.not. allocated(this%reks)) then
         if (.not. allocated(this%qBlockIn)) then
           allocate(this%qBlockIn(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-        endif
+        end if
         this%qBlockIn(:,:,:,:) = 0.0_dp
-      endif
+      end if
       if (.not. allocated(this%qBlockOut)) then
         allocate(this%qBlockOut(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-      endif
+      end if
       this%qBlockOut(:,:,:,:) = 0.0_dp
       if (this%tImHam) then
         if(.not. allocated(this%qiBlockIn)) then
           allocate(this%qiBlockIn(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-        endif
+        end if
         this%qiBlockIn(:,:,:,:) = 0.0_dp
       end if
     end if
@@ -4441,7 +4441,7 @@ contains
     if (this%tImHam) then
       if(.not. allocated(this%qiBlockOut))then
         allocate(this%qiBlockOut(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
-      endif
+      end if
       this%qiBlockOut(:,:,:,:) = 0.0_dp
     end if
 
@@ -4490,7 +4490,7 @@ contains
         this%supercellFoldingDiag = nint(diagonal(this%supercellFoldingMatrix(:,:3)))
       end if
 
-    endif
+    end if
 
 
     if (.not. allocated(this%reks)) then
@@ -4588,7 +4588,7 @@ contains
         end if
       end if
 
-    endif notChrgRead
+    end if notChrgRead
 
     !Swap from charge/magnetisation to up/down
     if (this%nSpin == 2) then
@@ -6415,7 +6415,7 @@ contains
         end if
         allocate(this%densityMatrix%deltaRhoOut(nLocalRows, nLocalCols, nLocalKS), source=0.0_dp)
       end if
-    elseif (this%tReadChrg .and. (.not. allocated(this%supercellFoldingDiag))) then
+    else if (this%tReadChrg .and. (.not. allocated(this%supercellFoldingDiag))) then
       ! in case of k-points and restart from file, we have to wait until charges.bin was read
       if (hybridXcAlg == hybridXcAlgo%matrixBased) then
         if (.not. allocated(this%densityMatrix%deltaRhoInCplx)) then
@@ -6611,7 +6611,7 @@ contains
       call error("REKS is currently not available with solvation")
     else if (tPoisson) then
       call error("Poisson solver is not compatible with REKS")
-    elseif (isShellResolved) then
+    else if (isShellResolved) then
       call error("REKS does not support shell resolved scc yet")
     end if
 
@@ -6868,7 +6868,7 @@ contains
           else
             write(stdOut, "(A,':',T30,A)") "Memory for A and Hxc", "Direct Updating Without Saving"
           end if
-        elseif (reks%Glevel == 2) then
+        else if (reks%Glevel == 2) then
           write(stdOut, "(A,':',T30,A)") "CP-REKS Solver", "Conjugate-Gradient"
           write(stdOut, "(A,':',T30,I14)") "CG max. Iterations", reks%CGmaxIter
           write(stdOut, "(A,':',T30,E14.6)") "CG Tolerance", reks%Glimit
@@ -6877,7 +6877,7 @@ contains
           else
             write(stdOut, "(A,':',T30,A)") "Memory for A and Hxc", "Direct Updating Without Saving"
           end if
-        elseif (reks%Glevel == 3) then
+        else if (reks%Glevel == 3) then
           write(stdOut, "(A,':',T30,A)") "CP-REKS Solver", "Direct Matrix Multiplication"
         end if
         if (reks%tNAC) then

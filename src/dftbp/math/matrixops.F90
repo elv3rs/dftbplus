@@ -437,7 +437,7 @@ contains
 
     if (present(iError)) then
       iError = info
-    elseif (info /= 0) then
+    else if (info /= 0) then
 99120 format ('Matrix inversion failed because of error in getrf or getri.', &
           & ' Info flag: ',i10)
       write (error_string, 99120) info
@@ -713,7 +713,7 @@ contains
 
     where(sigma > epsilon(0.0_dp))
       sigma = 1.0_dp / sigma
-    elsewhere
+    else where
       sigma = 0.0_dp
     end where
 

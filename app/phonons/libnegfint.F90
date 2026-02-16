@@ -113,7 +113,7 @@ contains
       ncont = transpar%ncont
     else
       ncont = 0
-    endif
+    end if
 
     ! Set defaults and fill up the parameter structure with them
     call init_negf(negf)
@@ -130,13 +130,13 @@ contains
           parms%kbT_t(i) = transpar%contacts(i)%kbT
           parms%kbT_dm(i) = transpar%contacts(i)%kbT
         end if
-      enddo
+      end do
 
       ! set parameters for wide band approximations
       do i=1, ncont
          parms%FictCont(i) = transpar%contacts(i)%wideBand
          parms%contact_DOS(i) = transpar%contacts(i)%wideBandDOS
-       enddo
+       end do
 
     end if
 
@@ -172,7 +172,7 @@ contains
       ! set SGF reload to compute
       parms%readOldDM_SGFs = COMP_SGF
       parms%readOldT_SGFs = COMP_SGF
-    endif
+    end if
 
     ! Energy conversion only affects output units.
     ! The library writes energies as (E * negf%eneconv)
@@ -322,16 +322,16 @@ contains
        cont_end(i) = ind(transpar%contacts(i)%idxrange(2)+1)
        surf_start(i) = ind(transpar%contacts(i)%idxrange(1)) + 1
        surf_end(i) = ind(transpar%contacts(i)%idxrange(1))
-    enddo
+    end do
 
     if (transpar%defined) then
       do i = 1, nbl-1
         PL_end(i) = ind(transpar%PL(i+1))
-      enddo
+      end do
       atomst(1:nbl) = transpar%PL(1:nbl)
       PL_end(nbl) = ind(transpar%idxdevice(2)+1)
       atomst(nbl+1) = iatm2 + 1
-    endif
+    end if
 
     ! For every contact finds the min-max atom indeces among
     ! the atoms in the central region interacting with contact
@@ -354,7 +354,7 @@ contains
                      img2CentCell(iNeigh(1:nNeigh(i),i))<=iatc2))
                 if (i1>=iatc1 .and. i1<=iatc2) then
                    minv(m,j1) = j1
-                endif
+                end if
 
              end do
           end do
@@ -488,7 +488,7 @@ contains
             call error('Allocation error (currTot)')
          end if
          currLead = 0.0_dp
-       endif
+       end if
        currLead(:) = currLead + currPVec
 
      #:if WITH_MPI
@@ -518,8 +518,8 @@ contains
         write(*,'(1x,a,i3,i3,a,ES14.5,a,a)') &
              & ' contacts: ', params%ni(ii), params%nf(ii), &
              & ' current: ', currLead(ii),' ',HeatCurrUnits%name
-      enddo
-    endif
+      end do
+    end if
 
     if (allocated(tunnMat)) then
       ntemp=nint((TempMax-TempMin)/TempStep)
@@ -553,7 +553,7 @@ contains
 
     else
       allocate(tunnMat(0,0))
-    endif
+    end if
 
     if (allocated(tunnSKRes)) then
       deallocate(tunnSKRes)
@@ -571,7 +571,7 @@ contains
       end if
     else
       allocate(ldosMat(0,0))
-    endif
+    end if
     if (allocated(ldosSKRes)) then
       deallocate(ldosSKRes)
     end if
@@ -719,7 +719,7 @@ contains
           end if
 
           matSKRes(:,:,:) = 0.0_dp
-        endif
+        end if
       #:if WITH_MPI
         matSKRes(:,:,iK) = tmpMat
       #:else
@@ -828,14 +828,14 @@ contains
       write(fd%unit, *)  '# Energy [H]', '  Transmission'
     else
       write(fd%unit, *)  '# Energy [H]', '  LDOS'
-    endif
+    end if
     do ii=1,size(pTot,1)
       write(fd%unit, '(es20.8)', advance='no') (negf%Emin+(ii-1)*negf%Estep)*negf%eneconv
       do jj=1,size(pTot,2)
         write(fd%unit, '(es20.8)', advance='no') pTot(ii,jj)
-      enddo
+      end do
       write(fd%unit, *)
-    enddo
+    end do
     call closeFile(fd)
 
     if (nK>1) then
@@ -853,10 +853,10 @@ contains
         do jj=1,size(pKRes(:,:,1),2)
           do iK = 1,nK
             write(fd%unit, '(es20.8)',advance="no") pKRes(ii,jj, iK)
-          enddo
+          end do
           write(fd%unit, *)
-        enddo
-      enddo
+        end do
+      end do
       call closeFile(fd)
     end if
 

@@ -1212,7 +1212,7 @@ contains
           else
             call this%chrgMixerReal%reset(this%nOrb**2 * this%nSpin)
           end if
-        elseif (allocated(this%chrgMixerCmplx)) then
+        else if (allocated(this%chrgMixerCmplx)) then
           call this%chrgMixerCmplx%reset(this%nMixElements)
         else
           call this%chrgMixerReal%reset(this%nMixElements)
@@ -1761,7 +1761,7 @@ contains
             & this%tAppendGeo.and.iGeoStep>0, this%tFracCoord, this%tPeriodic, this%tHelical,&
             & this%tPrintMulliken, this%species0, this%speciesName, this%latVec, this%origin,&
             & iGeoStep, iLatGeoStep, this%nSpin, this%qOutput, this%velocities)
-      endif
+      end if
     end if
     if (len(trim(this%extendedGeomFile)) > 0) then
       call writeExtendedGeometry(trim(this%extendedGeomFile), this%tLatOpt, this%tMd,&
@@ -2499,10 +2499,10 @@ contains
     if (allocated(hybridXc)) then
       if (.not. tPeriodic) then
         call hybridXc%updateCoords_cluster(env, coord)
-      elseif (tPeriodic .and. tRealHS) then
+      else if (tPeriodic .and. tRealHS) then
         call hybridXc%updateCoords_gamma(env, symNeighbourList, nNeighbourCamSym, skOverCont, orb,&
             & latVec, invLatVec, denseDescr%iAtomStart)
-      elseif (.not. tRealHS) then
+      else if (.not. tRealHS) then
         call hybridXc%updateCoords_kpts(env, symNeighbourList, nNeighbourCamSym, skOverCont, orb,&
             & latVec, invLatVec, denseDescr%iAtomStart)
       end if
@@ -3665,7 +3665,7 @@ contains
         if (isHChanged .and. dangerousChanges%hamiltonian) then
           @:RAISE_ERROR(errStatus, -1, "ASI interface changed the hamiltonian matrix, aborting")
         end if
-      endif
+      end if
 
       call diagDenseMtx(env, electronicSolver, 'V', HSqrCplx, SSqrCplx, eigen(:, iK, iSpin),&
           & errStatus)
@@ -3839,7 +3839,7 @@ contains
         if (isHChanged .and. dangerousChanges%hamiltonian) then
           @:RAISE_ERROR(errStatus, -1, "ASI interface changed the hamiltonian matrix, aborting")
         end if
-      endif
+      end if
 
       call diagDenseMtx(env, electronicSolver, 'V', HSqrCplx, SSqrCplx, eigen(:,iK), errStatus)
       @:PROPAGATE_ERROR(errStatus)
@@ -4002,7 +4002,7 @@ contains
       #:else
         call apiCallBack%invokeDM(iK, iSpin, work)
       #:endif
-      endif
+      end if
 
       ! Store full density matrix for linear-response excited gradient evaluation
       ! (at this point equivalent to deltaRhoOut, but deltaRhoOut is later transformed into
@@ -4168,7 +4168,7 @@ contains
       #:else
         call apiCallBack%invokeDM(iK, iSpin, work)
       #:endif
-      endif
+      end if
 
     end do
 
@@ -4323,7 +4323,7 @@ contains
       #:else
         call apiCallBack%invokeDM(iK, 1, work)
       #:endif
-      endif
+      end if
 
       if (tSpinOrbit .and. .not. tDualSpinOrbit) then
         call getOnsiteSpinOrbitEnergy(env, rVecTemp, work, denseDesc, xi, orb, species)
@@ -5972,7 +5972,7 @@ contains
       if (iHamiltonianType == hamiltonianTypes%dftb) then
         allocate(adS(3, sparseSize), source=0.0_dp)
         allocate(Sad(3, sparseSize), source=0.0_dp)
-      endif
+      end if
     end if
 
     ! loop over directions
@@ -7634,7 +7634,7 @@ contains
       else
         constrLatDerivs(1:3) = sum(tmpLatDerivs, dim=1)
       end if
-    elseif (tLatOptIsotropic) then
+    else if (tLatOptIsotropic) then
       tmpLatDerivs(:,:) = tmpLatDerivs * normLatVecs
       constrLatDerivs(:) = 0.0_dp
       constrLatDerivs(1) = sum(tmpLatDerivs)

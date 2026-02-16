@@ -662,7 +662,7 @@ contains
     if(size(inputSpecies) /= main%nAtom)then
       call error("Number of atoms must be kept constant in simulation." // newline //&
           & "Instead call destruct and then fully re-initialize DFTB+.")
-    endif
+    end if
 
     if (main%atomOrderMatters) then
       call error("This DftbPlus instance can not cope with atom reordering (by initialization)")

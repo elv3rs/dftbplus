@@ -339,7 +339,7 @@ contains
     write(fd, 200) nAtom
     if (present(comment)) then
       write(fd, "(A)") trim(comment)
-    elseif (present(velocities)) then
+    else if (present(velocities)) then
       write(fd, *) "Velocity in AA/ps"
     else
       write(fd, *) ""

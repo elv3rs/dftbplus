@@ -922,7 +922,7 @@ module dftbp_reks_reksinterface
       else
         call sccCalc%addForceDc(env, derivs, species, &
             & neighbourList%iNeighbour, img2CentCell)
-      endif
+      end if
 
 !      if (allocated(thirdOrd)) then
 !        call thirdOrd%updateCharges(pSpecies0, neighbourList, &

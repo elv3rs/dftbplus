@@ -267,7 +267,7 @@ contains
        tol_ = tol
     else
        tol_ = epsilon(0._dp)
-    endif
+    end if
 
     if (env%tAPICalculation) then
       if (.not. approxCoherence${NAME}$${DIM}$(env, data, tol_)) then

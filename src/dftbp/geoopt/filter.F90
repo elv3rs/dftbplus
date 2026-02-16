@@ -207,10 +207,10 @@ contains
           pressure = sum(pack(sigma, diagonal)) / 3.0_dp
           where(diagonal)
             sigma = pressure
-          elsewhere
+          else where
             sigma = 0.0_dp
           end where
-        endif
+        end if
         call invert33(inv_lat, latVec)
         inv_lat(:, :) = transpose(inv_lat)
         lat_grad(:, :) = matmul(sigma, inv_lat)

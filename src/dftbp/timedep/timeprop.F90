@@ -3146,7 +3146,7 @@ contains
           write(coorDat%unit, '(A2, 6F16.8)') trim(this%speciesName(this%species0(iAtom))), &
               &coord(:, iAtom) * Bohr__AA, auxVeloc(:, iAtom) * Bohr__AA / au__fs
         end do
-      endif
+      end if
     end if
 
     if (this%tForces .and. (mod(iStep,this%writeFreq) == 0)) then
@@ -4307,7 +4307,7 @@ contains
 
     if (.not. this%tdFieldThroughAPI) then
       this%presentField(:) = this%tdFunction(:, iStep)
-    elseif (.not. this%tdFieldIsSet) then
+    else if (.not. this%tdFieldIsSet) then
       if (iStep == 0) then
         this%presentField(:) = 0.0_dp
       else
@@ -4865,7 +4865,7 @@ contains
         call next(this%pMDIntegrator, this%movedAccel, new3Coord, this%movedVelo)
         this%coordNew(:, this%indMovedAtom) = new3Coord
 
-      elseif (.not. this%tdCoordsAndVelosAreSet) then
+      else if (.not. this%tdCoordsAndVelosAreSet) then
         @:RAISE_ERROR(errStatus, -1, "Coordinates and velocities were not set externally.")
       end if
 

@@ -737,7 +737,7 @@ contains
     allocate(rhs(ddCosmo%nylm, ddCosmo%nat), stat=iStatus)
     if (iStatus /= 0) then
       @:RAISE_ERROR(errStatus, iStatus, 'cosmo: [2] failed allocation')
-    endif
+    end if
 
     ! 1. RHS
     ! assemble rhs
@@ -747,7 +747,7 @@ contains
       allocate(g(ddCosmo%ngrid, ddCosmo%nat) , stat=iStatus)
       if (iStatus /= 0) then
         @:RAISE_ERROR(errStatus, iStatus, 'cosmo: [3] failed allocation')
-      endif
+      end if
 
       ! weight the potential...
       call wghpot(ddCosmo, phi, g)
@@ -755,13 +755,13 @@ contains
       ! ... and compute its multipolar expansion
       do iat = 1, ddCosmo%nat
         call intrhs(ddCosmo, iat, g(:, iat), rhs(:, iat))
-      enddo
+      end do
 
       ! deallocate workspace
       deallocate(g , stat=iStatus)
       if (iStatus /= 0) then
         @:RAISE_ERROR(errStatus, iStatus, 'cosmo: [1] failed deallocation')
-      endif
+      end if
 
     else
       ! no need to manipulate rhs
@@ -786,7 +786,7 @@ contains
     ! check solution
     if (.not.ok) then
       @:RAISE_ERROR(errStatus, -1, 'direct ddCOSMO did not converge!')
-    endif
+    end if
 
   end subroutine solveCosmoDirect
 
@@ -844,7 +844,7 @@ contains
     ! check solution
     if (.not.ok) then
       @:RAISE_ERROR(errStatus, -1, 'adjoint ddCOSMO did not converge!')
-    endif
+    end if
 
   end subroutine solveCosmoAdjoint
 

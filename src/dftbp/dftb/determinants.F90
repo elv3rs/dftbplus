@@ -117,7 +117,7 @@ contains
 
     if (iDet > size(this%determinants)) then
       call error("Internal error: invalid determinant")
-    endif
+    end if
 
     det = this%determinants(iDet)
 
@@ -137,7 +137,7 @@ contains
 
     if (iDet > size(this%determinants)) then
       call error("Internal error: invalid determinant")
-    endif
+    end if
 
     det = detNames(this%determinants(iDet))
 
@@ -260,7 +260,7 @@ contains
       else
         derivs(:,:) = mixedDerivs
       end if
-    endif
+    end if
 
     if (present(mixedStress)) then
       if (this%isSpinPurify) then

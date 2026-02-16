@@ -274,7 +274,7 @@ contains
     else
       ic = ati + atj*(atj-1)/2
       c6 = referenceC6(jref, iref, ic)
-    endif
+    end if
 
   end function getC6
 

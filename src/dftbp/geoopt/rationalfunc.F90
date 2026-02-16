@@ -302,7 +302,7 @@ contains
         tmp(:, :d2) = iwo
         deallocate(iwo)
         call move_alloc(tmp, iwo)
-      endif
+      end if
       iwo(:, irec) = v
     end subroutine mwrite
 

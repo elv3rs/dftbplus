@@ -255,7 +255,7 @@ contains
       else
         msaupd = 0
         msaup2 = 0
-      endif
+      end if
       ! End of ARPACK communication variables
 
     end if
@@ -289,7 +289,7 @@ contains
        allocate(lrGamma(this%nAtom, this%nAtom))
        call hybridXc%getCamGammaCluster(lrGamma)
        call env%globalTimer%stopTimer(globalTimers%lrCoulomb)
-    endif
+    end if
 
     ! Try to detect fractional occupations
     tFracOcc = .false.
@@ -1218,7 +1218,7 @@ contains
     if (allocated(lr%onSiteMatrixElements)) then
       write(tmpStr,'(A)') 'Onsite corrections not available in Stratmann diagonaliser.'
       call error(tmpStr)
-    endif
+    end if
 
     ! Number of excited states to solve for
     nExc = size(eval)
@@ -1230,7 +1230,7 @@ contains
     if (lr%subSpaceFactorStratmann < 2) then
       write(tmpStr,'(A)') 'SubSpaceFactor for Stratmann solver must be larger than one.'
       call error(tmpStr)
-    endif
+    end if
     subSpaceDim = min(lr%subSpaceFactorStratmann * nExc, rpa%nxov_rd)
     iterStrat = 1
 
@@ -1329,7 +1329,7 @@ contains
               & converge.'
         end if
         call error(tmpStr)
-      endif
+      end if
 
       ! This yields T=(A-B)^(-1/2)|X+Y>.
       ! Calc. |R_n>=|X+Y>=(A-B)^(1/2)T and |L_n>=|X-Y>=(A-B)^(-1/2)T.
@@ -1407,8 +1407,8 @@ contains
       do ii = 1, 2*nExc
         if (vecNorm(ii) > convThreshStrat) then
           newVec = newVec + 1
-        endif
-      enddo
+        end if
+      end do
 
       call incMemStratmann(subSpaceDim, subSpaceDim + newVec, vecB, vP, vM, mP, mM, mH, mMsqrt,&
             & mMsqrtInv, dummyM, evalInt, evecL, evecR)
@@ -1930,7 +1930,7 @@ contains
         end do
       end do
 
-    endif
+    end if
 
   end subroutine getZVectorEqRHS
 
@@ -3026,7 +3026,7 @@ contains
           end if
           write(fdXPlusY%unit, '(1x,i5,3x,a,3x,ES17.10)') ii, sign, sqrt(eval(ii))
           write(fdXPlusY%unit, '(6(1x,ES17.10))') xpy(:,ii)
-        endif
+        end if
 
         if (fdTrans%isConnected()) then
           write(fdTrans%unit, '(2x,a,T12,i5,T21,ES17.10,1x,a,2x,a)')&
@@ -3090,7 +3090,7 @@ contains
             if (updwn) sign = "U"
           end if
           write(fdXPlusY%unit, '(1x,i5,3x,a,3x,A)') ii,sign, '-'
-        endif
+        end if
 
         if (fdTrans%isConnected()) then
           write(fdTrans%unit, '(2x,a,1x,i5,5x,a,1x,a,3x,a)') 'Energy ', ii,  '-', 'eV', sign
@@ -3099,7 +3099,7 @@ contains
 
         if (fdTransDip%isConnected()) then
           write(fdTransDip%unit, '(1x,i5,1x,A)') ii, '-'
-        endif
+        end if
 
       end if
 
@@ -4199,7 +4199,7 @@ contains
         end do
       end do
 
-    endif
+    end if
 
   end subroutine getNadiaZvectorEqRHS
 
@@ -5053,7 +5053,7 @@ contains
     if (lr%tSpin) then
       allocate(xpyqds(lr%nAtom))
       allocate(gamxpyqds(lr%nAtom))
-    endif
+    end if
     allocate(xpyq(lr%nAtom))
     allocate(qTr(lr%nAtom))
     allocate(gamxpyq(lr%nAtom))
@@ -5338,7 +5338,7 @@ contains
       preFactor = 1.0_dp
     else
       preFactor = sqrt(2.0_dp)
-    endif
+    end if
 
     allocate(atomicTransQ(lr%nAtom))
     allocate(qia(lr%nAtom))

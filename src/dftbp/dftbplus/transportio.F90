@@ -50,11 +50,11 @@ contains
 
     if (size(shiftPerL, dim=1) /= orb%mShell) then
       call error("Internal error in writeshift: size(shiftPerL,1)")
-    endif
+    end if
 
     if (size(shiftPerL, dim=2) /= size(orb%nOrbAtom)) then
       call error("Internal error in writeshift size(shiftPerL,2)")
-    endif
+    end if
 
     call openFile(fdHS, fShifts, mode="w")
     write(fdHS%unit, *) nAtom, orb%mShell, orb%mOrb, nSpin

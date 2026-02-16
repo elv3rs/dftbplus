@@ -366,14 +366,14 @@ contains
       else
         C(K) = B(J)
         J = J+1
-      endif
+      end if
       K = K + 1
-    enddo
+    end do
     do while (I <= NA)
       C(K) = A(I)
       I = I + 1
       K = K + 1
-    enddo
+    end do
 
   end subroutine merge_int
 
@@ -399,9 +399,9 @@ contains
         V = A(1)
         A(1) = A(2)
         A(2) = V
-      endif
+      end if
       return
-    endif
+    end if
 
     NA=(N+1)/2
     NB=N-NA
@@ -412,7 +412,7 @@ contains
     if (A(NA) > A(NA+1)) then
       T(1:NA)=A(1:NA)
       call merge(NA,NB,N,T,A(NA+1:),A)
-    endif
+    end if
 
   end subroutine MergeSort_Int
 
@@ -480,14 +480,14 @@ contains
       else
         C(K,:) = B(J,:)
         J = J+1
-      endif
+      end if
       K = K + 1
-    enddo
+    end do
     do while (I <= NA)
       C(K,:) = A(I,:)
       I = I + 1
       K = K + 1
-    enddo
+    end do
 
   end subroutine merge_indx_int
 
@@ -517,9 +517,9 @@ contains
         V = A(1,:)
         A(1,:) = A(2,:)
         A(2,:) = V
-      endif
+      end if
       return
-    endif
+    end if
 
     NA=(N+1)/2
     NB=N-NA
@@ -530,7 +530,7 @@ contains
     if (A(NA,2) > A(NA+1,2)) then
       T(1:NA,:)=A(1:NA,:)
       call merge(NA,NB,N,T(:NA,:),A(NA+1:N,:),A(:N,:))
-    endif
+    end if
 
   end subroutine mergeSort_indx_int
 
@@ -587,14 +587,14 @@ contains
       else
         C(K) = B(J)
         J = J+1
-      endif
+      end if
       K = K + 1
-    enddo
+    end do
     do while (I <= NA)
       C(K) = A(I)
       I = I + 1
       K = K + 1
-    enddo
+    end do
 
   end subroutine merge_real
 
@@ -622,9 +622,9 @@ contains
         V = A(1)
         A(1) = A(2)
         A(2) = V
-      endif
+      end if
       return
-    endif
+    end if
 
     NA=(N+1)/2
     NB=N-NA
@@ -635,7 +635,7 @@ contains
     if (A(NA) > A(NA+1)) then
       T(1:NA)=A(1:NA)
       call merge(NA,NB,N,T,A(NA+1:),A)
-    endif
+    end if
 
   end subroutine mergeSort_real
 
@@ -709,14 +709,14 @@ contains
       else
         C(K,:) = B(J,:)
         J = J+1
-      endif
+      end if
       K = K + 1
-    enddo
+    end do
     do while (I <= NA)
       C(K,:) = A(I,:)
       I = I + 1
       K = K + 1
-    enddo
+    end do
 
   end subroutine merge_indx_real
 
@@ -750,9 +750,9 @@ contains
         V = A(1,:)
         A(1,:) = A(2,:)
         A(2,:) = V
-      endif
+      end if
       return
-    endif
+    end if
 
     NA=(N+1)/2
     NB=N-NA
@@ -763,7 +763,7 @@ contains
     if (A(NA,2) > A(NA+1,2) .and. (A(NA,2) - A(NA+1,2)) > tol) then
       T(1:NA,:)=A(1:NA,:)
       call merge(NA,NB,N,T(:NA,:),A(NA+1:N,:),A(:N,:),tol)
-    endif
+    end if
 
   end subroutine mergeSort_indx_real
 

@@ -208,7 +208,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -217,7 +217,7 @@ contains
       call checkError(child2, iErr, "Invalid logical value")
       call checkNoData(child2, char(text), iStart)
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(modifier)) then
         modifier = ""
@@ -277,7 +277,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -287,11 +287,11 @@ contains
       call checkNoData(child2, char(text), iStart)
       if (present(nItem)) then
         nItem = nReadItem
-      elseif (nReadItem /= size(variableValue)) then
+      else if (nReadItem /= size(variableValue)) then
         call detailedError(node, MSG_MISSING_VALUES)
       end if
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(nItem)) then
         nItem = size(default)
@@ -354,7 +354,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -367,7 +367,7 @@ contains
         call checkNoData(child2, char(text), iStart)
       end if
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(modifier)) then
         modifier = ""
@@ -419,7 +419,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -428,7 +428,7 @@ contains
       call checkError(child2, iErr, "Invalid real value")
       call checkNoData(child2, char(text), iStart)
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(modifier)) modifier = ""
       if (present(isDefaultExported)) then
@@ -490,7 +490,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -500,11 +500,11 @@ contains
       call checkNoData(child2, char(text), iStart)
       if (present(nItem)) then
         nItem = nReadItem
-      elseif (nReadItem /= size(variableValue)) then
+      else if (nReadItem /= size(variableValue)) then
         call detailedError(node, MSG_MISSING_VALUES)
       end if
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(nItem)) then
         nItem = size(default)
@@ -576,12 +576,12 @@ contains
     end if
     if (present(nItem)) then
       nItem = nReadItem
-    elseif (nReadItem /= size(variableValue)) then
+    else if (nReadItem /= size(variableValue)) then
       call detailedError(node, MSG_MISSING_VALUES)
     end if
     if (present(modifier)) then
       modifier = modif
-    elseif (len(modif) > 0) then
+    else if (len(modif) > 0) then
       call detailedError(child2, MSG_NOMODIFIER)
     end if
     variableValue(:,:) = reshape(buffer, shape(variableValue))
@@ -624,7 +624,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -633,7 +633,7 @@ contains
       call checkError(child2, iErr, "Invalid real value")
       call checkNoData(child2, char(text), iStart)
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(modifier)) then
         modifier = ""
@@ -694,7 +694,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -704,11 +704,11 @@ contains
       call checkNoData(child2, char(text), iStart)
       if (present(nItem)) then
         nItem = nReadItem
-      elseif (nReadItem /= size(variableValue)) then
+      else if (nReadItem /= size(variableValue)) then
         call detailedError(node, MSG_MISSING_VALUES)
       end if
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(nItem)) then
         nItem = size(default)
@@ -764,7 +764,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -773,7 +773,7 @@ contains
       call checkError(child2, iErr, "Invalid integer variableValue")
       call checkNoData(child2, char(text), iStart)
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(modifier)) modifier = ""
       if (present(isDefaultExported)) then
@@ -834,7 +834,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       iStart = 1
@@ -844,11 +844,11 @@ contains
       call checkNoData(child2, char(text), iStart)
       if (present(nItem)) then
         nItem = nReadItem
-      elseif (nReadItem /= size(variableValue)) then
+      else if (nReadItem /= size(variableValue)) then
         call detailedError(node, MSG_MISSING_VALUES)
       end if
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       variableValue = default
       if (present(nItem)) then
         nItem = size(default)
@@ -918,12 +918,12 @@ contains
     end if
     if (present(nItem)) then
       nItem = nReadItem
-    elseif (nReadItem /= size(variableValue)) then
+    else if (nReadItem /= size(variableValue)) then
       call detailedError(node, MSG_MISSING_VALUES)
     end if
     if (present(modifier)) then
       modifier = modif
-    elseif (len(modif) > 0) then
+    else if (len(modif) > 0) then
       call detailedError(child2, MSG_NOMODIFIER)
     end if
     variableValue(:,:) = reshape(buffer, shape(variableValue))
@@ -966,7 +966,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1043,7 +1043,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1121,7 +1121,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1164,7 +1164,7 @@ contains
     end do
     if (iErr == TOKEN_ERROR) then
       call detailedError(node, "Invalid real value")
-    elseif (iErr == TOKEN_EOS .and. nItem /= 0) then
+    else if (iErr == TOKEN_EOS .and. nItem /= 0) then
       call detailedError(node, "Unexpected end of data")
     end if
 
@@ -1204,7 +1204,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1282,7 +1282,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1325,7 +1325,7 @@ contains
     end do
     if (iErr == TOKEN_ERROR) then
       call detailedError(node, "Invalid real value")
-    elseif (iErr == TOKEN_EOS .and. nItem /= 0) then
+    else if (iErr == TOKEN_EOS .and. nItem /= 0) then
       call detailedError(node, "Unexpected end of data")
     end if
 
@@ -1365,7 +1365,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1445,7 +1445,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1488,7 +1488,7 @@ contains
     end do
     if (iErr == TOKEN_ERROR) then
       call detailedError(node, "Invalid real value")
-    elseif (iErr == TOKEN_EOS .and. nItem /= 0) then
+    else if (iErr == TOKEN_EOS .and. nItem /= 0) then
       call detailedError(node, "Unexpected end of data")
     end if
 
@@ -1541,7 +1541,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1593,7 +1593,7 @@ contains
       call getNextToken(text, bufferInt, iStart, iErr, nItem)
       if (iErr == TOKEN_ERROR) then
         call detailedError(node, "Invalid integer")
-      elseif (iErr == TOKEN_EOS .and. nItem /= 0) then
+      else if (iErr == TOKEN_EOS .and. nItem /= 0) then
         call detailedError(node, "Unexpected end of data")
       end if
       if (iErr == TOKEN_OK) then
@@ -1658,7 +1658,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       call getFirstTextChild(child2, text)
@@ -1716,7 +1716,7 @@ contains
       call getNextToken(text, bufferStr, iStart, iErr)
       if (iErr == TOKEN_ERROR) then
         call detailedError(node, "Invalid string")
-      elseif (iErr == TOKEN_EOS) then
+      else if (iErr == TOKEN_EOS) then
         exit
       end if
       call append(valueStr, char(bufferStr))
@@ -1805,7 +1805,7 @@ contains
       call getAttribute(child2, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child2, MSG_NOMODIFIER)
       end if
       variableValue => getFirstChild(child2)
@@ -1813,7 +1813,7 @@ contains
         call detailedError(child2, "Missing value")
       end if
       call setAttribute(child2, attrProcessed, "")
-    elseif (present(default)) then
+    else if (present(default)) then
       if (present(modifier)) then
         modifier = ""
       end if
@@ -1974,7 +1974,7 @@ contains
       call getAttribute(child, attrModifier, modif)
       if (present(modifier)) then
         modifier = modif
-      elseif (len(modif) > 0) then
+      else if (len(modif) > 0) then
         call detailedError(child, MSG_NOMODIFIER)
       end if
       call setAttribute(child, attrProcessed, "")
@@ -3530,7 +3530,7 @@ contains
     child => getFirstChild(node)
     if (.not. associated(child)) then
       str = ""
-    elseif (getNodeType(child) /= TEXT_NODE) then
+    else if (getNodeType(child) /= TEXT_NODE) then
       call detailedError(child, "Invalid node type.")
     else
       call getNodeValue(child, str)
@@ -3553,7 +3553,7 @@ contains
 
     if (iErr == TOKEN_ERROR) then
       call detailedError(node, msg)
-    elseif (iErr == TOKEN_EOS) then
+    else if (iErr == TOKEN_EOS) then
       call detailedError(node, "Unexpected end of data")
     end if
 

@@ -700,7 +700,7 @@ contains
         eval_0 = pp_eval(i)
         homo = aa
         cycle RPA
-      endif
+      end if
 
       diff_a = aa - homo - 1
       diff_b = bb - homo - 1
@@ -716,7 +716,7 @@ contains
         write(fdExc%unit, '(1x,f10.3,6x,a,i2,8x,f6.3,6x,f7.3,15x,a)')&
             & Hartree__eV * (pp_eval(i) - eval_0),&
             & 'HOMO -> LUMO +', diff_a, weight, ks_ener_a, sym
-      endif
+      end if
 
       if (((ii > nExc) .and. (sym == "S")) .or. ((ii == nExc) .and. (sym == "T"))) exit RPA
 
