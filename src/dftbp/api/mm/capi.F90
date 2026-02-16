@@ -920,11 +920,11 @@ contains
       maxlen0 = huge(maxlen0) - 1
     end if
 
-    do ii = 1, maxlen0
+    loop1: do ii = 1, maxlen0
       if (cstring(ii) == c_null_char) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     allocate(character(ii - 1) :: res)
     res = transfer(cstring(1 : ii - 1), res)
 

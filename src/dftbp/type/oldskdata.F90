@@ -232,16 +232,16 @@ contains
     rewind(fp)
 
     ! Look for spline
-    do
+    loop1: do
       read(fp, "(A)", iostat=iostat) chdummy
       if (iostat /= 0) then
         hasspline = .false.
-        exit
+        exit loop1
       else if (chdummy == "Spline") then
         hasspline = .true.
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
 
     if (.not. hasspline) then
       write(chdummy, "(A,A,A)") "No spline repulsive found in file '", trim(fname), "'"
@@ -335,16 +335,16 @@ contains
     rewind(fd)
 
     ! Seek hybrid xc-functional section in SK-file
-    do
+    loop1: do
       read(fd, "(A)", iostat=iErr) strDummy
       if (iErr /= 0) then
         isHybridXcTag = .false.
-        exit
+        exit loop1
       else if (strDummy == "RangeSep") then
         isHybridXcTag = .true.
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
 
     if (isHybridXcTag) then
       read(fd, "(A)", iostat=iErr) strDummy

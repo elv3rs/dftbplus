@@ -170,9 +170,9 @@ contains
     this%rVdW2 = 0.0_dp
     this%maxR = 0.0_dp
     tol = epsilon(1.0_dp)
-    do iAt1 = 1, this%nAtom
+    loop1: do iAt1 = 1, this%nAtom
       if (inp%polar(iAt1) < tol .or. inp%rWaals(iAt1) < tol) then
-        cycle
+        cycle loop1
       end if
       do iAt2 = 1, iAt1
         this%c6(iAt2, iAt1) = 1.5_dp * inp%polar(iAt1) * inp%polar(iAt2) / (sqrt(inp%polar(iAt1)&
@@ -186,7 +186,7 @@ contains
           this%rVdW2(iAt1, iAt2) = this%rVdW2(iAt2, iAt1)
         end if
       end do
-    end do
+    end do loop1
     this%rCutoff = (maxval(this%c6) / tolDispersion)**(1.0_dp / 6.0_dp)
 
     this%tPeriodic = present(latVecs)
@@ -478,11 +478,11 @@ contains
     !$omp private(h0, h1, h2, rTmp, vec, gr, ii)
     do iIter = 1, size(iterIndices)
       iAt1 = iterIndices(iIter)
-      do iNeigh = 1, nNeighbourSK(iAt1)
+      loop1: do iNeigh = 1, nNeighbourSK(iAt1)
         iAt2 = iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         if (c6(iAt2f, iAt1) == 0.0_dp) then
-          cycle
+          cycle loop1
         end if
         dist2 = neighDist2(iNeigh, iAt1)
         dist = sqrt(dist2)
@@ -510,7 +510,7 @@ contains
             localSigma(:,ii) = localSigma(:,ii) - 0.5_dp * gr * vec(ii)
           end do
         end if
-      end do
+      end do loop1
     end do
     !$omp end parallel do
 

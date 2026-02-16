@@ -182,13 +182,13 @@ contains
     h5Scaling_(:,:) = -1.0_dp
     sumVdw_(:,:) = -1.0_dp
     do iSp1 = 1, size(speciesNames)
-      do iSp2 = 1, size(speciesNames)
+      loop1: do iSp2 = 1, size(speciesNames)
         spName1 = speciesNames(iSp1)
         spName2 = speciesNames(iSp2)
 
         ! Scaling only needed if exactly one of the pair is a H-atom
         if (count([spName1, spName2] == "H") /= 1) then
-          cycle
+          cycle loop1
         end if
 
         if (spName1 /= "H") then
@@ -210,7 +210,7 @@ contains
         if (h5Scaling_(iSp2, iSp1) > 0.0_dp) then
           sumVdw_(iSp2, iSp1) = vdwH + vdwHeavy
         end if
-      end do
+      end do loop1
     end do
 
   end subroutine getParams_

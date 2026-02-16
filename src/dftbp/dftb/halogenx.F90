@@ -99,15 +99,15 @@ contains
 
     this%maxDab = 0.0_dp
     this%interactionType(:,:) = 0
-    do iSp1 = 1, nSpecies
+    loop1: do iSp1 = 1, nSpecies
       spName1 = speciesNames(iSp1)
       if (.not. any(spName1 == halogenXSpecies1)) then
-        cycle
+        cycle loop1
       end if
-      do iSp2 = 1, nSpecies
+      loop2: do iSp2 = 1, nSpecies
         spName2 = speciesNames(iSp2)
         if (.not. any(spName2 == halogenXSpecies2)) then
-          cycle
+          cycle loop2
         end if
         select case(trim(spName1) // trim(spName2))
         case("OCl")
@@ -125,8 +125,8 @@ contains
         end select
         this%interactionType(iSp2, iSp1) = this%interactionType(iSp1, iSp2)
         this%maxDab = max(this%maxDab, dab(this%interactionType(iSp1, iSp2)))
-      end do
-    end do
+      end do loop2
+    end do loop1
 
     if (all(this%interactionType == 0)) then
       call error("No suitable (O-X or N-X) halogen combinations present for this correction")
@@ -245,11 +245,11 @@ contains
 
     do iAt1 = 1, this%nAtom
       iSp1 = species(iAt1)
-      do iNeigh = 1, nNeigh(iAt1)
+      loop1: do iNeigh = 1, nNeigh(iAt1)
         iAt2 = neigh%iNeighbour(iNeigh,iAt1)
         iAt2f = img2CentCell(iAt2)
         if (iAt2f == iAt1) then
-          cycle
+          cycle loop1
         end if
         iSp2 = species(iAt2f)
         if (this%interactionType(iSp1,iSp2) /= 0) then
@@ -263,7 +263,7 @@ contains
           derivs(:,iAt2f) = derivs(:,iAt2f) - fTmp
 
         end if
-      end do
+      end do loop1
     end do
 
   end subroutine addGradients

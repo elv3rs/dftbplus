@@ -3637,9 +3637,9 @@ contains
       if (allocated(input%ctrl%hubbU)) then
         strTmp = ""
         tFirst = .true.
-        do iSp = 1, this%nType
+        loop1: do iSp = 1, this%nType
           if (all(input%ctrl%hubbU(1:this%orb%nShell(iSp), iSp) == 0.0_dp)) then
-            cycle
+            cycle loop1
           end if
           do jj = 1, this%orb%nShell(iSp)
             if (tFirst) then
@@ -3652,7 +3652,7 @@ contains
                 & this%speciesName(iSp), jj, shellNames(this%orb%angShell(jj, iSp)+1),&
                 & hubbU(jj, iSp)
           end do
-        end do
+        end do loop1
       end if
     end if
 

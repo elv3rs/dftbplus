@@ -235,13 +235,13 @@ contains
       nGrp = nGrp + 1
       levelRange(1, nGrp) = ii
       grpMembership(ii) = nGrp
-      do jj = ii + 1, iEnd
+      loop1: do jj = ii + 1, iEnd
         ! assume sorted:
         if (abs(levels(jj) - levels(jj-1)) > localTol) then
-          exit
+          exit loop1
         end if
         grpMembership(jj) = nGrp
-      end do
+      end do loop1
       ii = jj
       levelRange(2, nGrp) = jj - 1
     end do

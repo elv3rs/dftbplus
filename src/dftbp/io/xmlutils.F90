@@ -45,13 +45,13 @@ contains
       child => node
     else
       child => getFirstChild(node)
-      do while (associated(child))
+      loop1: do while (associated(child))
         call getNodeName(child, buffer)
         if (buffer == name) then
-          exit
+          exit loop1
         end if
         child => getNextSibling(child)
-      end do
+      end do loop1
     end if
 
   end function getFirstChildByName
@@ -78,13 +78,13 @@ contains
       child => node
     else
       child => getLastChild(node)
-      do while (associated(child))
+      loop1: do while (associated(child))
         call getNodeName(child, buffer)
         if (buffer == name) then
-          exit
+          exit loop1
         end if
         child => getPreviousSibling(child)
-      end do
+      end do loop1
     end if
 
   end function getLastChildByName

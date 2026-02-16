@@ -209,24 +209,24 @@ contains
     lcSymbol = "  "
 
     k = 0
-    do j = 1, len_trim(symbol)
-      if (k > 2) exit
+    loop1: do j = 1, len_trim(symbol)
+      if (k > 2) exit loop1
       l = iachar(symbol(j:j))
-      if (k >= 1 .and. l == iachar(" ")) exit
-      if (k >= 1 .and. l == 9) exit
+      if (k >= 1 .and. l == iachar(" ")) exit loop1
+      if (k >= 1 .and. l == 9) exit loop1
       if (l >= iachar("A") .and. l <= iachar("Z")) l = l + offset
       if (l >= iachar("a") .and. l <= iachar("z")) then
         k = k+1
         lcSymbol(k:k) = achar(l)
       end if
-    end do
+    end do loop1
 
-    do i = 1, size(elementSymbol)
+    loop2: do i = 1, size(elementSymbol)
       if (lcSymbol == elementSymbol(i)) then
         number = i
-        exit
+        exit loop2
       end if
-    end do
+    end do loop2
 
   end function symbolToNumber
 

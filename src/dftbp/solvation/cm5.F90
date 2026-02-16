@@ -347,11 +347,11 @@ contains
 
     do iAt1 = 1, this%nAtom
       iSp1 = species(iAt1)
-      do iNeigh = 1, nNeighbour(iAt1)
+      loop1: do iNeigh = 1, nNeighbour(iAt1)
         iAt2 = iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         iSp2 = species(iAt2f)
-        if (iSp1 == iSp2) cycle  ! includes iAt1 == iAt2f case
+        if (iSp1 == iSp2) cycle loop1  ! includes iAt1 == iAt2f case
         dist = sqrt(neighDist2(iNeigh, iAt1))
         p12 = this%pairParam(iSp1, iSp2)
         p21 = this%pairParam(iSp2, iSp1)
@@ -361,7 +361,7 @@ contains
         this%cm5(iAt1) = this%cm5(iAt1) + dEr * p12
         this%cm5(iAt2f) = this%cm5(iAt2f) + dEr * p21
 
-      end do
+      end do loop1
     end do
 
   end subroutine getCorrection
@@ -404,11 +404,11 @@ contains
 
     do iAt1 = 1, this%nAtom
       iSp1 = species(iAt1)
-      do iNeigh = 1, nNeighbour(iAt1)
+      loop1: do iNeigh = 1, nNeighbour(iAt1)
         iAt2 = iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         iSp2 = species(iAt2f)
-        if (iSp1 == iSp2) cycle  ! includes iAt1 == iAt2f case
+        if (iSp1 == iSp2) cycle loop1  ! includes iAt1 == iAt2f case
         dist = sqrt(neighDist2(iNeigh, iAt1))
         vec(:) = coords(:, iAt1) - coords(:, iAt2)
         p12 = this%pairParam(iSp1, iSp2)
@@ -429,7 +429,7 @@ contains
         this%dcm5dL(:, :, iAt1) = this%dcm5dL(:, :, iAt1) + dSr * p12
         this%dcm5dL(:, :, iAt2f) = this%dcm5dL(:, :, iAt2f) + dSr * p21
 
-      end do
+      end do loop1
     end do
 
   end subroutine getCorrectionDerivs

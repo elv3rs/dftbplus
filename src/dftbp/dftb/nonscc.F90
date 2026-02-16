@@ -498,14 +498,14 @@ contains
 
       ! want value of ii to be consistent however the loop exits, so using a while instead of for
       ! loop
-      do while (ii < maxrows .and. .not. all(tConverged))
+      loop1: do while (ii < maxrows .and. .not. all(tConverged))
         ! using powers of 2, so should be exactly representable
         hh = hh / 2.0_dp
         if (hh <= epsilon(1.0_dp)**0.25_dp) then
           ! rounding error on order of epsilon/h^2 and central difference formula truncation error
           ! of O(h^2), so want to keep above epsilon/h^4. If the function gets large, then
           ! max(1,|f|) epsilon^(1/4) might be better
-          exit
+          exit loop1
         end if
         ii = ii + 1
         do kk = 1, 2
@@ -528,9 +528,9 @@ contains
           end where
         end do
         do ll = 1, size(dd, dim=2)
-          do kk = 1, size(dd, dim=1)
+          loop2: do kk = 1, size(dd, dim=1)
             if (tConverged(kk, ll)) then
-              cycle
+              cycle loop2
             end if
             diff = abs(dd(kk,ll,mm-1,ii) - dd(kk,ll,mm,ii))
             if (diff <= tol * dd(kk,ll,mm,ii)) then
@@ -539,9 +539,9 @@ contains
               ! and mark it as converged
               tConverged(kk,ll) = .true.
             end if
-          end do
+          end do loop2
         end do
-      end do
+      end do loop1
       deriv(:,:,iCart) = dd(:,:,mm,ii)
     end do
 
@@ -578,11 +578,11 @@ contains
     sp2 = species(atomJ)
 
     do ii = 1, 3
-      do jj = 1, 3
+      loop1: do jj = 1, 3
 
         if (ii == jj) then
           ! treat diagonal case separately
-          cycle
+          cycle loop1
         end if
 
         do kk = -1, 1, 2
@@ -600,7 +600,7 @@ contains
             deriv(:,:,jj,ii) = deriv(:,:,jj,ii) + real(kk * ll, dp) * tmp
           end do
         end do
-      end do
+      end do loop1
 
       do jj = -1, 1
 

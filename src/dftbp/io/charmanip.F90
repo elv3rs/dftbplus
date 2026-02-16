@@ -295,7 +295,7 @@ contains
     end if
 
     ind = 0
-    do ii = iStart, iEnd, iStep
+    loop1: do ii = iStart, iEnd, iStep
       cc = string(ii:ii)
       tFound = .false.
       do jj = 1, lenSet
@@ -303,9 +303,9 @@ contains
       end do
       if (.not. tFound) then
         ind = ii
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
 
   end function complementaryScan
 

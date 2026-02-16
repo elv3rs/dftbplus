@@ -261,7 +261,7 @@ contains
       return
     end if
 
-    do while (nNeighbourSK < maxNeighs)
+    loop1: do while (nNeighbourSK < maxNeighs)
       if (this%iAtom2 > this%nAtom) then
         if (this%tPeriodic) then
           call this%latPointGen%getNextPoint(this%cellVec, this%tFinished)
@@ -270,7 +270,7 @@ contains
           this%tFinished = .true.
         end if
         if (this%tFinished) then
-          exit
+          exit loop1
         end if
         this%iAtom2 = this%iAtom1
       end if
@@ -284,7 +284,7 @@ contains
         img2CentCellTmp(nNeighbourSK) = this%iAtom2
       end if
       this%iAtom2 = this%iAtom2 + 1
-    end do
+    end do loop1
 
     if (present(coords)) then
       coords(:,1:nNeighbourSK) = coordsTmp(:,1:nNeighbourSK)

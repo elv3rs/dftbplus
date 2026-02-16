@@ -206,17 +206,17 @@ contains
 
     ! wait for anything other than 'STATUS' state from the interface, returning state 'READY' in the
     ! meanwhile
-    do while (.true.)
+    loop1: do while (.true.)
       call readbuffer(this%socket, header)
       call this%logger%write("ipisocket%receive: read from socket: " // trim(header), 3)
       if (trim(header) /= "STATUS") then
-        exit
+        exit loop1
       end if
 
       buffer = "READY"
       call writebuffer(this%socket, buffer)
       call this%logger%write("ipisocket%receive: write to socket: READY", 3)
-    end do
+    end do loop1
 
     ! expecting positions data
     select case (trim(header))

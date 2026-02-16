@@ -1251,7 +1251,7 @@ contains
       ! evaluate derivative of density matrix
       if (allocated(eigVecsReal)) then
 
-        do iKS = 1, parallelKS%nLocalKS
+        loop1: do iKS = 1, parallelKS%nLocalKS
 
           iS = parallelKS%localKS(2, iKS)
 
@@ -1266,14 +1266,14 @@ contains
               & degenTransform(iKS), species, dEi, dPsiReal, coord, errStatus, omega, isHelical,&
               & eta=eta)
           if (errStatus%hasError()) then
-            exit
+            exit loop1
           end if
-        end do
+        end do loop1
         @:PROPAGATE_ERROR(errStatus)
 
       else if (nSpin > 2) then
 
-        do iKS = 1, parallelKS%nLocalKS
+        loop2: do iKS = 1, parallelKS%nLocalKS
 
           iK = parallelKS%localKS(1, iKS)
 
@@ -1283,9 +1283,9 @@ contains
               & degenTransform(iKS), species, coord, dEi, dPsiCmplx, errStatus, omega, isHelical,&
               & eta=eta)
           if (errStatus%hasError()) then
-            exit
+            exit loop2
           end if
-        end do
+        end do loop2
         @:PROPAGATE_ERROR(errStatus)
 
         ! adjustment from Pauli to charge/spin
@@ -1296,7 +1296,7 @@ contains
 
       else
 
-        do iKS = 1, parallelKS%nLocalKS
+        loop3: do iKS = 1, parallelKS%nLocalKS
 
           iK = parallelKS%localKS(1, iKS)
 
@@ -1305,9 +1305,9 @@ contains
               & dRho, kPoint, kWeight, iCellVec, cellVec, iKS, degenTransform(iKS), species,&
               & coord, dEi, dPsiCmplx, errStatus, omega, isHelical, eta=eta)
           if (errStatus%hasError()) then
-            exit
+            exit loop3
           end if
-        end do
+        end do loop3
         @:PROPAGATE_ERROR(errStatus)
 
       end if
@@ -1327,12 +1327,12 @@ contains
         if (allocated(idRhoExtra)) then
           idRhoExtra(:,:) = 0.0_dp
         end if
-        do iKS = 1, parallelKS%nLocalKS
+        loop4: do iKS = 1, parallelKS%nLocalKS
           iK = parallelKS%localKS(1, iKS)
           iS = parallelKS%localKS(2, iKS)
 
           if (.not.tMetallic(iS,iK)) then
-            cycle
+            cycle loop4
           end if
 
           dqOut(:,:,iS) = 0.0_dp
@@ -1373,7 +1373,7 @@ contains
 
           end if
 
-        end do
+        end do loop4
 
         if (nSpin > 2) then
           ! adjustment from Pauli to charge/spin
@@ -1687,13 +1687,13 @@ contains
     nFilled(:,:) = -1
     do iS = 1, nIndepHam
       do iK = 1, nKPts
-        do iLev = 1, nOrbs
+        loop1: do iLev = 1, nOrbs
           if (filling(iLev, iK, iS) < epsilon(1.0)) then
             ! assumes Fermi filling, so above this is empty
             nFilled(iS, iK) = iLev - 1
-            exit
+            exit loop1
           end if
-        end do
+        end do loop1
         ! check if channel is fully filled
         if (nFilled(iS, iK) < 0) then
           nFilled(iS, iK) = nOrbs
@@ -1703,13 +1703,13 @@ contains
     nEmpty(:,:) = -1
     do iS = 1, nIndepHam
       do iK = 1, nKpts
-        do iLev = 1, nOrbs
+        loop2: do iLev = 1, nOrbs
           if (abs(filling(iLev, iK, iS) - maxFill) > epsilon(1.0)) then
             ! assumes Fermi filling, so this is filled
             nEmpty(iS, iK) = iLev
-            exit
+            exit loop2
           end if
-        end do
+        end do loop2
         !> Check is channel is empty
         if (nEmpty(iS, iK) < 0) then
           nEmpty(iS, iK) = 1

@@ -1592,16 +1592,16 @@ contains
     nNeigh = iterChunkSize_
     do while (nNeigh == iterChunkSize_)
       call neighIter%getNextNeighbours(nNeigh, coords=neighCoords, img2CentCell=neighImages)
-      do iNeigh = 1, nNeigh
+      loop1: do iNeigh = 1, nNeigh
         iAt2f = neighImages(iNeigh)
-        if (iAt2f == iAt1) cycle
+        if (iAt2f == iAt1) cycle loop1
         rr(:) = coords(:,iAt1) - neighCoords(:,iNeigh)
         prefac = dQOutAtom(iAt1) * dQInAtom(iAt2f) + dQInAtom(iAt1) * dQOutAtom(iAt2f)&
             & - dQInAtom(iAt1) * dQInAtom(iAt2f)
         contrib(:) = prefac * derivRTerm(rr, alpha)
         deriv(:,iAt1) = deriv(:,iAt1) + contrib
         deriv(:,iAt2f) = deriv(:,iAt2f) - contrib
-      end do
+      end do loop1
     end do
 
   end subroutine addNeighbourContribsXl
@@ -2195,10 +2195,10 @@ contains
     end if
 
     if (present(blurWidth)) then
-      do iR = 1, size(rVec, dim=2)
+      loop1: do iR = 1, size(rVec, dim=2)
         absRR = sum((rr + rVec(:,iR))**2)
         if (absRR < tolSameDist**2) then
-          cycle
+          cycle loop1
         end if
         if (absRR < (erfArgLimit_ * blurWidth)**2) then
           realSum = realSum + erfwrap(sqrt(absRR) / blurWidth) / sqrt(absRR+epsSoften2)
@@ -2206,13 +2206,13 @@ contains
           realSum = realSum + 1.0_dp / sqrt(absRR + epsSoften2)
         end if
         realSum = realSum - erfwrap(alpha * sqrt(absRR)) / sqrt(absRR + epsSoften2)
-      end do
+      end do loop1
     else
-      do iR = 1, size(rVec, dim=2)
+      loop2: do iR = 1, size(rVec, dim=2)
         absRR = sum((rr + rVec(:,iR))**2)
-        if (absRR < tolSameDist**2) cycle
+        if (absRR < tolSameDist**2) cycle loop2
         realSum = realSum + erfcwrap(alpha * sqrt(absRR)) / sqrt(absRR + epsSoften2)
-      end do
+      end do loop2
     end if
 
   end function ewaldReal
@@ -2243,10 +2243,10 @@ contains
     dewr = 0.0_dp
 
     if (present(blurWidth)) then
-      do iR = 1, size(rVec, dim=2)
+      loop1: do iR = 1, size(rVec, dim=2)
         rNew(:) = rdiff + rVec(:,iR)
         rr = norm2(rNew)
-        if (rr < tolSameDist2) cycle
+        if (rr < tolSameDist2) cycle loop1
         ! derivative of -erf(alpha * r) / r
         factor = alpha * rr
         dewr(:) = dewr + rNew * (-2.0_dp / sqrt(pi) * exp(-factor * factor) * factor&
@@ -2257,16 +2257,16 @@ contains
           dewr(:) = dewr + rNew * (2.0_dp / sqrt(pi) * exp(-factor * factor) * factor&
               & + erfcwrap(factor)) / (rr * rr * rr)
         end if
-      end do
+      end do loop1
     else
-      do iR = 1, size(rVec, dim=2)
+      loop2: do iR = 1, size(rVec, dim=2)
         rNew(:) = rdiff + rVec(:,iR)
         rr = norm2(rNew)
-        if (rr < tolSameDist2) cycle
+        if (rr < tolSameDist2) cycle loop2
         factor = alpha * rr
         dewr(:) = dewr + rNew * (-2.0_dp / sqrt(pi) * exp(-factor * factor) * factor&
             & - erfcwrap(factor)) / (rr * rr * rr)
-      end do
+      end do loop2
     end if
 
   end function derivEwaldReal
@@ -2764,9 +2764,9 @@ contains
     real(dp) :: dist, fTmp
     real(dp) :: vect(3)
 
-    do jj = 1, nAtom
+    loop1: do jj = 1, nAtom
 
-      if (iAt == jj) cycle
+      if (iAt == jj) cycle loop1
 
       vect(:) = coord(:,iAt) - coord(:,jj)
       dist = sqrt(sum(vect(:)**2))
@@ -2775,7 +2775,7 @@ contains
       vprime(iAt) = vprime(iAt) + deltaQAtom(jj)*fTmp
       vprime(jj) = vprime(jj) + deltaQAtom(iAt)*fTmp
 
-    end do
+    end do loop1
 
   end subroutine invRPrimeCluster
 

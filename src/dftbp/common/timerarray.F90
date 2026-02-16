@@ -172,15 +172,15 @@ contains
     write(fp, "(A)") repeat("-", 80)
     allCpu = 0.0
     allWall = 0.0
-    do iTimer = 1, size(this%timers)
+    loop1: do iTimer = 1, size(this%timers)
       level = this%timerLevels(iTimer)
       if (level > maxLevel) then
-        cycle
+        cycle loop1
       end if
       cpuTime = this%cpuTimes(iTimer)
       wallTime = this%wallClockTimes(iTimer)
       if (abs(cpuTime) < 1e-2_dp .and. abs(wallTime) < 1e-2) then
-        cycle
+        cycle loop1
       end if
       prefix = repeat(" ", 2 * (level - 1))
       if (level == 1) then
@@ -196,7 +196,7 @@ contains
         allCpu = allCpu + cpuTime
         allWall = allWall + wallTime
       end if
-    end do
+    end do loop1
     write(fp, "(A)") repeat("-", 80)
     write(fp, "(A,T40,A,T41,F11.2,1X,'(',F5.1,'%)',T61,F11.2,1X,'(',F5.1,'%)')")&
         & "Missing", "+", abs(totalCpu - allCpu),&

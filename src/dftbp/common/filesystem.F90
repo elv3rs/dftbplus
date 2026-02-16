@@ -124,11 +124,11 @@ contains
       return
     end if
 
-    do iPath = 1, size(searchPath)
+    loop1: do iPath = 1, size(searchPath)
       outName = joinPaths(char(searchPath(iPath)), trim(inName))
       inquire(file=outName, exist=exists)
-      if (exists) exit
-    end do
+      if (exists) exit loop1
+    end do loop1
 
     if (.not. exists .and. allocated(outName)) deallocate(outName)
 

@@ -472,17 +472,17 @@ contains
       ! Build Matrix A
       A_t(:,:) = 0.0_dp
       ab_r = 0
-      do ab = 1, nxvv
+      loop1: do ab = 1, nxvv
         call indxvv(nocc, ab, a, b)
-        if (a == b) cycle
+        if (a == b) cycle loop1
         ab_r = ab_r + 1
 
         A_t(ab_r, ab_r) = A_t(ab_r, ab_r) + eigVal(a) + eigVal(b)
 
         cd_r = ab_r - 1
-        do cd = ab, nxvv
+        loop2: do cd = ab, nxvv
           call indxvv(nocc, cd, c, d)
-          if (c == d) cycle
+          if (c == d) cycle loop2
           cd_r = cd_r + 1
 
           q_1(:) = transq(a, c, env, denseDesc, updwn, stimc, cc)
@@ -501,23 +501,23 @@ contains
           if (ab_r /= cd_r) then
             A_t(cd_r, ab_r) = A_t(cd_r, ab_r) + A_t(ab_r, cd_r)
           end if
-        end do
+        end do loop2
 
-      end do
+      end do loop1
 
       if (.not. tTDA) then
         ! Build Matrix B
         B_t(:,:) = 0.0_dp
         ab_r = 0
-        do ab = 1, nxvv
+        loop3: do ab = 1, nxvv
           call indxvv(nocc, ab, a, b)
-          if (a == b) cycle
+          if (a == b) cycle loop3
           ab_r = ab_r + 1
 
           kl_r = 0
-          do kl = 1, nxoo
+          loop4: do kl = 1, nxoo
             call indxoo(kl, k, l)
-            if (k == l) cycle
+            if (k == l) cycle loop4
             kl_r = kl_r + 1
 
             q_1(:) = transq(k, a, env, denseDesc, updwn, stimc, cc)
@@ -532,24 +532,24 @@ contains
               end do
             end do
 
-          end do
-        end do
+          end do loop4
+        end do loop3
 
         ! Build Matrix C
         C_t(:,:) = 0.0_dp
         ij_r = 0
-        do ij = 1, nxoo
+        loop5: do ij = 1, nxoo
           call indxoo(ij, i, j)
-          if (i == j) cycle
+          if (i == j) cycle loop5
           ij_r = ij_r + 1
 
           C_t(ij_r, ij_r) = C_t(ij_r, ij_r) - eigVal(i) - eigVal(j)
 
           kl_r = ij_r - 1
-          do kl = ij, nxoo
+          loop6: do kl = ij, nxoo
 
             call indxoo(kl, k, l)
-            if (k == l) cycle
+            if (k == l) cycle loop6
             kl_r = kl_r + 1
 
             q_1(:) = transq(i, k, env, denseDesc, updwn, stimc, cc)
@@ -568,9 +568,9 @@ contains
               C_t(kl_r, ij_r) = C_t(kl_r, ij_r) + C_t(ij_r, kl_r)
             end if
 
-          end do
+          end do loop6
 
-        end do
+        end do loop5
 
         ! Build ppRPA matrix
         PP(1:nxvv_r, 1:nxvv_r) = A_t

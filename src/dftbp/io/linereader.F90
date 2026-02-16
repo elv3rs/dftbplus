@@ -81,7 +81,7 @@ contains
       ioStat = this%ioStat
       return
     end if
-    do
+    loop1: do
       read(this%unit, "(a)", advance="no", iostat=ioStat, size=nReadChars) buffer
       if (ioStat > 0) then
         this%ioStat = ioStat
@@ -108,9 +108,9 @@ contains
         else
           this%ioStat = ioStat
         end if
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     ! Make sure, line is always allocated if returned ioStat is zero
     if (ioStat == 0 .and. .not. allocated(line)) line = ""
 

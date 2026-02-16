@@ -1244,21 +1244,21 @@ contains
     if (tReduce) then
       allocate(irreducible(nAllKPoint))
       irreducible(:) = .true.
-      do i1 = 1, nAllKPoint
+      loop1: do i1 = 1, nAllKPoint
         if (.not. irreducible(i1)) then
-          cycle
+          cycle loop1
         end if
         rr(:) = modulo(-1.0_dp * allKPoints(:,i1), 1.0_dp)
-        do i2 = i1 + 1, nAllKPoint
+        loop2: do i2 = i1 + 1, nAllKPoint
           if (.not. irreducible(i2)) then
-            cycle
+            cycle loop2
           end if
           if (all(abs(allKPoints(:,i2) - rr(:)) < tol)) then
             irreducible(i2) = .false.
             allKWeights(i1) = allKWeights(i1) + allKWeights(i2)
           end if
-        end do
-      end do
+        end do loop2
+      end do loop1
       nKPoint = count(irreducible)
       allocate(kPoints(3, nKPoint))
       allocate(kWeights(nKPoint))

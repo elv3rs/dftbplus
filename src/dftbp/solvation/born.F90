@@ -845,10 +845,10 @@ contains
     do iIter = 1, size(iterIndices)
       iAt1 = iterIndices(iIter)
       iSp1 = species(iAt1)
-      do iNeigh = 1, nNeighbour(iAt1)
+      loop1: do iNeigh = 1, nNeighbour(iAt1)
         iAt2 = iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
-        if (iAt2f > iAt1) cycle
+        if (iAt2f > iAt1) cycle loop1
         iSp2 = species(iAt2f)
         vec(:) = coords(:, iAt1) - coords(:, iAt2)
         dist = sqrt(neighDist2(iNeigh, iAt1))
@@ -1057,7 +1057,7 @@ contains
 
         end if tOverlap
 
-      end do
+      end do loop1
     end do
     !$omp end parallel do
 

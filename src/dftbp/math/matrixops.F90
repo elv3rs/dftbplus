@@ -306,8 +306,8 @@ contains
 
     res = 1.0_dp
     exponent = 0
-    do jj = 1, size(sigma)
-      if (ii == jj) cycle
+    loop1: do jj = 1, size(sigma)
+      if (ii == jj) cycle loop1
       res = Sigma(jj) * res
       if (res < epsilon(0.0_dp)) then
         res = 0.0_dp
@@ -321,7 +321,7 @@ contains
         res = res * base
         exponent = exponent - 1
       end do
-    end do
+    end do loop1
     res = res * base ** exponent
 
   end function product_real

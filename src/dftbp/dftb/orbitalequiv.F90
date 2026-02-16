@@ -66,10 +66,10 @@ contains
     newInd = 1
     do iS = 1, nSpin
       do iAt = 1, nAtom
-        do iOrb = 1, orb%nOrbAtom(iAt)
+        loop1: do iOrb = 1, orb%nOrbAtom(iAt)
           ! If element had been already processed, skip
           if (.not. mask(iOrb, iAt, iS)) then
-            cycle
+            cycle loop1
           end if
           ! Get mask for orbitals equivalent to (iOrb, iAt, iS) in both arrays
           tmpMask = (equiv1 == equiv1(iOrb, iAt, iS) &
@@ -82,7 +82,7 @@ contains
             newInd = newInd + 1
             mask = mask .and. .not. tmpMask
           end if
-        end do
+        end do loop1
       end do
     end do
 

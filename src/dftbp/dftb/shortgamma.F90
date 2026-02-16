@@ -699,11 +699,11 @@ contains
         iAt1 = iterIndices(iIter)
         iSp1 = species(iAt1)
         maxShell1 = orb%nShell(iSp1)
-        do iNeigh = 0, maxNeigh(iAt1)
+        loop1: do iNeigh = 0, maxNeigh(iAt1)
           iAt2 = iNeighbour(iNeigh, iAt1)
           iAt2f = img2CentCell(iAt2)
-          if (iAt /= iAt2f .and. iAt /= iAt1) cycle
-          if (iAt1 == iAt2) cycle
+          if (iAt /= iAt2f .and. iAt /= iAt1) cycle loop1
+          if (iAt1 == iAt2) cycle loop1
           iSp2 = species(iAt2f)
           maxShell2 = orb%nShell(iSp2)
           r(:) = coord(:,iAt1) - coord(:,iAt2)
@@ -733,7 +733,7 @@ contains
               end if
             end do
           end do
-        end do
+        end do loop1
       end do
     end if
 

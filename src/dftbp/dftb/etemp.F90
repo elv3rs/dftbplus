@@ -189,7 +189,7 @@ contains
           EfOld = Ef
           Ef = Ef - (electronCount(Ef, eigenvals, kT, distrib, kWeight) - nElectrons)&
               & / derivElectronCount(Ef, eigenvals, kT, distrib, kWeight)
-          do while(abs(electronCount(EfOld, eigenvals, kT, distrib, kWeight) - nElectrons)&
+          loop1: do while(abs(electronCount(EfOld, eigenvals, kT, distrib, kWeight) - nElectrons)&
               & > abs(electronCount(Ef, eigenvals, kT, distrib, kWeight) - nElectrons))
             if (abs(derivElectronCount(Ef, eigenvals, kT, distrib, kWeight))&
                 & >= epsilon(1.0_dp)) then
@@ -197,9 +197,9 @@ contains
               Ef = Ef - (electronCount(Ef, eigenvals, kT, distrib, kWeight) - nElectrons)&
                   & / derivElectronCount(Ef, eigenvals, kT, distrib, kWeight)
             else
-              exit
+              exit loop1
             end if
-          end do
+          end do loop1
           Ef = EfOld
         end if
       end if
@@ -255,15 +255,15 @@ contains
       call Aweights(A,MPorder)
       do ispin = 1, size(eigenvals,dim=3)
         do i = 1, size(kWeight)
-          do j = 1, size(eigenvals,dim=1)
+          loop1: do j = 1, size(eigenvals,dim=1)
             if (eigenvals(j,i,ispin)>(Ef-3.0_dp*w)) then
-              exit
+              exit loop1
             end if
             res=res+kWeight(i)
-          end do
-          do k = j, size(eigenvals,dim=1)
+          end do loop1
+          loop2: do k = j, size(eigenvals,dim=1)
             if (eigenvals(k,i,ispin)>(Ef+3.0_dp*w)) then
-              exit
+              exit loop2
             end if
             x = (eigenvals(k,i,ispin) - Ef) / kT
             call hX(hermites,MPorder*2,x)
@@ -272,7 +272,7 @@ contains
               occ = occ + A(l) * hermites(2*l-1) * exp(-x**2)
             end do
             res = res + occ * kWeight(i)
-          end do
+          end do loop2
         end do
       end do
     else
@@ -420,16 +420,16 @@ contains
       call Aweights(A, MPorder)
       do iSpin = 1, size(eigenvals,dim=3)
         do i = 1, kpts
-          do j = 1, size(eigenvals,dim=1)
+          loop1: do j = 1, size(eigenvals,dim=1)
             if (eigenvals(j,i,iSpin)>(Ef-3.0_dp*w)) then
-              exit
+              exit loop1
             end if
             filling(j,i,iSpin)=1.0_dp
             Eband(iSpin) = Eband(iSpin) + eigenvals(j,i,iSpin)
-          end do
-          do k = j, size(eigenvals,dim=1)
+          end do loop1
+          loop2: do k = j, size(eigenvals,dim=1)
             if (eigenvals(k, i, iSpin) > (Ef + 3.0_dp * w)) then
-              exit
+              exit loop2
             end if
             x = (eigenvals(k,i,iSpin) - Ef) / kT
             call hX(hermites, MPorder * 2, x)
@@ -450,7 +450,7 @@ contains
               TS(iSpin) = TS(iSpin) &
                   & + kWeights(i) * 0.5_dp * A(l) * hermites(2 * l) * exp(-x**2)
             end do
-          end do
+          end do loop2
         end do
       end do
       TS = TS * kT
@@ -458,7 +458,7 @@ contains
     else
       do iSpin = 1, size(eigenvals, dim=3)
         do i = 1, kpts
-          do j = 1, size(eigenvals, dim=1)
+          loop3: do j = 1, size(eigenvals, dim=1)
             x = (eigenvals(j, i, iSpin) - Ef) / kT
             ! Where the compiler does not handle inf gracefully, trap the exponential function for
             ! small values
@@ -472,7 +472,7 @@ contains
             filling(j, i, iSpin) = 1.0_dp / (1.0_dp + exp(x))
           #:endif
             if (filling(j, i, iSpin) <= elecTol) then
-              exit
+              exit loop3
             end if
             if (filling(j, i, iSpin) > epsilon(0.0_dp) .and.&
                 & filling(j, i, iSpin) < (1.0_dp - epsilon(1.0_dp))) then
@@ -483,7 +483,7 @@ contains
             end if
             Eband(iSpin) = Eband(iSpin) &
                 & + kWeights(i) * (filling(j, i, iSpin) * eigenvals(j, i, iSpin))
-          end do
+          end do loop3
         end do
       end do
       TS(:) = TS * kT

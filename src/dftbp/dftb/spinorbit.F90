@@ -333,10 +333,10 @@ contains
 
     speciesZ(:,:) = 0.0_dp
     speciesPlus(:,:) = 0.0_dp
-    do iShell = 1, orb%nShell(iSpecies)
+    loop1: do iShell = 1, orb%nShell(iSpecies)
       ll = orb%angShell(iShell, iSpecies)
       if (ll == 0) then
-        cycle
+        cycle loop1
       end if
       nOrbShell = 2 * ll + 1
       iOrbStart = orb%posShell(iShell, iSpecies)
@@ -346,7 +346,7 @@ contains
           & 0.5_dp * xi(iShell, iSpecies) * Lz(1:nOrbShell, 1:nOrbShell)
       speciesPlus(iOrbStart:iOrbEnd, iOrbStart:iOrbEnd) =&
           & 0.5_dp * xi(iShell, iSpecies) * Lplus(1:nOrbShell, 1:nOrbShell)
-    end do
+    end do loop1
 
   end subroutine getLSOperatorsForSpecies
 

@@ -385,19 +385,19 @@ contains
     par => null()
     child => root
     iPos = index(path, pathSep)
-    do while (iPos /= 0 .and. associated(child))
+    loop1: do while (iPos /= 0 .and. associated(child))
       par => child
       call getChild(par, path(iStart:iStart+iPos-2), child, &
           &requested=tRequested)
       if (.not. associated(child)) then
-        exit
+        exit loop1
       end if
       if (tUnprocessed) then
         call setUnprocessed(child)
       end if
       iStart = iStart + iPos
       iPos = index(path(iStart:), pathSep)
-    end do
+    end do loop1
     if (associated(child)) then
       par => child
       call getChild(par, path(iStart:), child, requested=tRequested)

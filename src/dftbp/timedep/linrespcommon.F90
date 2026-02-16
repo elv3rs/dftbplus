@@ -1039,13 +1039,13 @@ contains
         bb = rpa%getIA(rpa%win(jbs), 2)
         ss = rpa%getIA(rpa%win(jbs), 3)
 
-        do iat = iGlobal, fGlobal
+        loop1: do iat = iGlobal, fGlobal
           myia = iat - iGlobal + 1
           ii = rpa%getIA(rpa%win(iat), 1)
           aa = rpa%getIA(rpa%win(iat), 2)
           tt = rpa%getIA(rpa%win(iat), 3)
 
-          if (ss /= tt) cycle
+          if (ss /= tt) cycle loop1
 
           abs = rpa%iaTrans(aa, bb, ss)
           qTr(:) = transChrg%qTransAB(abs, env, denseDesc, ovrXev, grndEigVecs, rpa%getAB)
@@ -1068,28 +1068,28 @@ contains
           rTmp = cExchange * rpa%sqrOccIA(iat) * rpa%sqrOccIA(jbs) * dot_product(qTr, oTmp)
           vP(myia,jbs) = vP(myia,jbs) - rTmp
           vM(myia,jbs) = vM(myia,jbs) + rTmp
-        end do
+        end do loop1
 
       end do
     end if
 
-    do ia = iGlobal, fGlobal
+    loop2: do ia = iGlobal, fGlobal
       myia = ia - iGlobal + 1
-      if(ia > initDim) cycle
+      if(ia > initDim) cycle loop2
       vP(myia,ia) = vP(myia,ia) + rpa%wij(ia)
       vM(myia,ia) = vM(myia,ia) + rpa%wij(ia)
-    end do
+    end do loop2
 
-    do ii = iGlobal, fGlobal
+    loop3: do ii = iGlobal, fGlobal
       myii = ii - iGlobal + 1
-      if(ii > initDim) exit
+      if(ii > initDim) exit loop3
       do jj = ii, initDim
         mP(ii,jj) = vP(myii,jj)
         mP(jj,ii) = mP(ii,jj)
         mM(ii,jj) = vM(myii,jj)
         mM(jj,ii) = mM(ii,jj)
       end do
-    end do
+    end do loop3
 
     call assembleChunks(env, mP)
     call assembleChunks(env, mM)
@@ -1554,12 +1554,12 @@ contains
         ia = TDvin(k)
         call indxov(rpa%win, ia, rpa%getIA, ii, aa, ss)
         ud_ia = (rpa%win(ia) <= rpa%nxov_ud(1))
-        do l = 1, nmat
+        loop1: do l = 1, nmat
           jb = TDvin(l)
           call indxov(rpa%win, jb, rpa%getIA, jj, bb, ss)
           ud_jb = (rpa%win(jb) <= rpa%nxov_ud(1))
 
-          if ((bb /= aa) .or. (ud_jb .neqv. ud_ia)) cycle
+          if ((bb /= aa) .or. (ud_jb .neqv. ud_ia)) cycle loop1
 
           tmp = 0.0_dp
           if (ud_ia) then
@@ -1575,7 +1575,7 @@ contains
           end if
 
           s_iaja = s_iaja + TDvec(ia) * TDvec(jb) * tmp
-        end do
+        end do loop1
       end do
 
       ! S_{ia,ib}
@@ -1584,12 +1584,12 @@ contains
         ia = TDvin(k)
         call indxov(rpa%win, ia, rpa%getIA, ii, aa, ss)
         ud_ia = (rpa%win(ia) <= rpa%nxov_ud(1))
-        do l = 1, nmat
+        loop2: do l = 1, nmat
           jb = TDvin(l)
           call indxov(rpa%win, jb, rpa%getIA, jj, bb, ss)
           ud_jb = (rpa%win(jb) <= rpa%nxov_ud(1))
 
-          if ((ii /= jj) .or. (ud_jb .neqv. ud_ia)) cycle
+          if ((ii /= jj) .or. (ud_jb .neqv. ud_ia)) cycle loop2
 
           tmp = 0.0_dp
           if (ud_ia) then
@@ -1605,27 +1605,27 @@ contains
           end if
 
          s_iaib = s_iaib + TDvec(ia) * TDvec(jb) * tmp
-        end do
+        end do loop2
       end do
 
       ! S_{ia,jb}
       s_iajb = 0.0_dp
-      do k = 1, nmat
+      loop3: do k = 1, nmat
         ia = TDvin(k)
         call indxov(rpa%win, ia, rpa%getIA, ii, aa, ss)
         ud_ia = (rpa%win(ia) <= rpa%nxov_ud(1))
-        if (.not. ud_ia) cycle
-        do l = 1, nmat
+        if (.not. ud_ia) cycle loop3
+        loop4: do l = 1, nmat
           jb = TDvin(l)
           call indxov(rpa%win, jb, rpa%getIA, jj, bb, ss)
           ud_jb = (rpa%win(jb) <= rpa%nxov_ud(1))
 
-          if (ud_jb) cycle
+          if (ud_jb) cycle loop4
 
           s_iajb = s_iajb + TDvec(ia) * TDvec(jb) * MOoverlap(aa, bb, ovrXevGlb, eigVecGlb)&
               & * MOoverlap(ii, jj, ovrXevGlb, eigVecGlb)
-        end do
-      end do
+        end do loop4
+      end do loop3
 
       Ssq(i) =  s_iaja - s_iaib - 2.0_dp * s_iajb
 

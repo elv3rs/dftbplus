@@ -146,18 +146,18 @@ contains
       ! loop running over same spin and different spin
 
       do iSh = 1, orb%nShell(iSp)
-        do jSh = 1, orb%nShell(iSp)
+        loop1: do jSh = 1, orb%nShell(iSp)
 
           if (iSh == jSh .and. orb%angShell(jSh, iSp) == 0) then
             ! ss' on same shell
-            cycle
+            cycle loop1
           end if
 
           blockME(orb%posShell(jSh, iSp) : orb%posShell(jSh + 1, iSp) - 1,&
               & orb%posShell(iSh, iSp) : orb%posShell(iSh + 1, iSp) - 1, ud) =&
               & onsMEs(jSh, iSh, ud, iSp)
 
-        end do
+        end do loop1
       end do
 
       ! make symmetric just in case

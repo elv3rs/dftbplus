@@ -1712,12 +1712,12 @@ contains
 
     iErr = TOKEN_OK
     iStart = 1
-    do while (iErr == TOKEN_OK)
+    loop1: do while (iErr == TOKEN_OK)
       call getNextToken(text, bufferStr, iStart, iErr)
       if (iErr == TOKEN_ERROR) then
         call detailedError(node, "Invalid string")
       else if (iErr == TOKEN_EOS) then
-        exit
+        exit loop1
       end if
       call append(valueStr, char(bufferStr))
 
@@ -1728,7 +1728,7 @@ contains
       call getNextToken(text, bufferReal, iStart, iErr, nItem)
       call checkError(node, iErr, "Invalid real")
       call append(valueReal, bufferReal)
-    end do
+    end do loop1
 
   end subroutine getChVal_lStringIntR1RealR1_h
 

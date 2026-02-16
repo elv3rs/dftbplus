@@ -3558,10 +3558,10 @@ contains
         allocate(SSqrCplxCam(size(densityMatrix%deltaRhoInCplx, dim=1),&
             & size(densityMatrix%deltaRhoInCplx, dim=2), size(kPoint, dim=2)),&
             & source=(0.0_dp, 0.0_dp))
-        do iKS = 1, parallelKS%nLocalKS
+        loop1: do iKS = 1, parallelKS%nLocalKS
           iSpin = parallelKS%localKS(2, iKS)
           ! cycling in this case is crucial, since we allow more MPI groups than k-points
-          if (iSpin == 2) cycle
+          if (iSpin == 2) cycle loop1
           iK = parallelKS%localKS(1, iKS)
           call env%globalTimer%startTimer(globalTimers%sparseToDense)
           call unpackHS(SSqrCplxCam(:,:, iK), ints%overlap, kPoint(:, iK),&
@@ -3569,7 +3569,7 @@ contains
               & iSparseStart, img2CentCell)
           call env%globalTimer%stopTimer(globalTimers%sparseToDense)
           call adjointLowerTriangle(SSqrCplxCam(:,:, iK))
-        end do
+        end do loop1
       #:if WITH_SCALAPACK
         ! Distribute overlap matrices to all nodes via global summation
         call mpifx_allreduceip(env%mpi%globalComm, SSqrCplxCam, MPI_SUM)

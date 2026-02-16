@@ -492,12 +492,12 @@ contains
 
     do iAt1 = 1, this%nAtoms
       iSp1 = species(iAt1)
-      do iNeigh = 1, this%nNeighMax(iAt1)
+      loop1: do iNeigh = 1, this%nNeighMax(iAt1)
         iAt2 = neighList%iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         iSp2 = species(iAt2f)
         if (iAt1 == iAt2f .or. iNeigh > this%nNeigh(iSp2, iAt1)) then
-          cycle
+          cycle loop1
         end if
         rab = sqrt(neighList%neighDist2(iNeigh, iAt1))
         damping = this%damped(iSp1) .or. this%damped(iSp2)
@@ -516,7 +516,7 @@ contains
         tmp3(:) = tmp / (3.0_dp * rab) * (coords(:, iAt1) - coords(:, iAt2))
         derivs(:, iAt1) = derivs(:, iAt1) + tmp3
         derivs(:, iAt2f) = derivs(:, iAt2f) - tmp3
-      end do
+      end do loop1
     end do
 
   end subroutine addGradientDc
@@ -578,12 +578,12 @@ contains
     qDiffShell(:,:) = qOutShell - this%chargesPerShell
     do iAt1 = 1, this%nAtoms
       iSp1 = species(iAt1)
-      do iNeigh = 1, this%nNeighMax(iAt1)
+      loop1: do iNeigh = 1, this%nNeighMax(iAt1)
         iAt2 = neighList%iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         iSp2 = species(iAt2f)
         if (iAt1 == iAt2f .or. iNeigh > this%nNeigh(iSp2, iAt1)) then
-          cycle
+          cycle loop1
         end if
         rab = sqrt(neighList%neighDist2(iNeigh, iAt1))
         damping = this%damped(iSp1) .or. this%damped(iSp2)
@@ -615,7 +615,7 @@ contains
         tmp3 = tmp / (3.0_dp * rab) * (coords(:, iAt1) - coords(:, iAt2))
         derivs(:, iAt1) = derivs(:, iAt1) + tmp3
         derivs(:, iAt2f) = derivs(:, iAt2f) - tmp3
-      end do
+      end do loop1
     end do
 
   end subroutine addGradientDcXlbomd
@@ -655,12 +655,12 @@ contains
     stTmp(:,:) = 0.0_dp
     do iAt1 = 1, this%nAtoms
       iSp1 = species(iAt1)
-      do iNeigh = 1, this%nNeighMax(iAt1)
+      loop1: do iNeigh = 1, this%nNeighMax(iAt1)
         iAt2 = neighList%iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         iSp2 = species(iAt2f)
         if (iNeigh > this%nNeigh(iSp2, iAt1)) then
-          cycle
+          cycle loop1
         end if
         vect(:) = coords(:,iAt1) - coords(:,iAt2)
         if (iAt1 == iAt2f) then
@@ -686,7 +686,7 @@ contains
         do ii = 1, 3
           stTmp(:, ii) = stTmp(:, ii) + prefac * tmp3(:) * vect(ii)
         end do
-      end do
+      end do loop1
     end do
 
     st = st - stTmp / cellVol

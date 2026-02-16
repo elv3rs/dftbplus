@@ -295,12 +295,12 @@ contains
     ! Try to detect fractional occupations
     tFracOcc = .false.
     do iSpin = 1, nSpin
-      do i = 1, norb
+      loop1: do i = 1, norb
         if (filling(i,iSpin) > elecTolMax .and. 2.0_dp/nSpin - filling(i,iSpin) >  elecTolMax) then
           tFracOcc = .true.
-          exit
+          exit loop1
         end if
-      end do
+      end do loop1
     end do
     if (tFracOcc .and. tHybridXc) then
       call error("Fractional occupations not implemented for TD-LC-DFTB.")
@@ -1016,7 +1016,7 @@ contains
     ! solve A*x = lambda*x, with A symmetric
     iparam(7) = 1
 
-    do
+    loop1: do
 
       ! call the reverse communication interface from arpack
     #:if WITH_PARPACK
@@ -1029,7 +1029,7 @@ contains
 
       if (ido == 99) then
         ! has terminated normally, exit loop
-        exit
+        exit loop1
       end if
 
       ! still running, test for an error return
@@ -1044,7 +1044,7 @@ contains
           & ovrXev, grndEigVecs, gammaMat, .false., workd(ipntr(1):ipntr(1)+nLoc-1),&
           & workd(ipntr(2):ipntr(2)+nLoc-1))
 
-    end do
+    end do loop1
 
     ! check returned info flag for errors
     if (info < 0) then
@@ -1259,11 +1259,11 @@ contains
 
     ! set initial bs
     vecB(:,:) = 0.0_dp
-    do ii = iGlobal, fGlobal
+    loop1: do ii = iGlobal, fGlobal
       myii = ii - iGlobal + 1
-      if(ii > subSpaceDim) exit
+      if(ii > subSpaceDim) exit loop1
       vecB(myii, ii) = 1.0_dp
-    end do
+    end do loop1
 
     if (rpa%tZVector) then
       xmy(:,:) = 0.0_dp
@@ -2038,7 +2038,7 @@ contains
     pkm1(:) = zkm1
 
     ! Iteration: should be convergent in at most nxov steps for a quadradic surface, so set higher
-    do kk = 1, nxov**2
+    loop1: do kk = 1, nxov**2
 
       ! action of matrix on vector
       call actionAplusB(iGlobal, fGlobal, env, orb, lr, rpa, transChrg, "S", denseDesc, species0,&
@@ -2056,7 +2056,7 @@ contains
 
       ! residual
       if (tmp2 <= epsilon(1.0_dp)**2) then
-        exit
+        exit loop1
       end if
 
       if (kk == nxov**2) then
@@ -2072,7 +2072,7 @@ contains
 
       pkm1 = zkm1 + bkm1 * pkm1
 
-    end do
+    end do loop1
 
     rhs(:) = rhs2(:)
 

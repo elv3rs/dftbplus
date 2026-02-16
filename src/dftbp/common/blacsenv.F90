@@ -141,11 +141,11 @@ contains
     !> Number of columns in the 2D processor grid
     integer, intent(out) :: nCol
 
-    do nRow = int(sqrt(real(nProc))), 1, -1
+    loop1: do nRow = int(sqrt(real(nProc))), 1, -1
       if (mod(nProc, nRow) == 0) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     nCol = nProc / nRow
 
   end subroutine getSquareGridParams

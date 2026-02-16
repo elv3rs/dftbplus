@@ -1997,7 +1997,7 @@ contains
           do jj = 1, nShell
             tmpCh = strTmp(jj:jj)
             tFound = .false.
-            do kk = 1, size(shellNames)
+            loop1: do kk = 1, size(shellNames)
               if (tmpCh == trim(shellNames(kk))) then
                 if (tShellIncl(kk)) then
                   call detailedError(value1, "Double selection of the same shell&
@@ -2007,9 +2007,9 @@ contains
                 tShellIncl(kk) = .true.
                 angShell(jj) = kk - 1
                 tFound = .true.
-                exit
+                exit loop1
               end if
-            end do
+            end do loop1
             if (.not. tFound) then
               call detailedError(value1, "Invalid shell name '" // tmpCh // "'")
             end if
@@ -3024,16 +3024,16 @@ contains
       allocate(ctrl%kPoint(3, ctrl%nKPoint))
       allocate(ctrl%kWeight(ctrl%nKPoint))
       ind = 1
-      do jj = ii, size(tmpI1)
+      loop1: do jj = ii, size(tmpI1)
         if (tmpI1(jj) == 0) then
-          cycle
+          cycle loop1
         end if
         rTmp3(:) = (kpts(:,jj) - kpts(:,jj-1)) / real(tmpI1(jj), dp)
         do kk = 1, tmpI1(jj)
           ctrl%kPoint(:,ind) = kpts(:,jj-1) + real(kk, dp) * rTmp3
           ind = ind + 1
         end do
-      end do
+      end do loop1
       ctrl%kWeight(:) = 1.0_dp
       if (len(modifier) > 0) then
         select case (tolower(char(modifier)))
@@ -4905,13 +4905,13 @@ contains
     call destruct(li1)
     call destruct(lr1)
     allocate(tempProfInp%tempMethods(size(tmpC1)))
-    do ii = 1, size(tmpC1)
+    loop1: do ii = 1, size(tmpC1)
       call identifyTempProfile(tempProfInp%tempMethods(ii), tmpC1(ii), success)
       if (success) then
-        cycle
+        cycle loop1
       end if
       call detailedError(node, "Invalid annealing method name '" // trim(tmpC1(ii)) // "'.")
-    end do
+    end do loop1
 
     if (any(tempProfInp%tempInts < 0)) then
       call detailedError(node, "Step values must not be negative.")
@@ -5773,10 +5773,10 @@ contains
     if (associated(child)) then
       allocate(hubbU(orb%mShell, geo%nSpecies))
       hubbU(:,:) = 0.0_dp
-      do iSp1 = 1, geo%nSpecies
+      loop1: do iSp1 = 1, geo%nSpecies
         call getChild(child, geo%speciesNames(iSp1), child2, requested=.false.)
         if (.not. associated(child2)) then
-          cycle
+          cycle loop1
         end if
         if (tShellResolvedScc) then
           call getChildValue(child2, "", hubbU(:orb%nShell(iSp1), iSp1))
@@ -5784,7 +5784,7 @@ contains
           call getChildValue(child2, "", hubbU(1, iSp1))
           hubbU(:orb%nShell(iSp1), iSp1) = hubbU(1, iSp1)
         end if
-      end do
+      end do loop1
     end if
 
   end subroutine readCustomisedHubbards

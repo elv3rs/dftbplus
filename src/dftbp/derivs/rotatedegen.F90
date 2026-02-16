@@ -452,14 +452,14 @@ contains
     allocate(eigenvals(maxRange))
 
     ! Form the unitary elements
-    do iGrp = 1, self%nGrp
+    loop1: do iGrp = 1, self%nGrp
       subBlock(:,:) = zero
       eigenvals(:) = 0.0_dp
       iStart = self%blockRange(1,iGrp)
       iEnd = self%blockRange(2,iGrp)
       nInBlock = iEnd - iStart + 1
       if (nInBlock == 1) then
-        cycle
+        cycle loop1
       end if
       subBlock(:nInBlock, :nInBlock) = matrixToProcess(iStart:iEnd, iStart:iEnd)
       call heev(subBlock(:nInBlock, :nInBlock), eigenvals(:nInBlock), "L", "V")
@@ -476,7 +476,7 @@ contains
           self%${LABEL}$UBlock(iGrp)%data = subBlock(:nInBlock, :nInBlock)
         end if
       end if
-    end do
+    end do loop1
 
   end subroutine generate${LABEL}$Unitary
 
@@ -499,20 +499,20 @@ contains
 
     else if (allocated(self%${LABEL}$UBlock)) then
 
-      do iGrp = 1, self%nGrp
+      loop1: do iGrp = 1, self%nGrp
 
         iStart = self%blockRange(1,iGrp)
         iEnd = self%blockRange(2,iGrp)
         if (iStart == iEnd) then
-          cycle
+          cycle loop1
         end if
 
         matrixToProcess(:,iStart:iEnd) = matmul(matrixToProcess(:,iStart:iEnd),&
             & self%${LABEL}$UBlock(iGrp)%data)
 
-      end do
+      end do loop1
 
-      do iGrp = 1, self%nGrp
+      loop2: do iGrp = 1, self%nGrp
 
         iStart = self%blockRange(1,iGrp)
         iEnd = self%blockRange(2,iGrp)
@@ -521,7 +521,7 @@ contains
           matrixToProcess(iStart,iStart) = cmplx(real(matrixToProcess(iStart,iStart),dp), 0.0_dp,&
               & dp)
         #:endif
-          cycle
+          cycle loop2
         end if
 
       #:if TYPE == 'real'
@@ -543,7 +543,7 @@ contains
           end do
         end do
 
-      end do
+      end do loop2
 
     end if
 
@@ -571,12 +571,12 @@ contains
 
     else if (allocated(self%${LABEL}$UBlock)) then
 
-      do iGrp = 1, self%nGrp
+      loop1: do iGrp = 1, self%nGrp
 
         iStart = self%blockRange(1,iGrp)
         iEnd = self%blockRange(2,iGrp)
         if (iStart == iEnd) then
-          cycle
+          cycle loop1
         end if
 
       #:if TYPE == 'real'
@@ -587,7 +587,7 @@ contains
             & self%CmplxUBlock(iGrp)%data)
       #:endif
 
-      end do
+      end do loop1
 
     end if
 
@@ -756,13 +756,13 @@ contains
       nGrp = nGrp + 1
       blockRange(1, nGrp) = ii
       grpMembership(ii) = nGrp
-      do jj = ii + 1, iEnd
+      loop1: do jj = ii + 1, iEnd
         ! assumes sorted:
         if (ei(jj) - ei(jj-1) > localTol) then
-          exit
+          exit loop1
         end if
         grpMembership(jj) = nGrp
-      end do
+      end do loop1
       ii = jj
       blockRange(2, nGrp) = jj - 1
     end do

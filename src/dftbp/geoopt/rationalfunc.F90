@@ -209,7 +209,7 @@ contains
     av(1) = dot_product(C, vecf2)
     ! done
 
-    do m = 1, maxiter-1
+    loop1: do m = 1, maxiter-1
       allocate(Uaug(m, m), d(m))
 
       do i = 1, m
@@ -246,7 +246,7 @@ contains
 
       if (converged) then
         fail = .false.
-        exit
+        exit loop1
       end if
 
       iold = m
@@ -263,7 +263,7 @@ contains
         call mwrite(lun1, vecf1, jold)
       else
         fail = .false.
-        exit
+        exit loop1
       end if
 
       ! H * C
@@ -279,7 +279,7 @@ contains
 
       ! increase expansion space and iterate further
       e = valn
-    end do
+    end do loop1
 
   contains
 

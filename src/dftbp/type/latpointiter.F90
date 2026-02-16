@@ -143,10 +143,10 @@ contains
 
 
     curPoint(:) = this%curPoint
-    do
+    loop1: do
       tFinished = (curPoint(1) > this%ranges(2, 1))
       if (tFinished) then
-        exit
+        exit loop1
       end if
       if (this%tExcludeInv) then
         if (curPoint(1) < 0) then
@@ -161,19 +161,19 @@ contains
       end if
       if (this%tExcludeOrig .and. all(curPoint == 0)) then
         call getNextPoint(this%ranges, curPoint)
-        cycle
+        cycle loop1
       end if
       latticePoint(:) = real(curPoint, dp)
       if (this%tAll) then
-        exit
+        exit loop1
       end if
       rr(:) = latticePoint(1) * this%latVecs(:,1) + latticePoint(2) * this%latVecs(:,2)&
           & + latticePoint(3) * this%latVecs(:,3)
       if (sum(rr**2) <= this%cutoff2) then
-        exit
+        exit loop1
       end if
       call getNextPoint(this%ranges, curPoint)
-    end do
+    end do loop1
 
     if (.not. tFinished) then
       ! generate image for next call
@@ -199,12 +199,12 @@ contains
 
     maxLatPoints = product(this%ranges(2,:) - this%ranges(1,:) + 1)
     allocate(tmpLatPoints(3, maxLatPoints + 1))
-    do iLatPoint = 1, maxLatPoints + 1
+    loop1: do iLatPoint = 1, maxLatPoints + 1
       call this%getNextPoint(tmpLatPoints(:,iLatPoint), tFinished)
       if (tFinished) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     latticePoints = tmpLatPoints(:, 1:iLatPoint - 1)
 
   end subroutine TLatPointIter_getAllPoints

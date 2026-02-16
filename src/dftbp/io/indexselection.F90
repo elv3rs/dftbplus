@@ -442,12 +442,12 @@ contains
     integer :: startPos
     character :: curChar
 
-    do while (pos <= len(expression))
+    loop1: do while (pos <= len(expression))
       if (expression(pos:pos) /= " ") then
-        exit
+        exit loop1
       end if
       pos = pos + 1
-    end do
+    end do loop1
 
     if (pos > len(expression)) then
       return
@@ -459,13 +459,13 @@ contains
     else
       startPos = pos
       pos = pos + 1
-      do while (pos <= len(expression))
+      loop2: do while (pos <= len(expression))
         curChar = expression(pos:pos)
         if (scan(curChar, " )|&") /= 0) then
-          exit
+          exit loop2
         end if
         pos = pos + 1
-      end do
+      end do loop2
       token%content = expression(startPos : pos - 1)
     end if
 

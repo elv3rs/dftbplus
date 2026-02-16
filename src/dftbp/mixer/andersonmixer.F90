@@ -217,12 +217,12 @@ contains
 
     ! Determine mixing parameter
     rTmp = sqrt(sum(abs(qDiff)**2))
-    do ii = this%nConvMixParam, 1, -1
+    loop1: do ii = this%nConvMixParam, 1, -1
       if (rTmp < this%convMixParam(1, ii)) then
         mixParam = this%convMixParam(2, ii)
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
 
     ! First iteration: store vectors and return simple mixed vector
     if (this%nPrevVector == 0) then

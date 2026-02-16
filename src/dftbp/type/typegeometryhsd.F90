@@ -781,10 +781,10 @@ contains
 
     iStart = 1
     iEnd = len(commandInput)
-    do
+    loop1: do
       call getNextToken(commandInput, command, iStart, iErr)
       if (iErr /= TOKEN_OK) then
-        exit
+        exit loop1
       end if
 
       select case(char(command))
@@ -855,22 +855,22 @@ contains
         end select
         call jumpToEndOfLine(commandInput, iStart)
       end select
-    end do
+    end do loop1
 
     ! Now read the data file defining the geometry and the atoms
 
     iStart = 1
     iEnd = len(dataInput)
-    do
+    loop2: do
       ! Try to read real values at the beginning of the line
       readRealValue(:) = .false.
-      do i = 1, size(realValue)
+      loop3: do i = 1, size(realValue)
         call getNextToken(dataInput, realValue(i), iStart, iErr)
         readRealValue(i) = (iErr == TOKEN_OK)
         if (.not. readRealValue(i)) then
-          exit
+          exit loop3
         end if
-      end do
+      end do loop3
 
       ! Try to convert the first real value to integer
       if (readRealValue(1)) then
@@ -883,7 +883,7 @@ contains
       ! Read the actual command now
       call getNextToken(dataInput, command, iStart, iErr)
       if (iErr /= TOKEN_OK) then
-        exit
+        exit loop2
       end if
 
       select case(char(command))
@@ -1001,7 +1001,7 @@ contains
         end do
         haveAtoms = .true.
       end select
-    end do
+    end do loop2
 
     if (.not. haveMasses) then
       call detailedError(node, "Missing Masses section in data file")

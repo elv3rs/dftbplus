@@ -528,7 +528,7 @@ contains
     do iAt1 = 1, nAtom
       iSp1 = this%species(iAt1)
       u1 = this%hubbu(iSp1)
-      do iAt2 = 1, iAt1 - 1
+      loop1: do iAt2 = 1, iAt1 - 1
         iSp2 = this%species(iAt2)
         u2 = this%hubbu(iSp2)
         vRabx3(:) = coords(:,iAt1) - coords(:,iAt2)
@@ -578,7 +578,7 @@ contains
         this%f30AB(:,:,:,iAt1, iAt2) = -workM3x3x3
 
         ! f40AB and f50AB
-        if (.not.(any(this%hasOnsiteCharges(:,iSp1) .or. this%hasOnsiteCharges(:,iSp2)))) cycle
+        if (.not.(any(this%hasOnsiteCharges(:,iSp1) .or. this%hasOnsiteCharges(:,iSp2)))) cycle loop1
 
         ! f40AB
         gammaQuadruplePrime = 24.0_dp / rab**5 - expGammaQuadruplePrime(rab, u1, u2)
@@ -666,7 +666,7 @@ contains
 
         this%f50AB(:,:,:,:,:,iAt2, iAt1) = workM3x3x3x3x3
         this%f50AB(:,:,:,:,:,iAt1, iAt2) = - workM3x3x3x3x3
-      end do
+      end do loop1
 
       coeffTerm1 = - (3.2_dp * u1)**3 / 96.0_dp
       this%f20AB(:,:,iAt1, iAt1) = coeffTerm1 * mI3x3
@@ -889,9 +889,9 @@ contains
 
     !$OMP PARALLEL DO PRIVATE(iAt1, iAt2, iSp2, ii, jj) DEFAULT(SHARED) SCHEDULE(RUNTIME)
     do iAt1 = 1, nAtom
-      do iAt2 = 1, nAtom
+      loop1: do iAt2 = 1, nAtom
         iSp2 = this%species(iAt2)
-        if (all(.not. this%hasOnsiteCharges(:, iSp2))) cycle
+        if (all(.not. this%hasOnsiteCharges(:, iSp2))) cycle loop1
         this%pot10x1Atom(iAt1) = this%pot10x1Atom(iAt1)&
             & + sum(this%f10AB(:,iAt2, iAt1) * this%deltaDAtom(:,iAt2))
         this%pot20x2Atom(iAt1) = this%pot20x2Atom(iAt1)&
@@ -906,7 +906,7 @@ contains
                 & - 3.0_dp * sum(this%f30AB(:,jj, ii, iAt2, iAt1) * this%deltaDAtom(:,iAt2))
           end do
         end do
-      end do
+      end do loop1
     end do
     !$OMP END PARALLEL DO
 
@@ -914,20 +914,20 @@ contains
     this%pot22x2Atom(:,:,:) = 0.0_dp
 
     !$OMP PARALLEL DO PRIVATE(iAt1, iSp1, iAt2, iSp2, ii, jj) DEFAULT(SHARED) SCHEDULE(RUNTIME)
-    do iAt1 = 1, nAtom
+    loop2: do iAt1 = 1, nAtom
       iSp1 = this%species(iAt1)
-      if (all(.not. this%hasOnsiteCharges(:, iSp1))) cycle
-      do iAt2 = 1, nAtom
+      if (all(.not. this%hasOnsiteCharges(:, iSp1))) cycle loop2
+      loop3: do iAt2 = 1, nAtom
         iSp2 = this%species(iAt2)
-        if (all(.not. this%hasOnsiteCharges(:, iSp2))) cycle
+        if (all(.not. this%hasOnsiteCharges(:, iSp2))) cycle loop3
         do ii = 1, 3
           do jj = 1, 3
             this%pot22x2Atom(jj, ii, iAt1) = this%pot22x2Atom(jj, ii, iAt1)&
                 & + 6.0_dp * sum(this%f40AB(:,:,jj, ii, iAt2, iAt1) * this%deltaQAtom(:,:,iAt2))
           end do
         end do
-      end do
-    end do
+      end do loop3
+    end do loop2
     !$OMP END PARALLEL DO
 
   end subroutine updateDQPotentials
@@ -1237,11 +1237,11 @@ contains
     !$OMP PARALLEL DO PRIVATE(iAt1, iSp1, iAt2, iSp2, ii, jj, ll) DEFAULT(SHARED) SCHEDULE(RUNTIME)
     do iAt1 = 1, this%nAtom
       iSp1 = species(iAt1)
-      do iAt2 = 1, this%nAtom
+      loop1: do iAt2 = 1, this%nAtom
         iSp2 = species(iAt2)
         this%pot30x0Atom(:,:,:,iAt1) = this%pot30x0Atom(:,:,:,iAt1)&
             & + this%f30AB(:,:,:,iAt2,iAt1) * this%deltaMAtom(iAt2)
-        if (.not.(any(this%hasOnsiteCharges(:,iSp1) .or. this%hasOnsiteCharges(:,iSp2)))) cycle
+        if (.not.(any(this%hasOnsiteCharges(:,iSp1) .or. this%hasOnsiteCharges(:,iSp2)))) cycle loop1
         do ii = 1, 3
           do jj = 1, 3
             do ll = 1, 3
@@ -1252,7 +1252,7 @@ contains
             end do
           end do
         end do
-      end do
+      end do loop1
     end do
     !$OMP END PARALLEL DO
 
@@ -1284,11 +1284,11 @@ contains
 
       iSp1 = species(iAt1)
       nOrb1 = orb%nOrbSpecies(iSp1)
-      do iNeigh = 1, nNeighbourSK(iAt1)
+      loop2: do iNeigh = 1, nNeighbourSK(iAt1)
         iAt2 = iNeighbour(iNeigh, iAt1)
         iAt2f = img2CentCell(iAt2)
         iSp2 = species(iAt2f)
-        if (iAt1 == iAt2f) cycle
+        if (iAt1 == iAt2f) cycle loop2
         nOrb2 = orb%nOrbSpecies(iSp2)
         iOrig = iSparseStart(iNeigh,iAt1) + 1
         sqrDMTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
@@ -1358,7 +1358,7 @@ contains
         ! forces from atom 1 on atom 2f and 2f onto 1
         derivs(:,iAt1) = derivs(:,iAt1) + derivTmp
         derivs(:,iAt2f) = derivs(:,iAt2f) - derivTmp
-      end do
+      end do loop2
     end do
 
   end subroutine addMultiExpanGradients

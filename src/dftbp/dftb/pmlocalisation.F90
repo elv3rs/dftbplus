@@ -513,12 +513,12 @@ contains
           do jj = 1, nLevAtAtom(iAtom1)
             if (LevAtAtom(jj,iAtom1) > iLev1) then
               tPair = .true.
-              do kk = 1, nLevPairs
+              loop1: do kk = 1, nLevPairs
                 if (LevPairs(kk) == LevAtAtom(jj,iAtom1)) then  !already have it
                   tPair = .false.
-                  exit
+                  exit loop1
                 end if
-              end do
+              end do loop1
               if (tPair) then
                 nLevPairs = nLevPairs + 1
                 LevPairs(nLevPairs) = LevAtAtom(jj,iAtom1)
@@ -623,12 +623,12 @@ contains
               iLev = LevAtAtom(kk,iAtom1)
               if (iLev == iLev1) then  ! this was a level in the atom
                 tPresent = .false.  ! is it still present at that site?
-                do ij = 1, nSitesLev(jj)
+                loop2: do ij = 1, nSitesLev(jj)
                   if (iAtom1 == SitesLev(ij,iLev1)) then
                     tPresent = .true.
-                    exit
+                    exit loop2
                   end if
-                end do
+                end do loop2
                 if (.not.tPresent) then
                   LevAtAtom(kk:nLevAtAtom(iAtom1)-1,iAtom1) =&
                       & LevAtAtom(kk+1:nLevAtAtom(iAtom1),iAtom1)
@@ -644,12 +644,12 @@ contains
               iLev = LevAtAtom(kk,iAtom1)
               if (iLev == iLev2) then  ! this was a level in the atom
                 tPresent = .false.  ! is it still present at that site?
-                do ij = 1, nSitesLev(jj)
+                loop3: do ij = 1, nSitesLev(jj)
                   if (iAtom1 == SitesLev(ij,iLev2)) then
                     tPresent = .true.
-                    exit
+                    exit loop3
                   end if
-                end do
+                end do loop3
                 if (.not.tPresent) then
                   LevAtAtom(kk:nLevAtAtom(iAtom1)-1,iAtom1) =&
                       & LevAtAtom(kk+1:nLevAtAtom(iAtom1),iAtom1)

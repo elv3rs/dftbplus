@@ -465,7 +465,7 @@ contains
     do iAtom1 = 1, nAtom
       ii = iAtomStart(iAtom1)
       nOrb1 = iAtomStart(iAtom1 + 1) - ii
-      do iNeigh = 0, nNeighbourSK(iAtom1)
+      loop1: do iNeigh = 0, nNeighbourSK(iAtom1)
         iOrig = iSparseStart(iNeigh, iAtom1) + 1
         iAtom2 = iNeighbour(iNeigh, iAtom1)
         iAtom2f = img2CentCell(iAtom2)
@@ -479,11 +479,11 @@ contains
         end if
         square(:, jj:jj+nOrb2-1, ii:ii+nOrb1-1) = square(:, jj:jj+nOrb2-1, ii:ii+nOrb1-1)&
             & + phase * reshape(origKet(:, iOrig:iOrig+nOrb1*nOrb2-1), [nmp, nOrb2, nOrb1])
-        if (iAtom2f == iAtom1) cycle
+        if (iAtom2f == iAtom1) cycle loop1
         square(:, ii:ii+nOrb1-1, jj:jj+nOrb2-1) = square(:, ii:ii+nOrb1-1, jj:jj+nOrb2-1)&
             & + phase * reshape(origBra(:, iOrig:iOrig+nOrb1*nOrb2-1), [nmp, nOrb1, nOrb2], &
             &                   order=[1, 3, 2])
-      end do
+      end do loop1
     end do
 
   end subroutine unpackDQ_cmplx_kpts
@@ -539,7 +539,7 @@ contains
     do iAtom1 = 1, nAtom
       ii = iAtomStart(iAtom1)
       nOrb1 = iAtomStart(iAtom1 + 1) - ii
-      do iNeigh = 0, nNeighbourSK(iAtom1)
+      loop1: do iNeigh = 0, nNeighbourSK(iAtom1)
         iOrig = iSparseStart(iNeigh, iAtom1) + 1
         iAtom2 = iNeighbour(iNeigh, iAtom1)
         iAtom2f = img2CentCell(iAtom2)
@@ -548,11 +548,11 @@ contains
         nOrb2 = iAtomStart(iAtom2f + 1) - jj
         square(:, jj:jj+nOrb2-1, ii:ii+nOrb1-1) = square(:, jj:jj+nOrb2-1, ii:ii+nOrb1-1)&
             & + reshape(origKet(:, iOrig:iOrig+nOrb1*nOrb2-1), [nmp, nOrb2, nOrb1])
-        if (iAtom2f == iAtom1) cycle
+        if (iAtom2f == iAtom1) cycle loop1
         square(:, ii:ii+nOrb1-1, jj:jj+nOrb2-1) = square(:, ii:ii+nOrb1-1, jj:jj+nOrb2-1)&
             & + reshape(origBra(:, iOrig:iOrig+nOrb1*nOrb2-1), [nmp, nOrb1, nOrb2], &
             &           order=[1, 3, 2])
-      end do
+      end do loop1
     end do
 
   end subroutine unpackDQ_real
@@ -3327,10 +3327,10 @@ contains
     overSqrPrime(:,:,:) = 0.0_dp
 
     descAt1 = getDescriptor(iAtomPrime, iSquare)
-    do iNeigh = 0, nNeighbourCamSym(iAtomPrime)
+    loop1: do iNeigh = 0, nNeighbourCamSym(iAtomPrime)
       iAt2 = symNeighbourList%neighbourList%iNeighbour(iNeigh, iAtomPrime)
       iAt2fold = symNeighbourList%img2CentCell(iAt2)
-      if (iAtomPrime == iAt2fold) cycle
+      if (iAtomPrime == iAt2fold) cycle loop1
       descAt2 = getDescriptor(iAt2fold, iSquare)
       overPrime(:,:,:) = 0.0_dp
       call derivator%getFirstDeriv(overPrime, skOverCont, rCoords, symNeighbourList%species,&
@@ -3340,7 +3340,7 @@ contains
             & = overSqrPrime(iCoord, descAt2(iStart):descAt2(iEnd), descAt1(iStart):descAt1(iEnd))&
             & + overPrime(1:descAt2(iNOrb), 1:descAt1(iNOrb), iCoord)
       end do
-    end do
+    end do loop1
 
   end subroutine getUnpackedOverlapPrime_real
 
@@ -3418,10 +3418,10 @@ contains
     kPoint2p(:) = 2.0_dp * pi * kPoint
 
     descAt1 = getDescriptor(iAtomPrime, iSquare)
-    do iNeigh = 0, nNeighbourCamSym(iAtomPrime)
+    loop1: do iNeigh = 0, nNeighbourCamSym(iAtomPrime)
       iAt2 = symNeighbourList%neighbourList%iNeighbour(iNeigh, iAtomPrime)
       iAt2fold = symNeighbourList%img2CentCell(iAt2)
-      if (iAtomPrime == iAt2fold) cycle
+      if (iAtomPrime == iAt2fold) cycle loop1
       descAt2 = getDescriptor(iAt2fold, iSquare)
       iVec = symNeighbourList%iCellVec(iAt2)
       overPrime(:,:,:) = 0.0_dp
@@ -3433,7 +3433,7 @@ contains
             & = overSqrPrime(iCoord, descAt2(iStart):descAt2(iEnd), descAt1(iStart):descAt1(iEnd))&
             & + overPrime(1:descAt2(iNOrb), 1:descAt1(iNOrb), iCoord) * phase
       end do
-    end do
+    end do loop1
 
   end subroutine getUnpackedOverlapPrime_kpts
 

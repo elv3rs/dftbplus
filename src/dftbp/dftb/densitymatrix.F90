@@ -408,12 +408,12 @@ contains
     @:ASSERT(size(eigenvecs,dim=1) == size(filling))
 
     dm(:,:) = 0.0_dp
-    do ii =  size(filling), 1, -1
+    loop1: do ii =  size(filling), 1, -1
       nLevels = ii
       if (abs(filling(ii)) >= epsilon(1.0_dp)) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     shift = minval(filling(1:nLevels))
     if (shift > epsilon(1.0_dp)) then
       ! all fillings are definitely positive
@@ -476,12 +476,12 @@ contains
 
     dm(:,:) = cmplx(0.0_dp,0.0_dp,dp)
 
-    do ii =  size(filling), 1, -1
+    loop1: do ii =  size(filling), 1, -1
       nLevels = ii
       if (abs(filling(ii)) >= epsilon(1.0_dp)) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     shift = minval(filling(1:nLevels))
     if (shift > epsilon(1.0_dp)) then
       ! all fillings are definitely positive
@@ -547,12 +547,12 @@ contains
     @:ASSERT(size(eigen) == size(filling))
 
     dm(:,:) = 0.0_dp
-    do ii =  size(filling), 1, -1
+    loop1: do ii =  size(filling), 1, -1
       nLevels = ii
       if (abs(filling(ii)) >= epsilon(1.0_dp)) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
     fillProduct(1:nLevels) = filling(1:nLevels) * eigen(1:nLevels)
     if ((minval(fillProduct(1:nLevels)) < 0.0_dp&
         & .eqv. maxval(fillProduct(1:nLevels)) < 0.0_dp)&
@@ -623,12 +623,12 @@ contains
 
     dm(:,:) = cmplx(0.0_dp,0.0_dp,dp)
 
-    do ii =  size(filling), 1, -1
+    loop1: do ii =  size(filling), 1, -1
       nLevels = ii
       if (abs(filling(ii)) >= epsilon(1.0_dp)) then
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
 
     fillProduct(1:nLevels) = filling(1:nLevels) * eigen(1:nLevels)
     if ((minval(fillProduct(1:nLevels)) < 0.0_dp&

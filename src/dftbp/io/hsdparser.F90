@@ -528,13 +528,13 @@ contains
     !! Look for any extension operator
     iType = 0
     pos1 = 0
-    do ii = 1, nExtension
+    loop1: do ii = 1, nExtension
       pos1 = len_trim(extensions(ii))
       if (lowerName(:pos1) == trim(extensions(ii))) then
         iType = ii
-        exit
+        exit loop1
       end if
-    end do
+    end do loop1
 
     !! Cut extension operator from the field name
     if (iType /= 0) then

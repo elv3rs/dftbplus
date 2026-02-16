@@ -719,13 +719,13 @@ contains
     ! Check if k-point mesh is a Monkhorst-Pack sampling with zero shift
     tNotMonkhorstPack = .false.
     lpOuter: do jj = 1, size(coeffs, dim=2)
-      do ii = 1, size(coeffs, dim=1)
-        if (ii == jj) cycle
+      loop1: do ii = 1, size(coeffs, dim=1)
+        if (ii == jj) cycle loop1
         if (coeffs(ii, jj) > 1e-06_dp) then
           tNotMonkhorstPack = .true.
           exit lpOuter
         end if
-      end do
+      end do loop1
     end do lpOuter
     if (tNotMonkhorstPack) then
       @:RAISE_ERROR(errStatus, -1, "Hybrid functionals using integration with k-points requires a&
@@ -4027,8 +4027,8 @@ contains
     iOrbStartAtPrime = iSquare(iAtomPrime)
     iOrbEndAtPrime = iSquare(iAtomPrime + 1) - 1
 
-    do iAt2 = 1, nAtom0
-      if (iAtomPrime == iAt2) cycle
+    loop1: do iAt2 = 1, nAtom0
+      if (iAtomPrime == iAt2) cycle loop1
       iSp2 = this%species0(iAt2)
       iOrbStart2 = iSquare(iAt2)
       iOrbEnd2 = iSquare(iAt2 + 1) - 1
@@ -4037,7 +4037,7 @@ contains
       do iCoord = 1, 3
         camdGammaAO(iOrbStartAtPrime:iOrbEndAtPrime, iOrbStart2:iOrbEnd2, iCoord) = dGamma(iCoord)
       end do
-    end do
+    end do loop1
 
   end subroutine getCamGammaFourierAOPrime
 

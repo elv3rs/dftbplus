@@ -586,7 +586,7 @@ contains
         grds(:, :) = 0.0_dp
         grdi(:) = 0
         sasap = 1.0_dp
-        do iNeigh = 1, nNeighbour(iAt1)
+        loop1: do iNeigh = 1, nNeighbour(iAt1)
           iAt2 = iNeighbour(iNeigh, iAt1)
           iAt2f = img2CentCell(iAt2)
           iSp2 = species(iAt2f)
@@ -597,7 +597,7 @@ contains
           if (dist2 < thresholds(2,iSp2)) then
             if (dist2 < thresholds(1,iSp2)) then
               sasap = 0.0_dp
-              exit
+              exit loop1
             end if
             dist = sqrt(dist2)
             uj = dist - probeRad(iSp2)
@@ -612,7 +612,7 @@ contains
             grdi(nEval) = iAt2f
             grds(:, nEval) = dsasaij*vec(:)
           end if
-        end do
+        end do loop1
 
         if (sasap > tolerance) then
           ! numerical quadrature weight

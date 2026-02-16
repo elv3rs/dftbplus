@@ -139,13 +139,13 @@ contains
     tokenValue(:) = 0
     iError = TOKEN_OK
     iStart = start
-    do ii = 1, size(tokenValue)
+    loop1: do ii = 1, size(tokenValue)
       call getNextToken(str, tmp, iStart, iError)
       if (iError /= TOKEN_OK) then
-        exit
+        exit loop1
       end if
       tokenValue(ii) = tmp
-    end do
+    end do loop1
 
     if (iError == TOKEN_OK) then
       start = iStart
@@ -270,13 +270,13 @@ contains
     tokenValue(:) = 0.0_dp
     iError = TOKEN_OK
     iStart = start
-    do ii = 1, size(tokenValue)
+    loop1: do ii = 1, size(tokenValue)
       call getNextToken(str, tmp, iStart, iError)
       if (iError /= TOKEN_OK) then
-        exit
+        exit loop1
       end if
       tokenValue(ii) = tmp
-    end do
+    end do loop1
 
     if (iError == TOKEN_OK) then
       start = iStart
@@ -402,13 +402,13 @@ contains
     tokenValue(:) = 0.0_dp
     iError = TOKEN_OK
     iStart = start
-    do ii = 1, size(tokenValue)
+    loop1: do ii = 1, size(tokenValue)
       call getNextToken(str, tmp, iStart, iError)
       if (iError /= TOKEN_OK) then
-        exit
+        exit loop1
       end if
       tokenValue(ii) = tmp
-    end do
+    end do loop1
 
     if (iError == TOKEN_OK) then
       start = iStart
@@ -504,13 +504,13 @@ contains
     tokenValue = .false.
     iStart = start
     iError = TOKEN_OK
-    do ii = 1, size(tokenValue)
+    loop1: do ii = 1, size(tokenValue)
       call getNextToken(str, tmp, iStart, iError)
       if (iError /= TOKEN_OK) then
-        exit
+        exit loop1
       end if
       tokenValue(ii) = tmp
-    end do
+    end do loop1
 
     if (iError == TOKEN_OK) then
       start = iStart
