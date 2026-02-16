@@ -778,7 +778,7 @@ contains
     @:ASSERT(mod(iSeed(4),2) == 1)
     @:ASSERT(size(x) > 0)
     n = size(x)
-    x(:) = 0.0d0
+    x(:) = 0.0_rdp
     call DLARNV(iDist, iSeed, n, x)
   end subroutine larnv_dble
 
@@ -832,7 +832,7 @@ contains
     @:ASSERT(mod(iSeed(4),2) == 1)
     @:ASSERT(size(x) > 0)
     n = size(x)
-    x(:) = 0.0d0
+    x(:) = 0.0_rdp
     call ZLARNV(iDist, iSeed, n, x)
   end subroutine larnv_dblecplx
 
