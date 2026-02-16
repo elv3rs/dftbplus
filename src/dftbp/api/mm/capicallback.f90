@@ -10,7 +10,7 @@
 !> Contains types for the callback interface that exports dense matrix formatted density matrix,
 !! overlap and hamiltonian data
 module dftbp_capicallback
-  use iso_c_binding, only: c_ptr, c_int, c_funptr, c_loc, c_null_ptr, c_f_procpointer
+  use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_funptr, c_loc, c_null_ptr, c_f_procpointer
   use dftbp_common_accuracy, only : dp
 
   implicit none
@@ -42,7 +42,7 @@ module dftbp_capicallback
   !> C-style wrapper for TDMHSCallbackFunc
   abstract interface
     subroutine dmhs_callback_c_t(auxPtr, iKpoint, iSpin, blacsDescr, dataPtr, matrixDescr) bind(c)
-      use iso_c_binding, only: c_int, c_ptr
+      use, intrinsic :: iso_c_binding, only: c_int, c_ptr
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       type(c_ptr), value :: auxPtr
       !> 1-based index of k-points of the matrix
@@ -62,7 +62,7 @@ module dftbp_capicallback
   abstract interface
     integer function set_dmhs_callback_c_t(auxPtr, iKpoint, iSpin, blacsDescr, dataPtr,&
         & matrixDescr) bind(c)
-      use iso_c_binding, only: c_int, c_ptr
+      use, intrinsic :: iso_c_binding, only: c_int, c_ptr
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       type(c_ptr), value :: auxPtr
       !> 1-based index of k-points of the matrix

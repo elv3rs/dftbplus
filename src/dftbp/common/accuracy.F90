@@ -10,7 +10,7 @@
 !! code.
 !! Not all routines use the string length specifications to set their character string lengths.
 module dftbp_common_accuracy
-  use iso_fortran_env, only : real32, real64
+  use, intrinsic :: iso_fortran_env, only : real32, real64
   implicit none
 
   public

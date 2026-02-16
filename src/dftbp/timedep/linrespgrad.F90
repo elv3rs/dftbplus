@@ -230,6 +230,7 @@ contains
     integer :: mcaupd, mcaup2, mcaitr, mceigh, mcapps, mcgets, mceupd
 
     !> Common block of ARPACK variables
+    ! allow(OB011)
     common /debug/ logfil, ndigit, mgetv0,&
         & msaupd, msaup2, msaitr, mseigt, msapps, msgets, mseupd,&
         & mnaupd, mnaup2, mnaitr, mneigh, mnapps, mngets, mneupd,&

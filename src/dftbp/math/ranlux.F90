@@ -212,7 +212,7 @@ contains
       this%icarry = 1
     end if
 
-    isd = iabs(isdext(25))
+    isd = abs(isdext(25))
     this%i24 = mod(isd,100)
     isd = isd / 100
     this%j24 = mod(isd,100)

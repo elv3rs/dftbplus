@@ -15,8 +15,15 @@ fypp-args = [
 ]
 
 # Exclude: test/ (needs fortuno external), external/ (third-party code),
-# and wrappers that don't include common.fypp
-extend-exclude = ["test/", "external/", "src/dftbp/extlibs/fsockets.F90"]
+# extlibs/ (thin wrappers around external libraries — minimal code, many stubs),
+# utils/workarounds/ (intentionally non-standard compiler test programs),
+# app/misc/cmake/ (CMake feature-detection programs),
+# poisson/ (third-party code from Univ. Rome 'Tor Vergata')
+extend-exclude = [
+    "test/", "external/", "src/dftbp/extlibs/",
+    "utils/workarounds/", "app/misc/cmake/",
+    "src/dftbp/poisson/",
+]
 
 select = ["ALL"]
 ignore = [
@@ -41,4 +48,10 @@ ignore = [
     # --- Legacy interfaces (cannot be changed without API breaks) ---
     "C071",    # assumed-size-array — legacy interfaces, not autofixable
     "C072",    # assumed-size-character-intent — 11 violations, legacy C interop
+
+    # --- Coding conventions (too many to fix now, track for gradual cleanup) ---
+    "C101",    # missing-default-pointer-initialisation — 49 violations, needs careful review
+    "C081",    # initialisation-in-declaration — 18 violations, context-dependent severity
+    "C131",    # missing-accessibility-statement — 10 violations, mostly in small utility modules
+    "C132",    # default-public-accessibility — 5 violations, paired with C131
 ]
