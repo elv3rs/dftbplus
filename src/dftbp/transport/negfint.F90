@@ -1454,10 +1454,10 @@ contains
     real(dp), intent(in) :: mu(:,:)
 
     real(dp), allocatable :: tunnSKRes(:,:,:), currSKRes(:,:,:), ldosSKRes(:,:,:)
-    real(dp), pointer    :: tunnPMat(:,:)=>null()
-    real(dp), pointer    :: currPMat(:,:)=>null()
-    real(dp), pointer    :: ldosPMat(:,:)=>null()
-    real(dp), pointer    :: currPVec(:)=>null()
+    real(dp), pointer, save    :: tunnPMat(:,:)=>null()
+    real(dp), pointer, save    :: currPMat(:,:)=>null()
+    real(dp), pointer, save    :: ldosPMat(:,:)=>null()
+    real(dp), pointer, save    :: currPVec(:)=>null()
     integer :: iKS, iK, iS, nKS, nS,  nTotKS, ii, err, ncont, readSGFbkup
     type(units) :: unitsOfEnergy        ! Set the units of H
     type(units) :: unitsOfCurrent       ! Set desired units for Jel
