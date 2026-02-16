@@ -238,7 +238,7 @@ contains
     complex(dp), dimension(:,:), allocatable :: KdynMatrix
     real(dp) :: latVecs(3,3), invLatt(3,3)
     real(dp) :: DeltaR(3), q(3), qold(3)
-    complex(dp), parameter ::    j = (0.d0,1.d0)
+    complex(dp), parameter ::    j = (0.0_dp,1.0_dp)
     real(dp) :: unitsConv
 
     call setConversionUnits(unitsConv)
@@ -274,7 +274,7 @@ contains
     ModKpoint=0.0_dp
 
     do iK  = 1, nKPoints
-      KdynMatrix(:,:) = 0.d0
+      KdynMatrix(:,:) = 0.0_dp
       q(1) = dot_product(invLatt(:,1), kPoint(:,iK))
       q(2) = dot_product(invLatt(:,2), kPoint(:,iK))
       q(3) = dot_product(invLatt(:,3), kPoint(:,iK))
