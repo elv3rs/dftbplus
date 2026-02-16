@@ -48,6 +48,7 @@ ignore = [
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 
     # --- Legacy interfaces (cannot be changed without API breaks) ---
+    "C071",    # assumed-size-array — 28 violations, legacy interfaces
     "C072",    # assumed-size-character-intent — 9 violations, legacy C interop
 
     # --- Coding conventions (autofix available but would break: modules lack explicit `public ::`) ---
