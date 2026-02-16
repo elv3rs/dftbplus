@@ -295,7 +295,8 @@ contains
     if (token%type == tokenTypes_%empty) then
       selected(:) = .false.
       return
-    else if (token%type == tokenTypes_%selector) then
+    end if
+    if (token%type == tokenTypes_%selector) then
       call evalSelector_(token%content, selection, selected, errStatus)
       @:PROPAGATE_ERROR(errStatus)
     else if (token%type == tokenTypes_%open) then

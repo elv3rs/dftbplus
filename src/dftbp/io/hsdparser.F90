@@ -584,7 +584,8 @@ contains
         if (iType == 4) then
           newChild => null()
           return
-        else if (iType == 5) then
+        end if
+        if (iType == 5) then
           dummy => removeChild(parentNode, sameChild)
           call destroyNode(sameChild)
           tCreate = .true.

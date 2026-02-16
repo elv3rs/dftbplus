@@ -865,7 +865,8 @@ contains
           this%dxLo(:) = dx
           xNew(:) = this%xNew
           return
-        else if (dphi * (this%alphaHi - this%alphaLo) >= 0.0_dp) then
+        end if
+        if (dphi * (this%alphaHi - this%alphaLo) >= 0.0_dp) then
           this%phiTemp = this%phiHi
           this%alphaTemp = this%alphaHi
           this%alphaHi = this%alphaLo

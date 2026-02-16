@@ -237,7 +237,8 @@ contains
       if (iostat /= 0) then
         hasspline = .false.
         exit loop1
-      else if (chdummy == "Spline") then
+      end if
+      if (chdummy == "Spline") then
         hasspline = .true.
         exit loop1
       end if
@@ -340,7 +341,8 @@ contains
       if (iErr /= 0) then
         isHybridXcTag = .false.
         exit loop1
-      else if (strDummy == "RangeSep") then
+      end if
+      if (strDummy == "RangeSep") then
         isHybridXcTag = .true.
         exit loop1
       end if
