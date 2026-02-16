@@ -544,7 +544,9 @@ contains
     real(dp) :: vec(3)
     real(dp) :: uj, ah3uj2
     real(dp) :: sasaij, dsasaij
-    real(dp) :: rsas, sasai, point(3), sasap, wsa, dGr(3)
+    real(dp) :: rsas, sasai, sasap, wsa
+    real(dp) :: point(3)
+    real(dp) :: dGr(3)
     real(dp), allocatable :: grds(:,:), derivs(:,:)
     integer, allocatable :: grdi(:)
 

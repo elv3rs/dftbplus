@@ -658,7 +658,10 @@ contains
 
     integer :: iAt1, iSp1, iNeigh, iAt2, iSp2, iAt2f
     real(dp) :: dc6, dc6dcn1, dc6dcn2, dc6dq1, dc6dq2
-    real(dp) :: vec(3), grad(3), dEr, dGr, dSr(3, 3)
+    real(dp) :: dEr, dGr
+    real(dp) :: vec(3)
+    real(dp) :: grad(3)
+    real(dp) :: dSr(3, 3)
     real(dp) :: rc, r1, r2, r4, r5, r6, r8, r10, rc1, rc2, rc6, rc8, rc10
     real(dp) :: f6, df6, f8, df8, f10, df10
 
@@ -873,10 +876,15 @@ contains
 
     integer :: iAt1, iAt2, iAt3, iAt2f, iAt3f, iSp1, iSp2, iSp3
     integer :: iNeigh2, iNeigh3
-    real(dp) :: vec12(3), vec13(3), vec23(3), dist12, dist13, dist23
+    real(dp) :: dist12, dist13, dist23
+    real(dp) :: vec12(3)
+    real(dp) :: vec13(3)
+    real(dp) :: vec23(3)
     real(dp) :: c9, c6_12, c6_13, c6_23, rc12, rc13, rc23, rc
     real(dp) :: r1, r2, r3, r5, rr, fdmp, dfdmp, ang, dang
-    real(dp) :: dEr, dG12(3), dG13(3), dG23(3), dSr(3, 3)
+    real(dp) :: dEr, dG23(3), dSr(3, 3)
+    real(dp) :: dG12(3)
+    real(dp) :: dG13(3)
     real(dp) :: dc9dcn1, dc9dcn2, dc9dcn3, dc9dq1, dc9dq2, dc9dq3
 
     !$omp parallel do default(none) schedule(runtime) &

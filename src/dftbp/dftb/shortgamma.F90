@@ -667,7 +667,9 @@ contains
     integer :: iAt1, iAt2, iAt2f, iIter, iNeigh, iSh1, iSh2, iSp1, iSp2, maxShell1, maxShell2, nAtom
     integer :: iU1, iU2
     integer, allocatable :: iterIndices(:), maxNeigh(:)
-    real(dp) :: r(3), rab, rHat(3), tmpGamma, tmpGammaPrime, U1, U2
+    real(dp) :: rab, tmpGamma, tmpGammaPrime, U1, U2
+    real(dp) :: r(3)
+    real(dp) :: rHat(3)
     logical :: skipLoop
 
     nAtom = size(this%nNeigh_, dim=4)

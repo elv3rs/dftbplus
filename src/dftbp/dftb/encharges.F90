@@ -538,7 +538,9 @@ contains
     real(dp), intent(out) :: aTrace(:, :)
 
     integer :: iAt1, iAt2f, iSp1, iSp2, ic
-    real(dp) :: dist, vec(3), aTmp(3), arg, eta12, aij, aji
+    real(dp) :: dist, arg, eta12, aij, aji
+    real(dp) :: vec(3)
+    real(dp) :: aTmp(3)
 
     aMatdr(:,:,:) = 0.0_dp
     aTrace(:,:) = 0.0_dp
@@ -779,7 +781,10 @@ contains
     real(dp), intent(inout) :: aTrace(:, :)
 
     integer :: iAt1, iAt2f, ic, jc
-    real(dp) :: vec(3), aTmp(3), sigma(3, 3), aij, aji, sij, sji
+    real(dp) :: aij, aji, sij, sji
+    real(dp) :: vec(3)
+    real(dp) :: aTmp(3)
+    real(dp) :: sigma(3, 3)
 
     !$OMP PARALLEL DEFAULT(NONE) shared(aTrace, aMatdr, aMatdL) &
     !$OMP SHARED(nAtom, coords, recPoint, alpha, volume, qVec) &
@@ -926,7 +931,9 @@ contains
     !> Contains the `trace' derivative on exit.
     real(dp), intent(inout) :: aTrace(:, :)
 
-    real(dp) :: dist, vec(3), aTmp(3), arg, eta12, ewl, aij, aji, sij, sji
+    real(dp) :: dist, arg, eta12, ewl, aij, aji, sij, sji
+    real(dp) :: vec(3)
+    real(dp) :: aTmp(3)
     integer :: iAt1, iAt2, iAt2f, iSp1, iSp2, iNeigh, ic, jc
 
     !$OMP PARALLEL DEFAULT(NONE) shared(aTrace, aMatdr, aMatdL) &

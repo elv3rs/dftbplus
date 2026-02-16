@@ -484,7 +484,9 @@ contains
     real(dp), parameter :: k6 = 2*11.28174_dp**2
 
     integer :: iAt1, iSp1, iAt2, iAt2f, iSp2, iNeigh, ic, jc
-    real(dp) :: r2, r1, rc, vec(3), countf, countd(3), dEN, sij
+    real(dp) :: r2, r1, rc, countf, dEN, sij
+    real(dp) :: vec(3)
+    real(dp) :: countd(3)
 
     cn(:) = 0.0_dp
     dcndr(:, :, :) = 0.0_dp

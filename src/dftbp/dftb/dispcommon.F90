@@ -80,7 +80,11 @@ contains
 
     integer :: iAtFirst, iAtLast
     integer :: iAt1, iNeigh, iAt2, iAt2f, iG, ii
-    real(dp) :: rSum, rSum3(3), gSum, gSum3(3), gg(3), ggAbs, vec(3)
+    real(dp) :: rSum, gSum, ggAbs
+    real(dp) :: rSum3(3)
+    real(dp) :: gSum3(3)
+    real(dp) :: gg(3)
+    real(dp) :: vec(3)
     real(dp) :: aam2, bb, bbm2, rTmp, rTmp2, rTmp3, rc, r3c, gc, g3c, ddp
     real(dp) :: etam3, rTmp33
     real(dp) :: gsum33(3,3)
@@ -236,7 +240,12 @@ contains
 
     integer :: iAtFirst, iAtLast
     integer :: iAt1, iNeigh, iAt2, iAt2f, iG, iSp1, iSp2, ii
-    real(dp) :: rSum, rSum3(3), gSum, gSum3(3),gsum33(3,3),gg(3), ggAbs, vec(3)
+    real(dp) :: rSum, gSum, ggAbs
+    real(dp) :: rSum3(3)
+    real(dp) :: gSum3(3)
+    real(dp) :: gsum33(3,3)
+    real(dp) :: gg(3)
+    real(dp) :: vec(3)
     real(dp) :: aam2, bb, bbm2, rTmp, rTmp2, rTmp3, rc, r3c, gc, g3c, ddp, etam3
     real(dp) :: rTmp33
     real(dp), allocatable :: localDeriv(:,:), localStress(:, :), localEnergies(:)

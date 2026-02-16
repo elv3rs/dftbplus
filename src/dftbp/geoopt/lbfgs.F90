@@ -405,7 +405,9 @@ contains
     real(dp) :: diag(this%nElem)
 
     ! Workspace variables
-    real(dp) :: qq(this%nElem), alpha(this%mem), beta
+    real(dp) :: beta
+    real(dp) :: qq(this%nElem)
+    real(dp) :: alpha(this%mem)
 
     integer :: ii, mm
 
@@ -941,7 +943,9 @@ contains
     !> minimum for the cubic
     real(dp) :: xMin
 
-    real(dp) :: db, dc, denom, d1(2,2), radical, ta, tb, temp(2)
+    real(dp) :: db, dc, denom, radical, ta, tb
+    real(dp) :: d1(2,2)
+    real(dp) :: temp(2)
 
     db = bb - aa
     dc = cc - aa

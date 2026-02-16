@@ -265,7 +265,9 @@ contains
     type(TOrbitals), intent(in) :: orb
 
     integer :: iOrig, ii, nAtom, iNeigh, iAtom1, iAtom2, iAtom2f, nOrb1, nOrb2, iIter
-    real(dp) :: sqrDMTmp(orb%mOrb,orb%mOrb), sqrEDMTmp(orb%mOrb,orb%mOrb), theta
+    real(dp) :: theta
+    real(dp) :: sqrDMTmp(orb%mOrb,orb%mOrb)
+    real(dp) :: sqrEDMTmp(orb%mOrb,orb%mOrb)
     real(dp) :: hPrimeTmp(orb%mOrb,orb%mOrb,3), sPrimeTmp(orb%mOrb,orb%mOrb,3), intermed(3)
     integer, allocatable :: iterIndices(:)
 

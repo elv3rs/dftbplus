@@ -1103,7 +1103,9 @@ contains
     real(dp), allocatable :: shellPot(:,:,:), atomPot(:,:)
     real(dp), allocatable :: dummy(:,:,:,:)
 
-    real(dp) :: dqInpRed(nMixElements), dqOutRed(nMixElements), sccErrorQ
+    real(dp) :: sccErrorQ
+    real(dp) :: dqInpRed(nMixElements)
+    real(dp) :: dqOutRed(nMixElements)
     real(dp) :: dqPerShell(orb%mShell, nAtom, nSpin)
 
     integer :: iAt, iKS, iK, iS, iSh, iSp

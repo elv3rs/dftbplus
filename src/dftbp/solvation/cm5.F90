@@ -393,7 +393,10 @@ contains
     real(dp), intent(in) :: coords(:, :)
 
     integer :: iAt1, iSp1, iNeigh, iAt2, iAt2f, iSp2
-    real(dp) :: dist, vec(3), dEr, dGr(3), dSr(3, 3), p12, p21
+    real(dp) :: dist, dEr, p12, p21
+    real(dp) :: vec(3)
+    real(dp) :: dGr(3)
+    real(dp) :: dSr(3, 3)
 
     this%cm5(:) = 0.0_dp
     this%dcm5dr(:, :, :) = 0.0_dp

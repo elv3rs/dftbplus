@@ -1284,7 +1284,9 @@ contains
     real(dp), intent(in), optional :: blurWidths1(:)
 
     integer :: iAt0, iAt1
-    real(dp) :: dist, vect(3), fTmp(3), sigma, rs
+    real(dp) :: dist, sigma, rs
+    real(dp) :: vect(3)
+    real(dp) :: fTmp(3)
     integer :: iAtFirst0, iAtLast0, iAtFirst1, iAtLast1
     real(dp), allocatable :: localDeriv0(:,:), localDeriv1(:,:)
 
@@ -1528,7 +1530,9 @@ contains
 
     type(TDynNeighList), pointer :: pNeighList
     integer :: iAt1, iAt2
-    real(dp) :: rr(3), contrib(3), prefac
+    real(dp) :: prefac
+    real(dp) :: rr(3)
+    real(dp) :: contrib(3)
     real(dp), allocatable :: localDeriv(:,:)
     integer :: iAtFirst, iAtLast
 

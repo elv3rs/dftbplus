@@ -4855,7 +4855,9 @@ contains
 
     integer :: nAtom0, iAtK, iNeighK, iAtB, iNeighB, iAtC, iAtA, kpa
     real(dp) :: tmpgamma1, tmpgamma2
-    real(dp) :: tmpforce(3), tmpforce_r(3), tmpforce2, tmpmultvar1
+    real(dp) :: tmpforce2, tmpmultvar1
+    real(dp) :: tmpforce(3)
+    real(dp) :: tmpforce_r(3)
     integer :: nSpin, iSpin, mu, alpha, beta, ccc, kkk
     real(dp) :: sPrimeTmp(orb%mOrb, orb%mOrb, 3)
     real(dp) :: sPrimeTmp2(orb%mOrb, orb%mOrb, 3)

@@ -1590,7 +1590,9 @@ contains
     !> W vector virtual part
     real(dp), intent(out) :: wvv(:,:)
 
-    integer :: i, j, a, b, ias, ibs, abs, ij, ab, jas, ijs, s, nSpin, soo(2), svv(2), nOrb, nxov
+    integer :: i, j, a, b, ias, ibs, abs, ij, ab, jas, ijs, s, nSpin, nOrb, nxov
+    integer :: soo(2)
+    integer :: svv(2)
     real(dp), allocatable :: xpyq(:), qTr(:), gamxpyq(:), qgamxpyq(:,:), gamqt(:)
     real(dp), allocatable :: xpyqds(:), gamxpyqds(:)
     real(dp), allocatable :: vecHvvXpY(:), vecHvvXmY(:), vecHooXpY(:), vecHooXmY(:)
@@ -2402,7 +2404,11 @@ contains
     real(dp), allocatable :: PS(:,:,:), DS(:,:,:), SPS(:,:,:), SDS(:,:,:), SX(:,:,:)
     real(dp), allocatable :: XS(:,:,:), SXS(:,:,:), SY(:,:,:), YS(:,:,:), SYS(:,:,:)
     real(dp) :: tmp1, tmp2, tmp3, tmp4, tmp6, tmp8, tmp9, tmp10, rab
-    real(dp) :: diffvec(3), dgab(3), tmpVec(3), tmp3a, tmp3b, tmprs, tmprs2, tmps(2)
+    real(dp) :: tmp3a, tmp3b, tmprs, tmprs2
+    real(dp) :: diffvec(3)
+    real(dp) :: dgab(3)
+    real(dp) :: tmpVec(3)
+    real(dp) :: tmps(2)
     integer, allocatable :: species(:)
     integer :: ia, i, j, a, b, ab, ij, m, n, mu, nu, xyz, iAt1, iAt2, ka
     integer :: indalpha, indalpha1, indbeta, indbeta1, soo(2), svv(2)
@@ -3915,7 +3921,9 @@ contains
     real(dp), allocatable :: vecHvvXpY(:), vecHvvXmY(:), vecHooXpY(:), vecHooXmY(:)
     real(dp), allocatable :: vecHooT(:)
     integer :: nxov
-    integer :: i, j, a, b, ias, ibs, abs, ij, ab, jas, ijs, s, nSpin, soo(2), svv(2), nOrb
+    integer :: i, j, a, b, ias, ibs, abs, ij, ab, jas, ijs, s, nSpin, nOrb
+    integer :: soo(2)
+    integer :: svv(2)
     real(dp) :: ptmp1, ptmp2, tmp3, tmp4, tmp1
 
     nxov = size(rhs)
@@ -4359,7 +4367,11 @@ contains
     real(dp), allocatable :: XS(:,:,:,:), SXS(:,:,:,:), SY(:,:,:,:), YS(:,:,:,:), SYS(:,:,:,:)
     real(dp), allocatable :: xpy(:,:), xmy(:,:)
     real(dp) :: tmp1, tmp2, tmp3, tmp4, tmp6, tmp8, tmp9, tmp10, rab
-    real(dp) :: diffvec(3), dgab(3), tmpVec(3), tmp3a, tmp3b, tmprs, tmprs2, tmps(2)
+    real(dp) :: tmp3a, tmp3b, tmprs, tmprs2
+    real(dp) :: diffvec(3)
+    real(dp) :: dgab(3)
+    real(dp) :: tmpVec(3)
+    real(dp) :: tmps(2)
     integer, allocatable :: species(:)
     integer :: ia, i, j, a, b, ab, ij, m, n, mu, nu, xyz, iAt1, iAt2, ka
     integer :: indalpha, indalpha1, indbeta, indbeta1, soo(2), svv(2)
@@ -4901,7 +4913,9 @@ contains
     !> Output vector H[V] virtual-virtual
     real(dp), optional, intent(out) :: vecHvv(:)
 
-    integer :: nSpin, ab, s, abs, svv(2), ij, ijs, soo(2)
+    integer :: nSpin, ab, s, abs, ij, ijs
+    integer :: svv(2)
+    integer :: soo(2)
     real(dp) :: fact
     real(dp), allocatable  :: xpyq(:), gamxpyq(:), qTr(:), xpyqds(:), gamxpyqds(:)
 
@@ -5041,7 +5055,9 @@ contains
     !> Output vector H[M]
     real(dp), intent(out) :: vecH(:)
 
-    integer :: nSpin, ab, i, j, a, b, s, svv(2), ij, soo(2), ias
+    integer :: nSpin, ab, i, j, a, b, s, ij, ias
+    integer :: svv(2)
+    integer :: soo(2)
     real(dp), dimension(2), save :: spinFactor = [1.0_dp, -1.0_dp]
     real(dp), allocatable  :: xpyq(:), gamxpyq(:), qTr(:), xpyqds(:), gamxpyqds(:)
     real(dp), allocatable  :: gamqt(:)

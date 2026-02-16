@@ -1336,7 +1336,8 @@ contains
 
     integer :: iAt1, iAt2
     real(dp) :: aa, dist2, fgb2, qq, dd, expd, dfgb, dfgb2, dfgb3, ap, bp
-    real(dp) :: grddbi, grddbj, vec(3), dGr(3), dSr(3, 3)
+    real(dp) :: grddbi, grddbj, dGr(3), dSr(3, 3)
+    real(dp) :: vec(3)
 
     !$omp parallel do default(none) reduction(+:energies, derivs, dEdbr, sigma) &
     !$omp shared(iAtFirst, iAtLast, coords, chargesPerAtom, bornRad, kEps) &
@@ -1426,7 +1427,9 @@ contains
     integer :: iAt1, iAt2
     real(dp) :: r2, r1, ab, arg1, arg16, qq, fgb, dfgb, dfgb2
     real(dp) :: vec(3)
-    real(dp) :: dEdbr1, dEdbr2, dG(3), ap, bp, dS(3, 3)
+    real(dp) :: dEdbr1, dEdbr2, ap, bp
+    real(dp) :: dG(3)
+    real(dp) :: dS(3, 3)
 
     !$omp parallel do default(none) reduction(+:energies, derivs, dEdbr, sigma) &
     !$omp shared(iAtFirst, iAtLast, coords, chargesPerAtom, bornRad, kEps) &
@@ -1589,7 +1592,10 @@ contains
     real(dp), intent(inout) :: gradient(:, :)
 
     integer :: iAt, iSp
-    real(dp) :: rad2, rad3, totRad3, vec(3), center(3), inertia(3, 3), aDet
+    real(dp) :: rad2, rad3, totRad3, aDet
+    real(dp) :: vec(3)
+    real(dp) :: center(3)
+    real(dp) :: inertia(3, 3)
     real(dp) :: qtotal
     real(dp) :: aDeriv(3, 3)
 

@@ -191,7 +191,10 @@ contains
     !> Distance between two atoms of interest
     real(dp), intent(in) :: rr
 
-    real(dp) :: xa(nInterNew_), ya(nInterNew_), yb(this%nInteg,nInterNew_), y1, y1p, y1pp
+    real(dp) :: y1, y1p, y1pp
+    real(dp) :: xa(nInterNew_)
+    real(dp) :: ya(nInterNew_)
+    real(dp) :: yb(this%nInteg,nInterNew_)
     real(dp) :: incr, dr, rMax, y0(this%nInteg), y2(this%nInteg)
     integer :: leng, ind, iLast
     integer :: ii
@@ -256,7 +259,9 @@ contains
     !> Distance between two atoms of interest
     real(dp), intent(in) :: rr
 
-    real(dp) :: xa(nInterOld_), yb(this%nInteg,nInterOld_),y0, y1, y2, y1p, y1pp
+    real(dp) :: y0, y1, y2, y1p, y1pp
+    real(dp) :: xa(nInterOld_)
+    real(dp) :: yb(this%nInteg,nInterOld_)
     real(dp) :: incr, dr
     integer :: leng, ind, mInd, iLast
     integer :: ii

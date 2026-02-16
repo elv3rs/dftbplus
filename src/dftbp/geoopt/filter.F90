@@ -185,7 +185,10 @@ contains
     !> Common gradient vector containing both cartesian and lattice derivatives
     real(dp), intent(out) :: deriv(:)
 
-    real(dp) :: inv_lat(3, 3), lat_grad(3, 3), vol, sigma(3, 3), pressure
+    real(dp) :: vol, pressure
+    real(dp) :: inv_lat(3, 3)
+    real(dp) :: lat_grad(3, 3)
+    real(dp) :: sigma(3, 3)
     logical :: mask(3, 3)
     logical, parameter :: diagonal(3, 3) = reshape(&
        & [.true., .false., .false., .false., .true., .false., .false., .false., .true.], &

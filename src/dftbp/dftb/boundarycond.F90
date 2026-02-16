@@ -335,7 +335,11 @@ contains
     real(dp), intent(in) :: latVec(:,:)
 
     integer :: nAtom, iAt, jj, nDir
-    real(dp) :: frac(3), tmp3(3), vecLen(3), thetaNew, thetaOld, invLatVecs(3,3)
+    real(dp) :: thetaNew, thetaOld
+    real(dp) :: frac(3)
+    real(dp) :: tmp3(3)
+    real(dp) :: vecLen(3)
+    real(dp) :: invLatVecs(3,3)
     real(dp), allocatable :: work(:,:)
 
     nAtom = size(coord, dim=2)

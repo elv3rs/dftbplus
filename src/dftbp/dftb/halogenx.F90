@@ -323,7 +323,9 @@ contains
     real(dp), intent(in) :: cellVol
 
     integer :: iAt1, iNeigh, iAt2, iAt2f, ii, iSp1, iSp2
-    real(dp) :: vect(3), intermed(3), prefac, rvdw
+    real(dp) :: prefac, rvdw
+    real(dp) :: vect(3)
+    real(dp) :: intermed(3)
     integer, allocatable :: nNeigh(:)
 
     st(:,:) = 0.0_dp

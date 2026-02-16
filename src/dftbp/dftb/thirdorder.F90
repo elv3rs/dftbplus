@@ -646,7 +646,10 @@ contains
     real(dp), intent(inout) :: st(:,:)
 
     integer :: iAt1, iAt2, iAt2f, iSp1, iSp2, iSh1, iSh2, iNeigh, ii
-    real(dp) :: rab, tmp, tmp3(3), stTmp(3,3), prefac, vect(3)
+    real(dp) :: rab, tmp, prefac
+    real(dp) :: tmp3(3)
+    real(dp) :: stTmp(3,3)
+    real(dp) :: vect(3)
     logical :: damping
 
     stTmp(:,:) = 0.0_dp

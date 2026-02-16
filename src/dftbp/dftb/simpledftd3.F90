@@ -478,7 +478,10 @@ contains
     integer :: nRef, nAtom, iAtFirst, iAtLast
     integer :: iAt1, iSp1, iNeigh, iAt2, iSp2, iAt2f
     real(dp) :: dc6, dc6dcn1, dc6dcn2
-    real(dp) :: vec(3), grad(3), dEr, dGr, dSr(3, 3)
+    real(dp) :: dEr, dGr
+    real(dp) :: vec(3)
+    real(dp) :: grad(3)
+    real(dp) :: dSr(3, 3)
     real(dp) :: rc, r1, r2, r4, r5, r6, r8, r10, rc1, rc2, rc6, rc8, rc10
     real(dp) :: f6, df6, f8, df8, f10, df10
 

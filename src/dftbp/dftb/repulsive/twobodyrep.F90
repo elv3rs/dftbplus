@@ -284,7 +284,9 @@ contains
     real(dp), intent(out) :: gradients(:,:)
 
     integer :: iAt1, iNeigh, iAt2, iAt2f
-    real(dp) :: vect(3), intermed(3), dist, deriv, theta
+    real(dp) :: dist, deriv, theta
+    real(dp) :: vect(3)
+    real(dp) :: intermed(3)
     logical :: tHelix
 
     tHelix = isHelical
@@ -347,7 +349,9 @@ contains
     real(dp), intent(out) :: stress(:,:)
 
     integer :: iAt1, iNeigh, iAt2, iAt2f, ii, nAtom
-    real(dp) :: vect(3), intermed(3), prefac, dist, deriv
+    real(dp) :: prefac, dist, deriv
+    real(dp) :: vect(3)
+    real(dp) :: intermed(3)
 
     @:ASSERT(all(shape(stress) == [3, 3]))
 
