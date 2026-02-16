@@ -14,7 +14,7 @@ module dftbp_common_release
   public
 
   !> Release name of the code
-  character(len=*), parameter :: releaseName = '${RELEASE}$'
+  character(len=*), parameter :: releaseName = "${RELEASE}$"
 
   !> Year of release
   integer, parameter :: releaseYear = 2025

@@ -193,10 +193,10 @@ contains
             & info)
       end if
       if (info < 0) then
-        write(error_string, "(A,I0)")'Failure in ${PRF}$ illegal argument at position : ', info
+        write(error_string, "(A,I0)") "Failure in ${PRF}$ illegal argument at position : ", info
       else
-        write(error_string, "(A,I0)")'Linear dependent system in linear equation solver ${PRF}$,&
-            & info flag : ', info
+        write(error_string, "(A,I0)") "Linear dependent system in linear equation solver ${PRF}$,&
+            & info flag : ", info
       end if
       call error(error_string)
     end if
@@ -274,10 +274,10 @@ contains
             & info)
       end if
       if (info < 0) then
-        write(error_string, "(A,I0)")'Failure in ${PRF}$ illegal argument at position : ', info
+        write(error_string, "(A,I0)") "Failure in ${PRF}$ illegal argument at position : ", info
       else
-        write(error_string, "(A,I0)")'Linear dependent system in linear equation solver ${PRF}$,&
-            & info flag : ', info
+        write(error_string, "(A,I0)") "Linear dependent system in linear equation solver ${PRF}$,&
+            & info flag : ", info
       end if
       call error(error_string)
     end if

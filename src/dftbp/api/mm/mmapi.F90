@@ -194,7 +194,7 @@ contains
     !> Version string for DFTB+
     character(:), allocatable, intent(out) :: version
 
-    version = '${RELEASE}$'
+    version = "${RELEASE}$"
 
   end subroutine getDftbPlusBuild
 

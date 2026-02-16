@@ -737,7 +737,7 @@ contains
     ! allocate workspace for rhs
     allocate(rhs(ddCosmo%nylm, ddCosmo%nat), stat=iStatus)
     if (iStatus /= 0) then
-      @:RAISE_ERROR(errStatus, iStatus, 'cosmo: [2] failed allocation')
+      @:RAISE_ERROR(errStatus, iStatus, "cosmo: [2] failed allocation")
     end if
 
     ! 1. RHS
@@ -747,7 +747,7 @@ contains
       ! allocate workspace for weighted potential
       allocate(g(ddCosmo%ngrid, ddCosmo%nat) , stat=iStatus)
       if (iStatus /= 0) then
-        @:RAISE_ERROR(errStatus, iStatus, 'cosmo: [3] failed allocation')
+        @:RAISE_ERROR(errStatus, iStatus, "cosmo: [3] failed allocation")
       end if
 
       ! weight the potential...
@@ -761,7 +761,7 @@ contains
       ! deallocate workspace
       deallocate(g , stat=iStatus)
       if (iStatus /= 0) then
-        @:RAISE_ERROR(errStatus, iStatus, 'cosmo: [1] failed deallocation')
+        @:RAISE_ERROR(errStatus, iStatus, "cosmo: [1] failed deallocation")
       end if
 
     else
@@ -786,7 +786,7 @@ contains
 
     ! check solution
     if (.not.ok) then
-      @:RAISE_ERROR(errStatus, -1, 'direct ddCOSMO did not converge!')
+      @:RAISE_ERROR(errStatus, -1, "direct ddCOSMO did not converge!")
     end if
 
   end subroutine solveCosmoDirect
@@ -844,7 +844,7 @@ contains
 
     ! check solution
     if (.not.ok) then
-      @:RAISE_ERROR(errStatus, -1, 'adjoint ddCOSMO did not converge!')
+      @:RAISE_ERROR(errStatus, -1, "adjoint ddCOSMO did not converge!")
     end if
 
   end subroutine solveCosmoAdjoint

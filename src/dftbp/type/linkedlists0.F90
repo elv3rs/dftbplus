@@ -15,9 +15,9 @@ module dftbp_type_linkedlists0
   private
 
   $:define_list(&
-      & TYPE_NAME='TListString',&
-      & ITEM_TYPE='character(len=*)',&
-      & NODE_TYPE='type(string)',&
-      & PADDING="''", )
+      & TYPE_NAME="TListString",&
+      & ITEM_TYPE="character(len=*)",&
+      & NODE_TYPE="type(string)",&
+      & PADDING='""', )
 
 end module dftbp_type_linkedlists0

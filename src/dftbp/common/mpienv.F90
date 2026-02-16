@@ -158,7 +158,7 @@ contains
 
     if (this%globalComm%size > 1) then
 
-      @:ERROR_HANDLING(iErr, -1, 'This is serial code, but invoked on multiple processors')
+      @:ERROR_HANDLING(iErr, -1, "This is serial code, but invoked on multiple processors")
 
     end if
 

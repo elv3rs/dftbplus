@@ -314,9 +314,9 @@ contains
       form = getLabel(this%${FORMAT_STRING}$)
     end if
     #:if RANK
-      call writeTaggedHeader(file, tag, '${DATA_TYPE_TAG_NAME}$', shape(data))
+      call writeTaggedHeader(file, tag, "${DATA_TYPE_TAG_NAME}$", shape(data))
     #:else
-      call writeTaggedHeader(file, tag, '${DATA_TYPE_TAG_NAME}$')
+      call writeTaggedHeader(file, tag, "${DATA_TYPE_TAG_NAME}$")
     #:endif
     write(file, form) data
 
