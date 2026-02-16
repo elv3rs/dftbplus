@@ -11,6 +11,7 @@ program buildwire
   integer, parameter :: dp = kind(1.0d0)
 
   integer :: i,pl_atm,tot_atm,num_pl,err,k
+  character(256) :: err_msg
   integer :: d(3)
   character(100) :: gen_file
   character(2) :: period
@@ -56,19 +57,19 @@ program buildwire
   read(fp,*) pl_atm, period
   read(fp,"(A)") atm_spec
 
-  ALLOCATE(X(pl_atm),stat=err)
+  ALLOCATE(X(pl_atm),stat=err, errmsg=err_msg)
   IF (err /= 0) STOP "no space for allocation (X)"
 
-  ALLOCATE(Y(pl_atm),stat=err)
+  ALLOCATE(Y(pl_atm),stat=err, errmsg=err_msg)
   IF (err /= 0) STOP "no space for allocation (Y)"
 
-  ALLOCATE(Z(pl_atm),stat=err)
+  ALLOCATE(Z(pl_atm),stat=err, errmsg=err_msg)
   IF (err /= 0) STOP "no space for allocation (Z)"
 
-  ALLOCATE(n_atm(pl_atm),stat=err)
+  ALLOCATE(n_atm(pl_atm),stat=err, errmsg=err_msg)
   IF (err /= 0) STOP "no space for allocation (n_atm)"
 
-  ALLOCATE(typ_atm(pl_atm),stat=err)
+  ALLOCATE(typ_atm(pl_atm),stat=err, errmsg=err_msg)
   IF (err /= 0) STOP "no space for allocation (typ_atm)"
 
 

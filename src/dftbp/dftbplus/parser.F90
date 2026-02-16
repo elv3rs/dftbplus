@@ -2363,6 +2363,7 @@ contains
     real(dp) :: rTmp
     type(TFileDescr) :: file
     integer :: ind, ii, iErr, nElem
+    character(256) :: iErr_msg
     real(dp), allocatable :: tmpR1(:), tmpR2(:,:)
     type(TListRealR2) :: lCharges
     type(TListRealR1) :: lBlurs, lr1
@@ -2432,12 +2433,12 @@ contains
             call getChildValue(value1, "Records", ind)
             call getChildValue(value1, "File", buffer2)
             allocate(tmpR2(4, ind))
-            call openFile(file, unquote(char(buffer2)), mode="r", iostat=iErr)
+            call openFile(file, unquote(char(buffer2)), mode="r", iostat=iErr, iomsg=iErr_msg)
             if (iErr /= 0) then
               call detailedError(value1, "Could not open file '"&
                   & // trim(unquote(char(buffer2))) // "' for direct reading")
             end if
-            read(file%unit, *, iostat=iErr) tmpR2
+            read(file%unit, *, iostat=iErr, iomsg=iErr_msg) tmpR2
             if (iErr /= 0) then
               call detailedError(value1, "Error during direct reading '"&
                   & // trim(unquote(char(buffer2))) // "'")
@@ -7932,8 +7933,9 @@ contains
 
     real(dp) :: x
     integer :: err
+    character(256) :: err_msg
 
-    read(string,*,iostat=err) x
+    read(string,*,iostat=err, iomsg=err_msg) x
     is = (err == 0)
   end function is_numeric
 

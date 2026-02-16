@@ -2129,8 +2129,9 @@ contains
 
       character(len=128) :: buffer
       integer :: stat
+      character(256) :: stat_msg
 
-      write(buffer, format, iostat=stat) val
+      write(buffer, format, iostat=stat, iomsg=stat_msg) val
       if (stat == 0) then
         str = trim(buffer)
       else

@@ -453,6 +453,7 @@ contains
     type(units) :: HessianUnits, HeatCurrUnits, HeatCondUnits
     type(lnParams) :: params
     character(15) :: filename
+    character(256) :: err_msg
 
     ! Sets the Gamma point calculation
     nK = 1
@@ -484,7 +485,7 @@ contains
             tunnPMat, ldosPMat, currPVec)
 
       if(.not.allocated(currLead)) then
-         allocate(currLead(size(currPVec)), stat=err)
+         allocate(currLead(size(currPVec)), stat=err, errmsg=err_msg)
          if (err/=0) then
             call error("Allocation error (currTot)")
          end if
@@ -684,10 +685,11 @@ contains
     #:endif
 
     integer :: err
+    character(256) :: err_msg
 
     if (associated(pMat)) then
     #:if WITH_MPI
-      allocate(tmpMat(size(pMat,dim=1), size(pMat,dim=2)), stat=err)
+      allocate(tmpMat(size(pMat,dim=1), size(pMat,dim=2)), stat=err, errmsg=err_msg)
 
       if (err /= 0) then
         call error('Allocation error (tmpMat)')
@@ -697,7 +699,7 @@ contains
       call mpifx_reduceip(mpicomm, tmpMat, MPI_SUM)
     #:endif
       if(.not.allocated(matTot)) then
-        allocate(matTot(size(pMat,dim=1), size(pMat,dim=2)), stat=err)
+        allocate(matTot(size(pMat,dim=1), size(pMat,dim=2)), stat=err, errmsg=err_msg)
 
         if (err /= 0) then
           call error("Allocation error (tunnTot)")
@@ -713,7 +715,7 @@ contains
 
       if (nK > 1) then
         if (.not.allocated(matSKRes)) then
-          allocate(matSKRes(size(pMat,dim=1), size(pMat,dim=2), nK), stat=err)
+          allocate(matSKRes(size(pMat,dim=1), size(pMat,dim=2), nK), stat=err, errmsg=err_msg)
 
           if (err/=0) then
             call error("Allocation error (tunnSKRes)")

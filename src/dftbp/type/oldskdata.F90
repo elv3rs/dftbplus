@@ -122,15 +122,16 @@ contains
     real(dp) :: polyCutoff
     real(dp) :: coeffs(2:9)
     integer :: iostat
+    character(256) :: ioerr_msg
 
     @:ASSERT(present(splineRepInp) .eqv. present(iSp1))
     @:ASSERT(present(iSp1) .eqv. present(iSp2))
 
-    call openFile(file, fileName, mode="r", ioStat=iostat)
+    call openFile(file, fileName, mode="r", ioStat=iostat, ioMsg=ioerr_msg)
     call checkIoError(iostat, fileName, "Unable to open file")
     rewind(file%unit)
 
-    read(file%unit, "(A1)", iostat=iostat) chDummy
+    read(file%unit, "(A1)", iostat=iostat, iomsg=ioerr_msg) chDummy
     call checkIoError(iostat, fileName, "Unable to read 1st line")
     if (chDummy == "@") then
       tExtended = .true.
@@ -141,23 +142,23 @@ contains
       rewind(file%unit)
     end if
 
-    read(file%unit, *, iostat=iostat) skData%dist, skData%nGrid
+    read(file%unit, *, iostat=iostat, iomsg=ioerr_msg) skData%dist, skData%nGrid
     call checkIoError(iostat, fileName, "Unable to read 1st data line")
     skData%nGrid = skData%nGrid - 1
     if (homo) then
       skData%skSelf(nShell+1:) = 0.0_dp
       skData%skHubbU(nShell+1:) = 0.0_dp
       skData%skOcc(nShell+1:) = 0.0_dp
-      read(file%unit, *, iostat=iostat) (skData%skSelf(ii), ii = nShell, 1, -1), rDummy,&
+      read(file%unit, *, iostat=iostat, iomsg=ioerr_msg) (skData%skSelf(ii), ii = nShell, 1, -1), rDummy,&
           & (skData%skHubbU(ii), ii = nShell, 1, -1), (skData%skOcc(ii), ii = nShell, 1, -1)
       call checkIoError(iostat, fileName, "Unable to read 2nd data line")
-      read(file%unit, *, iostat=iostat) skData%mass, (coeffs(ii), ii = 2, 9), polyCutoff, rDummy,&
+      read(file%unit, *, iostat=iostat, iomsg=ioerr_msg) skData%mass, (coeffs(ii), ii = 2, 9), polyCutoff, rDummy,&
           & (rDummy, ii = 12, 20)
       call checkIoError(iostat, fileName, "Unable to read 3rd data line")
       ! convert to atomic units
       skData%mass = skData%mass * amu__au
     else
-      read(file%unit, *, iostat=iostat) rDummy, (coeffs(ii), ii = 2, 9), polyCutoff,&
+      read(file%unit, *, iostat=iostat, iomsg=ioerr_msg) rDummy, (coeffs(ii), ii = 2, 9), polyCutoff,&
           & (rDummy, ii = 11, 20)
       call checkIoError(iostat, fileName, "Unable to read 1st data line")
     end if
@@ -171,12 +172,12 @@ contains
     allocate(skData%skOver(skData%nGrid, nSKInter), source=0.0_dp)
     do iGrid = 1, skData%nGrid
       if (tExtended) then
-        read(file%unit, *, iostat=iostat)&
+        read(file%unit, *, iostat=iostat, iomsg=ioerr_msg)&
             & (skData%skHam(iGrid, ii), ii = 1, nSKInter),&
             & (skData%skOver(iGrid, ii), ii = 1, nSKInter)
         call checkIoError(iostat, fileName, "Reading error for integrals")
       else
-        read(file%unit, *, iostat=iostat)&
+        read(file%unit, *, iostat=iostat, iomsg=ioerr_msg)&
             & (skData%skHam(iGrid, iSKInterOld(ii)), ii = 1, nSKInterOld),&
             & (skData%skOver(iGrid, iSKInterOld(ii)), ii = 1, nSKInterOld)
         call checkIoError(iostat, fileName, "Reading error for integrals")
@@ -223,6 +224,7 @@ contains
 
     !! Error status
     integer :: iostat
+    character(256) :: ioerr_msg
 
     integer :: nint, ii, jj
     character(lc) :: chdummy
@@ -233,7 +235,7 @@ contains
 
     ! Look for spline
     loop1: do
-      read(fp, "(A)", iostat=iostat) chdummy
+      read(fp, "(A)", iostat=iostat, iomsg=ioerr_msg) chdummy
       if (iostat /= 0) then
         hasspline = .false.
         exit loop1
@@ -249,20 +251,20 @@ contains
       call error(chdummy)
     end if
 
-    read(fp, *, iostat=iostat) nint, splineRepInp%cutoff
+    read(fp, *, iostat=iostat, iomsg=ioerr_msg) nint, splineRepInp%cutoff
     call checkioerror(iostat, fname, "Error in reading nint and cutoff")
-    read(fp, *, iostat=iostat) (splineRepInp%expcoeffs(ii), ii = 1, 3)
+    read(fp, *, iostat=iostat, iomsg=ioerr_msg) (splineRepInp%expcoeffs(ii), ii = 1, 3)
     call checkioerror(iostat, fname, "Error in reading exponential coeffs")
     allocate(splineRepInp%xstart(nint))
     allocate(splineRepInp%spcoeffs(4, nint - 1))
     allocate(xend(nint))
 
     do jj = 1, nint - 1
-      read(fp, *, iostat=iostat) splineRepInp%xstart(jj), xend(jj),&
+      read(fp, *, iostat=iostat, iomsg=ioerr_msg) splineRepInp%xstart(jj), xend(jj),&
           & (splineRepInp%spcoeffs(ii,jj), ii = 1, 4)
       call checkioerror(iostat, fname, "Error in reading spline coeffs")
     end do
-    read(fp, *, iostat=iostat) splineRepInp%xstart(nint), xend(nint),&
+    read(fp, *, iostat=iostat, iomsg=ioerr_msg) splineRepInp%xstart(nint), xend(nint),&
         & (splineRepInp%spLastCoeffs(ii), ii = 1, 6)
     call checkioerror(iostat, fname, "Error in reading last spline coeffs")
     splineRepInp%cutoff = xend(nint)
@@ -303,6 +305,7 @@ contains
 
     !! Error status
     integer :: iErr
+    character(256) :: iErr_msg
 
     !! Temporary character storage
     character(lc) :: strDummy, tag
@@ -328,7 +331,7 @@ contains
     if (present(fp)) then
       fd = fp
     else
-      call openFile(file, fname, mode="r", ioStat=iErr)
+      call openFile(file, fname, mode="r", ioStat=iErr, ioMsg=iErr_msg)
       fd = file%unit
       call checkIoError(iErr, fname, "Unable to open file")
     end if
@@ -337,7 +340,7 @@ contains
 
     ! Seek hybrid xc-functional section in SK-file
     loop1: do
-      read(fd, "(A)", iostat=iErr) strDummy
+      read(fd, "(A)", iostat=iErr, iomsg=iErr_msg) strDummy
       if (iErr /= 0) then
         isHybridXcTag = .false.
         exit loop1
@@ -349,9 +352,9 @@ contains
     end do loop1
 
     if (isHybridXcTag) then
-      read(fd, "(A)", iostat=iErr) strDummy
+      read(fd, "(A)", iostat=iErr, iomsg=iErr_msg) strDummy
       call checkIoError(iErr, fname, "Error in reading hybrid xc-functional extra tag and method.")
-      read(strDummy, *, iostat=iErr) tag
+      read(strDummy, *, iostat=iErr, iomsg=iErr_msg) tag
       call checkIoError(iErr, fname, "Error in reading hybrid xc-functional extra tag and method.")
 
       select case(tolower(trim(tag)))
@@ -372,11 +375,11 @@ contains
     case (hybridXcFunc%lc)
       hybridXcSK_%camAlpha = 0.0_dp
       hybridXcSK_%camBeta = 1.0_dp
-      read(strDummy, *, iostat=iErr) tag, hybridXcSK_%omega
+      read(strDummy, *, iostat=iErr, iomsg=iErr_msg) tag, hybridXcSK_%omega
       call checkIoError(iErr, fname, "Error in reading hybrid xc-functional parameters.")
       hybridXcType_ = hybridXcFunc%lc
     case (hybridXcFunc%cam)
-      read(strDummy, *, iostat=iErr) tag, hybridXcSK_%omega, hybridXcSK_%camAlpha,&
+      read(strDummy, *, iostat=iErr, iomsg=iErr_msg) tag, hybridXcSK_%omega, hybridXcSK_%camAlpha,&
           & hybridXcSK_%camBeta
       call checkIoError(iErr, fname, "Error in reading hybrid xc-functional parameters.")
       if (abs(hybridXcSK_%camAlpha) < epsilon(1.0_dp)&

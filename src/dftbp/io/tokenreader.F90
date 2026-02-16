@@ -85,6 +85,7 @@ contains
     integer, intent(out), optional :: iostat
 
     integer :: iStart, iError, tokStart, tokLen, tokEnd
+    character(256) :: iError_msg
 
     tokenValue = 0
     iStart = start
@@ -96,7 +97,7 @@ contains
       ! therefore we check explicitly
       iError = TOKEN_ERROR
     else
-      read (str(tokStart:tokEnd), *, iostat=iError) tokenValue
+      read (str(tokStart:tokEnd), *, iostat=iError, iomsg=iError_msg) tokenValue
       if (iError /= 0) then
         iError = TOKEN_ERROR
       else
@@ -218,6 +219,7 @@ contains
     integer, intent(out), optional :: iostat
 
     integer :: iStart, iError, tokStart, tokEnd, tokLen
+    character(256) :: iError_msg
 
     tokenValue = 0.0_dp
     iStart = start
@@ -225,7 +227,7 @@ contains
     if (tokLen == 0) then
       iError = TOKEN_EOS
     else
-      read (str(tokStart:tokEnd), *, iostat=iError) tokenValue
+      read (str(tokStart:tokEnd), *, iostat=iError, iomsg=iError_msg) tokenValue
       if (iError /= 0) then
         iError = TOKEN_ERROR
       else
@@ -315,6 +317,7 @@ contains
     integer, intent(out), optional :: iostat
 
     integer :: iStart, iError, tokStart, tokEnd, tokLen, sepPos
+    character(256) :: iError_msg
 
     tokenValue = (0.0_dp, 0.0_dp)
     iStart = start
@@ -327,18 +330,18 @@ contains
       if (sepPos < tokStart) then
         ! Token contains only one number, either the imaginary or the real part
         if (str(tokEnd:tokEnd) == "i") then
-          read(str(tokStart : tokEnd - 1), *, iostat=iError) tokenValue%im
+          read(str(tokStart : tokEnd - 1), *, iostat=iError, iomsg=iError_msg) tokenValue%im
         else
-          read(str(tokStart : tokEnd), *, iostat=iError) tokenValue%re
+          read(str(tokStart : tokEnd), *, iostat=iError, iomsg=iError_msg) tokenValue%re
         end if
         if (iError /= 0) exit processComplexToken
       end if
       ! Token contains two numbers, the real part and the imaginary part
       if (str(tokEnd:tokEnd) /= "i") exit processComplexToken
       if (findComplexSeparator_(str(sepPos + 1 : tokEnd)) /= 0) exit processComplexToken
-      read(str(tokStart : sepPos - 1), *, iostat=iError) tokenValue%re
+      read(str(tokStart : sepPos - 1), *, iostat=iError, iomsg=iError_msg) tokenValue%re
       if (iError /= 0) exit processComplexToken
-      read(str(sepPos : tokEnd - 1), *, iostat=iError) tokenValue%im
+      read(str(sepPos : tokEnd - 1), *, iostat=iError, iomsg=iError_msg) tokenValue%im
       if (iError /= 0) exit processComplexToken
       iError = TOKEN_OK
       start = iStart

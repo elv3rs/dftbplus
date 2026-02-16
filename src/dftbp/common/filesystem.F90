@@ -59,13 +59,14 @@ contains
     character(len=:), allocatable, intent(out) :: val
 
     integer :: length, stat
+    character(256) :: stat_msg
 
     call get_environment_variable(var, length=length, status=stat)
     if (stat /= 0) then
       return
     end if
 
-    allocate(character(len=length) :: val, stat=stat)
+    allocate(character(len=length) :: val, stat=stat, errmsg=stat_msg)
     if (stat /= 0) then
       return
     end if

@@ -663,6 +663,7 @@ contains
     ${TYPE}$(${KIND}$), allocatable :: work(:)
     ${TYPE}$(${KIND}$) :: tmpwork(1)
     character :: uplo0
+    character(256) :: info_msg
 
     uplo0 = uploHelper(uplo)
     nn = size(aa, dim=2)
@@ -672,7 +673,7 @@ contains
       @:RAISE_FORMATTED_ERROR(status, -1, "('Failure in ${PRF}$ memory check, info: ',I0)", info)
     end if
     lwork = int(tmpwork(1))
-    allocate(work(lwork), stat=info)
+    allocate(work(lwork), stat=info, errmsg=info_msg)
     if (info /= 0) then
       @:RAISE_ERROR(status, -1, "Out of memory in ${PRF}$")
     end if
@@ -708,10 +709,11 @@ contains
     integer :: info, nn
     character :: uplo0
     ${TYPE}$(${KIND}$), allocatable :: work(:)
+    character(256) :: info_msg
 
     uplo0 = uploHelper(uplo)
     nn = size(aa, dim=1)
-    allocate(work(max(1, 2 * nn)), stat=info)
+    allocate(work(max(1, 2 * nn)), stat=info, errmsg=info_msg)
     if (info /= 0) then
       @:RAISE_ERROR(status, -1, "Out of memory in ${PRF}$ wrapper")
     end if

@@ -79,6 +79,7 @@ contains
 
     character(lc) :: arg
     integer :: iostat
+    character(256) :: iostat_msg
 
     if (command_argument_count() == 0) then
       call error("Wrong number of arguments. Use 'integvalue -h' to obtain&
@@ -104,7 +105,7 @@ contains
     end if
     extended = (arg == "ext")
     call get_command_argument(4, arg)
-    read(arg, *, iostat=iostat) col
+    read(arg, *, iostat=iostat, iomsg=iostat_msg) col
     if (iostat /= 0) then
       call error("Third argument must the column number")
     end if

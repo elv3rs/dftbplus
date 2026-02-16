@@ -727,6 +727,7 @@ contains
     real(dp) :: tol
     logical :: ok
     real(dp), allocatable :: g(:,:), rhs(:,:)
+    character(256) :: iStatus_msg
 
     ! parameters for the solver and matvec routine
     tol = ddCosmo%conv
@@ -735,7 +736,7 @@ contains
     ! DIRECT COSMO EQUATION L X = g
 
     ! allocate workspace for rhs
-    allocate(rhs(ddCosmo%nylm, ddCosmo%nat), stat=iStatus)
+    allocate(rhs(ddCosmo%nylm, ddCosmo%nat), stat=iStatus, errmsg=iStatus_msg)
     if (iStatus /= 0) then
       @:RAISE_ERROR(errStatus, iStatus, "cosmo: [2] failed allocation")
     end if
@@ -745,7 +746,7 @@ contains
     if (cart) then
 
       ! allocate workspace for weighted potential
-      allocate(g(ddCosmo%ngrid, ddCosmo%nat) , stat=iStatus)
+      allocate(g(ddCosmo%ngrid, ddCosmo%nat) , stat=iStatus, errmsg=iStatus_msg)
       if (iStatus /= 0) then
         @:RAISE_ERROR(errStatus, iStatus, "cosmo: [3] failed allocation")
       end if
@@ -759,7 +760,7 @@ contains
       end do
 
       ! deallocate workspace
-      deallocate(g , stat=iStatus)
+      deallocate(g , stat=iStatus, errmsg=iStatus_msg)
       if (iStatus /= 0) then
         @:RAISE_ERROR(errStatus, iStatus, "cosmo: [1] failed deallocation")
       end if

@@ -16,6 +16,7 @@ program flux
   real(dp), dimension(:,:), allocatable :: Inm
   real(dp), dimension(:,:), allocatable :: coord
   integer :: m, itmp, io, i, j, n, k, maxnn, maxnn_valid
+  character(256) :: io_msg
   real(dp) :: Iz, Imax, frac, width, arr_len
   real(dp) :: rtmp(3)
   real(dp) :: e(3)
@@ -86,7 +87,7 @@ program flux
   open(fp,file=trim(filename2), action="read")
   Inm = 0.0_dp
   loop1: do m=1, nat
-    read(fp,*, iostat=io) itmp, rtmp(1:3), nn(m), (neig(m,i), Inm(m,i), i=1,nn(m))
+    read(fp,*, iostat=io, iomsg=io_msg) itmp, rtmp(1:3), nn(m), (neig(m,i), Inm(m,i), i=1,nn(m))
     if (io<0) then
       natoms = m-1
       exit loop1

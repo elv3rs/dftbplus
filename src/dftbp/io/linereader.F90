@@ -76,13 +76,14 @@ contains
 
     character(this%bufferSize) :: buffer
     integer :: nReadChars
+    character(256) :: ioStat_msg
 
     if (this%ioStat /= 0) then
       ioStat = this%ioStat
       return
     end if
     loop1: do
-      read(this%unit, "(a)", advance="no", iostat=ioStat, size=nReadChars) buffer
+      read(this%unit, "(a)", advance="no", iostat=ioStat, iomsg=ioStat_msg, size=nReadChars) buffer
       if (ioStat > 0) then
         this%ioStat = ioStat
         return

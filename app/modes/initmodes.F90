@@ -165,6 +165,7 @@ contains
     character(len=:), allocatable :: strOut, strJoin, hessianFile
     type(TFileDescr) :: file
     integer :: iErr
+    character(256) :: iErr_msg
 
     !! Write header
     call printDftbHeader("(MODES "// version //")", releaseYear)
@@ -328,12 +329,12 @@ contains
     case ("directread")
       call getChildValue(value, "File", buffer2, child=child2)
       hessianFile = trim(unquote(char(buffer2)))
-      call openFile(file, hessianFile, mode="r", iostat=iErr)
+      call openFile(file, hessianFile, mode="r", iostat=iErr, iomsg=iErr_msg)
       if (iErr /= 0) then
         call detailedError(child2, "Could not open file '" // hessianFile&
             & // "' for direct reading.")
       end if
-      read(file%unit, *, iostat=iErr) dynMatrix
+      read(file%unit, *, iostat=iErr, iomsg=iErr_msg) dynMatrix
       if (iErr /= 0) then
         call detailedError(child2, "Error during direct reading '" // hessianFile // "'.")
       end if

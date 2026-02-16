@@ -325,6 +325,7 @@ contains
     integer :: seppos, iFirst, iLast, iFirstNorm, iLastNorm, iSpecies, iFirstChar
     integer :: iostat
     character :: firstChar
+    character(256) :: iostat_msg
 
     firstChar = selector(1:1)
     iFirstChar = ichar(firstChar)
@@ -335,18 +336,18 @@ contains
     if (iFirstChar  >= ichar("0") .and. iFirstChar <= ichar("9") .or. firstChar == "-") then
       seppos = index(selector, ":")
       if (seppos > 0) then
-        read(selector(: seppos - 1), *, iostat=iostat) iFirst
+        read(selector(: seppos - 1), *, iostat=iostat, iomsg=iostat_msg) iFirst
         if (iostat /= 0) then
           @:RAISE_FORMATTED_ERROR(errStatus, errors%syntaxError,&
               & "('Non-integer index ''', A,  '''')", selector(: seppos - 1))
         end if
-        read(selector(seppos + 1 :), *, iostat=iostat) iLast
+        read(selector(seppos + 1 :), *, iostat=iostat, iomsg=iostat_msg) iLast
         if (iostat /= 0) then
           @:RAISE_FORMATTED_ERROR(errStatus, errors%syntaxError,&
               & "('Non-integer index ''', A,  '''')", selector(seppos + 1 :))
         end if
       else
-        read(selector, *, iostat=iostat) iFirst
+        read(selector, *, iostat=iostat, iomsg=iostat_msg) iFirst
         if (iostat /= 0) then
           @:RAISE_FORMATTED_ERROR(errStatus, errors%syntaxError,&
               & "('Non-integer index ''', A,  '''')", selector)
