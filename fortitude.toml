@@ -1,0 +1,44 @@
+[check]
+# Fypp include dirs — common.fypp provides sensible defaults for all
+# WITH_* variables via defined(), so no -D flags are needed.
+fypp-includes = ["src/dftbp/include"]
+
+# Metadata variables that don't have defaults in common.fypp.
+# These are only used by #:assert and string literals, not code structure.
+fypp-args = [
+    "-DRELEASE='dev'",
+    "-DAPIVERSION='0.0.0'",
+    "-DAPIMAJOR=0",
+    "-DAPIMINOR=0",
+    "-DAPIPATCH=0",
+    "-DELSI_VERSION=0",
+]
+
+# Exclude: test/ (needs fortuno external), external/ (third-party code),
+# and wrappers that don't include common.fypp
+extend-exclude = ["test/", "external/", "src/dftbp/extlibs/fsockets.F90"]
+
+select = ["ALL"]
+ignore = [
+    # --- Formatting / style (not autofixable, too many) ---
+    "S001",    # line-too-long — 1100+ violations, manual reformatting needed
+    "S091",    # non-standard-file-extension — .F90 is the project standard for fypp
+    "S212",    # program-with-module — app programs use programs, by design
+
+    # --- Coding conventions (too many violations to enforce yet) ---
+    "C003",    # implicit-external-procedures — 333 violations, widespread in fypp macros
+    "C002",    # interface-implicit-typing — 147 violations, tied to C003 patterns
+    "C061",    # missing-intent — 619 violations, would need gradual enforcement
+
+    # --- Scientific / domain idioms (false positives for scientific code) ---
+    "C011",    # missing-default-case — 183 violations, many select cases by design
+    "C021",    # no-real-suffix — 86 violations, scientific code uses bare literals
+    "C022",    # implicit-real-kind — 13 violations, overlaps with C021
+    "C031",    # magic-number-in-array-size — 148 violations, 3 = spatial dims etc.
+    "C043",    # missing-action-specifier — 13 violations, minor
+    "C141",    # missing-exit-or-cycle-label — 15 violations, style preference
+
+    # --- Legacy interfaces (cannot be changed without API breaks) ---
+    "C071",    # assumed-size-array — legacy interfaces, not autofixable
+    "C072",    # assumed-size-character-intent — 11 violations, legacy C interop
+]
