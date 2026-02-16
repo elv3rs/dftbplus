@@ -595,21 +595,19 @@ contains
             if (dist2 < thresholds(1,iSp2)) then
               sasap = 0.0_dp
               exit
-            else
-              dist = sqrt(dist2)
-              uj = dist - probeRad(iSp2)
-              ah3uj2 = smoothingPar(3)*uj*uj
-              dsasaij = smoothingPar(2)+3.0_dp*ah3uj2
-              sasaij =  smoothingPar(1)+(smoothingPar(2)+ah3uj2)*uj
-
-              ! accumulate the molecular surface
-              sasap = sasap*sasaij
-              ! compute the gradient wrt the neighbor
-              dsasaij = dsasaij/(sasaij*dist)
-              nEval = nEval+1
-              grdi(nEval) = iAt2f
-              grds(:, nEval) = dsasaij*vec(:)
             end if
+            dist = sqrt(dist2)
+            uj = dist - probeRad(iSp2)
+            ah3uj2 = smoothingPar(3)*uj*uj
+            dsasaij = smoothingPar(2)+3.0_dp*ah3uj2
+            sasaij =  smoothingPar(1)+(smoothingPar(2)+ah3uj2)*uj
+            ! accumulate the molecular surface
+            sasap = sasap*sasaij
+            ! compute the gradient wrt the neighbor
+            dsasaij = dsasaij/(sasaij*dist)
+            nEval = nEval+1
+            grdi(nEval) = iAt2f
+            grds(:, nEval) = dsasaij*vec(:)
           end if
         end do
 

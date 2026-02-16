@@ -332,15 +332,14 @@ contains
           read(str(tokStart : tokEnd), *, iostat=iError) tokenValue%re
         end if
         if (iError /= 0) exit processComplexToken
-      else
-        ! Token contains two numbers, the real part and the imaginary part
-        if (str(tokEnd:tokEnd) /= "i") exit processComplexToken
-        if (findComplexSeparator_(str(sepPos + 1 : tokEnd)) /= 0) exit processComplexToken
-        read(str(tokStart : sepPos - 1), *, iostat=iError) tokenValue%re
-        if (iError /= 0) exit processComplexToken
-        read(str(sepPos : tokEnd - 1), *, iostat=iError) tokenValue%im
-        if (iError /= 0) exit processComplexToken
       end if
+      ! Token contains two numbers, the real part and the imaginary part
+      if (str(tokEnd:tokEnd) /= "i") exit processComplexToken
+      if (findComplexSeparator_(str(sepPos + 1 : tokEnd)) /= 0) exit processComplexToken
+      read(str(tokStart : sepPos - 1), *, iostat=iError) tokenValue%re
+      if (iError /= 0) exit processComplexToken
+      read(str(sepPos : tokEnd - 1), *, iostat=iError) tokenValue%im
+      if (iError /= 0) exit processComplexToken
       iError = TOKEN_OK
       start = iStart
     end block processComplexToken
@@ -575,9 +574,8 @@ contains
       tokLen = 0
       tokEnd = 0
       return
-    else
-      tokStart = tokStart + start - 1
     end if
+    tokStart = tokStart + start - 1
     if (tIgnoreQuotation) then
       tokEnd = scan(str(tokStart:), whiteSpaces)
     else

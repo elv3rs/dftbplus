@@ -258,9 +258,8 @@ contains
           do j = 1, size(eigenvals,dim=1)
             if (eigenvals(j,i,ispin)>(Ef-3.0_dp*w)) then
               exit
-            else
-              electronCount=electronCount+kWeight(i)
             end if
+            electronCount=electronCount+kWeight(i)
           end do
           do k = j, size(eigenvals,dim=1)
             if (eigenvals(k,i,ispin)>(Ef+3.0_dp*w)) then
@@ -424,10 +423,9 @@ contains
           do j = 1, size(eigenvals,dim=1)
             if (eigenvals(j,i,iSpin)>(Ef-3.0_dp*w)) then
               exit
-            else
-              filling(j,i,iSpin)=1.0_dp
-              Eband(iSpin) = Eband(iSpin) + eigenvals(j,i,iSpin)
             end if
+            filling(j,i,iSpin)=1.0_dp
+            Eband(iSpin) = Eband(iSpin) + eigenvals(j,i,iSpin)
           end do
           do k = j, size(eigenvals,dim=1)
             if (eigenvals(k, i, iSpin) > (Ef + 3.0_dp * w)) then

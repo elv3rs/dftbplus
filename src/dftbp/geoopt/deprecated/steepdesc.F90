@@ -186,10 +186,9 @@ contains
       tConverged = .true.
       xNew(:) = xOld(:)
       return
-    else
-      tConverged = .false.
     end if
 
+    tConverged = .false.
     xNew(:) = -1.0_dp * weight(:) * grad(:)
 
     maxX = maxval(abs(xNew))

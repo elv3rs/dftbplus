@@ -304,9 +304,8 @@ contains
       tConverged = .true.
       xNew(:) = this%xx
       return
-    else
-      tConverged = .false.
     end if
+    tConverged = .false.
     dxTemp(:) = dx
 
     if (this%isLineSearch) then
@@ -830,13 +829,12 @@ contains
           this%xNew(:) = this%x0 + this%alphaNew * this%d0
           xNew(:) = this%xNew
           return
-        else
-          xNew(:) = this%xNew
-          this%alphaLo = this%alphaNew
-          this%phiLo = phi
-          this%dphiLo = dphi
-          this%dxLo(:) = dx
         end if
+        xNew(:) = this%xNew
+        this%alphaLo = this%alphaNew
+        this%phiLo = phi
+        this%dphiLo = dphi
+        this%dxLo(:) = dx
       end if
       xNew(:) = this%x0 + this%alphaLo * this%d0
 

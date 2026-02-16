@@ -250,9 +250,8 @@ contains
         if (present(ioStat)) then
           ioStat = ioStat_
           return
-        else
-          call error("Invalid mode specification '" // trim(mode) // "'")
         end if
+        call error("Invalid mode specification '" // trim(mode) // "'")
       end if
     end if
 
@@ -321,10 +320,9 @@ contains
           ioMsg = trim(ioMsg_)
         end if
         return
-      else
-        call error("Failed to open file '" // trim(file) // "' [(" // i2c(ioStat_) // ") "&
-            &  // trim(ioMsg_) // "]")
       end if
+      call error("Failed to open file '" // trim(file) // "' [(" // i2c(ioStat_) // ") "&
+          &  // trim(ioMsg_) // "]")
     end if
     if (present(ioStat)) then
       ioStat = 0

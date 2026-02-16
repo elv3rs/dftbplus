@@ -624,11 +624,10 @@ contains
               if (ii == 1 .and. iAtom1 == iAtom2) then
                 ! We calculated the distance between the same atom in the unit cell
                 cycle lpIAtom2
-              else
-                ! proximity problem
-                pairError(:) = [iAtom1, iAtom2]
-                exit lpCellVec
               end if
+              ! proximity problem
+              pairError(:) = [iAtom1, iAtom2]
+              exit lpCellVec
             end if
 
             neigh%nNeighbour(iAtom2) = neigh%nNeighbour(iAtom2) + 1
