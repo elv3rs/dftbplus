@@ -44,7 +44,7 @@
 
   type :: TNode
     ${NODE_TYPE}$${NODE_ATTRIB}$ :: data
-    type(TNode), pointer :: pNext
+    type(TNode), pointer :: pNext => null()
   end type TNode
 
 
@@ -55,10 +55,10 @@
     integer :: elemShape(${ITEM_RANK}$)
   #:endif
     logical :: tUnishaped
-    type(TNode), pointer :: pFirst
-    type(TNode), pointer :: pLast
+    type(TNode), pointer :: pFirst => null()
+    type(TNode), pointer :: pLast => null()
     integer :: iCache
-    type(TNode), pointer :: pCache
+    type(TNode), pointer :: pCache => null()
     logical :: tInitialized = .false.
   end type ${TYPE_NAME}$
 

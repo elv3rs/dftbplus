@@ -181,7 +181,7 @@ module waveplot_initwaveplot
     type(TMolecularOrbital), allocatable :: molOrb
 
     !> pointer to the orbital
-    type(TMolecularOrbital), pointer :: pMolOrb
+    type(TMolecularOrbital), pointer :: pMolOrb => null()
 
     !> Grid cache
     type(TGridCache) :: grid

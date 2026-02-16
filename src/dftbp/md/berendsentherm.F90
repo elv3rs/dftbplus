@@ -50,7 +50,7 @@ module dftbp_md_berendsentherm
     real(dp), allocatable :: mass(:)
 
     !> Temperature generator
-    type(tTempProfile), pointer :: pTempProfile
+    type(tTempProfile), pointer :: pTempProfile => null()
 
     !> Coupling strength to friction term
     real(dp) :: coupling

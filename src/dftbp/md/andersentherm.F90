@@ -54,7 +54,7 @@ module dftbp_md_andersentherm
     real(dp), allocatable :: mass(:)
 
     !> Temperature generator
-    type(TTempProfile), pointer :: pTempProfile
+    type(TTempProfile), pointer :: pTempProfile => null()
 
     !> Rescale velocities individually?
     logical :: rescaleIndiv

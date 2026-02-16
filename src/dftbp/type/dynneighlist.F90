@@ -56,7 +56,7 @@ module dftbp_type_dynneighlist
     private
 
     !> Pointer to the original neighbour list
-    type(TDynNeighList), pointer :: neighList
+    type(TDynNeighList), pointer :: neighList => null()
 
     !> Lattice point generator (if system is periodic)
     type(TLatPointIter), allocatable :: latPointGen

@@ -30,7 +30,7 @@ module waveplot_gridcache
   type TGridCache
 
     !> Molecular orbital calculator
-    type(TMolecularOrbital), pointer :: molorb
+    type(TMolecularOrbital), pointer :: molorb => null()
 
     !> Grid vectors
     real(dp) :: gridVec(3,3)

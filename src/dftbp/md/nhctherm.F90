@@ -66,7 +66,7 @@ module dftbp_md_nhctherm
     real(dp), allocatable :: mass(:)
 
     !> Temperature generator
-    type(TTempProfile), pointer :: pTempProfile
+    type(TTempProfile), pointer :: pTempProfile => null()
 
     !> coupling strength to friction term
     real(dp) :: couplingParameter

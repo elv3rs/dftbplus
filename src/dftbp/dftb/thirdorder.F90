@@ -24,7 +24,7 @@ module dftbp_dftb_thirdorder
   type TThirdOrderInp
 
     !> Orbital information
-    type(TOrbitals), pointer :: orb
+    type(TOrbitals), pointer :: orb => null()
 
     !> Hubbard U values. Shape: [nShell, nSpecies]
     real(dp), allocatable :: hubbUs(:,:)

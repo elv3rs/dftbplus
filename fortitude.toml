@@ -53,8 +53,7 @@ ignore = [
     "C071",    # assumed-size-array — 28 violations, legacy interfaces
     "C072",    # assumed-size-character-intent — 9 violations, legacy C interop
 
-    # --- Coding conventions (too many to fix now, track for gradual cleanup) ---
-    "C101",    # missing-default-pointer-initialisation — 49 violations, needs careful review
-    "C131",    # missing-accessibility-statement — 6 violations (autofix available but would break: modules lack explicit `public ::`)
-    "C132",    # default-public-accessibility — 5 violations (autofix available but would break: modules lack explicit `public ::`)
+    # --- Coding conventions (autofix available but would break: modules lack explicit `public ::`) ---
+    "C131",    # missing-accessibility-statement — 6 violations
+    "C132",    # default-public-accessibility — 5 violations
 ]

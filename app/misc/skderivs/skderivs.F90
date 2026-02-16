@@ -31,7 +31,7 @@ implicit none
 
   !> Contains the data necessary for the main program
   type TInputData
-    type(TSlakoEqGrid), pointer :: skHam, skOver
+    type(TSlakoEqGrid), pointer :: skHam => null(), skOver => null()
     integer, allocatable :: iHam(:), iOver(:)
     real(dp) :: from, to, step
     logical :: value, first, second
