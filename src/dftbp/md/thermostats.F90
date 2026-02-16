@@ -111,6 +111,8 @@ contains
       call TNhcTherm_init(nhcTherm, input%nhc, randomThermostat, masses, ptempProfile,&
          pMdFrame, deltaT)
       call move_alloc(nhcTherm, thermostat)
+    case default
+      continue
     end select
 
   end subroutine createThermostat

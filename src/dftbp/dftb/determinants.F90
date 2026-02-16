@@ -407,6 +407,8 @@ contains
           nElecFill(1) = nElecFill(1) + 1.0_dp
         case(3)
           nElecFill(1) = nElecFill(1) - 1.0_dp
+        case default
+          continue
         end select
         ! Every spin channel (but not the k-points) filled up individually
         do iS = 1, nSpinHams

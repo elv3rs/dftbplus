@@ -245,6 +245,8 @@ contains
       ! Store predicted vector in the database
       this%ind = modIndex(this%ind + 1, this%nTimeSteps)
       this%auxVectors(:,this%ind) = inNext
+    case default
+      continue
     end select
 
     call this%updatePhaseAndSteps()

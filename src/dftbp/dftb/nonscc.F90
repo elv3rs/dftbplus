@@ -236,6 +236,8 @@ contains
           & this%deltaXDiff)
     case (diffTypes%richardson)
       call getFirstDerivRichardson(deriv, skCont, coords, species, atomI, atomJ, orb)
+    case default
+      continue
     end select
 
   end subroutine getFirstDerivBlock
@@ -352,6 +354,8 @@ contains
           & this%deltaXDiff)
     case (diffTypes%richardson)
       call error("Richardson second derivative extrapolation not implemented")
+    case default
+      continue
     end select
 
   end subroutine getSecondDeriv

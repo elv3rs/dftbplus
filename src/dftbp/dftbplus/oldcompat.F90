@@ -101,6 +101,8 @@ contains
       case (13)
         call convert_13_14(root)
         version = 14
+      case default
+        continue
       end select
     end do
 
@@ -484,6 +486,8 @@ contains
           call setChildValue(ch1, "writeBinaryContact", .false., child=ch2, replace=.true.)
         case ("uploadcontacts")
           call setChildValue(ch1, "readBinaryContact", .false., child=ch2, replace=.true.)
+        case default
+          continue
         end select
       end if
     end if
@@ -965,6 +969,8 @@ contains
     case ("beckejohnson")
       call useDftb3Default(pDampMethod, "a1", 0.5719_dp)
       call useDftb3Default(pDampMethod, "a2", 3.6017_dp)
+    case default
+      continue
     end select
 
   end subroutine handleD3Defaults

@@ -195,6 +195,8 @@ contains
       x(2) = x(1) - x(2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine qm2ud1
@@ -219,6 +221,8 @@ contains
       x(:,2) = x(:,1) - x(:,2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine qm2ud2
@@ -243,6 +247,8 @@ contains
       x(:,:,2) = x(:,:,1) - x(:,:,2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine qm2ud3
@@ -267,6 +273,8 @@ contains
       x(:,:,:,2) = x(:,:,:,1) - x(:,:,:,2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine qm2ud4
@@ -291,6 +299,8 @@ contains
       x(:,2) = x(:,1) - 2.0_dp * x(:,2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine ud2qm2
@@ -315,6 +325,8 @@ contains
       x(:,:,2) = x(:,:,1) - 2.0_dp * x(:,:,2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine ud2qm3
@@ -339,6 +351,8 @@ contains
       x(:,:,:,2) = x(:,:,:,1) - 2.0_dp * x(:,:,:,2)
     case (4)
       ! nothing to do
+    case default
+      continue
     end select
 
   end subroutine ud2qm4

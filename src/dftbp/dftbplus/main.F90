@@ -7275,6 +7275,8 @@ contains
         tripletDerivs(:,:) = derivs
       case (determinants%mixed)
         mixedDerivs(:,:) = derivs
+      case default
+        continue
       end select
     end if
 
@@ -7514,6 +7516,8 @@ contains
         tripletStress(:,:) = totalStress
       case (determinants%mixed)
         mixedStress(:,:) = totalStress
+      case default
+        continue
       end select
     end if
 

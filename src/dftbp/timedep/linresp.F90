@@ -254,6 +254,8 @@ contains
       this%tArnoldi = ini%tArnoldi
     case(linrespSolverTypes%Stratmann)
       this%subSpaceFactorStratmann = ini%subSpaceFactorStratmann
+    case default
+      continue
     end select
 
 

@@ -107,6 +107,8 @@ module dftbp_reks_reksio
           & this%Plevel)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine printReksSAInfo
@@ -134,6 +136,8 @@ module dftbp_reks_reksio
           & this%Na, this%tAllStates, this%tSSR)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine printReksSSRInfo

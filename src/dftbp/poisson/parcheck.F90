@@ -286,6 +286,8 @@ contains
                overrideBC(6) = 2
             endif
             mixed(6) = .true.
+         case default
+           continue
          end select
 
       enddo

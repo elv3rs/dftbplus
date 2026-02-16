@@ -2148,6 +2148,8 @@ contains
         allocate(pFire)
         call TFire_init(pFire, size(tmpCoords), input%ctrl%maxForce, input%ctrl%deltaT)
         call init(this%pGeoCoordOpt, pFire)
+      case default
+        continue
       end select
       call reset(this%pGeoCoordOpt, tmpCoords)
     end if
@@ -2176,6 +2178,8 @@ contains
         allocate(pFireLat)
         call TFire_init(pFireLat, 9, input%ctrl%maxForce, input%ctrl%deltaT)
         call init(this%pGeoLatOpt, pFireLat)
+      case default
+        continue
       end select
       if (this%tLatOptIsotropic) then
         ! optimisation uses scaling factor of unit cell
@@ -3386,6 +3390,8 @@ contains
         write(stdOut, "(A,':',T30,A)") "Spin polarisation", "Yes"
       case(4)
         write(stdOut, "(A,':',T30,A)") "Non-collinear calculation", "Yes"
+      case default
+        continue
       end select
       if (any(this%electronicSolver%iSolver ==&
           & [electronicSolverTypes%GF,electronicSolverTypes%onlyTransport]) .or. this%tFixEf) then
@@ -3405,6 +3411,8 @@ contains
           end if
         case(4)
           write(stdOut, "(A,':',T30,F12.6)") "Nr. of electrons", this%nEl(1)
+        case default
+          continue
         end select
       end if
     end if
@@ -3810,6 +3818,8 @@ contains
         write(stdOut, "(A,T30,A)") "Force type", "erho with DHD-product (T_elec = 0K)"
       case(forceTypes%dynamicTFinite)
         write(stdOut, "(A,T30,A)") "Force type", "erho with S^-1 H D (Te <> 0K)"
+      case default
+        continue
       end select
     end if
     if (this%tPrintEigVecs) then
@@ -4064,6 +4074,8 @@ contains
         call NonSccDiff_init(this%nonSccDeriv, diffTypes%finiteDiff, input%ctrl%deriv1stDelta)
       case (diffTypes%richardson)
         call NonSccDiff_init(this%nonSccDeriv, diffTypes%richardson)
+      case default
+        continue
       end select
     end if
 
@@ -4565,6 +4577,8 @@ contains
             end do
           end if
         end if
+      case default
+        continue
       end select
 
       if (this%tMixBlockCharges) then
@@ -5365,6 +5379,8 @@ contains
       nSpinHams = 2
     case (4)
       nSpinHams = 1
+    case default
+      continue
     end select
     if (isREKS) then
       nSpinHams = 1
@@ -6761,6 +6777,8 @@ contains
       case(electronicSolverTypes%omm, electronicSolverTypes%pexsi, electronicSolverTypes%ntpoly,&
           & electronicSolverTypes%elpadm, electronicSolverTypes%elpa)
         call error("REKS is not compatible with ELSI-solvers")
+      case default
+        continue
       end select
 
     case(hamiltonianTypes%xtb)
@@ -6803,6 +6821,8 @@ contains
       end if
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     write(stdOut, "(A,':',T30,I14)") "Number of Core Orbitals", reks%Nc

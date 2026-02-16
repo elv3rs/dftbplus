@@ -403,6 +403,8 @@ contains
       case ("T")
         allocate(symmetries(1))
         symmetries(:) = ["T"]
+      case default
+        continue
       end select
     else
       ! ADG: temporary solution for spin polarized case.
@@ -617,6 +619,8 @@ contains
       case (linrespSolverTypes%stratmann)
         call buildAndDiagExcMatrixStratmann(iGlobal, fGlobal, env, orb, this, rpa, transChrg,&
             & denseDesc, ovrXev, grndEigVecs, gammaMat, lrGamma, species0, eval, sym, xpy, xmy)
+      case default
+        continue
       end select
       call env%globalTimer%stopTimer(globalTimers%lrSolver)
 

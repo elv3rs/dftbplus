@@ -568,6 +568,8 @@ module dftbp_reks_rekscommon
       call assignIndex22_(Nc, Na, Nv, ij, i, j)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine assignIndex
@@ -611,6 +613,8 @@ module dftbp_reks_rekscommon
           & t, chk, e1, e2)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine assignEpsilon
@@ -643,6 +647,8 @@ module dftbp_reks_rekscommon
       call assignFilling22_(FONs, SAweight, Nc, i, fi)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine assignFilling

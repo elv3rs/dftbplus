@@ -647,6 +647,8 @@ contains
     case(plusUFunctionals%pSic)
       allocate(character(len=4) :: name)
       name = "pSic"
+    case default
+      continue
     end select
 
   end function funcName

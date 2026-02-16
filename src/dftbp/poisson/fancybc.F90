@@ -143,6 +143,8 @@ integer :: i_x,i_y,i_z
        i_x = 1
        i_y = 2
        i_z = 3
+   case default
+     continue
    end select
 
      ! The gate extends on the centre of Poisson Box
@@ -208,6 +210,8 @@ subroutine gate_bound(iparm,fparm,dlx,dly,dlz,rhs)
        i_x = 1
        i_y = 2
        i_z = 3
+   case default
+     continue
    end select
 
    x_min_gate=cntr_gate(i_x)-GateLength_t/2.d0
@@ -244,6 +248,8 @@ subroutine gate_bound(iparm,fparm,dlx,dly,dlz,rhs)
              x_x = xi
              y_y = yj
              z_z = zk
+          case default
+            continue
           end select
 
           ! The gate extends on the centre of Poisson Box
@@ -310,6 +316,8 @@ Subroutine coef_cilgate(x,y,z,cxx,cyy,czz,cx,cy,cz,ce)
         i_z= 2
         zero=[0.d0,0.d0,1.d0]
 
+     case default
+       continue
      end select
 
      x_min_gate = cntr_gate(i_x) - GateLength_l/2.d0
@@ -505,6 +513,8 @@ subroutine cilgate_bound(iparm,fparm,dlx,dly,dlz,rhs)
                 rhs(i,j,k) = gate
              endif
 
+          case default
+            continue
           end select
 
        end do
@@ -561,6 +571,8 @@ Subroutine coef_tip(x,y,z,cxx,cyy,czz,cx,cy,cz,ce)
         i_z= 1
 
 
+     case default
+       continue
      end select
 
 
@@ -676,6 +688,8 @@ subroutine tip_bound(iparm,fparm,dlx,dly,dlz,rhs)
              i_z= 1
 
 
+          case default
+            continue
           end select
 
 
@@ -766,6 +780,8 @@ Subroutine coef_local(x,y,z,cxx,cyy,czz,cx,cy,cz,ce)
        i_x=3
        i_y=1
        i_z=2
+    case default
+      continue
     end select
 
     ! The contacts extends on the face of Poisson Box
@@ -797,6 +813,8 @@ Subroutine coef_local(x,y,z,cxx,cyy,czz,cx,cy,cz,ce)
              ce = 1.d0
           endif
 
+       case default
+         continue
        end select
 
     endif
@@ -855,6 +873,8 @@ subroutine local_bound(iparm,fparm,x,rhs,phi_bulk)
           cntr_cont(:,m)=[ (y_max-Rmin_y),p,(x_max-Rmin_x) ]
        case(3)
           cntr_cont(:,m)=[ (x_max-Rmin_x),(y_max-Rmin_y),p ]
+       case default
+         continue
        end select
 
        do i = 1,jmax
@@ -875,6 +895,8 @@ subroutine local_bound(iparm,fparm,x,rhs,phi_bulk)
                       rhs(j,k,i) = phi_bulk(m)%val(i,j,1)
                    case(3)
                       rhs(i,j,k) = phi_bulk(m)%val(i,j,1)
+                   case default
+                     continue
                    end select
                 endif
              case(2)
@@ -887,8 +909,12 @@ subroutine local_bound(iparm,fparm,x,rhs,phi_bulk)
                       rhs(j,k,i) = phi_bulk(m)%val(i,j,1)
                    case(3)
                       rhs(i,j,k) = phi_bulk(m)%val(i,j,1)
+                   case default
+                     continue
                    end select
                 endif
+             case default
+               continue
              end select
 
           enddo
@@ -942,6 +968,8 @@ Subroutine mix_bndyc(kbdy,xory,yorz,alfa,gbdy)
           i_z=2
           !ii=nint((yy-PoissBounds(1,1))/phi_bulk(m)%dla)+1
           !jj=nint((zz-PoissBounds(2,1))/phi_bulk(m)%dlb)+1
+       case default
+         continue
        end select
 
        select case(localBC(m))
@@ -963,6 +991,8 @@ Subroutine mix_bndyc(kbdy,xory,yorz,alfa,gbdy)
 
           endif
 
+       case default
+         continue
        end select
 
     enddo  !m

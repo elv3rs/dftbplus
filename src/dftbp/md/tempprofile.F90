@@ -168,6 +168,8 @@ contains
       this%tempValues(this%iInt-1) = subVal
       this%incr = log(supVal/subVal) / real(sup - sub, dp)
       this%curTemp = subVal * exp(this%incr * real(this%iStep - sub, dp))
+    case default
+      continue
     end select
     print *, "TempProfile:", this%iStep, this%curTemp
 

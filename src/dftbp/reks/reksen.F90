@@ -53,6 +53,8 @@ module dftbp_reks_reksen
       call getFillingL22_(this%Nc, this%fillingL)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine constructMicrostates
@@ -70,6 +72,8 @@ module dftbp_reks_reksen
       call getWeightL22_(this%FONs, this%delta, this%SAweight, this%weightL, this%weight)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine calcWeights
@@ -90,6 +94,8 @@ module dftbp_reks_reksen
       call MOswap22_(eigenvecs, this%SAweight, this%FONs, this%Efunction, this%Nc)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine activeOrbSwap
@@ -110,6 +116,8 @@ module dftbp_reks_reksen
       call getFilling22_(filling, this%SAweight, this%FONs, this%Efunction, this%Nc)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine getFilling
@@ -343,6 +351,8 @@ module dftbp_reks_reksen
       call getStateCoup22_(Wab, this%FONs, StateCoup)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     ! diagonalize the state energies

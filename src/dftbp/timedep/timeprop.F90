@@ -1712,6 +1712,8 @@ contains
         pkick(2) = pkick(1)
       case(tdSpinTypes%triplet)
         pkick(2) = -pkick(1)
+      case default
+        continue
       end select
     end if
 
@@ -2873,6 +2875,8 @@ contains
       write(dipoleDat%unit, "(A)", advance = "NO")" mu_x (down) (e.angstrom)|"
       write(dipoleDat%unit, "(A)", advance = "NO")" mu_y (down) (e.angstrom)|"
       write(dipoleDat%unit, "(A)", advance = "NO")" mu_z (down) (e.angstrom)|"
+    case default
+      continue
     end select
     write(dipoleDat%unit, "(A)")
 
@@ -3484,6 +3488,8 @@ contains
     case(hamiltonianTypes%xtb)
       call taggedWriter%write(fdAutotest%unit, tagLabels%tdenergy, energy%eSCC + energy%Erep&
           & + energy%EDisp + energy%EHalogenX)
+    case default
+      continue
     end select
 
 

@@ -555,6 +555,8 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
          iparm(6) = 1+PoissBC(m)
       case(3)
          iparm(7) = 1+PoissBC(m)
+      case default
+        continue
       end select
     end do
 
@@ -570,6 +572,8 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
        case(3)
          iparm(6) = 2
          iparm(7) = 2
+       case default
+         continue
        end select
     end if
 
@@ -754,6 +758,8 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
           do i = 1, nb
              phi_(1:na,i,s) = bulk(m)%val(1:na,i,1)
           enddo
+        case default
+          continue
         end select
       endif
 
@@ -1260,6 +1266,8 @@ function boundary2string(typ,local) result(str)
            str='    Mixed '
         endif
       endif
+   case default
+     continue
    end select
 
 end function boundary2string
@@ -1721,6 +1729,8 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
        write(fp%unit, '(I6,I6)') iparm(14),iparm(15)
        call closeFile(fp)
 
+     case default
+       continue
      end select
    end if
 
@@ -1817,6 +1827,8 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
       stepx = 1
       stepy = 1
       stepz = nz - 1
+   case default
+     continue
    end select
 
    tol = 1.0d-5

@@ -55,6 +55,8 @@ module dftbp_reks_reksfon
 
       call error("SSR(4,4) is not implemented yet")
 
+    case default
+      continue
     end select
 
   end subroutine optimizeFons

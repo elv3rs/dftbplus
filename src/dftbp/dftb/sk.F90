@@ -89,6 +89,8 @@ contains
             call sd(tmpH,ll,mm,nn,pSK)
           case (3)
             call sf(tmpH,ll,mm,nn,pSK)
+          case default
+            continue
           end select
         case (1)
           select case (ang2)
@@ -100,6 +102,8 @@ contains
             call pd(tmpH,ll,mm,nn,pSK)
           case (3)
             call pf(tmpH,ll,mm,nn,pSK)
+          case default
+            continue
           end select
         case (2)
           select case (ang2)
@@ -111,6 +115,8 @@ contains
             call dd(tmpH,ll,mm,nn,pSK)
           case (3)
             call df(tmpH,ll,mm,nn,pSK)
+          case default
+            continue
           end select
         case (3)
           select case (ang2)
@@ -122,7 +128,11 @@ contains
             call df(tmpH,ll,mm,nn,pSK)
           case(3)
             call ff(tmpH,ll,mm,nn,pSK)
+          case default
+            continue
           end select
+        case default
+          continue
         end select
 
         if (ang1 <= ang2) then

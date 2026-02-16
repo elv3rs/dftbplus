@@ -278,6 +278,8 @@ contains
         else
           opts%access = defaultTextAccess(3)
         end if
+      case default
+        continue
       end select
     end if
 

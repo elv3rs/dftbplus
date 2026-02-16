@@ -166,6 +166,8 @@ contains
         ! Like B. Triplet calculation requires first singlet exc. energy
         allocate(symmetries(2))
         symmetries(:) = ["S", "T"]
+      case default
+        continue
       end select
     else
       @:ERROR_HANDLING(err, -1, "Spin-unrestricted calculations currently not possible with pp-RPA")

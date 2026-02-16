@@ -164,6 +164,8 @@ contains
       call this%pLbfgs%reset(x0)
     case (geoOptTypes%fire)
       call this%pFire%reset_old(x0)
+    case default
+      continue
     end select
 
   end subroutine GeoOpt_reset
@@ -199,6 +201,8 @@ contains
       call this%pLbfgs%next(fx, dx, xNew, tConverged)
     case (geoOptTypes%fire)
       call this%pFire%next(dx, xNew, tConverged)
+    case default
+      continue
     end select
 
   end subroutine GeoOpt_next

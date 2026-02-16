@@ -3944,6 +3944,8 @@ contains
               end if
             end do
           end do
+        case default
+          continue
         end select
         write(fd,*)
       end do
@@ -4684,6 +4686,8 @@ contains
           & "      Diff energy   ", "      x_a    ", "   SCC error   "
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine printReksSccHeader
@@ -4776,6 +4780,8 @@ contains
           & diffTotal, reks%FONs(1,1) * 0.5_dp, sccErrorQ
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine printReksSccInfo
@@ -5814,6 +5820,8 @@ contains
         write(fd, "(A)") repeat("*", 92)
       case (reksTypes%ssr44)
         call error("SSR(4,4) is not implemented yet")
+      case default
+        continue
       end select
       write(fd, *)
     end if

@@ -723,6 +723,8 @@ contains
       G1 = 2.0_dp / hess / tmpdE
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     ! set weightIL value
@@ -737,6 +739,8 @@ contains
       weightIL(6) = -weightIL(3)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     if (tSSR) then
@@ -764,6 +768,8 @@ contains
                 & SAweight, FONs, Nc, iL, Rab)
           case (reksTypes%ssr44)
             call error("SSR(4,4) is not implemented yet")
+          case default
+            continue
           end select
         end if
 
@@ -798,6 +804,8 @@ contains
                 & SAweight, FONs, Nc, iL, Rab)
           case (reksTypes%ssr44)
             call error("SSR(4,4) is not implemented yet")
+          case default
+            continue
           end select
         end if
 
@@ -813,6 +821,8 @@ contains
         call getRab22_2nd_(fockFa, FONs, SAweight, Nc, Rab)
       case (reksTypes%ssr44)
         call error("SSR(4,4) is not implemented yet")
+      case default
+        continue
       end select
     end if
 
@@ -1141,6 +1151,8 @@ contains
           & Nc, Na, ia, ib, reksAlg, XTdel)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine buildInteractionVectors
@@ -1338,6 +1350,8 @@ contains
           & reksAlg, RmatL)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine getRmat
@@ -1374,6 +1388,8 @@ contains
       call getRdel22_(eigenvecs, fillingL, FONs, Nc, nstates, RdelL)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine getRdel
@@ -1594,6 +1610,8 @@ contains
           & Nc, nstates, reksAlg, Q1del)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine getQ1del
@@ -2524,6 +2542,8 @@ contains
       call getOtherSAgrad22_(avgGrad, SAgrad)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
   end subroutine getOtherSAgrad

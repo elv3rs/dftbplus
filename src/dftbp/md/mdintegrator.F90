@@ -101,6 +101,8 @@ contains
     select case (this%integrator)
     case (velocityVerlet_)
       call next(this%pVelocityVerlet, accel, newCoord, newVelocity)
+    case default
+      continue
     end select
 
   end subroutine MDIntegrator_next

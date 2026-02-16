@@ -1674,12 +1674,16 @@ contains
       nIndepHam = 1
     case(2)
       nIndepHam = 2
+    case default
+      continue
     end select
     select case(nSpin)
     case(1)
       maxFill = 2.0_dp
     case(2,4)
       maxFill = 1.0_dp
+    case default
+      continue
     end select
 
     allocate(nFilled(nIndepHam, nKpts))

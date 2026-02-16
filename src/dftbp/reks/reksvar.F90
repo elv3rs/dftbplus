@@ -640,6 +640,8 @@ module dftbp_reks_reksvar
       call setSSR22conditions(this, nEl)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     nOrb = orb%nOrb
@@ -690,6 +692,8 @@ module dftbp_reks_reksvar
       call checkSSR22Requirements(this)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     ! Allocate REKS variables
@@ -1095,6 +1099,8 @@ module dftbp_reks_reksvar
         this%orderRmatL(:) = [1, 2, 1, 2, 3, 4]
       case (reksTypes%ssr44)
         call error("SSR(4,4) is not implemented yet")
+      case default
+        continue
       end select
     end if
 

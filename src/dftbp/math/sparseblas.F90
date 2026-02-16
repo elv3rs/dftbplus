@@ -625,6 +625,8 @@ contains
       end do
       !$OMP END PARALLEL DO
 
+    case default
+      continue
     end select
 
   end subroutine symm_${suffix}$_gamma
@@ -773,6 +775,8 @@ contains
       end do
       !$OMP END PARALLEL DO
 
+    case default
+      continue
     end select
 
   end subroutine symm_bc_${suffix}$_gamma
@@ -930,6 +934,8 @@ contains
       end do
       !$OMP END PARALLEL DO
 
+    case default
+      continue
     end select
 
   end subroutine symm_kpt
@@ -1099,6 +1105,8 @@ contains
       end do
       !$OMP END PARALLEL DO
 
+    case default
+      continue
     end select
 
   end subroutine symm_bc_kpt

@@ -334,6 +334,8 @@ contains
         else
           call parsingError("Invalid assignment separator", curFile, curLine)
         end if
+      case default
+        continue
       end select
 
       !! Ignore empty lines
@@ -479,6 +481,8 @@ contains
         residual = strLine
         nodetype = 1
 
+      case default
+        continue
       end select
 
       tTagClosed = tTagClosed .or. tRightValue
@@ -598,6 +602,8 @@ contains
           return
         case(3,4,5)
           tCreate = .true.
+        case default
+          continue
         end select
       end if
     end if

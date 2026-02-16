@@ -243,6 +243,8 @@ contains
      phi_bulk(m)%iparm(15) = iparm(15)  !# grid points in b (y)
      phi_bulk(m)%iparm(16) = num_p     !# grid points in c (z)
 
+   case default
+     continue
    end select
 
    na= phi_bulk(m)%iparm(14)               !# grid points in a

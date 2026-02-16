@@ -650,6 +650,8 @@ contains
       scale = 0.5_dp
     case(4)
       scale = 0.5_dp
+    case default
+      continue
     end select
 
   end function populationScalingFactor

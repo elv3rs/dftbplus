@@ -817,6 +817,8 @@ contains
           skipItemsForCoords = 6
         case("body", "mesont", "peri", "smd", "sphere", "bpm/sphere")
           call detailedError(node, "Unsupported atom_style " // char(text))
+        case default
+          continue
         end select
         call jumpToEndOfLine(commandInput, iStart)
       case("boundary")  ! default is p p p
@@ -854,6 +856,8 @@ contains
           toAtomicMassUnit = 1.0_dp
         end select
         call jumpToEndOfLine(commandInput, iStart)
+      case default
+        continue
       end select
     end do loop1
 
@@ -1000,6 +1004,8 @@ contains
           call jumpToEndOfLine(dataInput, iStart)
         end do
         haveAtoms = .true.
+      case default
+        continue
       end select
     end do loop2
 

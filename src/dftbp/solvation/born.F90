@@ -1109,6 +1109,8 @@ contains
     case(fgbKernel%p16)
       call getBornMatrixP16Cluster(iAtFirst, iAtLast, bornRad, coords0, &
           & keps, bornMat)
+    case default
+      continue
     end select
 
     !> self-energy part
@@ -1274,6 +1276,8 @@ contains
     case(fgbKernel%p16)
       call getBornEGP16Cluster(iAtFirst, iAtLast, coords, chargesPerAtom, &
           & bornRad, keps, energies, derivs, localSigma, dEdbr)
+    case default
+      continue
     end select
 
     !> self-energy part

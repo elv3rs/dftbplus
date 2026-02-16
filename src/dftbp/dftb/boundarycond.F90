@@ -210,6 +210,8 @@ contains
       call rotateZ(rotZ, lShellVals(:iSh), theta)
       sqrBlock(:nOrb2, :nOrb1) = matmul(rotZ(:nOrb2, :nOrb2), sqrBlock(:nOrb2, :nOrb1))
 
+    case default
+      continue
     end select
 
   end subroutine foldInDiatomicBlock_${LABEL}$
@@ -272,6 +274,8 @@ contains
       call rotateZ(rotZ, lShellVals(:iSh), theta)
       sqrBlock(:nOrb2, :nOrb1) = matmul(rotZ(:nOrb2, :nOrb2), sqrBlock(:nOrb2, :nOrb1))
 
+    case default
+      continue
     end select
 
   end subroutine foldOutDiatomicBlock_${LABEL}$
@@ -399,6 +403,8 @@ contains
         call rotate3(coord(:,iAt),-thetaOld+thetaNew,zAxis)
       end do
 
+    case default
+      continue
     end select
 
   end subroutine foldCoordsToCell
@@ -446,6 +452,8 @@ contains
         cellVol = abs(determinant33(latVecs))
         recCellVol = abs(determinant33(recVecs))
       end if
+    case default
+      continue
     end select
 
   end subroutine handleBoundaryChanges

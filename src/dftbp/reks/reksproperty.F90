@@ -129,6 +129,8 @@ module dftbp_reks_reksproperty
       call getActiveFilling22_(FONs, Nc, tmpFilling)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     ! unrelaxed density matrix for SA-REKS or L-th state
@@ -159,6 +161,8 @@ module dftbp_reks_reksproperty
         call getUnrelaxedTDM22_(eigenvecs, FONs, Nc, nstates, rhoXdel)
       case (reksTypes%ssr44)
         call error("SSR(4,4) is not implemented yet")
+      case default
+        continue
       end select
     end if
 
@@ -322,6 +326,8 @@ module dftbp_reks_reksproperty
             & G1, Nc, resTdm)
       case (reksTypes%ssr44)
         call error("SSR(4,4) is not implemented yet")
+      case default
+        continue
       end select
     end if
 
@@ -357,6 +363,8 @@ module dftbp_reks_reksproperty
           & SAweight, G1, Nc, resRho)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     ! Final relaxed density matrix for target state
@@ -480,6 +488,8 @@ module dftbp_reks_reksproperty
           & weightIL, G1, Lpaired, resRhoL)
     case (reksTypes%ssr44)
       call error("SSR(4,4) is not implemented yet")
+    case default
+      continue
     end select
 
     do iL = 1, Lmax

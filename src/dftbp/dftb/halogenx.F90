@@ -122,6 +122,8 @@ contains
           this%interactionType(iSp1,iSp2) = 5
         case("NI")
           this%interactionType(iSp1,iSp2) = 6
+        case default
+          continue
         end select
         this%interactionType(iSp2, iSp1) = this%interactionType(iSp1, iSp2)
         this%maxDab = max(this%maxDab, dab(this%interactionType(iSp1, iSp2)))

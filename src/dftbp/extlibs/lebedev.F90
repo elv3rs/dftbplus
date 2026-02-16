@@ -140,6 +140,8 @@ contains
     call ld5294(grid, weights, np)
     case(32)
     call ld5810(grid, weights, np)
+    case default
+      continue
     end select
 
     if (np == gridSize(nAng)) then
