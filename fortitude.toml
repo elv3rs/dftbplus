@@ -35,21 +35,20 @@ ignore = [
     "FORT",    # all Fortitude internal test rules (FORT99xx)
 
     # --- Formatting / style (not autofixable, too many) ---
-    "S001",    # line-too-long — 1534 violations, manual reformatting needed
+    "S001",    # line-too-long — 1640 violations, manual reformatting needed
 
     # --- Coding conventions (too many violations to enforce yet) ---
-    "C003",    # implicit-external-procedures — 266 violations, widespread in fypp macros
+    "C003",    # implicit-external-procedures — 290 violations, widespread in fypp macros
     "C002",    # interface-implicit-typing — 32 violations, tied to C003 patterns
-    "C061",    # missing-intent — 332 violations, would need gradual enforcement
+    "C061",    # missing-intent — 388 violations, would need gradual enforcement
 
     # --- Scientific / domain idioms (false positives for scientific code) ---
-    "C011",    # missing-default-case — 43 violations remaining (all fypp-expanded)
-    "C021",    # no-real-suffix — 31 violations, scientific code uses bare literals
+    "C011",    # missing-default-case — 51 violations remaining (all fypp-expanded)
+    "C021",    # no-real-suffix — 61 violations, scientific code uses bare literals
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 
     # --- Legacy interfaces (cannot be changed without API breaks) ---
-    "C071",    # assumed-size-array — 28 violations, legacy interfaces
-    "C072",    # assumed-size-character-intent — 8 violations, legacy C interop
+    "C072",    # assumed-size-character-intent — 9 violations, legacy C interop
 
     # --- Coding conventions (autofix available but would break: modules lack explicit `public ::`) ---
     "C131",    # missing-accessibility-statement — 6 violations
