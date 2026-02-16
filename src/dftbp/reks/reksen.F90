@@ -982,7 +982,7 @@ module dftbp_reks_reksen
     real(dp) :: eps = 1.0E-3_dp
 
     res = 0.0_dp
-    if (abs(f_j-f_i) .LT. eps) then
+    if (abs(f_j-f_i) < eps) then
       if (f_j >= f_i) then
         res = ( f_j*fock_j - f_i*fock_i )
       else

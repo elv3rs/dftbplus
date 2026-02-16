@@ -200,7 +200,7 @@ contains
           iMode = ModesToPlot(ii)
           write(fd%unit, *)nAtom
           write(fd%unit, *)'Eigenmode',iMode,eigenValues(iMode)*Hartree__cm,'cm-1'
-          if (tXmakeMol) then ! need to account for its non-standard xyz vector
+          if (tXmakeMol) then  ! need to account for its non-standard xyz vector
             ! format:
             do iAt = 1, nAtom
               write(fd%unit, '(A3,T4,3F10.6,A,3F10.6)') &
@@ -208,7 +208,7 @@ contains
                   & geo%coords(:,iAt)* Bohr__AA, ' atom_vector ',&
                   & displ(:,iAt,ii)
             end do
-          else ! genuine xyz format
+          else  ! genuine xyz format
             do iAt = 1, nAtom
               write(fd%unit, '(A3,T4,6F10.6)') &
                   & geo%speciesNames(geo%species(iAt)), &

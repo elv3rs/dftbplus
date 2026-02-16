@@ -865,10 +865,10 @@ contains
     real(dp), intent(in) :: keps
 
     !> ddcosmo adjoint solution
-    real(dp), intent(in) :: s(:, :) ! [ddCosmo%nylm, ddCosmo%nat]
+    real(dp), intent(in) :: s(:, :)  ! [ddCosmo%nylm, ddCosmo%nat]
 
     !> zeta intermediate for solvent
-    real(dp), intent(inout) :: zeta(:) ! [ddCosmo%ncav]
+    real(dp), intent(inout) :: zeta(:)  ! [ddCosmo%ncav]
 
     integer :: its, iat, ii
 

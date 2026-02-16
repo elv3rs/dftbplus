@@ -126,7 +126,7 @@ contains
     if (transpar%defined) then
 
       do i = 1, ncont
-        if (transpar%contacts(i)%kbT .ge. 0.0_dp) then
+        if (transpar%contacts(i)%kbT >= 0.0_dp) then
           parms%kbT_t(i) = transpar%contacts(i)%kbT
           parms%kbT_dm(i) = transpar%contacts(i)%kbT
         end if
@@ -300,7 +300,7 @@ contains
 
     ncont = transpar%ncont
     nbl = transpar%nPLs
-    if (nbl.eq.0) then
+    if (nbl==0) then
       call error('Internal ERROR: nbl = 0 ?!')
     end if
 
@@ -335,7 +335,7 @@ contains
 
     ! For every contact finds the min-max atom indeces among
     ! the atoms in the central region interacting with contact
-    if (transpar%defined .and. ncont.gt.0) then
+    if (transpar%defined .and. ncont>0) then
 
        minv = 0
 
@@ -350,9 +350,9 @@ contains
                 iatc2 = transpar%contacts(j1)%idxrange(2)
 
                 i1 = minval(img2CentCell(iNeigh(1:nNeigh(i),i)), &
-                     mask = (img2CentCell(iNeigh(1:nNeigh(i),i)).ge.iatc1 .and. &
-                     img2CentCell(iNeigh(1:nNeigh(i),i)).le.iatc2) )
-                if (i1.ge.iatc1 .and. i1.le.iatc2) then
+                     mask = (img2CentCell(iNeigh(1:nNeigh(i),i))>=iatc1 .and. &
+                     img2CentCell(iNeigh(1:nNeigh(i),i))<=iatc2) )
+                if (i1>=iatc1 .and. i1<=iatc2) then
                    minv(m,j1) = j1
                 endif
 
@@ -362,13 +362,13 @@ contains
 
 
        do j1 = 1, ncont
-          if (count(minv(:,j1).eq.j1).gt.1) then
+          if (count(minv(:,j1)==j1)>1) then
              write(stdOut,*) 'Contact',j1,'interacts with more than one PL:'
              write(stdOut,*) 'PLs:',minv(:,j1)
              call error('check cutoff value or PL size')
           end if
           do m = 1, transpar%nPLs
-             if (minv(m,j1).eq.j1) cblk(j1) = m
+             if (minv(m,j1)==j1) cblk(j1) = m
           end do
        end do
 
@@ -824,7 +824,7 @@ contains
 
     nK = size(kPoints,2)
     call openFile(fd, trim(filename) // '.dat', mode="w")
-    if (trim(filename).eq.'transmission') then
+    if (trim(filename)=='transmission') then
       write(fd%unit, *)  '# Energy [H]', '  Transmission'
     else
       write(fd%unit, *)  '# Energy [H]', '  LDOS'
@@ -838,7 +838,7 @@ contains
     enddo
     call closeFile(fd)
 
-    if (nK.gt.1) then
+    if (nK>1) then
       call openFile(fd, trim(filename) // '_kpoints.dat', mode="w")
       write(fd%unit, *)  '# NKpoints = ', nK
       write(fd%unit, *)  '# Energy [eV], <k1 k2 k3 weight> '

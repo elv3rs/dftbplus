@@ -173,7 +173,7 @@ contains
         nOrb2 = orb%nOrbAtom(iAtom2f)
         iOrig = iPair(iNeigh, iAtom1) + 1
         mulTmp(1:nOrb1*nOrb2) = over(iOrig:iOrig+nOrb1*nOrb2-1) * rho(iOrig:iOrig+nOrb1*nOrb2-1)
-        sqrTmp(1:nOrb2,1:nOrb1) = reshape(mulTmp(1:nOrb1*nOrb2), (/nOrb2,nOrb1/))
+        sqrTmp(1:nOrb2,1:nOrb1) = reshape(mulTmp(1:nOrb1*nOrb2), [nOrb2,nOrb1])
         qq(1:nOrb1,iAtom1) = qq(1:nOrb1,iAtom1) + sum(sqrTmp(1:nOrb2,1:nOrb1), dim=1)
         ! Add contribution to the other triangle sum, using the symmetry, but only when off diagonal
         if (iAtom1 /= iAtom2f) then
@@ -356,8 +356,8 @@ contains
         iAtom2f = img2CentCell(iAtom2)
         nOrb2 = orb%nOrbAtom(iAtom2f)
         iOrig = iPair(iNeigh,iAtom1) + 1
-        sTmp(1:nOrb2,1:nOrb1) = reshape(over(iOrig:iOrig+nOrb1*nOrb2-1), (/nOrb2,nOrb1/))
-        rhoTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), (/nOrb2,nOrb1/))
+        sTmp(1:nOrb2,1:nOrb1) = reshape(over(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
+        rhoTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         qq(1:nOrb1,1:nOrb1,iAtom1) = qq(1:nOrb1,1:nOrb1,iAtom1)&
             & + 0.5_dp*( matmul(transpose(rhoTmp(1:nOrb2,1:nOrb1)), sTmp(1:nOrb2,1:nOrb1) )&
             & + matmul(transpose(sTmp(1:nOrb2,1:nOrb1)), rhoTmp(1:nOrb2,1:nOrb1) ) )
@@ -432,8 +432,8 @@ contains
         iAtom2f = img2CentCell(iAtom2)
         nOrb2 = orb%nOrbAtom(iAtom2f)
         iOrig = iPair(iNeigh,iAtom1) + 1
-        sTmp(1:nOrb2,1:nOrb1) = reshape(over(iOrig:iOrig+nOrb1*nOrb2-1), (/nOrb2,nOrb1/))
-        rhoTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), (/nOrb2,nOrb1/))
+        sTmp(1:nOrb2,1:nOrb1) = reshape(over(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
+        rhoTmp(1:nOrb2,1:nOrb1) = reshape(rho(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         qq(1:nOrb1,1:nOrb1,iAtom1) = qq(1:nOrb1,1:nOrb1,iAtom1)&
             & - 0.5_dp*( matmul(transpose(rhoTmp(1:nOrb2,1:nOrb1)), sTmp(1:nOrb2,1:nOrb1) )&
             & - matmul(transpose(sTmp(1:nOrb2,1:nOrb1)), rhoTmp(1:nOrb2,1:nOrb1) ) )

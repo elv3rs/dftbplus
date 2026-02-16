@@ -28,7 +28,7 @@ contains
     !> second quaternion
     real(dp), intent(in)  :: b(:)
 
-    real(dp) axb(3)
+    real(dp) :: axb(3)
 
     axb(:) = cross3(a(2:4), b(2:4))
 

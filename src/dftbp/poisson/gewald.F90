@@ -35,7 +35,7 @@ contains
     real(kind=dp) :: distR(3), uhatm, deltaQ, basis(3,3), tol, sh_pot
     integer, intent(out), optional :: iError
 
-    integer i,j,k,nreal,nmax,nmin
+    integer :: i,j,k,nreal,nmax,nmin
     real(kind=dp) :: rvec(3),R(3),lastshell,tmp,norm
 
     if (present(iError)) then
@@ -48,15 +48,15 @@ contains
     nreal = 0
     lastshell = tol+1e-8
     ! /* sum over R until tolerance is reached */
-    DO WHILE ((nreal .le. nmax) .and. ((abs(lastshell) .gt. tol).or. &
-        (nreal .le. nmin)  ))
+    DO WHILE ((nreal <= nmax) .and. ((abs(lastshell) > tol).or. &
+        (nreal <= nmin)  ))
       lastshell = 0.0
       DO i = -nreal,nreal
         DO j = -nreal,nreal
           DO k = -nreal,nreal
             ! /*only R belonging to outer shells are new ones */
-            IF((nreal .eq. abs(i)) .or. (nreal .eq. abs(j))  .or. &
-              &         (nreal.eq. abs(k)) ) THEN
+            IF((nreal == abs(i)) .or. (nreal == abs(j))  .or. &
+              &         (nreal== abs(k)) ) THEN
 
               R(1)=i*basis(1,1)+j*basis(2,1)+k*basis(3,1)
               R(2)=i*basis(1,2)+j*basis(2,2)+k*basis(3,2)
@@ -68,7 +68,7 @@ contains
 
               norm = sqrt(rvec(1)**2+rvec(2)**2+rvec(3)**2)
 
-              IF (norm.gt.1.0e-20) THEN
+              IF (norm>1.0e-20) THEN
 
                 tmp = deltaQ*(exp(-3.2_dp*uhatm*norm))*(1.6_dp*uhatm+1/norm)
                 sh_pot = sh_pot + tmp
@@ -89,7 +89,7 @@ contains
 
     END DO
 
-    IF(abs(lastshell) .gt. tol) THEN
+    IF(abs(lastshell) > tol) THEN
       @:ERROR_HANDLING(iError, -1, 'tolerance in subroutine short_pot not reached')
     END IF
 
@@ -105,8 +105,8 @@ contains
 
     real(kind=dp) ::  reciprocal,rcspace,cterm
     real(kind=dp) ::  G(3),rh(3),help,norm,lastshell
-    integer nrezi, nreal, nmax, nmin
-    integer i,j,k
+    integer :: nrezi, nreal, nmax, nmin
+    integer :: i,j,k
     nmax = 20
     nmin = 2
 
@@ -119,15 +119,15 @@ contains
     nrezi = 1
     lastshell = tol+1.d-8
     reciprocal = 0.0_dp
-    DO WHILE ((nrezi .le. nmax) .and. ((nrezi .le. nmin) .or. &
-      &   (abs(lastshell) .gt.  tol)))
+    DO WHILE ((nrezi <= nmax) .and. ((nrezi <= nmin) .or. &
+      &   (abs(lastshell) >  tol)))
       lastshell = 0.0_dp
       DO i=-nrezi,nrezi
         DO j=-nrezi,nrezi
           DO k=-nrezi,nrezi
             !/*only G belonging to outer shells are new ones */
-            IF((nrezi .eq. abs(i)) .or. (nrezi .eq. abs(j)) .or. &
-              &        (nrezi.eq. abs(k)) ) THEN
+            IF((nrezi == abs(i)) .or. (nrezi == abs(j)) .or. &
+              &        (nrezi== abs(k)) ) THEN
               G(1)=i*recbasis(1,1)+j*recbasis(2,1)+k*recbasis(3,1)
               G(2)=i*recbasis(1,2)+j*recbasis(2,2)+k*recbasis(3,2)
               G(3)=i*recbasis(1,3)+j*recbasis(2,3)+k*recbasis(3,3)
@@ -146,7 +146,7 @@ contains
     END DO
 
     ! stop if tolerance not reached
-    IF ( abs(lastshell)  .gt. tol ) THEN
+    IF ( abs(lastshell)  > tol ) THEN
       @:ERROR_HANDLING(iError, -1, 'tolerance in long_pot not reached in reciprocal space')
     END IF
 
@@ -158,20 +158,20 @@ contains
     rcspace = 0._dp
     nreal = 0
     lastshell = tol+1e-8
-    DO WHILE ((nreal .le. nmax) .and. ((nreal .le. nmin) &
-      &            .or. (abs(lastshell) .gt.  tol)))
+    DO WHILE ((nreal <= nmax) .and. ((nreal <= nmin) &
+      &            .or. (abs(lastshell) >  tol)))
       lastshell = 0._dp
       DO i=-nreal,nreal
         DO j=-nreal,nreal
           DO k=-nreal,nreal
             !/*only R belonging to outer shells are new ones */
-            IF((nreal .eq. abs(i)) .or. (nreal .eq. abs(j)) .or. &
-              &         (nreal.eq. abs(k)) ) THEN
+            IF((nreal == abs(i)) .or. (nreal == abs(j)) .or. &
+              &         (nreal== abs(k)) ) THEN
               rh(1)=r(1)-(i*basis(1,1)+j*basis(2,1)+k*basis(3,1))
               rh(2)=r(2)-(i*basis(1,2)+j*basis(2,2)+k*basis(3,2))
               rh(3)=r(3)-(i*basis(1,3)+j*basis(2,3)+k*basis(3,3))
               norm=sqrt(rh(1)*rh(1)+rh(2)*rh(2)+rh(3)*rh(3))
-              IF (norm .gt. 1.d-20) THEN
+              IF (norm > 1.d-20) THEN
                 !erfc=1-erf
                 help   = terfc(alpha*norm)/norm
                 rcspace = rcspace + help
@@ -187,7 +187,7 @@ contains
     END DO
 
     ! stop if tolerance not reached
-    IF ( abs(lastshell)  .gt. tol ) THEN
+    IF ( abs(lastshell)  > tol ) THEN
       @:ERROR_HANDLING(iError, -2, 'tolerance in long_pot not reached in real space')
     END IF
 
@@ -196,7 +196,7 @@ contains
     cterm = -Pi/(vol*alpha*alpha)
 
     !if r = 0 there is another constant to be added
-    IF ((r(1)*r(1)+r(2)*r(2)+r(3)*r(3)) .lt. 1.0-20_dp) THEN
+    IF ((r(1)*r(1)+r(2)*r(2)+r(3)*r(3)) < 1.0-20_dp) THEN
       cterm = cterm -2._dp*alpha/sqrt(Pi)
     END IF
 
@@ -237,8 +237,8 @@ contains
 
     real(kind=dp) ::  reciprocal,rcspace,cterm
     real(kind=dp) ::  G(3),rh(3),help,norm,lastshell
-    integer nrezi, nreal, nmax, nmin
-    integer i,j,k
+    integer :: nrezi, nreal, nmax, nmin
+    integer :: i,j,k
 
     nmax = 20
     nmin = 2
@@ -252,15 +252,15 @@ contains
     nrezi = 1
     lastshell = tol+1d-8
     reciprocal = 0._dp
-    DO WHILE ((nrezi .le. nmax) .and. ((nrezi .le. nmin) .or. &
-      &    (abs(lastshell) .gt.  tol)))
+    DO WHILE ((nrezi <= nmax) .and. ((nrezi <= nmin) .or. &
+      &    (abs(lastshell) >  tol)))
       lastshell = 0._dp
       DO i=-nrezi,nrezi
         DO j=-nrezi,nrezi
           DO k=-nrezi,nrezi
             !  /*only G belonging to outer shells are new ones */
-            IF((nrezi .eq. abs(i)) .or. (nrezi .eq. abs(j)) .or. &
-              &        (nrezi.eq. abs(k)) ) THEN
+            IF((nrezi == abs(i)) .or. (nrezi == abs(j)) .or. &
+              &        (nrezi== abs(k)) ) THEN
               G(1)=i*recbasis(1,1)+j*recbasis(2,1)+k*recbasis(3,1)
               G(2)=i*recbasis(1,2)+j*recbasis(2,2)+k*recbasis(3,2)
               G(3)=i*recbasis(1,3)+j*recbasis(2,3)+k*recbasis(3,3)
@@ -279,7 +279,7 @@ contains
     END DO
 
     ! stop if tolerance not reached
-    IF ( abs(lastshell)  .gt. tol ) THEN
+    IF ( abs(lastshell)  > tol ) THEN
       @:ERROR_HANDLING(iError, -1, "tolerance in phi not reached in reciprocal space")
     END IF
 
@@ -291,20 +291,20 @@ contains
     rcspace = 0._dp
     nreal = 0
     lastshell = tol+1e-8
-    DO WHILE ((nreal .le. nmax) .and. ((nreal .le. nmin) &
-      &            .or. (abs(lastshell) .gt.  tol)))
+    DO WHILE ((nreal <= nmax) .and. ((nreal <= nmin) &
+      &            .or. (abs(lastshell) >  tol)))
       lastshell = 0._dp
       DO i=-nreal,nreal
         DO j=-nreal,nreal
           DO k=-nreal,nreal
             ! /*only R belonging to outer shells are new ones */
-            IF((nreal .eq. abs(i)) .or. (nreal .eq. abs(j)) .or. &
-              &         (nreal.eq. abs(k)) ) THEN
+            IF((nreal == abs(i)) .or. (nreal == abs(j)) .or. &
+              &         (nreal== abs(k)) ) THEN
               rh(1)=r(1)-(i*basis(1,1)+j*basis(2,1)+k*basis(3,1))
               rh(2)=r(2)-(i*basis(1,2)+j*basis(2,2)+k*basis(3,2))
               rh(3)=r(3)-(i*basis(1,3)+j*basis(2,3)+k*basis(3,3))
               norm=sqrt(rh(1)*rh(1)+rh(2)*rh(2)+rh(3)*rh(3))
-              IF (norm .gt. 1.d-20) THEN
+              IF (norm > 1.d-20) THEN
                 !erfc=1-erf
                 help   = terfc(alpha*norm)/norm
                 rcspace = rcspace + help
@@ -320,7 +320,7 @@ contains
     END DO
 
     ! stop if tolerance not reached
-    IF ( abs(lastshell)  .gt. tol ) THEN
+    IF ( abs(lastshell)  > tol ) THEN
       @:ERROR_HANDLING(iError, -2, "tolerance in phi not reached in real space")
     END IF
 
@@ -329,7 +329,7 @@ contains
     cterm = -Pi/(vol*alpha*alpha)
 
     !  if r = 0 there is another constant to be added
-    IF ((r(1)*r(1)+r(2)*r(2)+r(3)*r(3)) .lt. 1.d-20) THEN
+    IF ((r(1)*r(1)+r(2)*r(2)+r(3)*r(3)) < 1.d-20) THEN
       cterm = cterm -2._dp*alpha/sqrt(Pi)
     END IF
 
@@ -365,11 +365,11 @@ contains
 
     real(kind=dp) ::  reciprocal(3),rcspace(3)
     real(kind=dp) ::  G(3),rh(3),norm,help,tol,lastshell
-    integer i,j,k, nrezi, nreal, nmax, nmin
+    integer :: i,j,k, nrezi, nreal, nmax, nmin
     nmax = 20
     nmin = 2
 
-    IF((r(1)*r(1) + r(2)*r(2) + r(3)*r(3)) .lt. 1.d-20) THEN
+    IF((r(1)*r(1) + r(2)*r(2) + r(3)*r(3)) < 1.d-20) THEN
       deriv(1) = 0._dp
       deriv(2) = 0._dp
       deriv(3) = 0._dp
@@ -382,15 +382,15 @@ contains
     reciprocal(1) = 0._dp
     reciprocal(2) = 0._dp
     reciprocal(3) = 0._dp
-    DO WHILE ((nrezi .le. nmax) .and. ((nrezi .le. nmin) .or. &
-      &    (abs(lastshell) .gt.  tol)))
+    DO WHILE ((nrezi <= nmax) .and. ((nrezi <= nmin) .or. &
+      &    (abs(lastshell) >  tol)))
       lastshell = 0._dp
       DO i=-nrezi,nrezi
         DO j=-nrezi,nrezi
           DO k=-nrezi,nrezi
             !             /*only G belonging to outer shells are new ones */
-            IF((nrezi .eq. abs(i)) .or. (nrezi .eq. abs(j)) .or. &
-              &        (nrezi.eq. abs(k)) ) THEN
+            IF((nrezi == abs(i)) .or. (nrezi == abs(j)) .or. &
+              &        (nrezi== abs(k)) ) THEN
 
               G(1)=i*recbasis(1,1)+j*recbasis(2,1)+k*recbasis(3,1)
               G(2)=i*recbasis(1,2)+j*recbasis(2,2)+k*recbasis(3,2)
@@ -415,7 +415,7 @@ contains
     END DO
 
     ! stop if tolerance not reached
-    IF ( abs(lastshell)  .gt. tol ) THEN
+    IF ( abs(lastshell)  > tol ) THEN
       @:ERROR_HANDLING(iError, -1, "tolerance in phi1 not reached in reciprocal space")
     END IF
 
@@ -431,15 +431,15 @@ contains
     rcspace(3) = 0._dp
     nreal = 0
     lastshell = tol+1e-8
-    DO WHILE ((nreal .le. nmax) .and. ((nreal .le. nmin) &
-      &            .or. (abs(lastshell) .gt.  tol)))
+    DO WHILE ((nreal <= nmax) .and. ((nreal <= nmin) &
+      &            .or. (abs(lastshell) >  tol)))
       lastshell = 0._dp
       DO i=-nreal,nreal
         DO j=-nreal,nreal
           DO k=-nreal,nreal
             !            /*only R belonging to outer shells are new ones */
-            IF((nreal .eq. abs(i)) .or. (nreal .eq. abs(j)) .or. &
-              &         (nreal.eq. abs(k)) ) THEN
+            IF((nreal == abs(i)) .or. (nreal == abs(j)) .or. &
+              &         (nreal== abs(k)) ) THEN
               rh(1)=r(1)-(i*basis(1,1)+j*basis(2,1)+k*basis(3,1))
               rh(2)=r(2)-(i*basis(1,2)+j*basis(2,2)+k*basis(3,2))
               rh(3)=r(3)-(i*basis(1,3)+j*basis(2,3)+k*basis(3,3))
@@ -462,7 +462,7 @@ contains
     END DO
 
     ! stop if tolerance not reached
-    IF ( abs(lastshell)  .gt. tol ) THEN
+    IF ( abs(lastshell)  > tol ) THEN
       @:ERROR_HANDLING(iError, -2, "tolerance in phi1 not reached in real space")
     END IF
 
@@ -499,7 +499,7 @@ contains
 
     real(kind=dp) ::   basis(3,3), recbasis(3,3), vol
     real(kind=dp) ::   hv1(3), hv2(3), hv3(3), hv4(3), fac
-    integer i
+    integer :: i
 
 
     DO i=1,3, 1
@@ -547,7 +547,7 @@ contains
     &       t*(0.09678418_dp+t*(-0.18628806_dp+t*(0.27886807_dp+&
     &       t*(-1.13520398_dp+t*(1.48851587+t*(-0.82215223+&
     &       t*0.17087277)))))))))
-    if (x .lt. 0._dp) terfc=2._dp-terfc
+    if (x < 0._dp) terfc=2._dp-terfc
 
     RETURN
   END FUNCTION terfc
@@ -568,7 +568,7 @@ contains
     real(kind=dp) ::  basis(3,3)
     real(kind=dp) ::  getalpha
     real(kind=dp) ::  alpha, alphal, alphar
-    integer nopt
+    integer :: nopt
     real(kind=dp) ::  recbasis(3,3), vol, tol
     real(kind=dp) ::  G, R, help1, help2, help3
 
@@ -597,7 +597,7 @@ contains
     !       in real space too slow: increase alpha
     !       set starting alphal
     alpha = 1e-5
-    DO WHILE( diffrecreal(alpha,G,R,vol) .lt. tol )
+    DO WHILE( diffrecreal(alpha,G,R,vol) < tol )
       alphal = alpha
       alpha = alpha*2._dp
     END DO
@@ -606,7 +606,7 @@ contains
     !       in reciprocal space too slow: decrease alpha
     !       set starting alphar
     alpha = 1e+5
-    DO WHILE( diffrecreal(alpha,G,R,vol) .gt. tol )
+    DO WHILE( diffrecreal(alpha,G,R,vol) > tol )
       alphar = alpha
       alpha = alpha / 2._dp
     END DO
@@ -614,20 +614,20 @@ contains
     !       now find best value by refining the interval [alphal,alphar]
     alpha = (alphal + alphar)/2._dp
     nopt  = 0
-    DO WHILE ( abs(diffrecreal(alpha,G,R,vol)) .gt. tol .and. &
-      &             nopt .le. 20)
-      IF ( diffrecreal(alpha,G,R,vol) .lt. tol ) THEN
+    DO WHILE ( abs(diffrecreal(alpha,G,R,vol)) > tol .and. &
+      &             nopt <= 20)
+      IF ( diffrecreal(alpha,G,R,vol) < tol ) THEN
         alphal = alpha
       END IF
 
-      IF ( diffrecreal(alpha,G,R,vol) .gt. tol ) THEN
+      IF ( diffrecreal(alpha,G,R,vol) > tol ) THEN
         alphar = alpha
       END IF
       alpha = (alphal + alphar)/2._dp
       nopt  = nopt + 1
     END DO
 
-    IF (nopt .gt. 20 ) THEN
+    IF (nopt > 20 ) THEN
       alpha=exp(-0.310104*log(vol)+0.786382)/2._dp
       PRINT*, "WARNING: NO OPTIMISED ALPHA FOUND: "
       PRINT*, "STANDARD ALPHA USED. ALPHA SET TO", alpha

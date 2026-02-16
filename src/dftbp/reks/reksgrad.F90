@@ -312,7 +312,7 @@ contains
                 & DM(iSquare(iAtom2f):iSquare(iAtom2f+1)-1, &
                 & iSquare(iAtom1):iSquare(iAtom1+1)-1,1,tmpL)
             sqrEDMTmp(1:nOrb2,1:nOrb1) = &
-                & reshape(EDM(iOrig:iOrig+nOrb1*nOrb2-1,iL),(/nOrb2,nOrb1/))
+                & reshape(EDM(iOrig:iOrig+nOrb1*nOrb2-1,iL),[nOrb2,nOrb1])
             call derivator%getFirstDeriv(hPrimeTmp, skHamCont, &
                 & coords, species, iAtom1, iAtom2, orb)
             call derivator%getFirstDeriv(sPrimeTmp, skOverCont, &
@@ -3175,28 +3175,32 @@ contains
 
       ! get lagrange multipliers with delta function
       if (i == p) then
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, q, &
             & 1, reksAlg, e1, e2)
         A1e(ij,pq) = A1e(ij,pq) + 0.5_dp*(e1 - e2)
       end if
 
       if (j == q) then
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, p, &
             & 2, reksAlg, e1, e2)
         A1e(ij,pq) = A1e(ij,pq) - 0.5_dp*(e1 - e2)
       end if
 
       if (i == q) then
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, p, &
             & 1, reksAlg, e1, e2)
         A1e(ij,pq) = A1e(ij,pq) - 0.5_dp*(e1 - e2)
       end if
 
       if (j == p) then
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, q, &
             & 2, reksAlg, e1, e2)
         A1e(ij,pq) = A1e(ij,pq) + 0.5_dp*(e1 - e2)
@@ -3222,12 +3226,14 @@ contains
       if (Glevel == 1) then
 
         ! get lagrange multipliers with delta function
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, j, &
             & 1, reksAlg, e1, e2)
         A1ePre(ij,ij) = A1ePre(ij,ij) + 0.5_dp*(e1 - e2)
 
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, i, &
             & 2, reksAlg, e1, e2)
         A1ePre(ij,ij) = A1ePre(ij,ij) - 0.5_dp*(e1 - e2)
@@ -3337,28 +3343,32 @@ contains
 
         ! get lagrange multipliers with delta function
         if (i == p) then
-          e1 = 0.0_dp; e2 = 0.0_dp;
+          e1 = 0.0_dp
+          e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, q, &
               & 1, reksAlg, e1, e2)
           Aall(ij,pq) = Aall(ij,pq) + 0.5_dp*(e1 - e2)
         end if
 
         if (j == q) then
-          e1 = 0.0_dp; e2 = 0.0_dp;
+          e1 = 0.0_dp
+          e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, p, &
               & 2, reksAlg, e1, e2)
           Aall(ij,pq) = Aall(ij,pq) - 0.5_dp*(e1 - e2)
         end if
 
         if (i == q) then
-          e1 = 0.0_dp; e2 = 0.0_dp;
+          e1 = 0.0_dp
+          e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, p, &
               & 1, reksAlg, e1, e2)
           Aall(ij,pq) = Aall(ij,pq) - 0.5_dp*(e1 - e2)
         end if
 
         if (j == p) then
-          e1 = 0.0_dp; e2 = 0.0_dp;
+          e1 = 0.0_dp
+          e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, q, &
               & 2, reksAlg, e1, e2)
           Aall(ij,pq) = Aall(ij,pq) + 0.5_dp*(e1 - e2)
@@ -3985,7 +3995,7 @@ contains
 
     ZmatL(:,:,:) = 0.0_dp
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(tau,gam,tmpHxcS,tmpHxcD,tmpZM) SCHEDULE(RUNTIME)
-    do ii = 1, size(over,dim=1) ! tau and gam
+    do ii = 1, size(over,dim=1)  ! tau and gam
 
       if (abs(over(ii)) >= epsilon(1.0_dp)) then
 
@@ -4078,7 +4088,7 @@ contains
     real(dp), allocatable :: tmpZM(:,:)
 
     ! common variables
-    real(dp) :: tmp22!, tmp11
+    real(dp) :: tmp22  !, tmp11
 !    real(dp) :: tmpZ1, tmpZ2, tmp1, tmp2
     integer :: mu, nu, tau, gam, nOrb, iL, Lmax, LmaxR
     integer :: ii, jj, sparseSize, nOrbHalf
@@ -4372,7 +4382,8 @@ contains
 
         do t = 1, nOrb
 
-          e1 = 0.0_dp; e2 = 0.0_dp
+          e1 = 0.0_dp
+          e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, a, b, t, &
               & 2, reksAlg, e1, e2)
           Q1del(nu,mu,1) = Q1del(nu,mu,1) + ( sqrt(n_a)*e1 - sqrt(n_b)*e2 ) * &
@@ -4382,7 +4393,8 @@ contains
               & eigenvecs(mu,t,1) * eigenvecs(nu,b,1) * 0.5_dp
           end if
 
-          e1 = 0.0_dp; e2 = 0.0_dp
+          e1 = 0.0_dp
+          e2 = 0.0_dp
           call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, a, b, t, &
               & 1, reksAlg, e1, e2)
           Q1del(nu,mu,1) = Q1del(nu,mu,1) + ( sqrt(n_a)*e1 - sqrt(n_b)*e2 ) * &
@@ -4607,7 +4619,8 @@ contains
 
           ! zeroing for tmpQ1 & tmpQ2 with each k pair
           ! tmpQ1 & tmpQ2 has (qm) component
-          tmpQ1(:,:,:) = 0.0_dp; tmpQ2(:,:,:) = 0.0_dp
+          tmpQ1(:,:,:) = 0.0_dp
+          tmpQ2(:,:,:) = 0.0_dp
           do iS = 1, nSpin
             ! G3 ~ G4
             tmpQ1(:,1,iS) = sum(tmpS(:,:,ii)*tmpD(:,:,iS,iL),dim=1)

@@ -482,7 +482,7 @@ contains
 
     ! somewhat ugly, but fast small arrays on stack:
     real(dp) :: otmp(size(frGamma, dim=1)), gtmp(size(frGamma, dim=1))
-    real(dp) :: qij(size(frGamma, dim=1)) ! qij Working array (used for excitation charges). (nAtom)
+    real(dp) :: qij(size(frGamma, dim=1))  ! qij Working array (used for excitation charges). (nAtom)
     real(dp) :: vout_ons(size(vin))
     real(dp), allocatable :: vLoc(:), vGlb(:), vGlb2(:)
     real(dp), parameter :: spinFactor(2) = [1.0_dp, -1.0_dp]
@@ -520,7 +520,7 @@ contains
 
     call assembleChunks(env, otmp)
 
-    if (.not. lr%tSpin) then !-----------spin-unpolarized systems--------------
+    if (.not. lr%tSpin) then  !-----------spin-unpolarized systems--------------
 
       if (sym == 'S') then
 
@@ -547,7 +547,7 @@ contains
 
       end if
 
-    else !--------------spin-polarized systems--------
+    else  !--------------spin-polarized systems--------
 
       call hemv(gtmp, frGamma, otmp)
 
@@ -945,7 +945,7 @@ contains
     integer :: aa, bb, iat, jbs, abs, ijs, ibs, jas
     integer :: nLoc, myia, myii
 
-    nMat = size(vP, dim=1) ! also known as nXov
+    nMat = size(vP, dim=1)  ! also known as nXov
 
     ! Local chunk of RPA vectors have this size under MPI
     nLoc = fGlobal - iGlobal + 1

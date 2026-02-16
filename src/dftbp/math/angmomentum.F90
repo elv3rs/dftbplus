@@ -359,10 +359,10 @@ contains
     !> angle of rotation in radians
     real(dp), intent(in)  :: phi
 
-    integer  :: m ! magnetic quantum number
+    integer  :: m  ! magnetic quantum number
 
     zmat(:,:) = 0.0_dp
-    zmat(l+1,l+1) = 1.0_dp ! l_z = 0
+    zmat(l+1,l+1) = 1.0_dp  ! l_z = 0
 
     do m = 1, l
       zmat(m+l+1,m+l+1) = cos(m*phi)

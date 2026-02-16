@@ -134,7 +134,7 @@ contains
 
     ! Distance over which the interaction decays to minInteraction
     this%cutoff = this%maxDab + (-log(2.0_dp * minInteraction / c(1)) / c(2))**(1.0_dp/c(3))
-    this%cutoff = this%cutoff * AA__Bohr ! in a.u.
+    this%cutoff = this%cutoff * AA__Bohr  ! in a.u.
 
   end subroutine THalogenX_init
 

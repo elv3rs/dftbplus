@@ -152,7 +152,7 @@ contains
   #:if TYPE == "complex"
     real(${KIND}$), allocatable :: rwork(:)
   #:endif
-    integer n, info_, iStep
+    integer :: n, info_, iStep
     character(len=100) :: errorMsg
 
     @:ASSERT(uplo == 'u' .or. uplo == 'U' .or. uplo == 'l' .or. uplo == 'L')
@@ -242,7 +242,7 @@ contains
     real(${KIND}$) :: rworkDummy(1)
     integer :: rworkSize
   #:endif
-    integer n, info_, iStep
+    integer :: n, info_, iStep
     character(len=100) :: errorMsg
 
     @:ASSERT(uplo == 'u' .or. uplo == 'U' .or. uplo == 'l' .or. uplo == 'L')
@@ -484,7 +484,7 @@ contains
     real(${KIND}$), allocatable :: rwork(:)
     real(${KIND}$) :: rworkDummy(1)
   #:endif
-    integer n, lda, info_, iitype, ldb, iStep
+    integer :: n, lda, info_, iitype, ldb, iStep
     character(len=100) :: errorMsg
 
     @:ASSERT(uplo == 'u' .or. uplo == 'U' .or. uplo == 'l' .or. uplo == 'L')
@@ -594,7 +594,7 @@ contains
     real(${KIND}$) :: rworkDummy(1)
     integer :: rworkSize
   #:endif
-    integer n, info_, iitype, iStep
+    integer :: n, info_, iitype, iStep
     character(len=100) :: errorMsg
 
     @:ASSERT(uplo == 'u' .or. uplo == 'U' .or. uplo == 'l' .or. uplo == 'L')
@@ -833,13 +833,13 @@ contains
         if (upper) then
           do jj = 1, n
             do ii = jj+1, n
-              a(ii, jj) = #{if TYPE == "real"}# b(jj, ii) #{else}# conjg(b(jj, ii)) #{endif}#
+              a(ii, jj) = #{if TYPE == "real"}# b(jj, ii)#{else}# conjg(b(jj, ii))#{endif}#
             end do
           end do
         else
           do jj = 1, n
             do ii = 1, jj - 1
-              a(ii, jj) = #{if TYPE == "real"}# b(jj, ii) #{else}# conjg(b(jj, ii)) #{endif}#
+              a(ii, jj) = #{if TYPE == "real"}# b(jj, ii)#{else}# conjg(b(jj, ii))#{endif}#
             end do
           end do
         end if

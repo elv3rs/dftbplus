@@ -136,11 +136,11 @@ contains
      if(overrBulkBC(6) /= poissonBCsEnum%unset) phi_bulk(m)%iparm(5)=overrBulkBC(6)
      !------------------------------------------------------
      phi_bulk(m)%iparm(8)  = iparm(9)  ! iyp
-     phi_bulk(m)%iparm(9)  = iparm(10) ! izp
+     phi_bulk(m)%iparm(9)  = iparm(10)  ! izp
      phi_bulk(m)%iparm(10) = iparm(8)  ! ixp
 
-     phi_bulk(m)%iparm(11) = iparm(12) !highest grid in a  (y)
-     phi_bulk(m)%iparm(12) = iparm(13) !highest grid in b  (z)
+     phi_bulk(m)%iparm(11) = iparm(12)  !highest grid in a  (y)
+     phi_bulk(m)%iparm(12) = iparm(13)  !highest grid in b  (z)
 
      ! define the PL periodicity
      phi_bulk(m)%L_PL = abs(x(1,nstart+phi_bulk(m)%natm_PL)-x(1,nstart))
@@ -148,13 +148,13 @@ contains
      do i = 1,50
         phi_bulk(m)%iparm(13) = i      !highest grid in c  (x)
         num_p = phi_bulk(m)%iparm(10) *(2**(i - 1)) + 1
-        if (phi_bulk(m)%L_PL/(num_p - 1).le.dmin(1)) then
+        if (phi_bulk(m)%L_PL/(num_p - 1)<=dmin(1)) then
            phi_bulk(m)%dlc = phi_bulk(m)%L_PL/(num_p - 1)
            exit
         end if
      end do
-     phi_bulk(m)%iparm(14) = iparm(15) !# grid points in a (y)
-     phi_bulk(m)%iparm(15) = iparm(16) !# grid points in b (z)
+     phi_bulk(m)%iparm(14) = iparm(15)  !# grid points in a (y)
+     phi_bulk(m)%iparm(15) = iparm(16)  !# grid points in b (z)
      phi_bulk(m)%iparm(16) = num_p     !# grid points in c (x)
 
    case(2)
@@ -177,12 +177,12 @@ contains
      if(overrBulkBC(1) /= poissonBCsEnum%unset) phi_bulk(m)%iparm(4)=overrBulkBC(1)
      if(overrBulkBC(2) /= poissonBCsEnum%unset) phi_bulk(m)%iparm(5)=overrBulkBC(2)
      !------------------------------------------------------
-     phi_bulk(m)%iparm(8)  = iparm(10) ! izp
+     phi_bulk(m)%iparm(8)  = iparm(10)  ! izp
      phi_bulk(m)%iparm(9)  = iparm(8)  ! ixp
      phi_bulk(m)%iparm(10) = iparm(9)  ! iyp
 
-     phi_bulk(m)%iparm(11) = iparm(13) !highest grid in a  (z)
-     phi_bulk(m)%iparm(12) = iparm(11) !highest grid in b  (x)
+     phi_bulk(m)%iparm(11) = iparm(13)  !highest grid in a  (z)
+     phi_bulk(m)%iparm(12) = iparm(11)  !highest grid in b  (x)
 
      ! define the PL periodicity
      phi_bulk(m)%L_PL = abs(x(2,nstart+phi_bulk(m)%natm_PL)-x(2,nstart))
@@ -190,14 +190,14 @@ contains
      do i = 1,50
         phi_bulk(m)%iparm(13) = i      !highest grid in c  (y)
         num_p = phi_bulk(m)%iparm(10) *(2**(i - 1)) + 1
-        if (phi_bulk(m)%L_PL/(num_p - 1).le.dmin(2)) then
+        if (phi_bulk(m)%L_PL/(num_p - 1)<=dmin(2)) then
            phi_bulk(m)%dlc = phi_bulk(m)%L_PL/(num_p - 1)
            exit
         end if
      end do
 
-     phi_bulk(m)%iparm(14) = iparm(16) !# grid points in a (z)
-     phi_bulk(m)%iparm(15) = iparm(14) !# grid points in b (x)
+     phi_bulk(m)%iparm(14) = iparm(16)  !# grid points in a (z)
+     phi_bulk(m)%iparm(15) = iparm(14)  !# grid points in b (x)
      phi_bulk(m)%iparm(16) = num_p     !# grid points in c (y)
 
    case(3)
@@ -222,10 +222,10 @@ contains
      !------------------------------------------------------
      phi_bulk(m)%iparm(8)  = iparm(8)  ! ixp
      phi_bulk(m)%iparm(9)  = iparm(9)  ! iyp
-     phi_bulk(m)%iparm(10) = iparm(10) ! izp
+     phi_bulk(m)%iparm(10) = iparm(10)  ! izp
 
-     phi_bulk(m)%iparm(11) = iparm(11) !highest grid in a  (x)
-     phi_bulk(m)%iparm(12) = iparm(12) !highest grid in b  (y)
+     phi_bulk(m)%iparm(11) = iparm(11)  !highest grid in a  (x)
+     phi_bulk(m)%iparm(12) = iparm(12)  !highest grid in b  (y)
 
      ! define the PL periodicity
      phi_bulk(m)%L_PL = abs(x(3,nstart+phi_bulk(m)%natm_PL)-x(3,nstart))
@@ -233,14 +233,14 @@ contains
      do i = 1,50
         phi_bulk(m)%iparm(13) = i      !highest grid in c  (z)
         num_p = phi_bulk(m)%iparm(10) *(2**(i - 1)) + 1
-        if (phi_bulk(m)%L_PL/(num_p - 1).le.dmin(3)) then
+        if (phi_bulk(m)%L_PL/(num_p - 1)<=dmin(3)) then
            phi_bulk(m)%dlc = phi_bulk(m)%L_PL/(num_p - 1)
            exit
         end if
      end do
 
-     phi_bulk(m)%iparm(14) = iparm(14) !# grid points in a (x)
-     phi_bulk(m)%iparm(15) = iparm(15) !# grid points in b (y)
+     phi_bulk(m)%iparm(14) = iparm(14)  !# grid points in a (x)
+     phi_bulk(m)%iparm(15) = iparm(15)  !# grid points in b (y)
      phi_bulk(m)%iparm(16) = num_p     !# grid points in c (z)
 
    end select
@@ -254,7 +254,7 @@ contains
    ! Override periodic BC with Dirichlet
    if ( all(phi_bulk(m)%iparm(2:7) == poissonBCsEnum%periodic) ) then
      phi_bulk(m)%doEwald=.true.
-     if(nb*nc .lt. na*nc) then
+     if(nb*nc < na*nc) then
         phi_bulk(m)%iparm(2)= 1           !Dirichlet in a
         phi_bulk(m)%iparm(3)= 1           !     "     "  a
      else
@@ -265,7 +265,7 @@ contains
 
    ! CASE PERIODIC & NEUMANN:
    ! Override with Dirichlet.
-   if ( sum(phi_bulk(m)%iparm(2:7)).eq.8 ) then
+   if ( sum(phi_bulk(m)%iparm(2:7))==8 ) then
         phi_bulk(m)%iparm(2)= 1           !Dirichlet in a
         phi_bulk(m)%iparm(3)= 1           !     "     "  a
         phi_bulk(m)%iparm(4)= 1           !Dirichlet in b
@@ -275,7 +275,7 @@ contains
 
    !------------------------------------------------------
    phi_bulk(m)%iparm(17) = 0            ! no initial guess
-   phi_bulk(m)%iparm(18) = 50 !iparm(18)    ! # of iterations
+   phi_bulk(m)%iparm(18) = 50  !iparm(18)    ! # of iterations
    phi_bulk(m)%iparm(19) = 0            ! Gauss-Siedel
    phi_bulk(m)%iparm(20) = 7*(na+2)*(nb+2)*(nc+2)/2
 
@@ -340,9 +340,9 @@ Subroutine readbulk_pot(phi_bulk, iErr)
 
     read(fp%unit, *) a,b,c
 
-    if (a.ne.phi_bulk(m)%iparm(14) .or. &
-      b.ne.phi_bulk(m)%iparm(15) .or. &
-      c.ne.phi_bulk(m)%iparm(16)) then
+    if (a/=phi_bulk(m)%iparm(14) .or. &
+      b/=phi_bulk(m)%iparm(15) .or. &
+      c/=phi_bulk(m)%iparm(16)) then
       call warning('incompatible BulkPot: will be recomputed')
       ReadBulk = .false.
       call closeFile(fp)
@@ -432,12 +432,12 @@ Subroutine compbulk_pot_ewald(phi_bulk, m)
 
   ! decide which area is smaller and compute ewalds only on that
   ! (Dirichlet should have been set before)
-  if(nb*nc .lt. na*nc) then
-      stepa=na-1 ! Ewalds is computed on 1 and na
+  if(nb*nc < na*nc) then
+      stepa=na-1  ! Ewalds is computed on 1 and na
       stepb=1
   else
       stepa=1
-      stepb=nb-1 ! Ewalds is computed on 1 and nb
+      stepb=nb-1  ! Ewalds is computed on 1 and nb
   endif
 
   call log_gallocate( phi_bulk_PAR,na,nb,nc)
@@ -575,7 +575,7 @@ Subroutine compbulk_pot_mud(phi_bulk,iparm,fparm, iErr)
     phi_bulk(m)%fparm(2) = fparm(2*a)
     phi_bulk(m)%fparm(3) = fparm(2*b-1)
     phi_bulk(m)%fparm(4) = fparm(2*b)
-    if (contdir(m).gt.0) then
+    if (contdir(m)>0) then
        phi_bulk(m)%fparm(5) = fparm(2*c)
        phi_bulk(m)%fparm(6) = fparm(2*c)+phi_bulk(m)%L_PL
     else
@@ -607,10 +607,10 @@ Subroutine compbulk_pot_mud(phi_bulk,iparm,fparm, iErr)
                 &  bulk_cofx, bulk_cofy, bulk_cofz, &
                 &  bulk_bndyc,phi_bulk(m)%rhs,phi_bulk(m)%val,mgopt,err )
 
-      if (err.ne.0 .and. err.ne.9) then
+      if (err/=0 .and. err/=9) then
         @:FORMATTED_ERROR_HANDLING(iErr, -1, '(A,I0)', 'Poisson solver error n=', err)
       endif
-      if(err.eq.9) then
+      if(err==9) then
          call log_gdeallocate(work)
          call log_gallocate(work,phi_bulk(m)%iparm(21))
       endif
@@ -618,7 +618,7 @@ Subroutine compbulk_pot_mud(phi_bulk,iparm,fparm, iErr)
 
     call log_gdeallocate(work)
 
-    if (phi_bulk(m)%iparm(22).eq.phi_bulk(m)%iparm(18)) then
+    if (phi_bulk(m)%iparm(22)==phi_bulk(m)%iparm(18)) then
       @:FORMATTED_ERROR_HANDLING(iErr, -2, '(A,E12.4)', 'Bulk potential not converged! Error:',&
           & phi_bulk(m)%fparm(8))
     endif
@@ -647,7 +647,7 @@ Subroutine bulk_cofx(x,cxx,cx,cex)
   cx = 0.d0
   cex = 0.d0
 
-end subroutine
+end subroutine bulk_cofx
 
 Subroutine bulk_cofy(y,cyy,cy,cey)
   real(dp) :: y,cyy,cy,cey
@@ -656,7 +656,7 @@ Subroutine bulk_cofy(y,cyy,cy,cey)
   cy = 0.d0
   cey = 0.d0
 
-end subroutine
+end subroutine bulk_cofy
 
 Subroutine bulk_cofz(z,czz,cz,cez)
   real(dp) :: z,czz,cz,cez
@@ -665,7 +665,7 @@ Subroutine bulk_cofz(z,czz,cz,cez)
   cz = 0.d0
   cez = 0.d0
 
-end subroutine
+end subroutine bulk_cofz
 
 !%-------------------------------------------------------------------
 subroutine set_bulk_rhs(phi_bulk,cont)
@@ -685,7 +685,9 @@ subroutine set_bulk_rhs(phi_bulk,cont)
 
   dir=sign(1,contdir(m))
   phi_bulk(m)%rhs = 0.d0
-  dl(1)=phi_bulk(m)%dla; dl(2)=phi_bulk(m)%dlb; dl(3)=phi_bulk(m)%dlc;
+  dl(1)=phi_bulk(m)%dla
+  dl(2)=phi_bulk(m)%dlb
+  dl(3)=phi_bulk(m)%dlc
 
   c(1)=phi_bulk(m)%a
   c(2)=phi_bulk(m)%b
@@ -722,10 +724,10 @@ subroutine set_bulk_rhs(phi_bulk,cont)
 
       ! Cut out a box around the atom
       do i=1,3
-        imin(i) = nint( (xmin(i) - phi_bulk(m)%fparm(2*i-1))/dl(i) ) !+ 1
-        imax(i) = nint( (xmax(i) - phi_bulk(m)%fparm(2*i-1))/dl(i) ) !+ 1
+        imin(i) = nint( (xmin(i) - phi_bulk(m)%fparm(2*i-1))/dl(i) )  !+ 1
+        imax(i) = nint( (xmax(i) - phi_bulk(m)%fparm(2*i-1))/dl(i) )  !+ 1
         ! In non periodic directions cut at PoissonBox boundaries
-        if ( i.eq.3 .or. period_dir(c(i)) ) then
+        if ( i==3 .or. period_dir(c(i)) ) then
         else
           imin(i) = max( 0, imin(i) )
           imax(i) = min( phi_bulk(m)%iparm(13+i)-1, imax(i) )
@@ -778,8 +780,8 @@ subroutine set_bulk_rhs(phi_bulk,cont)
     phi_bulk(m)%rhs(:,nb+rag(2),:) = phi_bulk(m)%rhs(:,1,:)
   endif
 
-  if (dir.gt.0) phi_bulk(m)%rhs(:,:,nc+rag(3)) = phi_bulk(m)%rhs(:,:,1)
-  if (dir.lt.0) phi_bulk(m)%rhs(:,:,1) = phi_bulk(m)%rhs(:,:,nc+rag(3))
+  if (dir>0) phi_bulk(m)%rhs(:,:,nc+rag(3)) = phi_bulk(m)%rhs(:,:,1)
+  if (dir<0) phi_bulk(m)%rhs(:,:,1) = phi_bulk(m)%rhs(:,:,nc+rag(3))
 
 end subroutine set_bulk_rhs
 

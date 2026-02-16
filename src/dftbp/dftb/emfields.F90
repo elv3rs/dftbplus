@@ -101,7 +101,7 @@ contains
 
     ! spin Zeeman part
     select case(nSpin)
-    case(2) ! z aligned electron spins
+    case(2)  ! z aligned electron spins
       do iAt = 1, nAtom
         iSp = species(iAt)
         do iSh = 1, orb%nShell(iSp)

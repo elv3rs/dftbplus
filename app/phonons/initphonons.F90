@@ -537,7 +537,7 @@ contains
       else
          npl = 1
          allocate(pls(npl))
-         pls = (/ 1 /)
+         pls = [ 1 ]
       end if
 
   end subroutine readFirstLayerAtoms
@@ -847,7 +847,7 @@ contains
         allocate(kpts(3, 0:len(lr1)))
         call asVector(li1, tmpI1)
         call asArray(lr1, kpts(:,1:len(lr1)))
-        kpts(:,0) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+        kpts(:,0) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
         call destruct(li1)
         call destruct(lr1)
         if (any(tmpI1 < 0)) then
@@ -954,7 +954,7 @@ contains
     allocate(kPoint(3, nKPoints))
     allocate(kWeight(nKPoints))
 
-    iErr = -2 !TOKEN_ERROR
+    iErr = -2  !TOKEN_ERROR
     iOldStart = iStart
     iStart  = iOldStart
 
@@ -1154,7 +1154,7 @@ contains
           do jj = 1, nMovedAtom
             do ll = 1, 3
               jCount = jCount + 1
-              if (mod(iCount,3).eq.0 .or. mod(jCount,3).eq.0) then
+              if (mod(iCount,3)==0 .or. mod(jCount,3)==0) then
                   dynMatrix(jCount,iCount) = 0.0
               end if
             end do
@@ -1170,7 +1170,7 @@ contains
           do jj = 1, nMovedAtom
             do ll = 1, 3
               jCount = jCount + 1
-              if (mod(iCount,3).ne.0 .and. mod(jCount,3).ne.0) then
+              if (mod(iCount,3)/=0 .and. mod(jCount,3)/=0) then
                   dynMatrix(jCount,iCount) = 0.0
               end if
             end do
@@ -1298,10 +1298,10 @@ contains
     tundos%emin = eRange(1)
     tundos%emax = eRange(2)
 
-    if (eRange(1).le.0.d0) then
+    if (eRange(1)<=0.d0) then
        call detailedError(root, "FreqRange must be > 0")
     end if
-    if (eRange(2).lt.eRange(1)) then
+    if (eRange(2)<eRange(1)) then
        call detailedError(root, "Emax < Emin")
     end if
 
@@ -1331,7 +1331,7 @@ contains
       do ii = 1, 1
         do jj = ii + 1, ncont
           call setChildValue(pTmp, "EmitterCollector", &
-              &(/ transpar%contacts(ii)%name, transpar%contacts(jj)%name /))
+              &[ transpar%contacts(ii)%name, transpar%contacts(jj)%name ])
           tundos%ni(ind) = ii
           tundos%nf(ind) = jj
           ind = ind + 1
@@ -1508,7 +1508,7 @@ contains
     else
       nAllAtom = geo%nAtom
       allocate(rCellVec(3, 1))
-      rCellVec(:, 1) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+      rCellVec(:, 1) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
     end if
 
     allocate(coords(3, nAllAtom))
@@ -1537,7 +1537,7 @@ contains
         jAtom = img2CentCell(neighbourList%iNeighbour(jj,iAtom))
         if (jAtom > transpar%idxdevice(2)) cycle
         PL2 = getPL(jAtom)
-        if (.not.(PL1.eq.PL2 .or. PL1.eq.PL2+1 .or. PL1.eq.PL2-1)) then
+        if (.not.(PL1==PL2 .or. PL1==PL2+1 .or. PL1==PL2-1)) then
           write(stdOut,*) 'ERROR: PL size inconsistent with cutoff'
           stop
         end if
@@ -1558,7 +1558,7 @@ contains
     do iAtom = 1, geo%nAtom
        do jj = 1, nNeighbour(iAtom)
           jAtom = img2CentCell(neighbourList%iNeighbour(jj, iAtom))
-          if (neighbourList%neighDist2(jj,iAtom) .le. cutoff**2) then
+          if (neighbourList%neighDist2(jj,iAtom) <= cutoff**2) then
             dynMat2(3*(iAtom-1)+1:3*(iAtom-1)+3, 3*(jAtom-1)+1:3*(jAtom-1)+3) = &
                 dynMatrix(3*(iAtom-1)+1:3*(iAtom-1)+3, 3*(jAtom-1)+1:3*(jAtom-1)+3)
             dynMat2(3*(jAtom-1)+1:3*(jAtom-1)+3, 3*(iAtom-1)+1:3*(iAtom-1)+3) = &

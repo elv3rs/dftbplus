@@ -126,7 +126,7 @@ contains
     call move_alloc(inp%nUJ, this%nUJ)
     call move_alloc(inp%niUJ, this%niUJ)
     call move_alloc(inp%iUJ, this%iUJ)
-    do iSp = 1, size(this%nUJ) ! loop over species
+    do iSp = 1, size(this%nUJ)  ! loop over species
       do jj = 1, this%nUJ(iSp)
         if (this%niUJ(jj,iSp) > 1) then
           ! put orbitals in a particular U group in order

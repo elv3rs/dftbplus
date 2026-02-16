@@ -503,7 +503,7 @@ contains
 
         if (real(iLev1)/real(nLev) > rCount) then
           write(stdout, "(1X,I0,'%')")int(100*real(iLev1)/real(nLev))
-          rCount = rCount + 0.1 ! every 10%
+          rCount = rCount + 0.1  ! every 10%
         end if
 
         nLevPairs = 0
@@ -618,11 +618,11 @@ contains
           end do
 
           do jj = 1, nOldSites(1)
-            iAtom1 = oldSites(jj,1) ! was a site of level1
+            iAtom1 = oldSites(jj,1)  ! was a site of level1
             do kk = 1, nLevAtAtom(iAtom1)
               iLev = LevAtAtom(kk,iAtom1)
-              if (iLev == iLev1) then ! this was a level in the atom
-                tPresent = .false. ! is it still present at that site?
+              if (iLev == iLev1) then  ! this was a level in the atom
+                tPresent = .false.  ! is it still present at that site?
                 do ij = 1, nSitesLev(jj)
                   if (iAtom1 == SitesLev(ij,iLev1)) then
                     tPresent = .true.
@@ -639,11 +639,11 @@ contains
           end do
 
           do jj = 1, nOldSites(2)
-            iAtom1 = oldSites(jj,2) ! was a site of level2
+            iAtom1 = oldSites(jj,2)  ! was a site of level2
             do kk = 1, nLevAtAtom(iAtom1)
               iLev = LevAtAtom(kk,iAtom1)
-              if (iLev == iLev2) then ! this was a level in the atom
-                tPresent = .false. ! is it still present at that site?
+              if (iLev == iLev2) then  ! this was a level in the atom
+                tPresent = .false.  ! is it still present at that site?
                 do ij = 1, nSitesLev(jj)
                   if (iAtom1 == SitesLev(ij,iLev2)) then
                     tPresent = .true.

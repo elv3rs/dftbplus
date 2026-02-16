@@ -192,7 +192,7 @@ contains
 
     call this%thermostat%getInitVelocities(this%velocities)
 
-    this%vHalfPresent = .true. ! yes we have the t-.5 velocities
+    this%vHalfPresent = .true.  ! yes we have the t-.5 velocities
 
     this%tBarostat = .true.
     this%BarostatStrength = Barostat

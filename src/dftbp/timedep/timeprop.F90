@@ -1510,8 +1510,8 @@ contains
     !> Error status
     type(TStatus), intent(inout) :: errStatus
 
-    real(dp), allocatable :: qiBlock(:,:,:,:) ! not allocated since no imaginary ham
-    real(dp), allocatable :: iHam(:,:) ! not allocated since no imaginary ham
+    real(dp), allocatable :: qiBlock(:,:,:,:) ! not all  ocated since no imaginary ham
+    real(dp), allocatable :: iHam(:,:) ! not all  ocated since no imaginary ham
     real(dp), allocatable :: T2(:,:)
     integer :: iAtom, iEatom, iSpin, iKS, iK
     logical :: tImHam
@@ -1539,7 +1539,7 @@ contains
       call ud2qm(q0)
     end if
 
-    tImHam = .false. ! for the moment
+    tImHam = .false. ! for the   moment
 
     call resetExternalPotentials(refExtPot, potential)
     call resetInternalPotentials(tDualSpinOrbit, xi, orb, speciesAll, potential)
@@ -1813,7 +1813,7 @@ contains
       E0 = this%laserField
     end if
     if (this%tEnvFromFile) then
-      E0 = 0.0_dp !this is to make sure we never sum the current field with that read from file
+      E0 = 0.0_dp !this is   to make sure we never sum the current field with that read from file
     end if
 
     if (isLead) then
@@ -1825,7 +1825,7 @@ contains
         end do
       else
         if (this%tVerboseDyn) then 
-          call openOutputFile(this, env, laserDat, 'laser.dat')
+        call openOutputFile(this, env, laserDat, 'laser.dat')
           write(laserDat%unit, "(A)") "#     time (fs)  |  E_x (eV/ang)  | E_y (eV/ang) | E_z (eV/ang)"
         end if
       end if
@@ -2195,7 +2195,7 @@ contains
     real(dp), allocatable :: qiBlock(:,:,:,:), tmp(:,:)
     integer :: iKS, iK, iSpin
     real(dp) :: TS(this%nSpin)
-    type(TReksCalc), allocatable :: reks ! never allocated
+    type(TReksCalc), allocatable :: reks ! never a  llocated
 
     ! Multipole expansion
     type(TMdftb), allocatable :: mdftb

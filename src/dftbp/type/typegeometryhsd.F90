@@ -55,7 +55,7 @@ contains
 
     call setChildValue(node, "TypeNames", geo%speciesNames, .false.)
     call setChildValue(node, "TypesAndCoordinates", &
-        &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
+        &reshape(geo%species, [ 1, size(geo%species) ]), geo%coords, .false.)
     call setChildValue(node, "Periodic", geo%tPeriodic, .false.)
     if (geo%tPeriodic .or. geo%tHelical) then
       call setChildValue(node, "LatticeVectors", geo%latVecs, .false.)
@@ -78,11 +78,11 @@ contains
     call writeChildValue(xf, "TypeNames", geo%speciesNames)
     if (geo%tPeriodic .or. geo%tHelical) then
       call writeChildValue(xf, "TypesAndCoordinates", &
-          &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords&
+          &reshape(geo%species, [ 1, size(geo%species) ]), geo%coords&
           & + spread(geo%origin, 2, size(geo%species)))
     else
       call writeChildValue(xf, "TypesAndCoordinates", &
-          &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords)
+          &reshape(geo%species, [ 1, size(geo%species) ]), geo%coords)
     end if
     call writeChildValue(xf, "Periodic", geo%tPeriodic)
     call writeChildValue(xf, "Helical", geo%tHelical)
@@ -186,7 +186,7 @@ contains
         call detailedError(child, "Dependent lattice vectors")
       end if
       call invert33(geo%recVecs2p, geo%latVecs, det)
-      geo%recVecs2p(:,:) = reshape(geo%recVecs2p, (/3, 3/), order=(/2, 1/))
+      geo%recVecs2p(:,:) = reshape(geo%recVecs2p, [3, 3], order=[2, 1])
     end if
 
     if (geo%tHelical) then
@@ -788,7 +788,7 @@ contains
           call detailedError(node, "pair_style must be dftbplus")
         end if
         call jumpToEndOfLine(commandInput, iStart)
-      case("atom_style") ! default is atomic
+      case("atom_style")  ! default is atomic
         call getNextToken(commandInput, text, iStart, iErr)
         call checkError(node, iErr, "Error reading atom_style in command file")
         select case(char(text))
@@ -812,7 +812,7 @@ contains
           call detailedError(node, "Unsupported atom_style " // char(text))
         end select
         call jumpToEndOfLine(commandInput, iStart)
-      case("boundary") ! default is p p p
+      case("boundary")  ! default is p p p
         do i = 1, 3
           call getNextToken(commandInput, text, iStart, iErr)
           call checkError(node, iErr, "Error reading boundary in command file")
@@ -821,25 +821,25 @@ contains
           end if
         end do
         call jumpToEndOfLine(commandInput, iStart)
-      case("units") ! default is lj
+      case("units")  ! default is lj
         call getNextToken(commandInput, text, iStart, iErr)
         call checkError(node, iErr, "Error reading units in command file")
         select case(char(text))
         case("si")
-          toAngstrom = 1.0e10_dp ! from meters
-          toAtomicMassUnit = 1.0e3_dp * avogadConst ! from kilograms
+          toAngstrom = 1.0e10_dp  ! from meters
+          toAtomicMassUnit = 1.0e3_dp * avogadConst  ! from kilograms
         case("cgs")
-          toAngstrom = 1.0e8_dp ! from centimeters
-          toAtomicMassUnit = avogadConst ! from grams
+          toAngstrom = 1.0e8_dp  ! from centimeters
+          toAtomicMassUnit = avogadConst  ! from grams
         case("electron")
-          toAngstrom = Bohr__AA ! from Bohr radii
+          toAngstrom = Bohr__AA  ! from Bohr radii
           toAtomicMassUnit = 1.0_dp
         case("micro")
-          toAngstrom = 1.0e4_dp ! from micrometers
-          toAtomicMassUnit = 1.0e-12_dp * avogadConst ! from picograms
+          toAngstrom = 1.0e4_dp  ! from micrometers
+          toAtomicMassUnit = 1.0e-12_dp * avogadConst  ! from picograms
         case("nano")
-          toAngstrom = 10.0_dp ! from nanometers
-          toAtomicMassUnit = 1.0e-18_dp * avogadConst ! from attograms
+          toAngstrom = 10.0_dp  ! from nanometers
+          toAtomicMassUnit = 1.0e-18_dp * avogadConst  ! from attograms
         case("lj")
           call detailedError(node, "Unit system lj is not supported")
         case default
@@ -933,9 +933,9 @@ contains
             if (any(.not. readRealValue)) then
               call detailedError(node, "Invalid values for xy/xz/yz")
             end if
-            geo%latVecs(1,2) = realValue(1) ! xy
-            geo%latVecs(1,3) = realValue(2) ! xz
-            geo%latVecs(2,3) = realValue(3) ! yz
+            geo%latVecs(1,2) = realValue(1)  ! xy
+            geo%latVecs(1,3) = realValue(2)  ! xz
+            geo%latVecs(2,3) = realValue(3)  ! yz
           end if
         end if
       case("Masses")

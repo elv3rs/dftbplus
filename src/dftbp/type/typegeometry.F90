@@ -183,7 +183,7 @@ contains
     this%latVecs = latVecs
     this%recVecs2p = this%latVecs
     call invert33(this%recVecs2p)
-    this%recVecs2p = reshape(this%recVecs2p, (/3, 3/), order=(/2, 1/))
+    this%recVecs2p = reshape(this%recVecs2p, [3, 3], order=[2, 1])
 
   end subroutine setLattice_Geometry
 

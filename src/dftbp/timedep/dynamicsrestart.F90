@@ -30,7 +30,7 @@ module dftbp_timedep_dynamicsrestart
 #:if WITH_SCALAPACK
   public :: writeRestartFileBlacs, readRestartFileBlacs
 #:endif
-  
+
 contains
 
   !> Write to a restart file.

@@ -837,7 +837,7 @@ contains
     ! CAM calculations need to deduct atomic charges from delta density matrix
     if (this%isHybridXc) then
 
-      if (this%tRealHS) then ! real dense matrices (cluster/gamma point)
+      if (this%tRealHS) then  ! real dense matrices (cluster/gamma point)
         if (this%t2Component) then
           allocate(SSqrReal(this%nOrb,this%nOrb), source=0.0_dp)
         else
@@ -874,7 +874,7 @@ contains
 
         deallocate(sSqrReal)
 
-      else ! Not real dense matrices (k-points)
+      else  ! Not real dense matrices (k-points)
 
         if (this%t2Component) then
           call error("Not implemented yet")
@@ -1439,7 +1439,7 @@ contains
         end if
       end do lpSCC_REKS
 
-    else ! not REKS_SCC
+    else  ! not REKS_SCC
 
       ! Standard spin free or unrestricted DFTB
 
@@ -5222,7 +5222,7 @@ contains
                 & neighbourList%iNeighbour, nNeighbourSK, img2CentCell, iSparseStart)
           end do
 
-        else ! hybridXc%hybridXcAlg /= hybridXcAlgo%matrixBased
+        else  ! hybridXc%hybridXcAlg /= hybridXcAlgo%matrixBased
           call chrgMixerReal%mix(densityMatrix%deltaRhoInCplxHS, deltaRhoDiffSqrCplxHS)
           call mulliken(qInput, ints%overlap, densityMatrix%deltaRhoInCplxHS, orb,&
               & neighbourList%iNeighbour, nNeighbourSK, img2CentCell, iSparseStart,&
@@ -6039,7 +6039,7 @@ contains
     integer, intent(in) :: iAtInCentralRegion(:)
 
     integer :: nAtom, ii, iAtom, jj, ll
-    real(dp) dqAtom
+    real(dp) :: dqAtom
 
     nAtom = size(qOutput, dim=2)
     quadrupoleMoment(:,:) = 0.0_dp

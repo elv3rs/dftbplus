@@ -96,7 +96,7 @@ module dftbp_reks_rekscommon
     nOrb = size(this%overSqr,dim=1)
 
     nAtomSparse = 0
-    do iAtom1 = 1, nAtom ! mu
+    do iAtom1 = 1, nAtom  ! mu
       nAtomSparse = nAtomSparse + nNeighbourSK(iAtom1) + 1
     end do
 
@@ -106,17 +106,17 @@ module dftbp_reks_rekscommon
     ll = 1
     this%getDenseAO(:,:) = 0
     this%getDenseAtom(:,:) = 0
-    do iAtom1 = 1, nAtom ! mu in A atom
+    do iAtom1 = 1, nAtom  ! mu in A atom
       ii = denseDesc%iAtomStart(iAtom1)
       nOrb1 = denseDesc%iAtomStart(iAtom1 + 1) - ii
-      do iNeigh1 = 0, nNeighbourSK(iAtom1) ! nu in B atom
+      do iNeigh1 = 0, nNeighbourSK(iAtom1)  ! nu in B atom
         iOrig1 = iPair(iNeigh1,iAtom1) + 1
         iAtom2 = iNeighbour(iNeigh1, iAtom1)
         iAtom2f = img2CentCell(iAtom2)
         jj = denseDesc%iAtomStart(iAtom2f)
         nOrb2 = denseDesc%iAtomStart(iAtom2f + 1) - jj
 
-        do kk = 1, nOrb1*nOrb2 ! mu and nu
+        do kk = 1, nOrb1*nOrb2  ! mu and nu
           if (nOrb1 == 1 .or. nOrb2 == 1) then
             ! Read vertical
             mu = denseDesc%iAtomStart(iAtom1) - 1 + mod(kk,nOrb1)
@@ -141,7 +141,7 @@ module dftbp_reks_rekscommon
         end do
 
         this%getDenseAtom(ll,1) = iAtom1  ! A atom
-        this%getDenseAtom(ll,2) = iAtom2f ! B atom
+        this%getDenseAtom(ll,2) = iAtom2f  ! B atom
         ll = ll + 1
       end do
     end do

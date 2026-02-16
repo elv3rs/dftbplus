@@ -319,12 +319,12 @@ contains
     !! Maps (mm, l1, l2 ) onto an element in the SK table.
     !! l2 >= l1 (l1 = 0, 1, ...; l2 = 0, 1, ...), m <= l1.
     integer, parameter :: skMap(0:maxL, 0:maxL, 0:maxL) &
-        &= reshape((/&
+        &= reshape([&
         &20, 0,  0,  0,  19,  0,  0,  0,  18,  0,  0,  0,  17,  0,  0,  0,&
         & 0, 0,  0,  0,  15, 16,  0,  0,  13, 14,  0,  0,  11, 12,  0,  0,&
         & 0, 0,  0,  0,   0,  0,  0,  0,   8,  9, 10,  0,   5,  6,  7,  0,&
-        & 0, 0,  0,  0,   0,  0,  0,  0,   0,  0,  0,  0,   1,  2,  3,  4/),&
-        &(/maxL + 1, maxL + 1, maxL + 1/))
+        & 0, 0,  0,  0,   0,  0,  0,  0,   0,  0,  0,  0,   1,  2,  3,  4],&
+        &[maxL + 1, maxL + 1, maxL + 1])
 
     ind = 1
     do iSK1 = 1, len(angShells1)

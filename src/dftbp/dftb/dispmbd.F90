@@ -228,7 +228,7 @@ contains
     else
       call this%calculator%evaluate_vdw_method(energy)
       call this%calculator%get_exception(this%errCode, this%errOrigin, this%errMessage)
-      energies(:) = energy / this%nAtom ! replace if MBD library gives atom resolved energies
+      energies(:) = energy / this%nAtom  ! replace if MBD library gives atom resolved energies
       this%energies(:) = energies
       this%energyUpdated = .true.
     end if

@@ -180,7 +180,7 @@ contains
     integer :: n, m, jold, ij, i, j, iold
     logical :: converged
     real(dp), allocatable :: lun1(:, :), lun2(:, :)
-    real(dp) valn, uim, s, denerg
+    real(dp) :: valn, uim, s, denerg
     real(dp), allocatable :: adiag(:), vecf1(:), vecf2(:), w(:)
     real(dp), allocatable :: Uaug(:, :), d(:)
     real(dp), allocatable :: av(:)

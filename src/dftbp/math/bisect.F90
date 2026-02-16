@@ -112,7 +112,7 @@ contains
       jcurr=n+1
       do while ((jcurr-jlower) > 1)
         jupper=(jcurr+jlower)/2
-        if((xx(n).ge.xx(1)).eqv.(x.ge.xx(jupper)))then
+        if((xx(n)>=xx(1)).eqv.(x>=xx(jupper)))then
           jlower=jupper
         else
           jcurr=jupper

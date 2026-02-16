@@ -40,7 +40,7 @@ module dftbp_reks_reks
   !> dftbp_reks_rekscommon modules used in main.F90
   public :: checkGammaPoint
   public :: qm2udL, ud2qmL
-  public :: qmExpandL!, udExpandL
+  public :: qmExpandL  !, udExpandL
 
   !> dftbp_reks_reksen modules used in main.F90, mainio.F90
   public :: constructMicrostates, calcWeights

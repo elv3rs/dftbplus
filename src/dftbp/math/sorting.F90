@@ -218,7 +218,7 @@ contains
     ir=n
     ik = 1
     do while (ik == 1)
-      if (il.gt.1) then
+      if (il>1) then
         il=il-1
         indxTmp=indx(il)
         arrayTmp=array(indxTmp)
@@ -227,7 +227,7 @@ contains
         arrayTmp=array(indxTmp)
         indx(ir)=indx(1)
         ir=ir-1
-        if (ir.lt.1) then
+        if (ir<1) then
           indx(1)=indxTmp
           return
         end if
@@ -278,7 +278,7 @@ contains
     ir=n
     ik = 1
     do while (ik == 1)
-      if (il.gt.1) then
+      if (il>1) then
         il=il-1
         indxTmp=indx(il)
         arrayTmp=array(indxTmp)
@@ -287,7 +287,7 @@ contains
         arrayTmp=array(indxTmp)
         indx(ir)=indx(1)
         ir=ir-1
-        if (ir.lt.1) then
+        if (ir<1) then
           indx(1)=indxTmp
           return
         end if
@@ -356,7 +356,9 @@ contains
 
     @:ASSERT((na+nb)==nc)
 
-    I = 1; J = 1; K = 1;
+    I = 1
+    J = 1
+    K = 1
     do while(I <= NA .and. J <= NB)
       if (A(I) <= B(J)) then
         C(K) = A(I)
@@ -468,7 +470,9 @@ contains
 
     @:ASSERT((na+nb)==nc)
 
-    I = 1; J = 1; K = 1;
+    I = 1
+    J = 1
+    K = 1
     do while(I <= NA .and. J <= NB)
       if (A(I,2) <= B(J,2)) then
         C(K,:) = A(I,:)
@@ -573,7 +577,9 @@ contains
 
     @:ASSERT((na+nb)==nc)
 
-    I = 1; J = 1; K = 1;
+    I = 1
+    J = 1
+    K = 1
     do while(I <= NA .and. J <= NB)
       if (A(I) <= B(J)) then
         C(K) = A(I)
@@ -693,7 +699,9 @@ contains
 
     @:ASSERT((na+nb)==nc)
 
-    I = 1; J = 1; K = 1;
+    I = 1
+    J = 1
+    K = 1
     do while(I <= NA .and. J <= NB)
       if (A(I,2) <= B(J,2) .and. abs(A(I,2)-B(J,2)) > tol) then
         C(K,:) = A(I,:)

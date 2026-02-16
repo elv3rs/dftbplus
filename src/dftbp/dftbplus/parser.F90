@@ -944,7 +944,7 @@ contains
       call getChildValue(pRoot, 'MinSccIterations', input%minSCCIter, 1)
       call getChildValue(pRoot, 'MaxSccIterations', input%maxSCCIter, 200)
       if (input%maxSCCIter <= 0) then
-        call detailedError(pRoot,"MaxSccIterations must be >= 1");
+        call detailedError(pRoot,"MaxSccIterations must be >= 1")
       end if
       call getChildValue(pRoot, 'SccTolerance', input%sccTol, 1e-5_dp)
       input%scale = 1.0_dp
@@ -2565,9 +2565,9 @@ contains
 
     select case (char(buffer))
     case ("fermi")
-      ctrl%iDistribFn = fillingTypes%Fermi ! Fermi function
+      ctrl%iDistribFn = fillingTypes%Fermi  ! Fermi function
     case ("gaussian")
-      ctrl%iDistribFn = fillingTypes%Methfessel ! Gauss function broadening of levels (0th order MP)
+      ctrl%iDistribFn = fillingTypes%Methfessel  ! Gauss function broadening of levels (0th order MP)
     case ("methfesselpaxton")
       ! Set the order of the Methfessel-Paxton step function approximation, defaulting to 1st order
       call getChildValue(value1, "Order", ctrl%iDistribFn, 1)
@@ -3004,7 +3004,7 @@ contains
       allocate(kpts(3, 0:len(lr1)))
       call asVector(li1, tmpI1)
       call asArray(lr1, kpts(:,1:len(lr1)))
-      kpts(:,0) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+      kpts(:,0) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
       call destruct(li1)
       call destruct(lr1)
       if (any(tmpI1 < 0)) then
@@ -3989,12 +3989,12 @@ contains
     !> Maps (mm, l1, l2 ) onto an element in the SK table.
     !> l2 >= l1 (l1 = 0, 1, ...; l2 = 0, 1, ...), m <= l1.
     integer, parameter :: skMap(0:maxL, 0:maxL, 0:maxL) &
-        &= reshape((/&
+        &= reshape([&
         &20, 0,  0,  0,  19,  0,  0,  0,  18,  0,  0,  0,  17,  0,  0,  0,&
         & 0, 0,  0,  0,  15, 16,  0,  0,  13, 14,  0,  0,  11, 12,  0,  0,&
         & 0, 0,  0,  0,   0,  0,  0,  0,   8,  9, 10,  0,   5,  6,  7,  0,&
-        & 0, 0,  0,  0,   0,  0,  0,  0,   0,  0,  0,  0,   1,  2,  3,  4/),&
-        &(/maxL + 1, maxL + 1, maxL + 1/))
+        & 0, 0,  0,  0,   0,  0,  0,  0,   0,  0,  0,  0,   1,  2,  3,  4],&
+        &[maxL + 1, maxL + 1, maxL + 1])
 
     ind = 1
     do iSK1 = 1, len(angShells1)
@@ -4264,8 +4264,8 @@ contains
       else
         allocate(cellVec(3, 1))
         allocate(rCellVec(3, 1))
-        cellVec(:, 1) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
-        rCellVec(:, 1) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+        cellVec(:, 1) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
+        rCellVec(:, 1) = [ 0.0_dp, 0.0_dp, 0.0_dp ]
       end if
       call TNeighbourlist_init(neighs, geo%nAtom, 10)
       if (geo%tPeriodic) then
@@ -8366,19 +8366,19 @@ contains
 
     !> Parent node of the thermostat node
     type(fnode), pointer, intent(in) :: node
-    
+
     !> Time step
     real(dp), intent(in) :: deltaT
-    
+
     !> Whether initial velocities had been specified for the MD run
     logical, intent(in) :: hasInitVelocities
-    
+
     !> Number of MD timesteps, will be updated by adding up the steps in the temperature profile
     integer, intent(inout) :: maxRun
-    
+
     !> Thermostat input filled up from the HSD data
     type(TThermostatInput), allocatable, intent(out) :: thermostatInp
-    
+
     !> Temperature profile input filled up from the HSD data
     type(TTempProfileInput), allocatable, intent(out) :: tempProfileInp
 

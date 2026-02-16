@@ -82,7 +82,7 @@ contains
 
 
   !> Creates MD Framework.
-  subroutine MDCommon_init(sf, nMovedAtom, nAllAtom, isTranslationRemoved)!, coords,&
+  subroutine MDCommon_init(sf, nMovedAtom, nAllAtom, isTranslationRemoved)  !, coords,&
       !& isRotationRemoved)
 
     !> MD Framework instance.

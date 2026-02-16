@@ -399,9 +399,9 @@ contains
                   end do
                 end if
               end do
-            end do ! cell z
-          end do ! cell y
-        end do ! cell x
+            end do  ! cell z
+          end do  ! cell y
+        end do  ! cell x
       end do lpL
       ! Add all remaining atoms
       if (addAllR) then
@@ -541,10 +541,10 @@ contains
       kk = kk + size(atomsInPL)
       deallocate(atomsInPL)
     end do
-    write(fd2%unit,*) '}' !close FirstLayerAtoms
+    write(fd2%unit,*) '}'  !close FirstLayerAtoms
     write(sindx,'(I10)') kk
     write(fd2%unit,'(4x,A)') 'AtomRange= 1 '//trim(adjustl(sindx))
-    write(fd2%unit,'(2x,A)') '}' !close Device
+    write(fd2%unit,'(2x,A)') '}'  !close Device
 
     ! Write Contact Atoms
     do icont = 1, ncont
@@ -555,9 +555,9 @@ contains
       kk = kk + size(iAtInRegion(icont)%data)
       write(sindx,'(I10)') kk
       write(fd2%unit,'(A)') ' '//trim(adjustl(sindx))
-      write(fd2%unit,'(2x,A)') '}' !close Contact
+      write(fd2%unit,'(2x,A)') '}'  !close Contact
     end do
-    write(fd2%unit,'(A)') '}' !close Transport
+    write(fd2%unit,'(A)') '}'  !close Transport
     write(fd2%unit,'(A)') 'Hamiltonian = DFTB{'
     write(fd2%unit,'(2x,A)') 'TruncateSKRange = {'
     write(fd2%unit,'(4x,A,F8.4)') 'SKMaxDistance = ', plCutoff

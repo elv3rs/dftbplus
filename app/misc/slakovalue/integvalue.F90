@@ -18,7 +18,7 @@ program integvalue
   integer, parameter :: nSKInter = 20
   integer, parameter :: nSKInterOld = 10
   integer, parameter :: iSKInterOld(nSKInterOld) &
-      & = (/ 8, 9, 10, 13, 14, 15, 16, 18, 19, 20 /)
+      & = [ 8, 9, 10, 13, 14, 15, 16, 18, 19, 20 ]
   real(dp), parameter :: deltaXDiff = epsilon(1.0_dp)**0.25_dp
 
   type(TOldSKData) :: skdata

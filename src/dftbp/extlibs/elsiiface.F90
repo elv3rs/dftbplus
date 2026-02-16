@@ -71,10 +71,10 @@ module dftbp_extlibs_elsiiface
 
 
   !> Whether code was built with ELSI support
-  logical, parameter :: withElsi = #{if WITH_ELSI}# .true. #{else}# .false. #{endif}#
+  logical, parameter :: withElsi = #{if WITH_ELSI}# .true. #{else}# .false.#{endif}#
 
   !> Whether code was built with PEXSI support
-  logical, parameter :: withPexsi = #{if WITH_PEXSI}# .true. #{else}# .false. #{endif}#
+  logical, parameter :: withPexsi = #{if WITH_PEXSI}# .true. #{else}# .false.#{endif}#
 
 
 #:if not WITH_ELSI

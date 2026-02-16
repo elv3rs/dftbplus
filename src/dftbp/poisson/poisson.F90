@@ -220,7 +220,7 @@ module dftbp_poisson_poisson
 
   do m = 1, ncont
      f=abs(contdir(m))
-     if (contdir(m).gt.0) then
+     if (contdir(m)>0) then
        xmax = maxval(x(f,iatm(1):iatm(2)))
        xmin = minval(x(f,iatc(3,m):iatc(2,m)))
        if (xmin > xmax) then
@@ -246,22 +246,22 @@ module dftbp_poisson_poisson
   do m=1,ncont
      f=abs(contdir(m))
      do s=m+1,ncont
-        if( f.eq.abs(contdir(s)) .and. contdir(m).eq.-contdir(s) ) then
-           PoissBox(f,f)= abs(bound(s) -  bound(m)) !set PoissonBox to the direction of m and s
+        if( f==abs(contdir(s)) .and. contdir(m)==-contdir(s) ) then
+           PoissBox(f,f)= abs(bound(s) -  bound(m))  !set PoissonBox to the direction of m and s
 
            PoissBounds(f,2) = max(bound(s),bound(m))
            PoissBounds(f,1) = min(bound(s),bound(m))
 
            tmpdir(f)=1
         endif
-        if (contdir(m).eq.contdir(s).and.bound(s).ne.bound(m)) then
+        if (contdir(m)==contdir(s).and.bound(s)/=bound(m)) then
           @:ERROR_HANDLING(iErr, -3, 'Contacts in the same direction must be aligned')
         endif
      enddo
      ! Adjust PoissonBox if there are no facing contacts
-     if(tmpdir(f).eq.0) then
+     if(tmpdir(f)==0) then
 
-        if (contdir(m).gt.0) then
+        if (contdir(m)>0) then
            !fparm((f*2)-1) = bound(m) - PoissBox(f,f)
            PoissBounds(f,1) = min( bound(m) - PoissBox(f,f), &
                               minval(x(f,1:iatm(2)))-2.d0*deltaR_max )
@@ -292,15 +292,15 @@ module dftbp_poisson_poisson
   do i = 1, 3
 
      f=iatm(2)
-     if (tmpdir(i) .eq. 0) then
+     if (tmpdir(i) == 0) then
 
         tmp=(maxval(x(i,1:f))-minval(x(i,1:f))+2.d0*deltaR_max)
 
-        if(any(localBC.gt.0)) then
+        if(any(localBC>0)) then
            tmp = tmp - 2.d0*deltaR_max + 2.d0*maxval(dR_cont)
         endif
 
-        if (.not.period_dir(i).and.PoissBox(i,i).le.tmp) PoissBox(i,i) = tmp
+        if (.not.period_dir(i).and.PoissBox(i,i)<=tmp) PoissBox(i,i) = tmp
 
         Lx= maxval(x(i,1:f))+minval(x(i,1:f))
 
@@ -315,7 +315,7 @@ module dftbp_poisson_poisson
   ! Checking Poisson Box
   !---- ---------------------------
   do i=1,3
-    if(PoissBox(i,i) .le. 0.0_dp) then
+    if(PoissBox(i,i) <= 0.0_dp) then
       @:FORMATTED_ERROR_HANDLING(iErr, -4, '(A,A)', 'PoissBox negative along ', dir(i))
     end if
   enddo
@@ -326,7 +326,7 @@ module dftbp_poisson_poisson
   !-------------------------------
   if (DoGate) then
      biasdir = abs(contdir(1))
-     if (((PoissBox(gatedir,gatedir))/2.d0).le.Rmin_Gate) then
+     if (((PoissBox(gatedir,gatedir))/2.d0)<=Rmin_Gate) then
        @:ERROR_HANDLING(iErr, -5, 'Gate Distance too large')
      end if
   endif
@@ -335,15 +335,15 @@ module dftbp_poisson_poisson
 
      biasdir = abs(contdir(1))
 
-     if (abs(bound(2)-bound(1)).le.(OxLength+dr_eps)) then
+     if (abs(bound(2)-bound(1))<=(OxLength+dr_eps)) then
        @:ERROR_HANDLING(iErr, -6, 'Gate insulator is longer than Poisson box!')
      end if
 
      do i = 1,3
-        if (i.eq.biasdir) then
+        if (i==biasdir) then
           cycle
         end if
-        if (((PoissBox(i,i))/2.d0).le.Rmin_Gate) then
+        if (((PoissBox(i,i))/2.d0)<=Rmin_Gate) then
           @:ERROR_HANDLING(iErr, -7, 'Gate transversal section is bigger than Poisson box!')
         end if
       end do
@@ -407,7 +407,7 @@ subroutine mudpack_drv(env, SCC_in, V_L_atm, grad_V, iErr)
 
  iparm = 0
 
- if (SCC_in.ne.3) then
+ if (SCC_in/=3) then
 
     do i = 1,3
        fparm(2*i) =   PoissBounds(i,2)
@@ -436,7 +436,7 @@ subroutine mudpack_drv(env, SCC_in, V_L_atm, grad_V, iErr)
     do i = 1,50
        iparm(11) = i
        iparm(14) = iparm(8)*(2**(iparm(11) - 1)) + 1
-       if (((fparm(2) - fparm(1))/(iparm(14) - 1)).le.dmin(1)) then
+       if (((fparm(2) - fparm(1))/(iparm(14) - 1))<=dmin(1)) then
           dlx = (fparm(2) - fparm(1))/(iparm(14) - 1)
           exit
        end if
@@ -444,7 +444,7 @@ subroutine mudpack_drv(env, SCC_in, V_L_atm, grad_V, iErr)
     do i = 1,50
        iparm(12) = i
        iparm(15) = iparm(9)*(2**(iparm(12) - 1)) + 1
-       if (((fparm(4) - fparm(3))/(iparm(15) -1)).le.dmin(2)) then
+       if (((fparm(4) - fparm(3))/(iparm(15) -1))<=dmin(2)) then
           dly = (fparm(4) - fparm(3))/(iparm(15) -1)
           exit
        end if
@@ -452,13 +452,13 @@ subroutine mudpack_drv(env, SCC_in, V_L_atm, grad_V, iErr)
     do i = 1,50
        iparm(13) = i
        iparm(16) = iparm(10)*(2**(iparm(13) - 1)) + 1
-       if (((fparm(6) - fparm(5))/(iparm(16) - 1)).le.dmin(3)) then
+       if (((fparm(6) - fparm(5))/(iparm(16) - 1))<=dmin(3)) then
           dlz = (fparm(6) - fparm(5))/(iparm(16) - 1)
           exit
        end if
     end do
 
-    if (niter_.eq.1.and.verbose.gt.30) then
+    if (niter_==1.and.verbose>30) then
        write(stdOut,'(73("-"))')
        write(stdOut,*) "Poisson Box internally adjusted:"
        write(stdOut,'(a,f12.5,f12.5,a11,l3)') ' x range=',PoissBounds(1,1)*Bohr__AA,&
@@ -504,7 +504,7 @@ subroutine mudpack_drv(env, SCC_in, V_L_atm, grad_V, iErr)
     !endif
     ! -------------------------------------------------------------------
 
- end if !(SCC_in.ne.3)
+ end if  !(SCC_in.ne.3)
  !**********************************************************************************
  ! 3. Allocate space for phi_,rhs_ and work
  !**********************************************************************************
@@ -588,38 +588,38 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
           na = iparm(14)
           nb = iparm(15)
           nc = iparm(16)
-          overrideBC( 2*minloc( (/nb*nc,na*nc,na*nb/),1 )-1 ) = 1
-          overrideBC( 2*minloc( (/nb*nc,na*nc,na*nb/),1 )   ) = 1
+          overrideBC( 2*minloc( [nb*nc,na*nc,na*nb],1 )-1 ) = 1
+          overrideBC( 2*minloc( [nb*nc,na*nc,na*nb],1 )   ) = 1
        end if
 
     end if
 
-    if(overrideBC(1).ne.0) iparm(2) = overrideBC(1)
-    if(overrideBC(2).ne.0) iparm(3) = overrideBC(2)
-    if(overrideBC(3).ne.0) iparm(4) = overrideBC(3)
-    if(overrideBC(4).ne.0) iparm(5) = overrideBC(4)
-    if(overrideBC(5).ne.0) iparm(6) = overrideBC(5)
-    if(overrideBC(6).ne.0) iparm(7) = overrideBC(6)
+    if(overrideBC(1)/=0) iparm(2) = overrideBC(1)
+    if(overrideBC(2)/=0) iparm(3) = overrideBC(2)
+    if(overrideBC(3)/=0) iparm(4) = overrideBC(3)
+    if(overrideBC(4)/=0) iparm(5) = overrideBC(4)
+    if(overrideBC(5)/=0) iparm(6) = overrideBC(5)
+    if(overrideBC(6)/=0) iparm(7) = overrideBC(6)
 
 
-    if(id0.and.niter_.eq.1.and.verbose.gt.VBT) then
+    if(id0.and.niter_==1.and.verbose>VBT) then
       write(stdOut,*) 'Boundary Conditions:'
       BCinfo = 'x: '//boundary2string(iparm(2),mixed(1))
-      if (overrideBC(1).ne.0) BCinfo = trim(BCinfo)//' (overridden)'
+      if (overrideBC(1)/=0) BCinfo = trim(BCinfo)//' (overridden)'
       BCinfo = trim(BCinfo)//'  '//boundary2string(iparm(3),mixed(2))
-      if (overrideBC(2).ne.0) BCinfo = trim(BCinfo)//' (overridden)'
+      if (overrideBC(2)/=0) BCinfo = trim(BCinfo)//' (overridden)'
       write(stdOut,*) trim(BCinfo)
 
       BCinfo = 'y: '//boundary2string(iparm(4),mixed(3))
-      if (overrideBC(3).ne.0) BCinfo = trim(BCinfo)//' (overridden)'
+      if (overrideBC(3)/=0) BCinfo = trim(BCinfo)//' (overridden)'
       BCinfo = trim(BCinfo)//'  '//boundary2string(iparm(5),mixed(4))
-      if (overrideBC(4).ne.0) BCinfo = trim(BCinfo)//' (overridden)'
+      if (overrideBC(4)/=0) BCinfo = trim(BCinfo)//' (overridden)'
       write(stdOut,*) trim(BCinfo)
 
       BCinfo = 'z: '//boundary2string(iparm(6),mixed(5))
-      if (overrideBC(5).ne.0) BCinfo = trim(BCinfo)//' (overridden)'
+      if (overrideBC(5)/=0) BCinfo = trim(BCinfo)//' (overridden)'
       BCinfo = trim(BCinfo)//'  '//boundary2string(iparm(7),mixed(6))
-      if (overrideBC(6).ne.0) BCinfo = trim(BCinfo)//' (overridden)'
+      if (overrideBC(6)/=0) BCinfo = trim(BCinfo)//' (overridden)'
       write(stdOut,*) trim(BCinfo)
     endif
 
@@ -627,7 +627,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
     ! Setting initial guess for potential
     !------------------------------------------
 
-    if (niter_.eq.1) then
+    if (niter_==1) then
        iparm(17) = 0           !no initial guess is provided
     else
        iparm(17) = 1           !previous phi_ provided as initial guess
@@ -652,7 +652,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
     mgopt(1) = 0                            !Default multigrid with w-cycles
 
     !--------------------------------------------------------------------------
-    if (cluster.and.period .and. niter_.eq.1) then
+    if (cluster.and.period .and. niter_==1) then
       call env%globalTimer%startTimer(globalTimers%poissonEwald)
       if (id0) then
         call set_phi_periodic(phi_,iparm,fparm)
@@ -660,12 +660,12 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
       call env%globalTimer%stopTimer(globalTimers%poissonEwald)
     end if
     !--------------------------------------------------------------------------
-    if (ncont.gt.0) then
+    if (ncont>0) then
 
       allocate(bulk(ncont))
        call create_phi_bulk(bulk,iparm,dlx,dly,dlz,cont_mem)
 
-       if(InitPot.and.id0.and.niter_.eq.1.and.verbose.gt.VBT) then
+       if(InitPot.and.id0.and.niter_==1.and.verbose>VBT) then
          write(stdOut,*) 'Bulk Potential Info:'
          do m = 1,ncont
             write(stdOut,*) 'contact',m
@@ -681,7 +681,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
          enddo
        endif
 
-       if(id0.and.niter_.eq.1.and.verbose.gt.VBT) then
+       if(id0.and.niter_==1.and.verbose>VBT) then
          write(stdOut,*) 'Memory required for Poisson:', &
                           (2*size(phi_)+iparm(21)+cont_mem)*8.d0/1d6,'Mb'
 
@@ -707,7 +707,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
          end if
 
        else
-         if(id0.and.verbose.gt.VBT) write(stdOut,*) 'No bulk potential'
+         if(id0.and.verbose>VBT) write(stdOut,*) 'No bulk potential'
        endif
 
     else
@@ -733,7 +733,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
 
       bulk(m)%val(1:na,1:nb,1:nc) = bulk(m)%val(1:na,1:nb,1:nc) + mu(m)
 
-      if (contdir(m).gt.0) then
+      if (contdir(m)>0) then
          s = iparm(abs(contdir(m))+13)
       else
          s = 1
@@ -794,12 +794,12 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
 
         worksize = iparm(22)
 
-        if (err.ne.0.and.err.ne.9) then
-          if(err.gt.0) then
+        if (err/=0.and.err/=9) then
+          if(err>0) then
             @:FORMATTED_ERROR_HANDLING(iErr, err, "(A,I0)", 'Fatal Error in poisson solver:', err)
           end if
         end if
-        if (err.eq.9) then
+        if (err==9) then
           call log_gdeallocate(work)
           call log_gallocate(work,worksize)
         end if
@@ -807,7 +807,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
 
       call env%globalTimer%stopTimer(globalTimers%poissonSoln)
 
-      if (err.lt.-1) then
+      if (err<-1) then
         write(stdOut,*) 'Non-fatal Error in poisson solver:',err
       endif
 
@@ -816,7 +816,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
     end if
 
     if (id0) then
-      if (verbose.gt.30) then
+      if (verbose>30) then
         write(stdOut,'(1x,73("-"))')
         write(stdOut,*) 'Relative Poisson Error =',fparm(8)
         write(stdOut,'(a,i3,a,i3)') ' Number of cycles executed =',ncycles,'/',iparm(18)
@@ -824,7 +824,7 @@ case(GetPOT)     !Poisson called in order to calculate potential in SCC
         flush(6)
       end if
 
-      if (err.eq.-1 .or. ncycles.eq.iparm(18)) then
+      if (err==-1 .or. ncycles==iparm(18)) then
         @:ERROR_HANDLING(iErr, -1, 'Convergence in Poisson solver not obtained')
       end if
 
@@ -1002,7 +1002,7 @@ subroutine set_rhs(env, iparm, fparm, dlx, dly, dlz, rhs, bulk)
   endif
  #:endif
 
-  if (any(localBC.gt.0)) then
+  if (any(localBC>0)) then
     call local_bound(iparm,fparm,x,rhs,bulk)
   endif
 
@@ -1011,7 +1011,6 @@ end subroutine set_rhs
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subroutine renormalization_volume(iparm, fparm, dlx, dly, dlz, fixed)
 
-  implicit none
 
   integer :: iparm(23)
   real(kind=dp) :: fparm(8)
@@ -1033,7 +1032,9 @@ subroutine renormalization_volume(iparm, fparm, dlx, dly, dlz, fixed)
   ! discretization and truncation errors (this runs on contact atoms
   ! as well)
 
-  dl(1)=dlx; dl(2)=dly; dl(3)=dlz;
+  dl(1)=dlx
+  dl(2)=dly
+  dl(3)=dlz
 
   do i = 1,3
     if (period_dir(i)) then
@@ -1044,8 +1045,12 @@ subroutine renormalization_volume(iparm, fparm, dlx, dly, dlz, fixed)
   end do
 
   ! define aliases
-  ragx = rag(1); ragy = rag(2); ragz = rag(3)
-  npx = iparm(14)-ragx; npy = iparm(15)-ragy; npz = iparm(16)-ragz
+  ragx = rag(1)
+  ragy = rag(2)
+  ragz = rag(3)
+  npx = iparm(14)-ragx
+  npy = iparm(15)-ragy
+  npz = iparm(16)-ragz
 
   ! Strategy: along periodic direction we need to avoid the double counting
   ! introduced by the last grid-point that should fold on the first.
@@ -1068,7 +1073,7 @@ subroutine renormalization_volume(iparm, fparm, dlx, dly, dlz, fixed)
 
   else
 
-    do atom = 1, natoms !istart(id+1), iend(id+1)
+    do atom = 1, natoms  !istart(id+1), iend(id+1)
 
       nsh = nshells(izp(atom))
 
@@ -1078,8 +1083,8 @@ subroutine renormalization_volume(iparm, fparm, dlx, dly, dlz, fixed)
 
       ! Cut atomic box out of PoissonBox
       do i=1,3
-        imin(i) = nint( (xmin(i) - fparm(2*i-1))/dl(i) ) !+ 1
-        imax(i) = nint( (xmax(i) - fparm(2*i-1))/dl(i) ) !+ 1
+        imin(i) = nint( (xmin(i) - fparm(2*i-1))/dl(i) )  !+ 1
+        imax(i) = nint( (xmax(i) - fparm(2*i-1))/dl(i) )  !+ 1
         ! GP In non periodic directions DO NOT cut at boundaries. In this way we
         ! ensure the right renormalization volume also for atoms lying close
         ! to boundaries. The lines commented below are the corresponding ones
@@ -1125,7 +1130,6 @@ end subroutine renormalization_volume
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 subroutine charge_density(iparm,fparm,dlx,dly,dlz,rhs)
 
- implicit none
 
  integer :: iparm(23)
  real(kind=dp) :: fparm(8)
@@ -1144,7 +1148,9 @@ subroutine charge_density(iparm,fparm,dlx,dly,dlz,rhs)
 
  rhs(:,:,:)=0.d0
 
- dl(1)=dlx; dl(2)=dly; dl(3)=dlz;
+ dl(1)=dlx
+ dl(2)=dly
+ dl(3)=dlz
 
  do i = 1,3
     if (period_dir(i)) then
@@ -1155,8 +1161,12 @@ subroutine charge_density(iparm,fparm,dlx,dly,dlz,rhs)
  end do
 
  ! define aliases
- ragx = rag(1); ragy = rag(2); ragz = rag(3)
- npx = iparm(14)-ragx; npy = iparm(15)-ragy; npz = iparm(16)-ragz
+ ragx = rag(1)
+ ragy = rag(2)
+ ragz = rag(3)
+ npx = iparm(14)-ragx
+ npy = iparm(15)-ragy
+ npz = iparm(16)-ragz
 
 
  !call distribute_atoms(1, natoms, 1, istart, iend, dims, displ)
@@ -1169,7 +1179,7 @@ subroutine charge_density(iparm,fparm,dlx,dly,dlz,rhs)
  ! takes into account cutoff of exponential as well
  tau = 3.2d0 * uhubb
 
- do atom = 1, natoms !istart(id+1), iend(id+1)
+ do atom = 1, natoms  !istart(id+1), iend(id+1)
     tmp=0.d0
     ! project the atom on the primitive cell
     !patom=mod(atom-1,natoms)+1
@@ -1181,8 +1191,8 @@ subroutine charge_density(iparm,fparm,dlx,dly,dlz,rhs)
 
     ! Cut atomic box out of PoissonBox
     do i=1,3
-       imin(i) = nint( (xmin(i) - fparm(2*i-1))/dl(i) ) !+ 1
-       imax(i) = nint( (xmax(i) - fparm(2*i-1))/dl(i) ) !+ 1
+       imin(i) = nint( (xmin(i) - fparm(2*i-1))/dl(i) )  !+ 1
+       imax(i) = nint( (xmax(i) - fparm(2*i-1))/dl(i) )  !+ 1
        ! in non periodic directions cut at PoissonBox boundaries
        if (.not.period_dir(i)) then
           imin(i) = max( 0, imin(i) )
@@ -1275,7 +1285,9 @@ Subroutine shift_Ham(iparm,fparm,dlx,dly,dlz,phi,phi_bulk,V_atm)
   integer :: imin(3), imax(3), n_cell(3), ii, jj, kk, rag(3)
   integer :: ncx,ncy,ncz, npx, npy, npz, nsh,l
 
-  dl(1)=dlx; dl(2)=dly; dl(3)=dlz;
+  dl(1)=dlx
+  dl(2)=dly
+  dl(3)=dlz
 
   do i = 1,3
      if (period_dir(i)) then
@@ -1290,28 +1302,32 @@ Subroutine shift_Ham(iparm,fparm,dlx,dly,dlz,phi,phi_bulk,V_atm)
   ! NOTE: DO NOT INITIALIZE V_atm = 0 here
 
   ! define aliases
-  ncx = n_cell(1); ncy = n_cell(2); ncz = n_cell(3)
-  npx = iparm(14)-rag(1); npy = iparm(15)-rag(2); npz = iparm(16)-rag(3)
+  ncx = n_cell(1)
+  ncy = n_cell(2)
+  ncz = n_cell(3)
+  npx = iparm(14)-rag(1)
+  npy = iparm(15)-rag(2)
+  npz = iparm(16)-rag(3)
 
   atoms: do atm = 1, iatm(2)
 
      xhlp(:)=x(:,atm)
-     do while (xhlp(1).lt.fparm(1))
+     do while (xhlp(1)<fparm(1))
         xhlp(1)=xhlp(1)+PoissBox(1,1)
      enddo
-     do while (xhlp(1).gt.fparm(2))
+     do while (xhlp(1)>fparm(2))
         xhlp(1)=xhlp(1)-PoissBox(1,1)
      enddo
-     do while (xhlp(2).lt.fparm(3))
+     do while (xhlp(2)<fparm(3))
         xhlp(2)=xhlp(2)+PoissBox(2,2)
      enddo
-     do while (xhlp(2).gt.fparm(4))
+     do while (xhlp(2)>fparm(4))
         xhlp(2)=xhlp(2)-PoissBox(2,2)
      enddo
-     do while (xhlp(3).lt.fparm(5))
+     do while (xhlp(3)<fparm(5))
         xhlp(3)=xhlp(3)+PoissBox(3,3)
      enddo
-     do while (xhlp(3).gt.fparm(6))
+     do while (xhlp(3)>fparm(6))
         xhlp(3)=xhlp(3)-PoissBox(3,3)
      enddo
 
@@ -1321,8 +1337,8 @@ Subroutine shift_Ham(iparm,fparm,dlx,dly,dlz,phi,phi_bulk,V_atm)
 
      ! Cut out box out of PoissonBox imin imax start from 0
      do i=1,3
-        imin(i) = nint( (xmin(i) - fparm(2*i-1))/dl(i) ) !+ 1
-        imax(i) = nint( (xmax(i) - fparm(2*i-1))/dl(i) ) !+ 1
+        imin(i) = nint( (xmin(i) - fparm(2*i-1))/dl(i) )  !+ 1
+        imax(i) = nint( (xmax(i) - fparm(2*i-1))/dl(i) )  !+ 1
         if (.not.period_dir(i)) then
            imin(i) = max( 0, imin(i) )
            imax(i) = min( iparm(13+i)-1, imax(i) )
@@ -1354,7 +1370,7 @@ Subroutine shift_Ham(iparm,fparm,dlx,dly,dlz,phi,phi_bulk,V_atm)
 
                  ! Compute distance from atom
                  deltaR = sqrt(dot_product(xi-xhlp, xi-xhlp))
-                 if (deltaR.gt.deltaR_max) then
+                 if (deltaR>deltaR_max) then
                     cycle
                  else
                    expgr = exp(-g*deltaR)
@@ -1384,7 +1400,7 @@ Subroutine shift_Ham(iparm,fparm,dlx,dly,dlz,phi,phi_bulk,V_atm)
 
            vol = dla*dlb*dlc
 
-           if(abs( xhlp(c)-fparm( 2*c + f ) ).lt.deltaR_max) then
+           if(abs( xhlp(c)-fparm( 2*c + f ) )<deltaR_max) then
            !We add the shift due to 2nd PL, too. This is consistent
            !with the calculation of chrge density which uses both
            !contact PLs
@@ -1403,7 +1419,7 @@ Subroutine shift_Ham(iparm,fparm,dlx,dly,dlz,phi,phi_bulk,V_atm)
                        ! potential is ordered from the device outwards.
 
                        deltaR = sqrt(dot_product(xi-xhlp, xi-xhlp))
-                       if (deltaR.gt.deltaR_max) then
+                       if (deltaR>deltaR_max) then
                           cycle
                        else
                           expgr = exp(-g*deltaR)
@@ -1455,7 +1471,9 @@ subroutine gradient_V(phi,iparm,fparm,dlx,dly,dlz,grad_V)
 
   grad_V = 0.0_dp
 
-  dl(1)=dlx; dl(2)=dly; dl(3)=dlz;
+  dl(1)=dlx
+  dl(2)=dly
+  dl(3)=dlz
 
   do i = 1,3
      if (period_dir(i)) then
@@ -1468,9 +1486,15 @@ subroutine gradient_V(phi,iparm,fparm,dlx,dly,dlz,grad_V)
   end do
 
   ! define aliases
-  ragx = rag(1); ragy = rag(2); ragz = rag(3)
-  ncx = n_cell(1); ncy = n_cell(2); ncz = n_cell(3)
-  npx = iparm(14)-ragx; npy = iparm(15)-ragy; npz = iparm(16)-ragz
+  ragx = rag(1)
+  ragy = rag(2)
+  ragz = rag(3)
+  ncx = n_cell(1)
+  ncy = n_cell(2)
+  ncz = n_cell(3)
+  npx = iparm(14)-ragx
+  npy = iparm(15)-ragy
+  npz = iparm(16)-ragz
 
   do atm = iatm(1),iatm(2)
 
@@ -1480,8 +1504,8 @@ subroutine gradient_V(phi,iparm,fparm,dlx,dly,dlz,grad_V)
 
      ! Cut out box out of PoissonBox
      do i=1,3
-        imin(i) = int( (xmin(i) - fparm(2*i-1))/dl(i) ) !+ 1
-        imax(i) = int( (xmax(i) - fparm(2*i-1))/dl(i) ) !+ 1
+        imin(i) = int( (xmin(i) - fparm(2*i-1))/dl(i) )  !+ 1
+        imax(i) = int( (xmax(i) - fparm(2*i-1))/dl(i) )  !+ 1
         if (.not.period_dir(i)) then
            imin(i) = max( 0, imin(i) )
            imax(i) = min( iparm(13+i)-1, imax(i) )
@@ -1513,7 +1537,7 @@ subroutine gradient_V(phi,iparm,fparm,dlx,dly,dlz,grad_V)
                 ! Compute distance from atom
 
                 deltaR = sqrt(dot_product(xi(:)-x(:,atm), xi(:)-x(:,atm)))
-                if (deltaR.gt.deltaR_max .or. deltaR.eq.0.d0) then
+                if (deltaR>deltaR_max .or. deltaR==0.d0) then
                    cycle
                 else
 
@@ -1550,13 +1574,13 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
 
   FixDir=int(PoissPlane(1))
 
-  if (verbose.gt.70) then
+  if (verbose>70) then
     if(id0) write(stdOut,'(1x,a)') 'Saving charge density and potential ...'
   endif
 
   ! Saving 3D potential and density
   !--------------------------------------------
-  if (id0.and.(FixDir.eq.0)) then
+  if (id0.and.(FixDir==0)) then
      call openFile(fp, 'box3d.dat', mode="w")
      write(fp%unit,*) iparm(14),iparm(15),iparm(16)
      call closeFile(fp)
@@ -1611,7 +1635,7 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
   ! Saving just on a plane of the Poisson box
   !--------------------------------------------
 
-  if (id0.and.(FixDir.ne.0)) then
+  if (id0.and.(FixDir/=0)) then
 
     select case(FixDir)
     case(1)
@@ -1727,7 +1751,7 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
      write(fp%unit,'(E17.8,E17.8)') z_min_gate*Bohr__AA,z_max_gate*Bohr__AA
 
      do i=1,3
-       if (i.ne.gatedir .and. i.ne.biasdir) exit
+       if (i/=gatedir .and. i/=biasdir) exit
      enddo
      z_min_gate = cntr_gate(i) - GateLength_t/2.d0
      z_max_gate = cntr_gate(i) + GateLength_t/2.d0
@@ -1778,7 +1802,7 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
    ny=iparm(15)
    nz=iparm(16)
 
-   ml = minloc( (/ny*nz,nx*nz,nx*ny/), 1 )
+   ml = minloc( [ny*nz,nx*nz,nx*ny], 1 )
 
    select case(ml)
    case(1)
@@ -1861,7 +1885,7 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
       do atom = 1,natoms
 
          deltaR = sqrt((xx - x(1,atom))**2 + (yy - x(2,atom))**2 + (zz - x(3,atom))**2)
-         if (deltaR.gt.deltaR_max) then
+         if (deltaR>deltaR_max) then
             cycle
          else
 
@@ -1876,7 +1900,7 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
 
       end do
 
-   else !Periodic structure
+   else  !Periodic structure
 
       write(stdOut,*) 'periodic poisson not yet implemented'
 
@@ -1902,7 +1926,7 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
    n_alpha=0.d0
 
    deltaR = sqrt((xx - x(1,atom))**2 + (yy - x(2,atom))**2 + (zz - x(3,atom))**2)
-   if (deltaR.lt.deltaR_max) then
+   if (deltaR<deltaR_max) then
 
       nsh = nshells(izp(atom))
       do l = 1, nsh
@@ -1916,8 +1940,8 @@ subroutine save_pot(iparm,fparm,dlx,dly,dlz,phi,rhs)
  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
  function booltoint(bool)
-   logical bool
-   integer booltoint
+   logical :: bool
+   integer :: booltoint
 
    booltoint = 0
    if (bool) booltoint = 1

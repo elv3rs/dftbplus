@@ -208,7 +208,7 @@ contains
           nOrb2 = orb%nOrbSpecies(iSp2)
           iOrig = iPair(iNeigh, iAt1)
           tmpS(1:nOrb2,1:nOrb1) = reshape( &
-              & over(iOrig+1:iOrig+nOrb2*nOrb1),(/nOrb2,nOrb1/) )
+              & over(iOrig+1:iOrig+nOrb2*nOrb1),[nOrb2,nOrb1] )
           tmpH(1:nOrb2,1:nOrb1) = 0.5_dp * ( &
               & matmul(tmpS(1:nOrb2,1:nOrb1), &
               & shift(1:nOrb1,1:nOrb1,iAt1,iSpin)) + &
@@ -216,7 +216,7 @@ contains
               & tmpS(1:nOrb2,1:nOrb1)) )
           ham(iOrig+1:iOrig+nOrb2*nOrb1,iSpin) = &
               & ham(iOrig+1:iOrig+nOrb2*nOrb1,iSpin) + &
-              & reshape(tmpH(1:nOrb2, 1:nOrb1), (/nOrb2*nOrb1/))
+              & reshape(tmpH(1:nOrb2, 1:nOrb1), [nOrb2*nOrb1])
         end do
       end do
     end do
@@ -243,7 +243,7 @@ contains
     !> List of the species of each atom.
     integer, intent(in) :: species(:)
 
-    integer iAtom, iSpin, nAtom, nSpin
+    integer :: iAtom, iSpin, nAtom, nSpin
 
     nAtom = size(atom, dim=1)
     nSpin = size(atom, dim=2)
@@ -279,7 +279,7 @@ contains
     !> List of the species of each atom.
     integer, intent(in) :: species(:)
 
-    integer iAt, iSpin, nAtom, nSpin, iSh, iSp, iOrb
+    integer :: iAt, iSpin, nAtom, nSpin, iSh, iSp, iOrb
 
     nAtom = size(shiftblock, dim=3)
     nSpin = size(shiftblock, dim=4)

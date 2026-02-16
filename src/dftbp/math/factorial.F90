@@ -32,7 +32,7 @@ contains
     !> n calculate factorials from 0 to n
     integer, intent(in) :: n
 
-    integer i
+    integer :: i
     @:ASSERT(n >= 0)
     @:ASSERT(size(nbang)==n+1)
     nbang(0)=1
@@ -54,7 +54,7 @@ contains
     !> n calculate factorials from 0 to n
     integer, intent(in) :: n
 
-    integer i
+    integer :: i
     @:ASSERT(n >= 0)
     @:ASSERT(size(nbang)==n+1)
     nbang(0)=1.0_dp

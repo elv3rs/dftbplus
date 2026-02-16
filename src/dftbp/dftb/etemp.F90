@@ -184,7 +184,7 @@ contains
     nElec = electronCount(Ef, eigenvals, kT, distrib, kWeight)
     ! Polish resulting root with Newton-Raphson type steps
     if (abs(nElectrons - nElec) > elecTol) then
-      if (distrib == fillingTypes%Fermi) then ! only derivs for Fermi so far
+      if (distrib == fillingTypes%Fermi) then  ! only derivs for Fermi so far
         if (abs(derivElectronCount(Ef, eigenvals, kT, distrib, kWeight)) >= epsilon(1.0_dp)) then
           EfOld = Ef
           Ef = Ef - (electronCount(Ef, eigenvals, kT, distrib, kWeight) - nElectrons)&
@@ -243,7 +243,7 @@ contains
     real(dp) :: w
     real(dp), allocatable :: A(:)
     real(dp), allocatable :: hermites(:)
-    integer i, j , k, l, ispin
+    integer :: i, j , k, l, ispin
     real(dp) :: occ, x
 
     w = 1.0_dp/kT
@@ -324,7 +324,7 @@ contains
 
     !> The k-point weightings
     real(dp) :: w
-    integer i, j, ispin
+    integer :: i, j, ispin
     real(dp) :: x
 
     w = 1.0_dp/kT
@@ -507,7 +507,7 @@ contains
     integer, intent(in) :: n
 
     real(dp) :: nbang(0:n)
-    integer i
+    integer :: i
     @:ASSERT(n>=0)
     @:ASSERT(size(A)>=n)
     A(:) = 0.0_dp

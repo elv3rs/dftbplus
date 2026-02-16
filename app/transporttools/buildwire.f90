@@ -126,9 +126,9 @@ program buildwire
   if (do_super) then
     write(fp,'(A)') cell_centre
     do i = 1,3
-        if(d(1).eq.1) write(fp,*) cell(i,1)*(num_pl+4)*d(1),cell(i,2),cell(i,3)
-        if(d(2).eq.1) write(fp,*) cell(i,1),cell(i,2)*(num_pl+4)*d(2),cell(i,3)
-        if(d(3).eq.1) write(fp,*) cell(i,1),cell(i,2),cell(i,3)*(num_pl+4)*d(3)
+        if(d(1)==1) write(fp,*) cell(i,1)*(num_pl+4)*d(1),cell(i,2),cell(i,3)
+        if(d(2)==1) write(fp,*) cell(i,1),cell(i,2)*(num_pl+4)*d(2),cell(i,3)
+        if(d(3)==1) write(fp,*) cell(i,1),cell(i,2),cell(i,3)*(num_pl+4)*d(3)
     end do
   end if
 
@@ -164,4 +164,4 @@ program buildwire
   write(*,*) '}'
   write(*,*)
 
-end program
+end program buildwire

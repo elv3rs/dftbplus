@@ -45,29 +45,29 @@ module dftbp_dftb_coordnumber
   !> Covalent radii (taken from Pyykko and Atsumi, Chem. Eur. J. 15, 2009,
   !> 188-197), values for metals decreased by 10%.
   real(dp), parameter :: CovalentRadii(1:118) = [ &
-    & 0.32_dp,0.46_dp, & ! H,He
-    & 1.20_dp,0.94_dp,0.77_dp,0.75_dp,0.71_dp,0.63_dp,0.64_dp,0.67_dp, & ! Li-Ne
-    & 1.40_dp,1.25_dp,1.13_dp,1.04_dp,1.10_dp,1.02_dp,0.99_dp,0.96_dp, & ! Na-Ar
-    & 1.76_dp,1.54_dp, & ! K,Ca
-    &                 1.33_dp,1.22_dp,1.21_dp,1.10_dp,1.07_dp, & ! Sc-
-    &                 1.04_dp,1.00_dp,0.99_dp,1.01_dp,1.09_dp, & ! -Zn
-    &                 1.12_dp,1.09_dp,1.15_dp,1.10_dp,1.14_dp,1.17_dp, & ! Ga-Kr
-    & 1.89_dp,1.67_dp, & ! Rb,Sr
-    &                 1.47_dp,1.39_dp,1.32_dp,1.24_dp,1.15_dp, & ! Y-
-    &                 1.13_dp,1.13_dp,1.08_dp,1.15_dp,1.23_dp, & ! -Cd
-    &                 1.28_dp,1.26_dp,1.26_dp,1.23_dp,1.32_dp,1.31_dp, & ! In-Xe
-    & 2.09_dp,1.76_dp, & ! Cs,Ba
-    &         1.62_dp,1.47_dp,1.58_dp,1.57_dp,1.56_dp,1.55_dp,1.51_dp, & ! La-Eu
-    &         1.52_dp,1.51_dp,1.50_dp,1.49_dp,1.49_dp,1.48_dp,1.53_dp, & ! Gd-Yb
-    &                 1.46_dp,1.37_dp,1.31_dp,1.23_dp,1.18_dp, & ! Lu-
-    &                 1.16_dp,1.11_dp,1.12_dp,1.13_dp,1.32_dp, & ! -Hg
-    &                 1.30_dp,1.30_dp,1.36_dp,1.31_dp,1.38_dp,1.42_dp, & ! Tl-Rn
-    & 2.01_dp,1.81_dp, & ! Fr,Ra
-    &         1.67_dp,1.58_dp,1.52_dp,1.53_dp,1.54_dp,1.55_dp,1.49_dp, & ! Ac-Am
-    &         1.49_dp,1.51_dp,1.51_dp,1.48_dp,1.50_dp,1.56_dp,1.58_dp, & ! Cm-No
-    &                 1.45_dp,1.41_dp,1.34_dp,1.29_dp,1.27_dp, & ! Lr-
-    &                 1.21_dp,1.16_dp,1.15_dp,1.09_dp,1.22_dp, & ! -Cn
-    &                 1.36_dp,1.43_dp,1.46_dp,1.58_dp,1.48_dp,1.57_dp] & ! Nh-Og
+    & 0.32_dp,0.46_dp, &  ! H,He
+    & 1.20_dp,0.94_dp,0.77_dp,0.75_dp,0.71_dp,0.63_dp,0.64_dp,0.67_dp, &  ! Li-Ne
+    & 1.40_dp,1.25_dp,1.13_dp,1.04_dp,1.10_dp,1.02_dp,0.99_dp,0.96_dp, &  ! Na-Ar
+    & 1.76_dp,1.54_dp, &  ! K,Ca
+    &                 1.33_dp,1.22_dp,1.21_dp,1.10_dp,1.07_dp, &  ! Sc-
+    &                 1.04_dp,1.00_dp,0.99_dp,1.01_dp,1.09_dp, &  ! -Zn
+    &                 1.12_dp,1.09_dp,1.15_dp,1.10_dp,1.14_dp,1.17_dp, &  ! Ga-Kr
+    & 1.89_dp,1.67_dp, &  ! Rb,Sr
+    &                 1.47_dp,1.39_dp,1.32_dp,1.24_dp,1.15_dp, &  ! Y-
+    &                 1.13_dp,1.13_dp,1.08_dp,1.15_dp,1.23_dp, &  ! -Cd
+    &                 1.28_dp,1.26_dp,1.26_dp,1.23_dp,1.32_dp,1.31_dp, &  ! In-Xe
+    & 2.09_dp,1.76_dp, &  ! Cs,Ba
+    &         1.62_dp,1.47_dp,1.58_dp,1.57_dp,1.56_dp,1.55_dp,1.51_dp, &  ! La-Eu
+    &         1.52_dp,1.51_dp,1.50_dp,1.49_dp,1.49_dp,1.48_dp,1.53_dp, &  ! Gd-Yb
+    &                 1.46_dp,1.37_dp,1.31_dp,1.23_dp,1.18_dp, &  ! Lu-
+    &                 1.16_dp,1.11_dp,1.12_dp,1.13_dp,1.32_dp, &  ! -Hg
+    &                 1.30_dp,1.30_dp,1.36_dp,1.31_dp,1.38_dp,1.42_dp, &  ! Tl-Rn
+    & 2.01_dp,1.81_dp, &  ! Fr,Ra
+    &         1.67_dp,1.58_dp,1.52_dp,1.53_dp,1.54_dp,1.55_dp,1.49_dp, &  ! Ac-Am
+    &         1.49_dp,1.51_dp,1.51_dp,1.48_dp,1.50_dp,1.56_dp,1.58_dp, &  ! Cm-No
+    &                 1.45_dp,1.41_dp,1.34_dp,1.29_dp,1.27_dp, &  ! Lr-
+    &                 1.21_dp,1.16_dp,1.15_dp,1.09_dp,1.22_dp, &  ! -Cn
+    &                 1.36_dp,1.43_dp,1.46_dp,1.58_dp,1.48_dp,1.57_dp] &  ! Nh-Og
     & * AA__Bohr
 
 
@@ -77,30 +77,30 @@ module dftbp_dftb_coordnumber
 
   !> Pauling electronegativities, used for the covalent coordination number.
   real(dp), parameter :: paulingEN(1:118) = [ &
-    & 2.20_dp,3.00_dp, & ! H,He
-    & 0.98_dp,1.57_dp,2.04_dp,2.55_dp,3.04_dp,3.44_dp,3.98_dp,4.50_dp, & ! Li-Ne
-    & 0.93_dp,1.31_dp,1.61_dp,1.90_dp,2.19_dp,2.58_dp,3.16_dp,3.50_dp, & ! Na-Ar
-    & 0.82_dp,1.00_dp, & ! K,Ca
-    &                 1.36_dp,1.54_dp,1.63_dp,1.66_dp,1.55_dp, & ! Sc-
-    &                 1.83_dp,1.88_dp,1.91_dp,1.90_dp,1.65_dp, & ! -Zn
-    &                 1.81_dp,2.01_dp,2.18_dp,2.55_dp,2.96_dp,3.00_dp, & ! Ga-Kr
-    & 0.82_dp,0.95_dp, & ! Rb,Sr
-    &                 1.22_dp,1.33_dp,1.60_dp,2.16_dp,1.90_dp, & ! Y-
-    &                 2.20_dp,2.28_dp,2.20_dp,1.93_dp,1.69_dp, & ! -Cd
-    &                 1.78_dp,1.96_dp,2.05_dp,2.10_dp,2.66_dp,2.60_dp, & ! In-Xe
-    & 0.79_dp,0.89_dp, & ! Cs,Ba
-    &         1.10_dp,1.12_dp,1.13_dp,1.14_dp,1.15_dp,1.17_dp,1.18_dp, & ! La-Eu
-    &         1.20_dp,1.21_dp,1.22_dp,1.23_dp,1.24_dp,1.25_dp,1.26_dp, & ! Gd-Yb
-    &                 1.27_dp,1.30_dp,1.50_dp,2.36_dp,1.90_dp, & ! Lu-
-    &                 2.20_dp,2.20_dp,2.28_dp,2.54_dp,2.00_dp, & ! -Hg
-    &                 1.62_dp,2.33_dp,2.02_dp,2.00_dp,2.20_dp,2.20_dp, & ! Tl-Rn
+    & 2.20_dp,3.00_dp, &  ! H,He
+    & 0.98_dp,1.57_dp,2.04_dp,2.55_dp,3.04_dp,3.44_dp,3.98_dp,4.50_dp, &  ! Li-Ne
+    & 0.93_dp,1.31_dp,1.61_dp,1.90_dp,2.19_dp,2.58_dp,3.16_dp,3.50_dp, &  ! Na-Ar
+    & 0.82_dp,1.00_dp, &  ! K,Ca
+    &                 1.36_dp,1.54_dp,1.63_dp,1.66_dp,1.55_dp, &  ! Sc-
+    &                 1.83_dp,1.88_dp,1.91_dp,1.90_dp,1.65_dp, &  ! -Zn
+    &                 1.81_dp,2.01_dp,2.18_dp,2.55_dp,2.96_dp,3.00_dp, &  ! Ga-Kr
+    & 0.82_dp,0.95_dp, &  ! Rb,Sr
+    &                 1.22_dp,1.33_dp,1.60_dp,2.16_dp,1.90_dp, &  ! Y-
+    &                 2.20_dp,2.28_dp,2.20_dp,1.93_dp,1.69_dp, &  ! -Cd
+    &                 1.78_dp,1.96_dp,2.05_dp,2.10_dp,2.66_dp,2.60_dp, &  ! In-Xe
+    & 0.79_dp,0.89_dp, &  ! Cs,Ba
+    &         1.10_dp,1.12_dp,1.13_dp,1.14_dp,1.15_dp,1.17_dp,1.18_dp, &  ! La-Eu
+    &         1.20_dp,1.21_dp,1.22_dp,1.23_dp,1.24_dp,1.25_dp,1.26_dp, &  ! Gd-Yb
+    &                 1.27_dp,1.30_dp,1.50_dp,2.36_dp,1.90_dp, &  ! Lu-
+    &                 2.20_dp,2.20_dp,2.28_dp,2.54_dp,2.00_dp, &  ! -Hg
+    &                 1.62_dp,2.33_dp,2.02_dp,2.00_dp,2.20_dp,2.20_dp, &  ! Tl-Rn
     ! only dummies below
-    & 1.50_dp,1.50_dp, & ! Fr,Ra
-    &         1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, & ! Ac-Am
-    &         1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, & ! Cm-No
-    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, & ! Rf-
-    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, & ! Rf-Cn
-    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp ] ! Nh-Og
+    & 1.50_dp,1.50_dp, &  ! Fr,Ra
+    &         1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Ac-Am
+    &         1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Cm-No
+    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Rf-
+    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp, &  ! Rf-Cn
+    &                 1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp,1.50_dp ]  ! Nh-Og
 
 
   !> Possible counting functions for calculating coordination numbers

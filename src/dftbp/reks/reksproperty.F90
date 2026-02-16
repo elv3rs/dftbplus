@@ -722,8 +722,10 @@ module dftbp_reks_reksproperty
     nstHalf = size(resTdm,dim=3)
     nOrb = size(eigenvecs,dim=1)
 
-    n_a = FONs(1,1); n_b = FONs(2,1)
-    a = Nc + 1; b = Nc + 2
+    n_a = FONs(1,1)
+    n_b = FONs(2,1)
+    a = Nc + 1
+    b = Nc + 2
 
     do mu = 1, nOrb
       do nu = 1, nOrb

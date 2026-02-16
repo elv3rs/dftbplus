@@ -338,7 +338,7 @@ contains
     ! Spin-up channel only for closed-shell systems
     updwn = .true.
 
-    if (sym == "S") then !------ singlets -------
+    if (sym == "S") then  !------ singlets -------
 
       ! Build Matrix A
       A_s(:,:) = 0.0_dp
@@ -467,7 +467,7 @@ contains
         PP(:,:) = A_s
       end if
 
-    else !-------- triplets ----------
+    else  !-------- triplets ----------
 
       ! Build Matrix A
       A_t(:,:) = 0.0_dp

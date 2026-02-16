@@ -2118,12 +2118,12 @@ contains
     if (this%tCoordOpt) then
       allocate(tmpCoords(this%nMovedCoord))
       tmpCoords(1:this%nMovedCoord) = reshape(this%coord0(:, this%indMovedAtom),&
-          & (/ this%nMovedCoord /))
+          & [ this%nMovedCoord ])
       select case (input%ctrl%iGeoOpt)
       case(geoOptTypes%steepestDesc)
         allocate(tmpWeight(this%nMovedCoord))
         tmpWeight(1:this%nMovedCoord) = 0.5_dp * this%deltaT**2 /&
-            & reshape(spread(this%mass(this%indMovedAtom), 1, 3), (/this%nMovedCoord/))
+            & reshape(spread(this%mass(this%indMovedAtom), 1, 3), [this%nMovedCoord])
         allocate(pSteepDesc)
         call init(pSteepDesc, size(tmpCoords), input%ctrl%maxForce, input%ctrl%maxAtomDisp,&
             & tmpWeight )
@@ -2162,7 +2162,7 @@ contains
         call init(pSteepDescLat, 9, input%ctrl%maxForce, input%ctrl%maxLatDisp, tmpWeight)
         deallocate(tmpWeight)
         call init(this%pGeoLatOpt, pSteepDescLat)
-      case(geoOptTypes%conjugateGrad, geoOptTypes%diis) ! use CG lattice for both DIIS and CG
+      case(geoOptTypes%conjugateGrad, geoOptTypes%diis)  ! use CG lattice for both DIIS and CG
         allocate(pConjGradLat)
         call init(pConjGradLat, 9, input%ctrl%maxForce, input%ctrl%maxLatDisp)
         call init(this%pGeoLatOpt, pConjGradLat)
@@ -2180,13 +2180,13 @@ contains
       if (this%tLatOptIsotropic ) then
         ! optimisation uses scaling factor of unit cell
         call reset(this%pGeoLatOpt,&
-            & (/1.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp/))
+            & [1.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp])
       else if (this%tLatOptFixAng) then
         ! optimisation uses scaling factor of lattice vectors
         call reset(this%pGeoLatOpt,&
-            & (/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp/))
+            & [1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp,0.0_dp])
       else
-        call reset(this%pGeoLatOpt, reshape(this%latVec, (/ 9 /)) )
+        call reset(this%pGeoLatOpt, reshape(this%latVec, [ 9 ]) )
       end if
     end if
 
@@ -2451,7 +2451,7 @@ contains
     end if
 
     this%doPerturbation = allocated(input%ctrl%perturbInp)
-    this%doPerturbEachGeom = this%tDerivs .and. this%doPerturbation ! needs work
+    this%doPerturbEachGeom = this%tDerivs .and. this%doPerturbation  ! needs work
 
     if (this%doPerturbation .or. this%doPerturbEachGeom) then
 
@@ -3147,7 +3147,7 @@ contains
         if (input%ctrl%tOrbResInRegion(iReg) .or. input%ctrl%tShellResInRegion(iReg)) then
 
           if (input%ctrl%tOrbResInRegion(iReg)) then
-            iSp = this%species0(iAtomRegion(1)) ! all atoms the same in the region
+            iSp = this%species0(iAtomRegion(1))  ! all atoms the same in the region
             @:ASSERT(all(this%species0(iAtomRegion) == iSp))
             nOrbRegion = nAtomRegion
             ! Create orbital index.
@@ -3170,7 +3170,7 @@ contains
           end if
 
           if (input%ctrl%tShellResInRegion(iReg)) then
-            iSp = this%species0(iAtomRegion(1)) ! all atoms the same in the region
+            iSp = this%species0(iAtomRegion(1))  ! all atoms the same in the region
             @:ASSERT(all(this%species0(iAtomRegion) == iSp))
             ! Create a separate region for each shell. It will contain
             ! the orbitals of that given shell for each atom in the region.
@@ -4335,7 +4335,7 @@ contains
           allocate(this%iEqBlockDFTBU(this%orb%mOrb, this%orb%mOrb, this%nAtom, this%nSpin))
         endif
         call this%dftbU%blockIndx(this%iEqBlockDFTBU, this%nIneqOrb, this%orb, this%species0)
-        this%nMixElements = max(this%nMixElements, maxval(this%iEqBlockDFTBU)) ! as
+        this%nMixElements = max(this%nMixElements, maxval(this%iEqBlockDFTBU))  ! as
         !  iEqBlockDFTBU does not include diagonal elements, so in the case of
         !  a purely s-block DFTB+U calculation, maxval(iEqBlockDFTBU) would
         !  return 0
@@ -4551,7 +4551,7 @@ contains
           if (.not. present(initialSpins)) then
             call error("Missing initial spins!")
           end if
-          if (any(shape(initialSpins)/=(/3,this%nAtom/))) then
+          if (any(shape(initialSpins)/=[3,this%nAtom])) then
             call error("Incorrect shape initialSpins array!")
           end if
           ! Rescaling to ensure correct number of electrons in the system

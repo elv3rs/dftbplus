@@ -265,7 +265,7 @@ contains
     ! get the total kinetic energy
     scaling = 1.0_dp
     call evalKE(akin, velocities, this%mass)
-    akin = 2.0_dp * akin ! Paper defines eqn 1 without 1/2 in K.E. so scale
+    akin = 2.0_dp * akin  ! Paper defines eqn 1 without 1/2 in K.E. so scale
     ! update the forces
     this%gnose(1) = (akin - gnkt) / qmass(1)
     ! start the multiple time step procedure

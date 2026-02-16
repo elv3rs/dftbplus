@@ -243,7 +243,8 @@ module dftbp_reks_rekscpeqn
     end if
     p0(:) = z0
 
-    iter = 0; eps = 0.0_dp
+    iter = 0
+    eps = 0.0_dp
     write(stdOut,'(2x,a)') 'CG solver: Constructing Y initial guess'
 
     CGsolver: do iter = 1, maxIter
@@ -404,28 +405,32 @@ module dftbp_reks_rekscpeqn
 
           ! get lagrange multipliers with delta function
           if (i == p) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, q, &
                 & 1, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) + 0.5_dp*(e1 - e2)
           end if
 
           if (j == q) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, p, &
                 & 2, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) - 0.5_dp*(e1 - e2)
           end if
 
           if (i == q) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, p, &
                 & 1, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) - 0.5_dp*(e1 - e2)
           end if
 
           if (j == p) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, q, &
                 & 2, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) + 0.5_dp*(e1 - e2)
@@ -438,28 +443,32 @@ module dftbp_reks_rekscpeqn
 
           ! get lagrange multipliers with delta function
           if (p == i) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, p, q, j, &
                 & 1, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) + 0.5_dp*(e1 - e2)
           end if
 
           if (q == j) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, p, q, i, &
                 & 2, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) - 0.5_dp*(e1 - e2)
           end if
 
           if (p == j) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, p, q, i, &
                 & 1, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) - 0.5_dp*(e1 - e2)
           end if
 
           if (q == i) then
-            e1 = 0.0_dp; e2 = 0.0_dp;
+            e1 = 0.0_dp
+            e2 = 0.0_dp
             call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, p, q, j, &
                 & 2, reksAlg, e1, e2)
             tmpA(pq) = tmpA(pq) + 0.5_dp*(e1 - e2)
@@ -540,12 +549,14 @@ module dftbp_reks_rekscpeqn
       if (Glevel == 1) then
 
         ! get lagrange multipliers with delta function
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, j, &
             & 1, reksAlg, e1, e2)
         tmpApre(ij) = tmpApre(ij) + 0.5_dp*(e1 - e2)
 
-        e1 = 0.0_dp; e2 = 0.0_dp;
+        e1 = 0.0_dp
+        e2 = 0.0_dp
         call assignEpsilon(Fc, Fa, SAweight, FONs, Nc, i, j, i, &
             & 2, reksAlg, e1, e2)
         tmpApre(ij) = tmpApre(ij) - 0.5_dp*(e1 - e2)

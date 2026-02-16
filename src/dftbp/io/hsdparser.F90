@@ -77,8 +77,8 @@ module dftbp_io_hsdparser
 
   !> Collect together as an array
   character(len=*), parameter :: separators(nSeparator) = &
-      &(/ sIncludeXML, sIncludeParsed, sIncludeUnparsed, &
-      &sSingleOpen, sOpen, sClose, sSingleClose /)
+      &[ sIncludeXML, sIncludeParsed, sIncludeUnparsed, &
+      &sSingleOpen, sOpen, sClose, sSingleClose ]
 
   ! Other parsed characters
 
@@ -113,8 +113,8 @@ module dftbp_io_hsdparser
 
   !> Collect together as an array
   character(len=*), parameter :: extensions(nExtension) = &
-      &(/ sExtendIfPresentOrDie, sExtendIfPresent, sExtendIfPresentOrCreate, &
-      &sCreateIfNotPresent, sReplaceIfPresentOrCreate /)
+      &[ sExtendIfPresentOrDie, sExtendIfPresent, sExtendIfPresentOrCreate, &
+      &sCreateIfNotPresent, sReplaceIfPresentOrCreate ]
 
   ! Name and file descriptors for standard input/output
 
@@ -401,12 +401,12 @@ contains
           newCurLine = 0
           if (iType == 2) then
             !! Everything is parsed
-            newParsedTypes = (/ .true., .true., .true., .true., .true., &
-                &.true., .true. /)
+            newParsedTypes = [ .true., .true., .true., .true., .true., &
+                &.true., .true. ]
           else
             !! Nothing is parsed
-            newParsedTypes = (/ .false., .false., .false., .false., .false., &
-                &.false., .false. /)
+            newParsedTypes = [ .false., .false., .false., .false., .false., &
+                &.false., .false. ]
           end if
           tFinished = parse_recursive(curNode, 0, strLine, .false., newLineReader,&
               & word, fileDepth + 1, newCurLine, newParsedTypes, .false.)
@@ -438,8 +438,8 @@ contains
           childNode => null()
         end if
         !! Only block opening/closing sign and single child separator are parsed
-        newParsedTypes = (/ .false., .false., .false., .false., .true., &
-            &.true., .true. /)
+        newParsedTypes = [ .false., .false., .false., .false., .true., &
+            &.true., .true. ]
         tFinished = parse_recursive(childNode, depth+1, strLine, .true., lineReader,&
             & curFile, fileDepth, curLine, newParsedTypes, tNewNodeCreated)
         residual = strLine
@@ -472,8 +472,8 @@ contains
         else
           childNode => null()
         end if
-        newParsedTypes = (/ .true., .true., .true., .true., .true., .true., &
-            &.true. /)
+        newParsedTypes = [ .true., .true., .true., .true., .true., .true., &
+            &.true. ]
         tFinished = parse_recursive(childNode, depth+1, strLine, .false., &
             & lineReader, curFile, fileDepth, curLine, newParsedTypes, tNewNodeCreated)
         residual = strLine

@@ -860,7 +860,7 @@ contains
         tOvij = dist < (rvdwi + rhoj)
         tOvji = dist < (rhoi + rvdwj)
 
-        tOverlap: if (.not. tOvij .and. .not. tOvji) then ! ij do not overlap; ji do not overlap
+        tOverlap: if (.not. tOvij .and. .not. tOvji) then  ! ij do not overlap; ji do not overlap
           ! nonoverlaping spheres
           if(abs(rhoi-rhoj) < 1.e-8_dp) then
             ! equal reduced radiAt1
@@ -913,7 +913,7 @@ contains
             dpsidr(:,iAt1,iAt2f) = dpsidr(:,iAt1,iAt2f)+dGr(:)
           end if
 
-        else if (.not. tOvij .and. tOvji) then tOverlap ! ij do not overlap; ji overlap
+        else if (.not. tOvij .and. tOvji) then tOverlap  ! ij do not overlap; ji overlap
 
           ! ij contribution
           r1 = 1.0_dp/dist
@@ -957,7 +957,7 @@ contains
             dpsidr(:,iAt1,iAt2f) = dpsidr(:,iAt1,iAt2f)+dGr(:)
           end if
 
-        else if (tOvij .and. .not. tOvji) then ! ij overlap; ji do not overlap
+        else if (tOvij .and. .not. tOvji) then  ! ij overlap; ji do not overlap
 
           if((dist+rhoj) > rvdwi) then
             ! ij contribution
@@ -1000,7 +1000,7 @@ contains
           dpsitr(:,iAt2f) = dpsitr(:,iAt2f)-dGr(:)
           dpsidr(:,iAt1,iAt2f) = dpsidr(:,iAt1,iAt2f)+dGr(:)
 
-        else if (tOvij .and. tOvji) then tOverlap ! ij and ji overlap
+        else if (tOvij .and. tOvji) then tOverlap  ! ij and ji overlap
           ! overlaping spheres
           if((dist+rhoj) > rvdwi) then
             ! ij contribution
@@ -1196,11 +1196,11 @@ contains
       do iAt2 = 1, iAt1-1
         r1 = sqrt(sum((coords0(:, iAt1) - coords0(:, iAt2))**2))
         ab = sqrt(bornRad(iAt1) * bornRad(iAt2))
-        arg = ab / (ab + zetaP16o16*r1) ! ab / (1 + ζR/(16·ab))
-        arg = arg * arg ! ab / (1 + ζR/(16·ab))²
-        arg = arg * arg ! ab / (1 + ζR/(16·ab))⁴
-        arg = arg * arg ! ab / (1 + ζR/(16·ab))⁸
-        arg = arg * arg ! ab / (1 + ζR/(16·ab))¹⁶
+        arg = ab / (ab + zetaP16o16*r1)  ! ab / (1 + ζR/(16·ab))
+        arg = arg * arg  ! ab / (1 + ζR/(16·ab))²
+        arg = arg * arg  ! ab / (1 + ζR/(16·ab))⁴
+        arg = arg * arg  ! ab / (1 + ζR/(16·ab))⁸
+        arg = arg * arg  ! ab / (1 + ζR/(16·ab))¹⁶
         fgb = r1 + ab*arg
         dfgb = 1.0_dp / fgb
         bornMat(iAt2, iAt1) = bornMat(iAt2, iAt1) + dfgb * kEps
@@ -1438,11 +1438,11 @@ contains
         qq = chargesPerAtom(iAt1)*chargesPerAtom(iAt2)
 
         ab = sqrt(bornRad(iAt1) * bornRad(iAt2))
-        arg1 = ab / (ab + zetaP16o16*r1) ! 1 / (1 + ζR/(16·ab))
-        arg16 = arg1 * arg1 ! 1 / (1 + ζR/(16·ab))²
-        arg16 = arg16 * arg16 ! 1 / (1 + ζR/(16·ab))⁴
-        arg16 = arg16 * arg16 ! 1 / (1 + ζR/(16·ab))⁸
-        arg16 = arg16 * arg16 ! 1 / (1 + ζR/(16·ab))¹⁶
+        arg1 = ab / (ab + zetaP16o16*r1)  ! 1 / (1 + ζR/(16·ab))
+        arg16 = arg1 * arg1  ! 1 / (1 + ζR/(16·ab))²
+        arg16 = arg16 * arg16  ! 1 / (1 + ζR/(16·ab))⁴
+        arg16 = arg16 * arg16  ! 1 / (1 + ζR/(16·ab))⁸
+        arg16 = arg16 * arg16  ! 1 / (1 + ζR/(16·ab))¹⁶
 
         fgb = r1 + ab*arg16
         dfgb = 1.0_dp / fgb
@@ -1607,13 +1607,13 @@ contains
 
     aDeriv(:, :) = reshape([&
         & inertia(1,1)*(inertia(2,2)+inertia(3,3))-inertia(1,2)**2-inertia(1,3)**2, &
-        & inertia(1,2)*inertia(3,3)-inertia(1,3)*inertia(2,3), & ! xy
-        & inertia(1,3)*inertia(2,2)-inertia(1,2)*inertia(3,2), & ! xz
-        & inertia(1,2)*inertia(3,3)-inertia(1,3)*inertia(2,3), & ! xy
+        & inertia(1,2)*inertia(3,3)-inertia(1,3)*inertia(2,3), &  ! xy
+        & inertia(1,3)*inertia(2,2)-inertia(1,2)*inertia(3,2), &  ! xz
+        & inertia(1,2)*inertia(3,3)-inertia(1,3)*inertia(2,3), &  ! xy
         & inertia(2,2)*(inertia(1,1)+inertia(3,3))-inertia(1,2)**2-inertia(2,3)**2, &
-        & inertia(1,1)*inertia(2,3)-inertia(1,2)*inertia(1,3), & ! yz
-        & inertia(1,3)*inertia(2,2)-inertia(1,2)*inertia(3,2), & ! xz
-        & inertia(1,1)*inertia(2,3)-inertia(1,2)*inertia(1,3), & ! yz
+        & inertia(1,1)*inertia(2,3)-inertia(1,2)*inertia(1,3), &  ! yz
+        & inertia(1,3)*inertia(2,2)-inertia(1,2)*inertia(3,2), &  ! xz
+        & inertia(1,1)*inertia(2,3)-inertia(1,2)*inertia(1,3), &  ! yz
         & inertia(3,3)*(inertia(1,1)+inertia(2,2))-inertia(1,3)**2-inertia(2,3)**2],&
         & shape=[3, 3]) * (250.0_dp / (48.0_dp * totRad3**3 * aDet**5)) &
         & * (-0.5_dp * kEps * qtotal**2 / aDet**2)

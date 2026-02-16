@@ -903,7 +903,7 @@ contains
     !> Instance
     class(TDftbPlus), intent(in) :: this
 
-    logical isHSReal
+    logical :: isHSReal
 
     call this%checkInit()
 

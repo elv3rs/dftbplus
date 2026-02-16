@@ -246,14 +246,14 @@ contains
 
     integer :: ii
 
-    if (all(shape(latVec) == (/3, 3/))) then
+    if (all(shape(latVec) == [3, 3])) then
       call getLatticePoints(cellVec, latVec, recVec2p, cutoff, boundaryConds, posExtension=1,&
           & negExtension=1)
       allocate(rCellVec(3, size(cellVec, dim=2)))
       do ii = 1, size(rCellVec, dim=2)
         rCellVec(:,ii) = matmul(latVec, cellVec(:,ii))
       end do
-    else if (all(shape(latVec) == (/3, 1/))) then
+    else if (all(shape(latVec) == [3, 1])) then
       ! Helical
       call getHelicalPoints(cellVec, rCellVec, latVec, cutoff)
     else
@@ -1219,7 +1219,7 @@ contains
       do i2 = imgRange(1, 2), imgRange(2, 2)
         do i3 = imgRange(1, 3), imgRange(2, 3)
           ! relative coordinate with respect to the original reciprocal lattice
-          rr(:) = matmul(invCoeffs, real((/ i1, i2, i3 /), dp))
+          rr(:) = matmul(invCoeffs, real([ i1, i2, i3 ], dp))
           if (all(rr >= minLim) .and. all(rr < maxLim)) then
             ! Add point + shift vector
             call append(lr1, rr + matmul(invCoeffs, shifts))

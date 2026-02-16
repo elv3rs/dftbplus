@@ -49,7 +49,7 @@ module dftbp_common_memman
       type(c_ptr), intent(inout) :: ptr
       integer(c_size_t), intent(in), value :: alignment, size
       integer(c_int) :: error
-    end function
+    end function posixMemalign
   end interface
 
 
@@ -58,7 +58,7 @@ module dftbp_common_memman
     subroutine free(ptr) bind(C, name="free")
       import c_ptr
       type(c_ptr), value :: ptr
-    end subroutine
+    end subroutine free
   end interface
 
 

@@ -472,7 +472,7 @@ contains
 
       dRho(:,:) = 0.0_dp
 
-      do iSignOmega = -1, 1, 2 ! loop over positive and negative frequencies
+      do iSignOmega = -1, 1, 2  ! loop over positive and negative frequencies
 
         ! Form actual perturbation U matrix for eigenvectors (potentially at finite T) by weighting
         ! the elements at freqency omega
@@ -1080,7 +1080,7 @@ contains
       eigvecsTransformed = eigVecsCplx(:,:,iKS)
       call degenTransform%applyUnitary(eigvecsTransformed)
 
-      do iSignOmega = -1, 1, 2 ! loop over positive and negative frequencies
+      do iSignOmega = -1, 1, 2  ! loop over positive and negative frequencies
 
         ! Form actual perturbation U matrix for eigenvectors (potentially at finite T) by weighting
         ! the elements at frequency omega
@@ -1637,7 +1637,7 @@ contains
       eigvecsTransformed = eigVecsCplx(:,:,iKS)
       call degenTransform%applyUnitary(eigvecsTransformed)
 
-      do iSignOmega = -1, 1, 2 ! loop over positive and negative frequencies
+      do iSignOmega = -1, 1, 2  ! loop over positive and negative frequencies
 
         ! Form actual perturbation U matrix for eigenvectors (potentially at finite T) by
         ! weighting the elements at frequency omega

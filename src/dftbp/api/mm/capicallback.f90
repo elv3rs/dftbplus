@@ -111,7 +111,7 @@ contains
   #:if WITH_SCALAPACK
     mdescr%storage_type = 0 ! dense full matrix
   #:else
-    mdescr%storage_type = 1 ! lower triangle, unpacked
+    mdescr%storage_type = 1  ! lower triangle, unpacked
   #:endif
 
     if (present(blacsDescr)) then
@@ -165,7 +165,7 @@ contains
   #:if WITH_SCALAPACK
     mdescr%storage_type = 0 ! dense full matrix
   #:else
-    mdescr%storage_type = 1 ! lower triangle, unpacked
+    mdescr%storage_type = 1  ! lower triangle, unpacked
   #:endif
 
     if (present(blacsDescr)) then

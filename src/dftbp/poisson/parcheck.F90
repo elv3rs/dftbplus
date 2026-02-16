@@ -43,7 +43,7 @@ contains
 
    integer, intent(out), optional :: iErr
 
-   integer i
+   integer :: i
 
    if (present(iErr)) then
      iErr = 0
@@ -95,7 +95,7 @@ contains
 
    integer, intent(out), optional :: iErr
 
-   integer i,m
+   integer :: i,m
 
    if (present(iErr)) then
      iErr = 0
@@ -103,11 +103,11 @@ contains
 
    if (.not.cluster) then
      !-OLD Bias,BiasDir compatibility -----------------
-     if (ncont.eq.2) then
+     if (ncont==2) then
        !if(mu(ni(1)).eq.0.d0) mu(ni(1))=0.d0
        !if(mu(nf(1)).eq.0.d0) mu(nf(1))=bias
-       if (contdir(1).ne.contdir(2)) then
-         if (localBC(1).eq.0) then
+       if (contdir(1)/=contdir(2)) then
+         if (localBC(1)==0) then
            @:ERROR_HANDLING(iErr, -1,&
                & 'Local BC should be used when contacts are in different directions')
          endif
@@ -122,7 +122,7 @@ contains
      ! Find oriented direction of contact m
      do m = 1, ncont
        i = contdir(m)
-       if ( x(i,iatc(1,m)).lt.x(i,1) ) then
+       if ( x(i,iatc(1,m))<x(i,1) ) then
          contdir(m) = -contdir(m)
        end if
      end do
@@ -136,7 +136,7 @@ contains
       enddo
       if (DoGate) period_dir(gatedir)=.false.
       do i=1,3
-         if (overrideBC(2*i).ne.0) then
+         if (overrideBC(2*i)/=0) then
             period_dir(i)=.false.
          endif
       enddo
@@ -153,9 +153,9 @@ contains
 
  subroutine check_parameters()
 
-   if(OxLength.lt.GateLength_l) OxLength=GateLength_l
-   if(Rmin_ins.lt.Rmin_gate) Rmin_ins=Rmin_gate
-   if(dr_eps.lt.0.5d0) dr_eps = 0.5d0
+   if(OxLength<GateLength_l) OxLength=GateLength_l
+   if(Rmin_ins<Rmin_gate) Rmin_ins=Rmin_gate
+   if(dr_eps<0.5d0) dr_eps = 0.5d0
 
 
    ! Check nPoles ----------------------------------------
@@ -167,9 +167,9 @@ contains
    !-------WRITE DOWN FEEDBACK ABOUT INPUT FILE -------------------!
  subroutine write_parameters()
 
-   integer i
+   integer :: i
 
-   if (id0.and.verbose.gt.40) then
+   if (id0.and.verbose>40) then
 
       !if (DoTransport.or.DoGreenDens) then
       !   write(stdOut,*) 'Conversion factor Ang/a.u.',Bohr__AA
@@ -218,10 +218,10 @@ contains
             write(stdOut,*) 'Dielectric constant of gate insulator=',eps_r
             write(stdOut,*) 'Smoothing of eps_r=',(eps_r-1.d0)/(dr_eps*Bohr__AA)
          end if
-         if (any(localBC.gt.0)) then
+         if (any(localBC>0)) then
             do i=1,ncont
-               if (localBC(i).eq.1) write(stdOut,*) 'Local Boundary Conditions= Circular'
-               if (localBC(i).eq.2) write(stdOut,*) 'Local Boundary Conditions= Squared'
+               if (localBC(i)==1) write(stdOut,*) 'Local Boundary Conditions= Circular'
+               if (localBC(i)==2) write(stdOut,*) 'Local Boundary Conditions= Squared'
                write(stdOut,'(a9,i2,a2,f8.3,a1)') ' dR_cont(',i,')=',dR_cont(i)*Bohr__AA,'A'
             enddo
          endif
@@ -240,48 +240,48 @@ contains
    err = 0
    mixed = .false.
 
-   if (any(localBC.gt.0)) then
+   if (any(localBC>0)) then
       do m=1,ncont
-         PoissBC(m)=1 ! Sets Mixed BC on this contact
+         PoissBC(m)=1  ! Sets Mixed BC on this contact
          select case(contdir(m))
          case(-1)
-            if (overrideBC(1).eq.2) err = 1
-            if (overrideBC(1).eq.1) then
+            if (overrideBC(1)==2) err = 1
+            if (overrideBC(1)==1) then
                err = 2
                overrideBC(1) = 2
             endif
             mixed(1) = .true.
          case(1)
-            if (overrideBC(2).eq.2) err = 1
-            if (overrideBC(2).eq.1) then
+            if (overrideBC(2)==2) err = 1
+            if (overrideBC(2)==1) then
                err = 2
                overrideBC(2) = 2
             endif
             mixed(2) = .true.
          case(-2)
-            if (overrideBC(3).eq.2) err = 1
-            if (overrideBC(3).eq.1) then
+            if (overrideBC(3)==2) err = 1
+            if (overrideBC(3)==1) then
                err = 2
                overrideBC(3) = 2
             endif
             mixed(3) = .true.
          case(2)
-            if (overrideBC(4).eq.2) err = 1
-            if (overrideBC(4).eq.1) then
+            if (overrideBC(4)==2) err = 1
+            if (overrideBC(4)==1) then
                err = 2
                overrideBC(4) = 2
             endif
             mixed(4) = .true.
          case(-3)
-            if (overrideBC(5).eq.2) err = 1
-            if (overrideBC(5).eq.1) then
+            if (overrideBC(5)==2) err = 1
+            if (overrideBC(5)==1) then
                err = 2
                overrideBC(5) = 2
             endif
             mixed(5) = .true.
          case(3)
-            if (overrideBC(6).eq.2) err = 1
-            if (overrideBC(6).eq.1) then
+            if (overrideBC(6)==2) err = 1
+            if (overrideBC(6)==1) then
                err = 2
                overrideBC(6) = 2
             endif
@@ -290,12 +290,12 @@ contains
 
       enddo
    endif
-   if (err.eq.1 .and. id0) then
+   if (err==1 .and. id0) then
       write(stdOut,*)
       write(stdOut,*) 'ERROR: BoundaryRegion{} sets a Dirichlet BC'
       write(stdOut,*) '       not compatible with overrideDefaultBC=Neumann'
    endif
-   if (err.eq.2 .and. id0) then
+   if (err==2 .and. id0) then
       write(stdOut,*)
       write(stdOut,*) 'WARNING: '
       write(stdOut,*) 'BoundaryRegion{} sets a mixed Neumann/Dirichlet BC'
@@ -312,7 +312,7 @@ contains
 
    integer, intent(out), optional :: iErr
 
-   integer i,ncdim_max
+   integer :: i,ncdim_max
 
    if (present(iErr)) then
      iErr = 0
@@ -332,7 +332,7 @@ contains
    endif
 
 
-   if(id0.and.verbose.gt.50) then
+   if(id0.and.verbose>50) then
       write(stdOut,'(a)') 'CENTRAL REGION'
       write(stdOut,'(1x,a,2I6)') 'Atom start - end = ',iatm(1), iatm(2)
       write(stdOut,*)
@@ -344,7 +344,7 @@ contains
       do i=1,ncont
 
          ! CHECK CONTACTS
-         if(iatc(3,i).lt.iatc(1,i)) then
+         if(iatc(3,i)<iatc(1,i)) then
             iatc(3,i)=iatc(1,i)
          endif
 
@@ -366,8 +366,8 @@ contains
          write(stdOut,*) 'mu=',mu(i)*hartree__eV,'V'
          write(stdOut,*)
 
-      end do !ncont
-   endif !cluster
+      end do  !ncont
+   endif  !cluster
 
 
    ncdim_max=maxval(ncdim)
@@ -375,21 +375,21 @@ contains
    !-----CHECK IF SYSTEM STRUCTURE IS CONSISTENT-------!
    if (.not.cluster) then
      do i=1,ncont
-       if (iatc(1,i).lt.iatm(2)) then
+       if (iatc(1,i)<iatm(2)) then
          @:ERROR_HANDLING(iErr, -1,&
              & 'The contacts MUST be defined after the scattering region')
        end if
      enddo
    endif
-   if ((iatm(2)-iatm(1)+1).gt.natoms) then
+   if ((iatm(2)-iatm(1)+1)>natoms) then
      @:ERROR_HANDLING(iErr, -2, 'The number of atoms in the scattering region is higher than&
          & the total number of atoms')
    endif
    if (DoGate) then
-     if (gatedir.ne.2) then
+     if (gatedir/=2) then
        @:ERROR_HANDLING(iErr, -3, 'Gate direction must be along y')
      end if
-     if(any(abs(contdir(:)).eq.gatedir)) then
+     if(any(abs(contdir(:))==gatedir)) then
        @:ERROR_HANDLING(iErr, -4, 'Gate direction along contacts!?')
      end if
    endif

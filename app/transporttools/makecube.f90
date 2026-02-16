@@ -21,7 +21,7 @@ program makecube
 
   narg=command_argument_count()
 
-  if (.not.(narg.eq.1 .or. narg.eq.3 .or. narg.eq.8)) then
+  if (.not.(narg==1 .or. narg==3 .or. narg==8)) then
     write(*,*) 'usage:'
     write(*,*) 'makecube pot_file [-r refpot] [-b boxfile xfile yfile zfile] '
     stop
@@ -43,7 +43,7 @@ program makecube
   endif
 
   k = index(filebox,"-b")
-  if (k.eq.0) then
+  if (k==0) then
     filebox="box3d.dat"
     filex="Xvector.dat"
     filey="Yvector.dat"
@@ -102,9 +102,9 @@ program makecube
     close(fp)
   endif
 
-  or(1) = x(1) !(x(1) - x(nx))/2.d0
-  or(2) = y(1) !(y(1) - y(ny))/2.d0
-  or(3) = z(1) !(z(1) - z(nz))/2.d0
+  or(1) = x(1)  !(x(1) - x(nx))/2.d0
+  or(2) = y(1)  !(y(1) - y(ny))/2.d0
+  or(3) = z(1)  !(z(1) - z(nz))/2.d0
 
   write(*,*) 'CUBE'
   write(*,*) 'x, y, z'
@@ -123,7 +123,7 @@ program makecube
         else
           write(*,'(E13.5)',advance='NO') phi3d(i,j,k)
         endif
-        if (mod(k-1,6) .eq. 5) write(*,*)
+        if (mod(k-1,6) == 5) write(*,*)
       enddo
       write(*,*)
     enddo

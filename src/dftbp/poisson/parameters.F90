@@ -28,7 +28,7 @@ module dftbp_poisson_parameters
   interface
     real(dp) function DLAMCH(C)
       import :: dp
-      character C
+      character :: C
     end function DLAMCH
   end interface
 
@@ -122,8 +122,10 @@ module dftbp_poisson_parameters
     gatedir=0
     contdir(:)=0
     ncont=0
-    ni(:)=0; ni(1)=1;
-    nf(:)=0; nf(1)=2;
+    ni(:)=0
+    ni(1)=1
+    nf(:)=0
+    nf(1)=2
     iatc(:,:)=0
     iatm(:)=0
     ncdim(:)=0
@@ -184,7 +186,7 @@ module dftbp_poisson_parameters
     do_renorm=.true.
     fixed_renorm=.true.
 
-  end subroutine
+  end subroutine init_defaults
 
   subroutine set_scratch(scratch)
     character(*) :: scratch
@@ -286,7 +288,7 @@ module dftbp_poisson_parameters
 
   subroutine set_poissonbox(Box)
     real(dp), intent(in) :: Box(:)
-    integer i
+    integer :: i
     do i = 1, 3
       PoissBox(i,i)=box(i)
     end do

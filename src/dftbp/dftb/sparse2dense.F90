@@ -306,7 +306,7 @@ contains
           phase = exp(imag * dot_product(kPoint2p(:2), cellVec(:2, iVec)) )
           iOldVec = iVec
         end if
-        tmpSqr(:nOrb2,:nOrb1) = reshape(orig(iOrig:iOrig+nOrb1*nOrb2-1), (/nOrb2, nOrb1/))
+        tmpSqr(:nOrb2,:nOrb1) = reshape(orig(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2, nOrb1])
         iSp = species(iAtom2f)
         iSh = orb%nShell(iSp)
         lShellVals(:iSh) = orb%angShell(:iSh,iSp)
@@ -377,7 +377,7 @@ contains
         iAtom2f = img2CentCell(iAtom2)
         jj = iAtomStart(iAtom2f)
         nOrb2 = iAtomStart(iAtom2f+1) - jj
-        tmpSqr(:nOrb2,:nOrb1) = reshape(orig(iOrig:iOrig+nOrb1*nOrb2-1), (/nOrb2,nOrb1/))
+        tmpSqr(:nOrb2,:nOrb1) = reshape(orig(iOrig:iOrig+nOrb1*nOrb2-1), [nOrb2,nOrb1])
         iSp = species(iAtom2f)
         iSh = orb%nShell(iSp)
         lShellVals(:iSh) = orb%angShell(:iSh,iSp)
@@ -1336,7 +1336,7 @@ contains
         tmpSqr(1:nOrb2, 1:nOrb1) =&
             & 0.5_dp * (square(jj + nOrb : jj + nOrb2 - 1 + nOrb, ii : ii + nOrb1 - 1)&
             & - conjg(transpose(square(nOrb +ii : nOrb + ii + nOrb1 - 1, jj : jj + nOrb2 - 1))))
-        if (iAtom1 == iAtom2f) then !make up the other side of the on-site block
+        if (iAtom1 == iAtom2f) then  !make up the other side of the on-site block
           do kk = 1, nOrb2
             tmpSqr(kk, kk+1:nOrb1) = tmpSqr(kk+1:nOrb1, kk)
           end do
@@ -1759,7 +1759,7 @@ contains
           end if
           @:ASSERT(sizePrim >= iOrig + nOrb1*nOrb2 - 1)
           primitive(iOrig : iOrig + nOrb1*nOrb2 - 1) = primitive(iOrig : iOrig + nOrb1*nOrb2 - 1)&
-              & + reshape(real(tmpSqr(1:nOrb2, 1:nOrb1)), (/nOrb1*nOrb2/))
+              & + reshape(real(tmpSqr(1:nOrb2, 1:nOrb1)), [nOrb1*nOrb2])
         end do
       end do
     end do

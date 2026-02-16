@@ -123,7 +123,9 @@ contains
           end do
 
           if (abs(dist(iCenter) - minval(dist)) <= distTol_) then
-            tmp3Int(1) = n1; tmp3Int(2) = n2; tmp3Int(3) = n3
+            tmp3Int(1) = n1
+            tmp3Int(2) = n2
+            tmp3Int(3) = n3
             call appendToArray2d_int(wsVectors, tmp3Int)
           end if
 

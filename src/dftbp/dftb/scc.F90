@@ -22,14 +22,14 @@ module dftbp_dftb_scc
   use dftbp_extlibs_poisson, only : TPoisson, TPoisson_init, TPoissonInput
   use dftbp_io_message, only : error
   use dftbp_type_commontypes, only : TOrbitals
-  
+
 #:if WITH_SCALAPACK
   use mpi
   use dftbp_extlibs_mpifx, only : mpifx_allreduceip
   use dftbp_extlibs_scalapackfx, only : CSRC_, MB_, NB_, RSRC_, scalafx_indxl2g
 
 #:endif
-  
+
   implicit none
 
   private
@@ -614,7 +614,7 @@ contains
   end subroutine getAtomicGammaMatrixBlacs
 
 #:endif
-  
+
   !> Routine for returning lower triangle of atomic resolved Coulomb matrix
   !>
   !> Works only, if SCC-instance uses Gamma-electrostatics.

@@ -257,7 +257,7 @@ contains
     call getChildValue(root, "Task", pTask, child=pTaskType, default='uploadcontacts')
     call getNodeName(pTask, buffer)
 
-    if (char(buffer).ne."setupgeometry") then
+    if (char(buffer)/="setupgeometry") then
       call getChild(root, "Device", pDevice)
       call getChildValue(pDevice, "AtomRange", transpar%idxdevice)
     end if
@@ -330,7 +330,7 @@ contains
           & child=field)
       call convertUnitHsd(char(modif), lengthUnits, field, contactLayerTol)
 
-      if (task .eq. "setupgeometry") then
+      if (task == "setupgeometry") then
         call getChildValue(pNode, "PLsDefined", nPLs(ii))
         call getChildValue(pNode, "Atoms", buffer, child=pTmp, modifier=modif, multiple=.true.)
         if (isZeroBased(char(modif))) then
@@ -345,7 +345,7 @@ contains
         iAtInRegion(ii)%data = iAtInRegion(ii)%data + ishift
         call init(vecBuffer)
         call getChildValue(pNode, "ContactVector", vecBuffer, modifier=modif)
-        if (len(vecBuffer).eq.3) then
+        if (len(vecBuffer)==3) then
            call asArray(vecBuffer, vec)
            call convertUnitHsd(char(modif), lengthUnits, pNode, vec)
            ! check vector is along x y or z
@@ -372,7 +372,7 @@ contains
 
         if (trim(chr) == "" .or. tolower(trim(chr)) == "onebased") then
           isZeroBased = .false.
-        else if (tolower(trim(chr)) .eq. "zerobased") then
+        else if (tolower(trim(chr)) == "zerobased") then
           isZeroBased = .true.
         else
           call error("Modifier in Atoms " // trim(chr) // " not recongnized")

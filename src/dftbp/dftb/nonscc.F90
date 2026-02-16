@@ -455,7 +455,7 @@ contains
 
     integer, parameter :: maxrows = 20
     integer, parameter :: maxcolumns = 3
-    real(dp), parameter :: tol = 1.0E-11_dp ! epsilon ?
+    real(dp), parameter :: tol = 1.0E-11_dp  ! epsilon ?
 
     real(dp) :: interSk(getMIntegrals(skCont))  ! interpolated S integs.
     real(dp) :: vect(3), dist

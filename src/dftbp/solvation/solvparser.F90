@@ -529,9 +529,9 @@ contains
     select case(tolower(unquote(char(state))))
     case default
       call detailedError(child, "Unknown reference state: "//char(state))
-    case("gsolv") ! just the bare shift
+    case("gsolv")  ! just the bare shift
       freeEnergyShift = shift
-    case("reference") ! gsolv=reference option in cosmotherm
+    case("reference")  ! gsolv=reference option in cosmotherm
       ! RT * ln(ideal gas mol volume) + ln(rho/M)
       freeEnergyShift = shift + temperature&
           & * (log(idealGasMolVolume * temperature / ambientTemperature)&

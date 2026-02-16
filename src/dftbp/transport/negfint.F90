@@ -214,12 +214,12 @@ contains
       if (tundos%gSpin /= greendens%gSpin) then
         call error("spin degeneracy is not consistent between different input blocks")
       else
-        params%g_spin = real(tundos%gSpin) ! Spin degeneracy
+        params%g_spin = real(tundos%gSpin)  ! Spin degeneracy
       end if
     else if (tundos%defined) then
-        params%g_spin = real(tundos%gSpin) ! Spin degeneracy
+        params%g_spin = real(tundos%gSpin)  ! Spin degeneracy
     else if (greendens%defined) then
-        params%g_spin = real(greendens%gSpin) ! Spin degeneracy
+        params%g_spin = real(greendens%gSpin)  ! Spin degeneracy
     end if
 
 
@@ -340,7 +340,7 @@ contains
       else
          params%n_poles = greendens%nPoles
       end if
-      if(all(params%kbT_dm.eq.0)) then
+      if(all(params%kbT_dm==0)) then
         params%n_poles = 0
       end if
 
@@ -635,7 +635,7 @@ contains
        nDevicePLs = greendens%nPLs
     endif
 
-    if (nDevicePLs.eq.0) then
+    if (nDevicePLs==0) then
       call error('Internal ERROR: nDevicePLs = 0 ?!')
     end if
 
@@ -714,7 +714,7 @@ contains
             minv(1,j1) = j1
           end if
 
-          if (count(minv(:,j1).eq.j1) > 1) then
+          if (count(minv(:,j1)==j1) > 1) then
             write(stdOut,"(A)")     '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(stdOut,"(A,I0,A)")'ERROR: contact ',j1,' interacts with more than one PL'
             write(stdOut,"(A)")     '       check structure and increase PL size         '
@@ -723,7 +723,7 @@ contains
           end if
 
           do m = 1, transpar%nPLs
-            if (minv(m,j1).eq.j1) then
+            if (minv(m,j1)==j1) then
               cblk(j1) = m
             end if
           end do
@@ -790,7 +790,7 @@ contains
        nbl = greendens%nPLs
     endif
 
-    if (nbl.eq.0) then
+    if (nbl==0) then
       call error('Internal ERROR: nbl = 0 ?!')
     end if
 
@@ -885,7 +885,7 @@ contains
        call error('UNSUPPORTED CASE in negf_density')
     endif
 
-    if (params%DorE.eq.'N') then
+    if (params%DorE=='N') then
       return
     end if
 
@@ -1165,8 +1165,8 @@ contains
 #:endif
     !Decide what to do with surface GFs.
     !sets readOldSGF: if it is 0 or 1 it is left so
-    if (this%negf%readOldDM_SGFs.eq.COMPSAVE_SGF) then
-      if(iSCCIter.eq.1) then
+    if (this%negf%readOldDM_SGFs==COMPSAVE_SGF) then
+      if(iSCCIter==1) then
         call set_readOldDMsgf(this%negf, COMPSAVE_SGF)  ! compute and save SGF on files
       else
         call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
@@ -1228,7 +1228,7 @@ contains
 #:endif
 
     ! Now SGFs can be read unless not stored
-    if (this%negf%readOldDM_SGFs.ne.COMP_SGF) then
+    if (this%negf%readOldDM_SGFs/=COMP_SGF) then
       call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
     end if
 
@@ -1312,8 +1312,8 @@ contains
 #:endif
     !Decide what to do with surface GFs.
     !sets readOldSGF: if it is 0 or 1 it is left so
-    if (this%negf%readOldDM_SGFs.eq.COMPSAVE_SGF) then
-      if(iSCCIter.eq.1) then
+    if (this%negf%readOldDM_SGFs==COMPSAVE_SGF) then
+      if(iSCCIter==1) then
         call set_readOldDMsgf(this%negf, COMPSAVE_SGF)  ! compute and save SGF on files
       else
         call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
@@ -1365,7 +1365,7 @@ contains
 #:endif
 
     ! Now SGFs can be read unless not stored
-    if (this%negf%readOldDM_SGFs.ne.COMP_SGF) then
+    if (this%negf%readOldDM_SGFs/=COMP_SGF) then
       call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
     end if
 
@@ -1508,7 +1508,7 @@ contains
 
       call set_params(this%negf, params)
 
-      if (this%negf%NumStates.eq.0) then
+      if (this%negf%NumStates==0) then
         this%negf%NumStates=this%csrHam%ncol
       end if
 
@@ -2005,8 +2005,8 @@ contains
 
     !Decide what to do with surface GFs.
     !sets readOldSGF: if it is 0 or 1 it is left so
-    if (this%negf%readOldDM_SGFs.eq.COMPSAVE_SGF) then
-      if(iSCCIter.eq.1) then
+    if (this%negf%readOldDM_SGFs==COMPSAVE_SGF) then
+      if(iSCCIter==1) then
         call set_readOldDMsgf(this%negf, COMPSAVE_SGF)  ! compute and save SGF on files
       else
         call set_readOldDMsgf(this%negf, READ_SGF)  ! read from files
@@ -2026,7 +2026,7 @@ contains
     call get_fmtstring(nK, skp, fmtstring)
 
     ! Create a symmetrized neighbour list extended to periodic cell in lc_coord
-    if (any(iCellVec.ne.1)) then
+    if (any(iCellVec/=1)) then
       lc_nAllAtom = int((real(nAtom, dp)**(1.0_dp/3.0_dp) + 3.0_dp)**3)
     else
       lc_nAllAtom = nAtom
@@ -2060,7 +2060,7 @@ contains
           & DensMat=pCsrDens)
 
       ! Unless SGFs are not stored, read them from file
-      if (this%negf%readOldDM_SGFs.ne.COMP_SGF) then
+      if (this%negf%readOldDM_SGFs/=COMP_SGF) then
          call set_readOldDMsgf(this%negf, READ_SGF)
       end if
 
@@ -2218,7 +2218,7 @@ contains
     nnz=0
     do i=1,NumStates
       do j=1,NumStates
-        if ((i.eq.j).or.(abs(H_all(i,j)) > 0.00001_dp)) then
+        if ((i==j).or.(abs(H_all(i,j)) > 0.00001_dp)) then
           nnz = nnz+1
         end if
       end do
@@ -2234,10 +2234,10 @@ contains
     do i=1,NumStates
        k=0
        do j=1,NumStates
-          if((i.eq.j).or.(abs(H_all(i,j)) > 0.00001_dp)) then
+          if((i==j).or.(abs(H_all(i,j)) > 0.00001_dp)) then
              k=k+1
              nnz=nnz+1
-             if(i.eq.j) then
+             if(i==j) then
                 HH%nzval(nnz)= H_all(i,j)
                 SS%nzval(nnz)= S_all(i,j)
              else

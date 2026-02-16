@@ -1193,15 +1193,15 @@ contains
     !> Eigenvectors (X-Y), only evaluated if Z-vector is needed
     real(dp), intent(inout), allocatable :: xmy(:,:)
 
-    real(dp), allocatable :: vecB(:,:) ! basis of subspace
-    real(dp), allocatable :: evecL(:,:), evecR(:,:) ! left and right eigenvectors of Mnh
-    real(dp), allocatable :: vP(:,:), vM(:,:) ! vec. for (A+B)b_i, (A-B)b_i
+    real(dp), allocatable :: vecB(:,:)  ! basis of subspace
+    real(dp), allocatable :: evecL(:,:), evecR(:,:)  ! left and right eigenvectors of Mnh
+    real(dp), allocatable :: vP(:,:), vM(:,:)  ! vec. for (A+B)b_i, (A-B)b_i
     ! matrices M_plus, M_minus, M_minus^(1/2), M_minus^(-1/2) and M_herm~=resp. mat on subspace
     real(dp), allocatable :: mP(:,:), mM(:,:), mMsqrt(:,:), mMsqrtInv(:,:), mH(:,:)
     ! Residual vectors
     real(dp), allocatable :: resR(:,:), resL(:,:), dummyM(:,:)
-    real(dp), allocatable :: evalInt(:) ! store eigenvectors within routine
-    real(dp), allocatable :: vecNorm(:) ! will hold norms of residual vectors
+    real(dp), allocatable :: evalInt(:)  ! store eigenvectors within routine
+    real(dp), allocatable :: vecNorm(:)  ! will hold norms of residual vectors
     real(dp) :: dummyReal
 
     integer :: nExc, nAtom, dummyInt, newVec, iVec, info, iterStrat, nLoc
@@ -1396,7 +1396,7 @@ contains
         end if
 
         write(stdOut,'(A)') '>> Stratmann converged'
-        exit solveLinResp ! terminate diag. routine
+        exit solveLinResp  ! terminate diag. routine
 
       end if
 
@@ -1680,7 +1680,7 @@ contains
           qTr(:) = transChrg%qTransAB(ab, env, denseDesc, ovrXev, grndEigVecs, rpa%getAB)
           qgamxpyq(ab, 1) = 2.0_dp * sum(qTr * gamxpyq)
         end do
-      else ! triplet case
+      else  ! triplet case
         do ab = 1, rpa%nxvv_ud(1)
           qTr(:) = transChrg%qTransAB(ab, env, denseDesc, ovrXev, grndEigVecs, rpa%getAB)
           qgamxpyq(ab, 1) = 2.0_dp * sum(qTr * xpyq * lr%spinW(species0))
@@ -4934,7 +4934,7 @@ contains
             vecHoo(ij) = 2.0_dp * sum(qTr * gamxpyq)
           end do
         end if
-      else ! Triplet case
+      else  ! Triplet case
         if (present(vecHvv)) then
           do ab = 1, rpa%nxvv_ud(1)
             qTr(:) = transChrg%qTransAB(ab, env, denseDesc, ovrXev, grndEigVecs, rpa%getAB)

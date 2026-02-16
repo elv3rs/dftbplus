@@ -1114,7 +1114,7 @@ contains
       call hemv(xVec, aMat, qVec, alpha=0.5_dp, beta=-1.0_dp)
       energies(:) = energies(:) + xVec(:nAtom) * qVec(:nAtom)
     end if
-    deallocate(xVec) ! free xVec to avoid using it later
+    deallocate(xVec)  ! free xVec to avoid using it later
 
     ! Step 5: get derivative of interaction matrix
     if (tPeriodic) then

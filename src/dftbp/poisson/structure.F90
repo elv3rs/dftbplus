@@ -48,7 +48,7 @@ module dftbp_poisson_structure
   logical,  public, save :: period_dir(3)
 
 
-  real(kind=dp), allocatable, public, save :: dQmat(:,:) ! nshells,natoms
+  real(kind=dp), allocatable, public, save :: dQmat(:,:)  ! nshells,natoms
 
   character(3), public, save :: atnames(92)
 
@@ -79,7 +79,7 @@ module dftbp_poisson_structure
       natoms=st_nAtom
       ntypes=st_nSpecies
 
-      dir = (/ 1, 2, 3 /)
+      dir = [ 1, 2, 3 ]
       boxsiz(1:3,1:3) = 0_dp
       ! the latVec structure is :
       !
@@ -189,7 +189,7 @@ module dftbp_poisson_structure
 
   real(dp) function shortvertice()
 
-    real(dp) yhlp, testbox(6)
+    real(dp) :: yhlp, testbox(6)
 
     testbox(1)=boxsiz(1,1)**2+boxsiz(1,2)**2+boxsiz(1,3)**2
     testbox(2)=boxsiz(2,1)**2+boxsiz(2,2)**2+boxsiz(2,3)**2
@@ -215,14 +215,19 @@ module dftbp_poisson_structure
    !
    subroutine gamma_summind(slkcutoff)
 
-     implicit none
-     real(dp) slkcutoff
-     real(dp) u(3),v(3),w(3),helpv(3),l,lu,lv,lw
+     real(dp) :: slkcutoff
+     real(dp) :: u(3),v(3),w(3),helpv(3),l,lu,lv,lw
 
      !get vectors and lengths
-     u(1) = boxsiz(1,1); u(2) = boxsiz(1,2); u(3) = boxsiz(1,3)
-     v(1) = boxsiz(2,1); v(2) = boxsiz(2,2); v(3) = boxsiz(2,3)
-     w(1) = boxsiz(3,1); w(2) = boxsiz(3,2); w(3) = boxsiz(3,3)
+     u(1) = boxsiz(1,1)
+     u(2) = boxsiz(1,2)
+     u(3) = boxsiz(1,3)
+     v(1) = boxsiz(2,1)
+     v(2) = boxsiz(2,2)
+     v(3) = boxsiz(2,3)
+     w(1) = boxsiz(3,1)
+     w(2) = boxsiz(3,2)
+     w(3) = boxsiz(3,3)
      lu = sqrt(u(1)**2 + u(2)**2 + u(3)**2)
      lv = sqrt(v(1)**2 + v(2)**2 + v(3)**2)
      lw = sqrt(w(1)**2 + w(2)**2 + w(3)**2)
@@ -258,7 +263,6 @@ module dftbp_poisson_structure
    end subroutine gamma_summind
 
    subroutine CROSS( A, B, C)
-     IMPLICIT NONE
      REAL(kind=dp) ::  A(3), B(3), C(3)
 
      C(1)=A(2)*B(3)-A(3)*B(2)
@@ -271,7 +275,6 @@ module dftbp_poisson_structure
    !
    subroutine buildsupercell()
 
-     implicit none
 
      integer :: ijk(9),algn,nu,nv,nw,i,j,k,n
 
@@ -303,8 +306,15 @@ module dftbp_poisson_structure
      if (.not.allocated(ss_x)) call log_gallocate(ss_x,3,ss_natoms)
      if (.not.allocated(ss_izp)) call log_gallocate(ss_izp,ss_natoms)
 
-     ijk(1)=0;  ijk(2)=-1; ijk(3)=1;  ijk(4)=-2;  ijk(5)=2;
-     ijk(6)=-3; ijk(7)=3;  ijk(8)=-4; ijk(9)=4;
+     ijk(1)=0
+     ijk(2)=-1
+     ijk(3)=1
+     ijk(4)=-2
+     ijk(5)=2
+     ijk(6)=-3
+     ijk(7)=3
+     ijk(8)=-4
+     ijk(9)=4
 
      algn=1
      do i=1,ss_f(1)
@@ -312,7 +322,9 @@ module dftbp_poisson_structure
            do k=1,ss_f(3)
               do n=1,natoms
 
-                 nu=ijk(i); nv=ijk(j); nw=ijk(k);
+                 nu=ijk(i)
+                 nv=ijk(j)
+                 nw=ijk(k)
                  ss_x(:,algn)=x(:,n)+nu*boxsiz(1,:)+nv*boxsiz(2,:)+nw*boxsiz(3,:)
                  ss_izp(algn)=izp(n)
                  algn=algn+1
