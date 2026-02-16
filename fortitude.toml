@@ -3,6 +3,10 @@
 # WITH_* variables via defined(), so no -D flags are needed.
 fypp-includes = ["src/dftbp/include"]
 
+# Read CMake build configuration to automatically derive -D flags for fypp.
+# Enabled boolean options (e.g. WITH_OMP:BOOL=ON) become -DWITH_OMP.
+fypp-cmake-cache = "build"
+
 # Metadata variables that don't have defaults in common.fypp.
 # These are only used by #:assert and string literals, not code structure.
 fypp-args = [
