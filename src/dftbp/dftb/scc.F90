@@ -263,6 +263,8 @@ contains
       #:block REQUIRES_COMPONENT('Poisson-solver', WITH_POISSON)
         call initPoisson_(input%poissonInput, env, orb, this%poisson)
       #:endblock
+    case default
+      continue
     end select
 
     this%tPeriodic = (input%boundaryCond == boundaryCondsEnum%pbc3d)
@@ -356,6 +358,8 @@ contains
         ! folding can mess up the contact position.
         call this%poisson%updateCoords(coord0)
       #:endblock
+    case default
+      continue
     end select
 
     if (allocated(this%extCharges)) then
@@ -395,6 +399,8 @@ contains
       #:block REQUIRES_COMPONENT('Poisson-solver', WITH_POISSON)
         call this%poisson%updateLatVecs(latVec)
       #:endblock
+    case default
+      continue
     end select
 
     if (allocated(this%extCharges)) then
@@ -439,6 +445,8 @@ contains
       #:block REQUIRES_COMPONENT('Poisson-solver', WITH_POISSON)
         call this%poisson%updateCharges(env, qOrbital(:,:,1), q0)
       #:endblock
+    case default
+      continue
     end select
 
   end subroutine updateCharges
@@ -479,6 +487,8 @@ contains
         this%shiftPerL(:,:) = 0.0_dp
         call this%poisson%addPotentials(this%shiftPerL)
       #:endblock
+    case default
+      continue
     end select
 
     if (this%tChrgPenalty) then
@@ -798,6 +808,8 @@ contains
         call this%poisson%getGradients(env, tmpDerivs)
         force(:,:) = force + tmpDerivs
       #:endblock
+    case default
+      continue
     end select
 
     if (allocated(this%extCharges)) then
@@ -843,6 +855,8 @@ contains
       #:block REQUIRES_COMPONENT('Poisson-solver', WITH_POISSON)
         st(:,:) = 0.0_dp
       #:endblock
+    case default
+      continue
     end select
 
     !! NOTE: no stress contribution from external charges

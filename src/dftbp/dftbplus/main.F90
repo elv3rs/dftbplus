@@ -3016,6 +3016,8 @@ contains
       end if
       call env%globalTimer%stopTimer(globalTimers%densityMatrix)
 
+    case default
+      continue
     end select
 
   end subroutine getDensity
@@ -6001,6 +6003,8 @@ contains
               & nNeighbourSK, img2CentCell, iSparseStart, orb)
           call addAtomicMultipoleShift(hPrime, adS, Sad, nNeighbourSK, neighbourList%iNeighbour,&
               & species, orb, iSparseStart, nAtom, img2CentCell, potentialGradDeriv)
+        case default
+          continue
         end select
       end if
 
@@ -6212,6 +6216,8 @@ contains
           & nNeighbourSK, tHelical, orb, species, coord, iSparseStart, img2CentCell, iCellVec,&
           & cellVec, tRealHS, parallelKS, ERhoPrim, SSqrReal, SSqrCplx)
 
+    case default
+      continue
     end select
 
     call env%globalTimer%stopTimer(globalTimers%energyDensityMatrix)
@@ -6521,6 +6527,8 @@ contains
         ! Symmetrize just in case
         work(:,:) = 0.5_dp * (work2 + transpose(work2))
       #:endif
+      case default
+        continue
       end select
 
     #:if WITH_SCALAPACK
@@ -6757,6 +6765,8 @@ contains
         ! Symmetrize just in case
         work(:,:) = 0.5_dp * (work2 + transpose(conjg(work2)))
       #:endif
+      case default
+        continue
       end select
 
     #:if WITH_SCALAPACK

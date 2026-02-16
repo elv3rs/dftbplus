@@ -1505,6 +1505,8 @@ contains
           & nNeighbourCam, iSquare, iPair, orb, img2CentCell, HSqrReal)
     case (hybridXcAlgo%matrixBased)
       call addCamHamiltonianMatrix_real(this, iSquare, SSqrReal, deltaRhoSqr, HSqrReal)
+    case default
+      continue
     end select
 
     call env%globalTimer%stopTimer(globalTimers%hybridXcH)
@@ -1599,6 +1601,8 @@ contains
       call addCamHamiltonianMatrix_kpts(this, env, denseDesc, ints, densityMatrix, neighbourList,&
           & nNeighbourSK, iCellVec, cellVecs, iSparseStart, img2CentCell, kPoints, kWeights,&
           & HSqrCplxCam)
+    case default
+      continue
     end select
 
     call env%globalTimer%stopTimer(globalTimers%hybridXcH)
@@ -4736,6 +4740,8 @@ contains
       @:ASSERT(present(symNeighbourList) .and. present(nNeighbourCamSym))
       call addCamGradientsMatrix_real(this, deltaRhoSqr, SSqrReal, skOverCont,&
           & symNeighbourList, nNeighbourCamSym, iSquare, orb, derivator, gradients)
+    case default
+      continue
     end select
 
   end subroutine addCamGradients_real
@@ -4806,6 +4812,8 @@ contains
       @:ASSERT(present(symNeighbourList) .and. present(nNeighbourCamSym))
       call addCamGradientsMatrix_pauli(this, deltaRhoSqr, SSqrReal, skOverCont,&
           & symNeighbourList, nNeighbourCamSym, iSquare, orb, derivator, gradients)
+    case default
+      continue
     end select
 
   end subroutine addCamGradients_pauli
@@ -6260,6 +6268,8 @@ contains
       call addCamGradientsMatrix_kpts_ct(this, env, denseDesc, skOverCont, derivator, orb, ints,&
           & densityMatrix, neighbourList, nNeighbourSK, symNeighbourList, nNeighbourCamSym,&
           & iCellVec, cellVec, iSparseStart, img2CentCell, kPoints, kWeights, gradients)
+    case default
+      continue
     end select
 
   end subroutine addCamGradients_kpts

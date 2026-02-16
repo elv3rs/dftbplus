@@ -198,6 +198,8 @@ contains
         write(errorMsg, "(a, i0, a)") "Failure in LAPACK routine ${LAPACK_ROUTINE}$, ", info_,&
             & " off-diagonal elements did not converge to zero."
       end if
+    case default
+      continue
     end select
     call error(errorMsg)
 
@@ -290,6 +292,8 @@ contains
         write(errorMsg, "(a, i0, a)") "Failure in LAPACK routine ${LAPACK_ROUTINE}$, ", info_,&
             & " off-diagonal elements did not converge to zero."
         end if
+    case default
+      continue
     end select
     call error(errorMsg)
 
@@ -438,6 +442,8 @@ contains
       else
         write(errorMsg, "(a, i0, a)") "Failure in LAPACK routine ${LAPACK_HEEVR}$, internal error"
       end if
+    case default
+      continue
     end select
     call error(errorMsg)
 
@@ -542,6 +548,8 @@ contains
         write(errorMsg, "(a, i0, a)") "Failure in LAPACK routine ${LAPACK_ROUTINE}$, non-positive&
             & definite overlap, minor ", info_ - n, " responsible."
       end if
+    case default
+      continue
     end select
     call error(errorMsg)
 
@@ -654,6 +662,8 @@ contains
         write(errorMsg, "(a, i0, a)") "Failure in LAPACK routine ${LAPACK_ROUTINE}$, non-positive&
             & definite overlap, minor ", info_ - n, " responsible."
       end if
+    case default
+      continue
     end select
     call error(errorMsg)
 
@@ -911,6 +921,8 @@ contains
     case (4)
       write(errorMsg, "(a, i0)") "Failure in LAPACK routine ${LAPACK_HEEVR}$ to solve the&
           & eigenvalue, problem, info: ", info_
+    case default
+      continue
     end select
     call error(errorMsg)
 
@@ -1025,6 +1037,8 @@ contains
         write(errorMsg, "(a, i0, a)") "Failure in diagonalisation routine ${LAPACK_ROUTINE}$,&
             & QR algorithm failed to calculate ", info_, " eigenvalues."
       end if
+    case default
+      continue
     end select
     call error(errorMsg)
 
