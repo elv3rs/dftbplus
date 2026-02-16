@@ -393,7 +393,9 @@ contains
   !> Returns normalized atom index or 0 if index is invalid.
   pure function normalizedIndex_(ind, selectionRange, indexRange, backwardIndexing) &
         & result(normInd)
-    integer, intent(in) :: ind, selectionRange(:), indexRange(:)
+    integer, intent(in) :: ind
+    integer, intent(in) :: indexRange(:)
+    integer, intent(in) :: selectionRange(:)
     logical, intent(in) :: backwardIndexing
     integer :: normInd
 

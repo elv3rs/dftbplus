@@ -72,7 +72,9 @@ contains
     integer :: iCenter
 
     !! Auxiliary variables
-    integer :: n1, n2, n3, i1, i2, i3, ii, jj, diff(3), tmp3Int(3)
+    integer :: n1, n2, n3, i1, i2, i3, ii, jj
+    integer :: tmp3Int(3)
+    integer :: diff(3)
     real(dp) :: dotProducts(3, 3), diffMat(3, 3)
 
     !! Temporary storage for distances

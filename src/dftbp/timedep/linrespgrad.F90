@@ -2129,7 +2129,9 @@ contains
     !> W vector virtual part
     real(dp), intent(inout) :: wvv(:,:)
 
-    integer :: nSpin, soo(2), svv(2)
+    integer :: nSpin
+    integer :: svv(2)
+    integer :: soo(2)
     integer :: ij, ias, ijs, ab, i, j, a, b, s
     real(dp), allocatable :: qTr(:), gamxpyq(:), zq(:), zqds(:), vecHooZ(:)
     real(dp) :: fact
@@ -2411,7 +2413,9 @@ contains
     real(dp) :: tmps(2)
     integer, allocatable :: species(:)
     integer :: ia, i, j, a, b, ab, ij, m, n, mu, nu, xyz, iAt1, iAt2, ka
-    integer :: indalpha, indalpha1, indbeta, indbeta1, soo(2), svv(2)
+    integer :: indalpha, indalpha1, indbeta, indbeta1
+    integer :: svv(2)
+    integer :: soo(2)
     integer :: iSp1, iSp2, iSpin, nSpin, nOrb
 
     nSpin = size(grndEigVecs, dim=3)
@@ -4374,7 +4378,9 @@ contains
     real(dp) :: tmps(2)
     integer, allocatable :: species(:)
     integer :: ia, i, j, a, b, ab, ij, m, n, mu, nu, xyz, iAt1, iAt2, ka
-    integer :: indalpha, indalpha1, indbeta, indbeta1, soo(2), svv(2)
+    integer :: indalpha, indalpha1, indbeta, indbeta1
+    integer :: svv(2)
+    integer :: soo(2)
     integer :: iSp1, iSp2, iSpin, nSpin, iState, nOrb
 
     nSpin = size(grndEigVecs, dim=3)

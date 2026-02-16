@@ -882,7 +882,9 @@ contains
     real(dp) :: vec23(3)
     real(dp) :: c9, c6_12, c6_13, c6_23, rc12, rc13, rc23, rc
     real(dp) :: r1, r2, r3, r5, rr, fdmp, dfdmp, ang, dang
-    real(dp) :: dEr, dG23(3), dSr(3, 3)
+    real(dp) :: dEr
+    real(dp) :: dSr(3, 3)
+    real(dp) :: dG23(3)
     real(dp) :: dG12(3)
     real(dp) :: dG13(3)
     real(dp) :: dc9dcn1, dc9dcn2, dc9dcn3, dc9dq1, dc9dq2, dc9dq3

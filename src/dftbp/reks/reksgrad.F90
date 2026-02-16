@@ -4508,7 +4508,9 @@ contains
     real(dp), allocatable :: SpinQderiv(:,:,:,:)     ! nOrb, 1, 3, Lmax
     real(dp), allocatable :: TderivL(:,:,:,:)        ! sparseSize, 3, Lmax, Ncpu
 
-    real(dp) :: tmpCoulomb, tmpG1, tmpS1, tmpG2(3), tmpV1(3)
+    real(dp) :: tmpCoulomb, tmpG1, tmpS1
+    real(dp) :: tmpV1(3)
+    real(dp) :: tmpG2(3)
     integer :: iAtom1, iAtom2, iAtom3, iAtom4, nAtom, k, nAtomPair
     integer :: ist, nstates, nstHalf, mOrb, mu, nu, nOrb, l, sparseSize
     integer :: iS, nSpin, iL, Lmax, id, Ncpu

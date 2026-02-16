@@ -1336,7 +1336,9 @@ contains
 
     integer :: iAt1, iAt2
     real(dp) :: aa, dist2, fgb2, qq, dd, expd, dfgb, dfgb2, dfgb3, ap, bp
-    real(dp) :: grddbi, grddbj, dGr(3), dSr(3, 3)
+    real(dp) :: grddbi, grddbj
+    real(dp) :: dSr(3, 3)
+    real(dp) :: dGr(3)
     real(dp) :: vec(3)
 
     !$omp parallel do default(none) reduction(+:energies, derivs, dEdbr, sigma) &
@@ -1547,7 +1549,9 @@ contains
     real(dp), intent(out) :: aDet
 
     integer :: iAt, iSp
-    real(dp) :: rad2, rad3, totRad3, center(3), inertia(3, 3)
+    real(dp) :: rad2, rad3, totRad3
+    real(dp) :: inertia(3, 3)
+    real(dp) :: center(3)
 
     totRad3 = 0.0_dp
     center(:) = 0.0_dp

@@ -195,7 +195,9 @@ contains
     real(dp) :: xa(nInterNew_)
     real(dp) :: ya(nInterNew_)
     real(dp) :: yb(this%nInteg,nInterNew_)
-    real(dp) :: incr, dr, rMax, y0(this%nInteg), y2(this%nInteg)
+    real(dp) :: incr, dr, rMax
+    real(dp) :: y2(this%nInteg)
+    real(dp) :: y0(this%nInteg)
     integer :: leng, ind, iLast
     integer :: ii
 

@@ -4144,7 +4144,9 @@ contains
     !> Boundary conditions on the calculation
     type(TBoundaryConds), intent(in) :: boundaryCond
 
-    real(dp) :: cellVol, recVecs(3,3), recVecs2p(3,3)
+    real(dp) :: cellVol
+    real(dp) :: recVecs2p(3,3)
+    real(dp) :: recVecs(3,3)
 
     cellVol = abs(determinant33(this%latVec))
     recVecs2p(:,:) = this%latVec
