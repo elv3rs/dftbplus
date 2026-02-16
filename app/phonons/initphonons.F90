@@ -1179,6 +1179,8 @@ contains
           end do
         end do
       end do
+    case default
+      continue
     end select
 
   end subroutine selectModes

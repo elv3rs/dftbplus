@@ -419,6 +419,8 @@ contains
       mSKCutOff = mSKCutOff + distFudgeOld
     case(skEqGridNew)
       mSKCutOff = mSKCutOff + distFudge
+    case default
+      continue
     end select
 
   end subroutine getSKcutoff
@@ -565,6 +567,8 @@ contains
         truncationCutOff = truncationCutOff - distFudgeOld
       case(skEqGridNew)
         truncationCutOff = truncationCutOff - distFudge
+      case default
+        continue
       end select
     end if
     if (truncationCutOff < epsilon(0.0_dp)) then

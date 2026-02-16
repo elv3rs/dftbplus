@@ -112,6 +112,8 @@ contains
       case(1)
         ! x
         rty = 0.4886025119029198_dp * xx / rr
+      case default
+        continue
       end select
     case(2)
       select case(mm)
@@ -130,6 +132,8 @@ contains
       case(2)
         ! x**2-y**2
         rty = 0.5462742152960395_dp * (xx**2 - yy**2) / rr**2
+      case default
+        continue
       end select
     case(3)
 
@@ -158,7 +162,11 @@ contains
       case(3)
         ! x(x**2-3y**2)
         rty = 0.5900435899266435_dp * xx * (xx**2 - 3.0_dp * yy**2) / rr**3
+      case default
+        continue
       end select
+    case default
+      continue
     end select
 
   end function realTessY

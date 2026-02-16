@@ -254,6 +254,8 @@ contains
         indx(l) = i+2   ! Z
         l = l + 1
       end do
+    case default
+      continue
     end select
 
     call set_tun_indexes(negf, indx)
