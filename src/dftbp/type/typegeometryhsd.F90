@@ -722,13 +722,17 @@ contains
     type(string) :: text1, text2
 
     call getChildValue(node, "CommandFile", child)
-    if (.not. associated(child) .or. getNodeType(child) /= TEXT_NODE) then
+    if (.not. associated(child)) then
+      call detailedError(node, "Missing CommandFile for LammpsFormat")
+    else if (getNodeType(child) /= TEXT_NODE) then
       call detailedError(node, "Missing CommandFile for LammpsFormat")
     end if
     call getNodeValue(child, text1)
 
     call getChildValue(node, "DataFile", child)
-    if (.not. associated(child) .or. getNodeType(child) /= TEXT_NODE) then
+    if (.not. associated(child)) then
+      call detailedError(node, "Missing DataFile for LammpsFormat")
+    else if (getNodeType(child) /= TEXT_NODE) then
       call detailedError(node, "Missing DataFile for LammpsFormat")
     end if
     call getNodeValue(child, text2)
