@@ -187,20 +187,18 @@ contains
         if (info < 0) then
           @:RAISE_FORMATTED_ERROR(status, -1,&
               & "('Failure in ${PRF}$ illegal argument at position : ',I0)", info)
-        else
-          @:RAISE_FORMATTED_ERROR(status, -1,&
-              & "('Linear dependent system in linear equation solver ${PRF}$, info flag : ',I0)",&
-              & info)
         end if
-      else
-        if (info < 0) then
-          write(error_string, "(A,I0)")'Failure in ${PRF}$ illegal argument at position : ', info
-        else
-          write(error_string, "(A,I0)")'Linear dependent system in linear equation solver ${PRF}$,&
-              & info flag : ', info
-        end if
-        call error(error_string)
+        @:RAISE_FORMATTED_ERROR(status, -1,&
+            & "('Linear dependent system in linear equation solver ${PRF}$, info flag : ',I0)",&
+            & info)
       end if
+      if (info < 0) then
+        write(error_string, "(A,I0)")'Failure in ${PRF}$ illegal argument at position : ', info
+      else
+        write(error_string, "(A,I0)")'Linear dependent system in linear equation solver ${PRF}$,&
+            & info flag : ', info
+      end if
+      call error(error_string)
     end if
 
   end subroutine gesv_${LABEL}$
@@ -270,20 +268,18 @@ contains
         if (info < 0) then
           @:RAISE_FORMATTED_ERROR(status, -1,&
               & "('Failure in ${PRF}$ illegal argument at position : ',I0)", info)
-        else
-          @:RAISE_FORMATTED_ERROR(status, -1,&
-              & "('Linear dependent system in linear equation solver ${PRF}$, info flag : ',I0)",&
-              & info)
         end if
-      else
-        if (info < 0) then
-          write(error_string, "(A,I0)")'Failure in ${PRF}$ illegal argument at position : ', info
-        else
-          write(error_string, "(A,I0)")'Linear dependent system in linear equation solver ${PRF}$,&
-              & info flag : ', info
-        end if
-        call error(error_string)
+        @:RAISE_FORMATTED_ERROR(status, -1,&
+            & "('Linear dependent system in linear equation solver ${PRF}$, info flag : ',I0)",&
+            & info)
       end if
+      if (info < 0) then
+        write(error_string, "(A,I0)")'Failure in ${PRF}$ illegal argument at position : ', info
+      else
+        write(error_string, "(A,I0)")'Linear dependent system in linear equation solver ${PRF}$,&
+            & info flag : ', info
+      end if
+      call error(error_string)
     end if
 
   end subroutine posv_${LABEL}$

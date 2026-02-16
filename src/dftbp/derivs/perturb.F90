@@ -1515,26 +1515,25 @@ contains
       if (isSccConvRequired) then
         @:RAISE_ERROR(errStatus, -1, "SCC in perturbation is NOT converged, maximal SCC&
             & iterations exceeded")
-      else
-        quietNan = ieee_value(1.0_dp, ieee_quiet_nan)
-        dRho(:,:) = quietNan
-        dqOut(:,:,:) = quietNan
-        if (allocated(idRho)) idRho(:,:) = quietNan
-        if (allocated(dEi)) dEi(:,:,:) = quietNan
-        if (allocated(dEf)) dEf(:) = quietNan
-        if (allocated(dqBlockOut)) dqBlockOut(:,:,:,:) = quietNan
-        if (allocated(dPsiReal)) dPsiReal(:,:,:) = quietNan
-        if (allocated(dPsiCmplx)) dPsiCmplx(:,:,:,:) = quietNan
-        ! restore back-ups of the input charges/density matrix in case the iteration fails
-        dqIn(:,:,:) = dqInBackup
-        if (allocated(dqBlockIn)) then
-          dqBlockInBackup(:,:,:,:) = dqBlockIn
-        end if
-        if (allocated(dRhoIn)) then
-          dRhoInBackup(:) = dRhoIn
-        end if
-        call warning("SCC in perturbation is NOT converged, maximal SCC iterations exceeded")
       end if
+      quietNan = ieee_value(1.0_dp, ieee_quiet_nan)
+      dRho(:,:) = quietNan
+      dqOut(:,:,:) = quietNan
+      if (allocated(idRho)) idRho(:,:) = quietNan
+      if (allocated(dEi)) dEi(:,:,:) = quietNan
+      if (allocated(dEf)) dEf(:) = quietNan
+      if (allocated(dqBlockOut)) dqBlockOut(:,:,:,:) = quietNan
+      if (allocated(dPsiReal)) dPsiReal(:,:,:) = quietNan
+      if (allocated(dPsiCmplx)) dPsiCmplx(:,:,:,:) = quietNan
+      ! restore back-ups of the input charges/density matrix in case the iteration fails
+      dqIn(:,:,:) = dqInBackup
+      if (allocated(dqBlockIn)) then
+        dqBlockInBackup(:,:,:,:) = dqBlockIn
+      end if
+      if (allocated(dRhoIn)) then
+        dRhoInBackup(:) = dRhoIn
+      end if
+      call warning("SCC in perturbation is NOT converged, maximal SCC iterations exceeded")
     end if
 
     if (present(dDipole)) then

@@ -29,9 +29,8 @@
       ${errVar}$ = ${errNumber}$
       call warning(stringTmp)
       return
-    else
-      call error(stringTmp)
     end if
+    call error(stringTmp)
   end block
 #:enddef ERROR_HANDLING
 
@@ -50,9 +49,8 @@
       ${errVar}$ = ${errNumber}$
       call warning(stringTmp)
       return
-    else
-      call error(stringTmp)
     end if
+    call error(stringTmp)
   end block
 #:enddef FORMATTED_ERROR_HANDLING
 

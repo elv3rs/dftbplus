@@ -1497,10 +1497,9 @@ contains
       if (isPeriodic) then
         @:RAISE_ERROR(errStatus, -1, "HybridXc Module: Thresholded algorithm not implemented for&
             & Gamma-point periodic systems.")
-      else
-        call addCamHamiltonianThreshold_cluster(this, SSqrReal, deltaRhoSqr, iNeighbour,&
-            & nNeighbourCam, iSquare, HSqrReal, orb)
       end if
+      call addCamHamiltonianThreshold_cluster(this, SSqrReal, deltaRhoSqr, iNeighbour,&
+          & nNeighbourCam, iSquare, HSqrReal, orb)
     case (hybridXcAlgo%neighbourBased)
       call addCamHamiltonianNeighbour_real(this, deltaRhoSqr, overSparse, iNeighbour,&
           & nNeighbourCam, iSquare, iPair, orb, img2CentCell, HSqrReal)
@@ -6251,13 +6250,12 @@ contains
         @:RAISE_ERROR(errStatus, -1, "Hybrid functionals don't yet support gradient calculations&
             & for periodic systems beyond the Gamma point for CoulombMatrix setting&
             & 'MinimumImage'.")
-      else
-        @:ASSERT(allocated(densityMatrix%deltaRhoInCplxHS)&
-            & .and. allocated(densityMatrix%deltaRhoOutCplx))
-        call addCamGradientsNeighbour_kpts_ct(this, densityMatrix%deltaRhoInCplxHS,&
-            & densityMatrix%deltaRhoOutCplx, symNeighbourList, nNeighbourCamSym, cellVec,&
-            & denseDesc%iAtomStart, orb, kPoints, kWeights, skOverCont, derivator, gradients)
       end if
+      @:ASSERT(allocated(densityMatrix%deltaRhoInCplxHS)&
+          & .and. allocated(densityMatrix%deltaRhoOutCplx))
+      call addCamGradientsNeighbour_kpts_ct(this, densityMatrix%deltaRhoInCplxHS,&
+          & densityMatrix%deltaRhoOutCplx, symNeighbourList, nNeighbourCamSym, cellVec,&
+          & denseDesc%iAtomStart, orb, kPoints, kWeights, skOverCont, derivator, gradients)
     case (hybridXcAlgo%matrixBased)
       call addCamGradientsMatrix_kpts_ct(this, env, denseDesc, skOverCont, derivator, orb, ints,&
           & densityMatrix, neighbourList, nNeighbourSK, symNeighbourList, nNeighbourCamSym,&

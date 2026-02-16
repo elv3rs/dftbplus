@@ -7131,10 +7131,9 @@ contains
         chrgForces(:,:) = 0.0_dp
         if (isXlbomd) then
           @:RAISE_ERROR(errStatus, -1, "XLBOMD does not work with external charges yet!")
-        else
-          call sccCalc%addForceDc(env, derivs, species, neighbourList%iNeighbour, img2CentCell,&
-              & chrgForces)
         end if
+        call sccCalc%addForceDc(env, derivs, species, neighbourList%iNeighbour, img2CentCell,&
+            & chrgForces)
       else if (tSccCalc) then
         if (isXlbomd) then
           call sccCalc%addForceDcXlbomd(env, species, orb, neighbourList%iNeighbour,&
@@ -7177,17 +7176,16 @@ contains
     if (allocated(solvation)) then
       if (isXlbomd) then
         @:RAISE_ERROR(errStatus, -1, "XLBOMD does not work with solvation yet!")
-      else
-        if (areSolventNeighboursSym) then
-          call solvation%addGradients(env, symNeighbourList%neighbourList,&
-              & symNeighbourList%species, symNeighbourList%coord, symNeighbourList%img2CentCell,&
-              & derivs, errStatus)
-        else
-          call solvation%addGradients(env, neighbourList, species, coord, img2CentCell, derivs,&
-              & errStatus)
-        end if
-        @:PROPAGATE_ERROR(errStatus)
       end if
+      if (areSolventNeighboursSym) then
+        call solvation%addGradients(env, symNeighbourList%neighbourList,&
+            & symNeighbourList%species, symNeighbourList%coord, symNeighbourList%img2CentCell,&
+            & derivs, errStatus)
+      else
+        call solvation%addGradients(env, neighbourList, species, coord, img2CentCell, derivs,&
+            & errStatus)
+      end if
+      @:PROPAGATE_ERROR(errStatus)
     end if
 
     if (allocated(dispersion)) then
