@@ -492,8 +492,8 @@ contains
   !!* @param list  The list object.
   !!* @param pNode Pointer to set to the wanted node.
   !!* @param index Index of the wanted node.
-  function getNode(list, index)
-    type(TNode), pointer :: getNode
+  function getNode(list, index) result(res)
+    type(TNode), pointer :: res
     type(${TYPE_NAME}$), intent(inout) :: list
     integer, intent(in) :: index
 
@@ -502,22 +502,22 @@ contains
     @:ASSERT(index > 0 .and. index <= list%length)
 
     if (list%iCache == index) then
-      getNode => list%pCache
+      res => list%pCache
       return
     end if
 
     if (list%iCache > 0 .and. list%iCache < index) then
       iStart = list%iCache
-      getNode => list%pCache
+      res => list%pCache
     else
       iStart = 1
-      getNode => list%pFirst
+      res => list%pFirst
     end if
 
     do ii = iStart + 1, index
-      getNode => getNode%pNext
+      res => res%pNext
     end do
-    list%pCache => getNode
+    list%pCache => res
     list%iCache = index
 
    end function getNode
