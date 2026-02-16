@@ -413,8 +413,10 @@ contains
     if (isMultipolar) then
 
       if (tReadAscii) then
+        ! allow(unchecked-stat)
         read(file%unit, "(2I2)", iostat=iErr) nDipole, nQuadrupole
       else
+        ! allow(unchecked-stat)
         read(file%unit, iostat=iErr)  nDipole, nQuadrupole
       end if
       if (allocated(multipoles%dipoleAtom)) then
@@ -553,8 +555,10 @@ contains
         coeffsAndShifts(:,:) = 0.0_dp
         if (tKpointInfoPresent) then
           if (tReadAscii) then
+            ! allow(unchecked-stat)
             read(file%unit, *, iostat=iErr) coeffsAndShifts
           else
+            ! allow(unchecked-stat)
             read(file%unit, iostat=iErr) coeffsAndShifts
           end if
           call checkSupercellFoldingMatrix(coeffsAndShifts, errStatus)
@@ -857,8 +861,10 @@ contains
       ! Write k-point set information to file, if CAM calculation with k-points is present
       if (present(coeffsAndShifts)) then
         if (tWriteAscii) then
+          ! allow(unchecked-stat)
           write(fd%unit, *, iostat=iErr) coeffsAndShifts
         else
+          ! allow(unchecked-stat)
           write(fd%unit, iostat=iErr) coeffsAndShifts
         end if
       end if
