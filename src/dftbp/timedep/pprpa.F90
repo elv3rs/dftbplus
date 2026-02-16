@@ -699,7 +699,7 @@ contains
       if ((ii == 1) .and. (sym == "S")) then
         eval_0 = pp_eval(i)
         homo = aa
-        cycle
+        cycle RPA
       endif
 
       diff_a = aa - homo - 1
@@ -718,7 +718,7 @@ contains
             & 'HOMO -> LUMO +', diff_a, weight, ks_ener_a, sym
       endif
 
-      if (((ii > nExc) .and. (sym == "S")) .or. ((ii == nExc) .and. (sym == "T"))) exit
+      if (((ii > nExc) .and. (sym == "S")) .or. ((ii == nExc) .and. (sym == "T"))) exit RPA
 
     end do RPA
 

@@ -31,6 +31,9 @@ extend-exclude = [
 
 select = ["ALL"]
 ignore = [
+    # --- Internal test rules (not for real projects) ---
+    "FORT",    # all Fortitude internal test rules (FORT99xx)
+
     # --- Formatting / style (not autofixable, too many) ---
     "S001",    # line-too-long — 1640 violations, manual reformatting needed
 
@@ -45,7 +48,6 @@ ignore = [
     "C022",    # implicit-real-kind — 12 violations, overlaps with C021
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
     "C043",    # missing-action-specifier — 13 violations, minor
-    "C141",    # missing-exit-or-cycle-label — 15 violations, style preference
 
     # --- Legacy interfaces (cannot be changed without API breaks) ---
     "C071",    # assumed-size-array — 28 violations, legacy interfaces
@@ -53,7 +55,7 @@ ignore = [
 
     # --- Coding conventions (too many to fix now, track for gradual cleanup) ---
     "C101",    # missing-default-pointer-initialisation — 49 violations, needs careful review
-    "C081",    # initialisation-in-declaration — 18 violations, context-dependent severity
+    "C081",    # initialisation-in-declaration — 18 violations (autofix now available via --unsafe-fixes)
     "C131",    # missing-accessibility-statement — 6 violations, mostly in small utility modules
     "C132",    # default-public-accessibility — 5 violations, paired with C131
 ]

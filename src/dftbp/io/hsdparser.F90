@@ -291,7 +291,7 @@ contains
           if (fileDepth == 0) then
             tFinished = .true.
           end if
-          exit
+          exit lpMain
         end if
         call convertWhitespaces(strLine)
         strLine = adjustl(strLine)

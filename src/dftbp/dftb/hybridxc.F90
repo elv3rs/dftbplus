@@ -5112,7 +5112,7 @@ contains
         loopB1: do iNeighK = 0, nNeighbourCamSym(iAtK)
           iAtB = symNeighbourList%neighbourList%iNeighbour(iNeighK, iAtK)
           iAtBfold = symNeighbourList%img2CentCell(iAtB)
-          if (iAtK == iAtBfold) cycle
+          if (iAtK == iAtBfold) cycle loopB1
           descB = getDescriptor(iAtBfold, iSquare)
           ! \tilde{\gamma}_{\mu\beta}
           gammaMKMB = gammaMK + this%camGammaEval0(iAtM, iAtBfold)
@@ -5163,7 +5163,7 @@ contains
     loopK2: do iAtK = 1, nAtom0
       descK = getDescriptor(iAtK, iSquare)
       loopM2: do iAtM = 1, nAtom0
-        if (iAtK == iAtM) cycle
+        if (iAtK == iAtM) cycle loopM2
         descM = getDescriptor(iAtM, iSquare)
         dGammaMK(:) = -this%camdGammaEval0(:, iAtM, iAtK)
         loopB2: do iNeighK = 0, nNeighbourCamSym(iAtK)
@@ -5217,7 +5217,7 @@ contains
         loopA3: do iNeighM = 0, nNeighbourCamSym(iAtM)
           iAtA = symNeighbourList%neighbourList%iNeighbour(iNeighM, iAtM)
           iAtAfold = symNeighbourList%img2CentCell(iAtA)
-          if (iAtK == iAtAfold) cycle
+          if (iAtK == iAtAfold) cycle loopA3
           dGammaAK(:) = -this%camdGammaEval0(:, iAtAfold, iAtK)
           descA = getDescriptor(iAtAfold, iSquare)
           ! get 2D pointer to Sam overlap block
@@ -6717,7 +6717,7 @@ contains
         loopB1: do iNeighK = 0, nNeighbourCamSym(iAtK)
           iAtB = symNeighbourList%neighbourList%iNeighbour(iNeighK, iAtK)
           iAtBfold = symNeighbourList%img2CentCell(iAtB)
-          if (iAtBfold == iAtK) cycle
+          if (iAtBfold == iAtK) cycle loopB1
           descB = getDescriptor(iAtBfold, iSquare)
           vecL(:) = cellVecs(:, symNeighbourList%iCellVec(iAtB))
           SbnPrimeKequalsN(:,:,:) = 0.0_dp
@@ -6887,7 +6887,7 @@ contains
     loopK2: do iAtK = 1, nAtom0
       descK = getDescriptor(iAtK, iSquare)
       loopM2: do iAtM = 1, nAtom0
-        if (iAtK == iAtM) cycle
+        if (iAtK == iAtM) cycle loopM2
         descM = getDescriptor(iAtM, iSquare)
         dGammaMK = -this%camdGammaEvalG(iAtM, iAtK)%data
         loopB2: do iNeighK = 0, nNeighbourCamSym(iAtK)
@@ -6958,7 +6958,7 @@ contains
         loopB3: do iNeighN = 0, nNeighbourCamSym(iAtN)
           iAtB = symNeighbourList%neighbourList%iNeighbour(iNeighN, iAtN)
           iAtBfold = symNeighbourList%img2CentCell(iAtB)
-          if (iAtK == iAtBfold) cycle
+          if (iAtK == iAtBfold) cycle loopB3
           descB = getDescriptor(iAtBfold, iSquare)
           vecL(:) = cellVecs(:, symNeighbourList%iCellVec(iAtB))
           dGammaKB = this%camdGammaEvalG(iAtK, iAtBfold)%data
@@ -7035,7 +7035,7 @@ contains
           loopA4: do iNeighM = 0, nNeighbourCamSym(iAtM)
             iAtA = symNeighbourList%neighbourList%iNeighbour(iNeighM, iAtM)
             iAtAfold = symNeighbourList%img2CentCell(iAtA)
-            if (iAtK == iAtAfold) cycle
+            if (iAtK == iAtAfold) cycle loopA4
             descA = getDescriptor(iAtAfold, iSquare)
             vecH(:) = cellVecs(:, symNeighbourList%iCellVec(iAtA))
             dGammaAK = -this%camdGammaEvalG(iAtAfold, iAtK)%data
@@ -7104,7 +7104,7 @@ contains
           loopA5: do iNeighM = 0, nNeighbourCamSym(iAtM)
             iAtA = symNeighbourList%neighbourList%iNeighbour(iNeighM, iAtM)
             iAtAfold = symNeighbourList%img2CentCell(iAtA)
-            if (iAtK == iAtAfold) cycle
+            if (iAtK == iAtAfold) cycle loopA5
             descA = getDescriptor(iAtAfold, iSquare)
             vecH(:) = cellVecs(:, symNeighbourList%iCellVec(iAtA))
             dGammaAK = -this%camdGammaEvalG(iAtAfold, iAtK)%data

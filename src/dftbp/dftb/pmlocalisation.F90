@@ -366,7 +366,7 @@ contains
       conv = abs(alphamax) - abs(alphalast)
       if (iIter > 2 .and. ((abs(conv)<pipekTol) .or. alphamax == 0.0)) then
         tConverged = .true.
-        exit
+        exit lpLocalise
       end if
       alphalast = alphamax
 
@@ -671,14 +671,14 @@ contains
       if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0)) then
         write(stdout, *)'Converged on rotation angle'
         tConverged = .true.
-        exit
+        exit lpLocalise
       end if
 
       conv = abs(Localisation-oldLocalisation)
       if (abs(conv)<convergence) then
         write(stdout, *)'Converged on localization value.'
         tConverged = .true.
-        exit
+        exit lpLocalise
       end if
 
       alphalast = alphamax
@@ -961,7 +961,7 @@ contains
       conv = abs(alphamax) - abs(alphalast)
       if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0)) then
         tConverged = .true.
-        exit
+        exit lpLocalise
       end if
       alphalast = alphamax
 
