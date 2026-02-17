@@ -132,7 +132,7 @@ contains
     type(TWrappedInt1), intent(inout) :: iOrbRegion(:)
 
     !> File name for each region
-    character(*), intent(inout) :: regionLabels(:)
+    character(lc), intent(inout) :: regionLabels(:)
 
     !> Current region being processed
     integer, intent(inout) :: curReg
@@ -184,7 +184,7 @@ contains
     type(TWrappedInt1), intent(inout) :: iOrbRegion(:)
 
     !> File name for each region
-    character(*), intent(inout) :: regionLabels(:)
+    character(lc), intent(inout) :: regionLabels(:)
 
     !> Current region being processed
     integer, intent(inout) :: curReg

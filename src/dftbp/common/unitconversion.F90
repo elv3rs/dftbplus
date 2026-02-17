@@ -295,6 +295,7 @@ contains
     integer, intent(out) :: iostat
 
     !> Eventual error message
+    ! allow(assumed-size-character-intent)
     character(*), intent(inout) :: iomsg
 
     if (this%invertValue) then

@@ -457,6 +457,7 @@ contains
   subroutine convertWhitespaces(str)
 
     !> String to process.
+    ! allow(assumed-size-character-intent)
     character(len=*), intent(inout) :: str
 
     integer :: ii

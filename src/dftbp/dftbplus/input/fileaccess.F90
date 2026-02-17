@@ -28,7 +28,7 @@ contains
     type(fnode), pointer, intent(in) :: node
 
     !> Read and write access types on exit (defaulting to ["stream", "stream"])
-    character(*), intent(out) :: accessTypes(:)
+    character(20), intent(out) :: accessTypes(:)
 
     type(fnode), pointer :: child
     type(TListString) :: stringList

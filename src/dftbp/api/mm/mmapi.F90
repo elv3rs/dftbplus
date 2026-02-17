@@ -10,7 +10,7 @@
 !> Provides DFTB+ API for MM-type high level access
 module dftbp_mmapi
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbp_common_accuracy, only : dp
+  use dftbp_common_accuracy, only : dp, mc
   use dftbp_common_environment, only : TEnvironment, TEnvironment_init
   use dftbp_common_file, only : closeFile, openFile, TFileDescr
   use dftbp_common_globalenv, only : destructGlobalEnv, initGlobalEnv, instanceSafeBuild, withMpi
@@ -1133,7 +1133,7 @@ contains
     integer, allocatable, intent(out) :: species(:)
 
     !> Names of each species, usually X1, X2 unless typeNames have been specified.
-    character(len=*), allocatable, intent(out) :: speciesNames(:)
+    character(len=:), allocatable, intent(out) :: speciesNames(:)
 
     !> Array of type names, indexed by the type numbers.
     character(len=*), intent(in), optional :: typeNames(:)
@@ -1161,7 +1161,7 @@ contains
       end where
     end do
 
-    allocate(speciesNames(nSpecies))
+    allocate(character(mc) :: speciesNames(nSpecies))
     do iSp = 1, nSpecies
       if (present(typeNames)) then
         speciesNames(iSp) = typeNames(uniqueTypeNumbers(iSp))
