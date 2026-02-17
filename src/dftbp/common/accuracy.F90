@@ -13,7 +13,14 @@ module dftbp_common_accuracy
   use, intrinsic :: iso_fortran_env, only : real32, real64
   implicit none (type, external)
 
-  public
+  private
+
+  public :: dp, cp, sc, mc, lc, rdp, rsp
+  public :: distFudge, distFudgeOld, elecTol, elecTolMax, minTemp
+  public :: tolSameDist, tolSameDist2, minNeighDist, minNeighDist2
+  public :: minShortGamma, minShortEwald, tolShortGamma, tolShortEwald, tolMinAlpha
+  public :: MinHubTol, MinHubDiff, nSearchIter, mExpArg
+  public :: tolDispersion, tolDispDamp, tolEfEquiv, hugeIterations
 
   !> Precision of the real data type
   integer, parameter :: dp = real64

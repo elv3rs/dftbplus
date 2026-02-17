@@ -22,7 +22,19 @@ module dftbp_dftb_dispersions
   use dftbp_extlibs_sdftd3, only : TSDFTD3Input
   implicit none (type, external)
 
-  public
+  private
+
+  public :: TDispersionInp
+  public :: init, TDispDftD4, TDispDftD4Inp
+  public :: TDispersionIface
+  public :: dispslakirk_init, TDispSlaKirk, TDispSlaKirkInp
+  public :: dispuff_init, TDispUFF, TDispUffInp
+  public :: getuffvalues
+  public :: TSimpleDftD3, TSimpleDftD3Input
+  public :: TSDFTD3Input
+#:if WITH_MBD
+  public :: TDispMbdInp
+#:endif
 
   !> Types of dispersion model
   type :: TDispersionInp

@@ -60,12 +60,6 @@ real-suffix = "dp"
 "src/dftbp/dftbplus/inputconversion.F90" = ["C072"]
 "src/dftbp/io/charmanip.F90" = ["C072"]
 "src/dftbp/type/linkedlists0.F90" = ["C072"]
-# C132 default-public-accessibility (5 violations across 5 files)
-"src/dftbp/common/accuracy.F90" = ["C132"]
-"src/dftbp/common/release.F90" = ["C132"]
-"src/dftbp/dftb/dispersions.F90" = ["C132"]
-"src/dftbp/dftbplus/outputfiles.F90" = ["C132"]
-"src/dftbp/timedep/linrespcommon.F90" = ["C061", "C132"]
 # C061 missing-intent (388 violations across 40 files)
 # Most are pointer dummy arguments in HSD parser code and API callbacks.
 "app/modes/initmodes.F90" = ["C061"]
@@ -101,6 +95,7 @@ real-suffix = "dp"
 "src/dftbp/solvation/sasa.F90" = ["C061"]
 "src/dftbp/solvation/solvparser.F90" = ["C061"]
 "src/dftbp/timedep/linresp.F90" = ["C061"]
+"src/dftbp/timedep/linrespcommon.F90" = ["C061"]
 "src/dftbp/timedep/linrespgrad.F90" = ["C031", "C061"]
 "src/dftbp/timedep/timeprop.F90" = ["C061"]
 "src/dftbp/transport/matconv.F90" = ["C061"]

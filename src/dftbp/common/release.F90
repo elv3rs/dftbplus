@@ -11,7 +11,9 @@
 module dftbp_common_release
   implicit none (type, external)
 
-  public
+  private
+
+  public :: releaseName, releaseYear, TVersionMap
 
   !> Release name of the code
   character(len=*), parameter :: releaseName = "${RELEASE}$"

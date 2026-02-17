@@ -9,7 +9,11 @@
 module dftbp_dftbplus_outputfiles
   implicit none (type, external)
 
-  public
+  private
+
+  public :: autotestTag, userOut, bandOut, derivEBandOut, derivVBandOut
+  public :: mdOut, resultsTag, hessianOut, bornChargesOut, bornDerivativesOut
+  public :: fCharges, fStopDriver, fStopSCC, fShifts
 
   !> Tagged output files (machine readable)
   character(*), parameter :: autotestTag = "autotest.tag"
