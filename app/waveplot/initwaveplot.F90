@@ -393,7 +393,7 @@ contains
     type(TProgramVariables), intent(inout) :: this
 
     !> Pointer to the node, containing the information
-    type(fnode), pointer :: detailed
+    type(fnode), pointer, intent(in) :: detailed
 
     !> Wether to look for ground state occupations (True) or excited (False)
     logical, intent(in) :: tGroundState
@@ -467,7 +467,7 @@ contains
     type(TGeometry), intent(out) :: geo
 
     !> Node containing the geometry
-    type(fnode), pointer :: geonode
+    type(fnode), pointer, intent(in) :: geonode
 
     !! Pointers to input nodes
     type(fnode), pointer :: child
@@ -505,7 +505,7 @@ contains
     type(TProgramVariables), intent(inout) :: this
 
     !> Node containing the information
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Nr. of states in the calculation
     integer, intent(in) :: nLevel
@@ -749,7 +749,7 @@ contains
     type(TProgramVariables), intent(inout) :: this
 
     !> Node containing the basis definition
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Names of the species for which the basis should be read in
     character(len=*), intent(in) :: speciesNames(:)
@@ -789,7 +789,7 @@ contains
   subroutine readSpeciesBasis(node, basisResolution, spBasis)
 
     !> Node containing the basis definition for a species
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Grid distance for discretising the basis functions
     real(dp), intent(in) :: basisResolution

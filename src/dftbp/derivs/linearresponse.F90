@@ -117,7 +117,7 @@ contains
     real(dp), intent(out) :: dRhoSparse(:)
 
     !> Derivative of rho as a square matrix, if needed
-    real(dp), pointer :: dRhoSqr(:,:,:)
+    real(dp), pointer, intent(inout) :: dRhoSqr(:,:,:)
 
     !> Data for range-separated calculation
     class(THybridXcFunc), allocatable, intent(inout) :: hybridXc
@@ -654,7 +654,7 @@ contains
     real(dp), intent(in) :: eigvals(:,:,:)
 
     !> Derivative of rho as a square matrix, if needed
-    real(dp), pointer :: dRhoSqr(:,:,:)
+    real(dp), pointer, intent(inout) :: dRhoSqr(:,:,:)
 
     !> Species of all atoms in the system
     integer, intent(in) :: species(:)

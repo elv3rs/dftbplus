@@ -34,7 +34,7 @@ contains
   subroutine readSpeciesListReal(node, speciesNames, array, default, units, markAllProcessed)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Names of all species
     character(len=*), intent(in) :: speciesNames(:)
@@ -93,7 +93,7 @@ contains
   subroutine readSpeciesListInt(node, speciesNames, array, default, markAllProcessed)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Names of all species
     character(len=*), intent(in) :: speciesNames(:)

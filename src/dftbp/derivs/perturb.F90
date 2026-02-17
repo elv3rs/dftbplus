@@ -991,10 +991,10 @@ contains
     real(dp), target, allocatable, intent(inout) :: dRhoOut(:)
 
     !> Delta density matrix response for hybrid xc-functional calculations
-    real(dp), pointer :: dRhoOutSqr(:,:,:)
+    real(dp), pointer, intent(inout) :: dRhoOutSqr(:,:,:)
 
     !> Delta density matrix input for hybrid xc-functional calculations
-    real(dp), pointer :: dRhoInSqr(:,:,:)
+    real(dp), pointer, intent(inout) :: dRhoInSqr(:,:,:)
 
     !> Are there orbital potentials present
     type(TDftbU), intent(in), allocatable :: dftbU
@@ -1630,10 +1630,10 @@ contains
     real(dp), target, allocatable, intent(out) :: dRhoOut(:)
 
     !> Delta density matrix for hybrid xc-functional calculations
-    real(dp), pointer :: dRhoInSqr(:,:,:)
+    real(dp), pointer, intent(inout) :: dRhoInSqr(:,:,:)
 
     !> Delta density matrix for hybrid xc-functional calculations
-    real(dp), pointer :: dRhoOutSqr(:,:,:)
+    real(dp), pointer, intent(inout) :: dRhoOutSqr(:,:,:)
 
     ! derivative of potentials
     type(TPotentials), intent(out) :: dPotential

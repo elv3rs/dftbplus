@@ -62,20 +62,14 @@ real-suffix = "dp"
 "src/dftbp/type/linkedlists0.F90" = ["C072"]
 # C061 missing-intent (remaining violations across 33 files)
 # Most are pointer dummy arguments in HSD parser code and API callbacks.
-"app/modes/initmodes.F90" = ["C061"]
 "app/phonons/initphonons.F90" = ["C061"]
 "app/phonons/libnegfint.F90" = ["C061"]
 "app/transporttools/parser.F90" = ["C061"]
 "app/waveplot/gridcache.F90" = ["C061"]
-"app/waveplot/initwaveplot.F90" = ["C061"]
-"src/dftbp/derivs/linearresponse.F90" = ["C061"]
-"src/dftbp/derivs/perturb.F90" = ["C061"]
 "src/dftbp/dftbplus/apicallback.F90" = ["C061"]
 "src/dftbp/dftbplus/main.F90" = ["C031"]
 "src/dftbp/dftbplus/oldcompat.F90" = ["C061"]
 "src/dftbp/dftbplus/parser.F90" = ["C061"]
-"src/dftbp/dftbplus/specieslist.F90" = ["C061"]
-
 "src/dftbp/io/hsdparser.F90" = ["C061"]
 "src/dftbp/io/hsdutils.F90" = ["C061"]
 "src/dftbp/io/hsdutils2.F90" = ["C061"]

@@ -407,7 +407,7 @@ contains
   subroutine readGeometry(geonode, geo)
 
     !> Node containing the geometry
-    type(fnode), pointer :: geonode
+    type(fnode), pointer, intent(in) :: geonode
 
     !> Contains the geometry information on exit
     type(TGeometry), intent(out) :: geo
@@ -441,7 +441,7 @@ contains
   subroutine getInputMasses(node, geo, masses)
 
     !> Relevant node of input data
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry object, which contains atomic species information
     type(TGeometry), intent(in) :: geo
