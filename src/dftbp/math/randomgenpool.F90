@@ -79,7 +79,8 @@ contains
 
 
     !> system time if available
-    integer :: timeValues(8)
+    integer, parameter :: nDateTimeValues = 8
+    integer :: timeValues(nDateTimeValues)
 
     !> real temporary
     real(dp) :: rTmp

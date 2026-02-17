@@ -261,7 +261,8 @@ contains
     !> Random number generator
     type(TRanlux), intent(inout) :: pRanlux
 
-    real(dp) :: ranvals(7)
+    integer, parameter :: nRanVals = 7
+    real(dp) :: ranvals(nRanVals)
     real(dp) :: junk
 
     ! use the uniform distribution to get a normal (Gaussian) distribution

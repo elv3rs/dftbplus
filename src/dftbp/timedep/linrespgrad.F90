@@ -968,7 +968,8 @@ contains
     !> Eigenvectors (X-Y), only evaluated if Z-vector is needed
     real(dp), intent(inout), allocatable :: xmy(:,:)
 
-    integer :: iparam(11), ipntr(11)
+    integer, parameter :: arpackControlLen = 11
+    integer :: iparam(arpackControlLen), ipntr(arpackControlLen)
     integer :: ido, ncv, lworkl, info
     integer :: nexc, natom, nLoc
     integer :: iState, comm

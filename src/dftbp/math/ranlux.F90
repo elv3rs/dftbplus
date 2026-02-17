@@ -46,18 +46,21 @@ module dftbp_math_ranlux
 
   private
   public :: TRanlux
+
+  !> Number of state values in the RANLUX generator
+  integer, parameter :: nRanluxState = 24
   public :: init, getRandom, getState
 
 
   !> Internal variables for the luxury pseudorandom generator
   type TRanlux
-    integer :: next(24)
+    integer :: next(nRanluxState)
     integer :: luxlev
     integer :: nskip
     integer :: in24
     integer :: i24
     integer :: j24
-    integer :: iseeds(24)
+    integer :: iseeds(nRanluxState)
     integer :: icarry
     real(dp) :: twom24
     real(dp) :: twom12

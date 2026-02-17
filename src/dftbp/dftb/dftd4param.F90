@@ -83,6 +83,9 @@ module dftbp_dftb_dftd4param
   !> Number of frequencies used in Casimir-Polder integration
   integer, parameter :: imagFrequencies = 23
 
+  !> Maximum coordination number for reference counting
+  integer, parameter :: maxCoordNumber = 18
+
 
   !> Damping parameters for DFT-D4 calculation
   type :: TDispDftD4Inp
@@ -506,7 +509,7 @@ contains
 
     integer :: nSpecies
     integer :: iZp1, iSec, iCN, iRef1, iRef2, iSp1, iSp2
-    integer :: cncount(0:18)
+    integer :: cncount(0:maxCoordNumber)
     real(dp) :: zEff1, c6, eta1
     real(dp) :: alpha(imagFrequencies)
     real(dp) :: tmp_hq(maxReferences, maxElementD4)

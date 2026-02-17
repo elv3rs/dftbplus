@@ -15,6 +15,9 @@ module dftbp_dftb_repulsive_splinerep
   implicit none (type, external)
 
   private
+
+  !> Number of coefficients in the last spline
+  integer, parameter :: nLastSplineCoeffs = 6
   public :: TSplineRepInp, TSplineRep, TSplineRep_init
 
 
@@ -28,7 +31,7 @@ module dftbp_dftb_repulsive_splinerep
     real(dp), allocatable :: spCoeffs(:,:)
 
     !> Coeffs. of the last spline
-    real(dp) :: spLastCoeffs(6)
+    real(dp) :: spLastCoeffs(nLastSplineCoeffs)
 
     !> Coeffs for the exponential head
     real(dp) :: expCoeffs(3)
@@ -53,7 +56,7 @@ module dftbp_dftb_repulsive_splinerep
     real(dp), allocatable :: spCoeffs(:,:)
 
     !> Coeffs of the last spline
-    real(dp) :: spLastCoeffs(6)
+    real(dp) :: spLastCoeffs(nLastSplineCoeffs)
 
     !> Exponential head
     real(dp) :: expCoeffs(3)

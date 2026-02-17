@@ -43,6 +43,10 @@ ignore = [
 [check.kind-suffixes]
 real-suffix = "dp"
 
+# C031: 9 (= 3×3 flattened lattice vector / max-orbital-block) is pervasive.
+[check.magic-numbers]
+extra-allowed-literals = [9]
+
 # Rules enforced globally but grandfathered in specific files.
 # New code must comply; existing violations are tracked here.
 [check.per-file-ignores]
@@ -60,14 +64,3 @@ real-suffix = "dp"
 "src/dftbp/dftbplus/inputconversion.F90" = ["C072"]
 "src/dftbp/io/charmanip.F90" = ["C072"]
 "src/dftbp/type/linkedlists0.F90" = ["C072"]
-# C031 magic-number-in-array-size (17 violations across 10 files)
-"src/dftbp/dftbplus/main.F90" = ["C031"]
-"src/dftbp/md/mdcommon.F90" = ["C031"]
-"src/dftbp/timedep/linrespgrad.F90" = ["C031"]
-"src/dftbp/type/typegeometryhsd.F90" = ["C031"]
-"src/dftbp/dftb/dftd4param.F90" = ["C031"]
-"src/dftbp/dftb/repulsive/splinerep.F90" = ["C031"]
-"src/dftbp/io/ipisocket.F90" = ["C031"]
-"src/dftbp/math/randomgenpool.F90" = ["C031"]
-"src/dftbp/math/ranlux.F90" = ["C031"]
-"src/dftbp/type/oldskdata.F90" = ["C031"]
