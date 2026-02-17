@@ -132,7 +132,7 @@ contains
     character(*), intent(in) :: hsdFile
 
     !> Data tree representation of the input
-    type(fnode), pointer :: hsdTree
+    type(fnode), pointer, intent(out) :: hsdTree
 
     call parseHSD(rootTag, hsdFile, hsdTree)
 
@@ -143,7 +143,7 @@ contains
   subroutine parseHsdTree(hsdTree, input, parserFlags)
 
     !> Tree representation of the input
-    type(fnode), pointer :: hsdTree
+    type(fnode), pointer, intent(in) :: hsdTree
 
     !> Returns initialised input variables on exit
     type(TInputData), intent(out) :: input
@@ -316,11 +316,11 @@ contains
   subroutine readParserOptions(node, root, flags, implicitVersion)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Root of the entire tree (in case it needs to be converted, for example because of
     !> compatibility options)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
 
     !> Contains parser flags on exit.
     type(TParserFlags), intent(out) :: flags
@@ -382,7 +382,7 @@ contains
   subroutine readGeometry(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Input structure to be filled
     type(TInputData), intent(inout) :: input
@@ -807,7 +807,7 @@ contains
   subroutine commonGeoOptions(node, ctrl, geom, atomsRange, isMaxStepNeeded)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -891,7 +891,7 @@ contains
   subroutine readXlbomdOptions(node, input)
 
     !> node in the input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> extracted settings on exit
     type(TXLBOMDInp), allocatable, intent(out) :: input
@@ -957,7 +957,7 @@ contains
   subroutine readGeoConstraints(node, ctrl, nAtom)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -997,7 +997,7 @@ contains
   subroutine readInitialVelocities(node, ctrl, nAtom)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -1044,7 +1044,7 @@ contains
   subroutine getInputMasses(node, geo, masses)
 
     !> relevant node of input data
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> geometry object, which contains atomic species information
     type(TGeometry), intent(in) :: geo
@@ -1907,7 +1907,7 @@ contains
   subroutine readSpinOrbit(node, ctrl, geo, orb)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -1952,7 +1952,7 @@ contains
   subroutine readMaxAngularMomentum(node, geo, angShells)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
@@ -2170,7 +2170,7 @@ contains
   subroutine readMdftb(node, ctrl, geo)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2349,7 +2349,7 @@ contains
   subroutine readExternal(node, ctrl, geo)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2547,7 +2547,7 @@ contains
   subroutine readFilling(node, ctrl, geo, temperatureDefault)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2824,7 +2824,7 @@ contains
   subroutine readKPoints(node, ctrl, geo, errStatus)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2876,7 +2876,7 @@ contains
   subroutine maxSelfConsIterations(node, ctrl, label, maxSccIter)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2941,7 +2941,7 @@ contains
   subroutine getEuclideanKSampling(ctrl, node, geo, errStatus)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -3121,7 +3121,7 @@ contains
   subroutine getHelicalKSampling(ctrl, node, geo)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -3252,7 +3252,7 @@ contains
   subroutine readSccOptions(node, ctrl, geo)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -3293,7 +3293,7 @@ contains
   subroutine readForceOptions(node, ctrl)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -3320,7 +3320,7 @@ contains
   subroutine SKTruncations(node, truncationCutOff, skInterMeth)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> This is the resulting cutoff distance
     real(dp), intent(out) :: truncationCutOff
@@ -3360,13 +3360,13 @@ contains
   subroutine getInitialCharges(node, geo, initCharges)
 
     !> relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> geometry, including atomic type information
     type(TGeometry), intent(in) :: geo
 
     !> initial atomic charges
-    real(dp), allocatable :: initCharges(:)
+    real(dp), allocatable, intent(out) :: initCharges(:)
 
     type(fnode), pointer :: child, child2, child3, val
     type(fnodeList), pointer :: children
@@ -3414,7 +3414,7 @@ contains
   subroutine getInitialSpins(node, geo, nSpin, initSpins)
 
     !> relevant node in input data
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> geometry, including atomic information
     type(TGeometry), intent(in) :: geo
@@ -3423,7 +3423,7 @@ contains
     integer, intent(in) :: nSpin
 
     !> initial spins on return
-    real(dp), allocatable :: initSpins(:,:)
+    real(dp), allocatable, intent(out) :: initSpins(:,:)
 
     type(fnode), pointer :: child, child2, child3, val
     type(fnodeList), pointer :: children
@@ -4141,7 +4141,7 @@ contains
   subroutine readDispersion(node, geo, input, nrChrg, tSCC)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> geometry, including atomic information
     type(TGeometry), intent(in) :: geo
@@ -4201,7 +4201,7 @@ contains
   subroutine readDispSlaKirk(node, geo, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -4334,7 +4334,7 @@ contains
   subroutine readDispVdWUFF(node, geo, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -4383,7 +4383,7 @@ contains
   subroutine readDFTD3(node, geo, input)
 
     !> Node to process.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -4466,7 +4466,7 @@ contains
   subroutine readSimpleDFTD3(node, geo, input)
 
     !> Node to process.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -4503,7 +4503,7 @@ contains
   subroutine readDispDFTD4(node, geo, input, nrChrg)
 
     !> Node to process.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -4597,7 +4597,7 @@ contains
       & kKcnDefault, kRadDefault)
 
     !> Node to process.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -4690,7 +4690,7 @@ contains
   subroutine readCoordinationNumber(node, input, geo, cnDefault, cutDefault)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TCNInput), intent(inout) :: input
@@ -4857,7 +4857,7 @@ contains
   subroutine readTemperature(node, tempProfInp)
 
     !> Temperature node
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Temperature profile input data on exit
     type(TTempProfileInput), intent(out) :: tempProfInp
@@ -4880,7 +4880,7 @@ contains
   subroutine readTemperatureProfile(node, modifier, tempProfInp)
 
     !> Temperature profile node
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> unit modifier of the node
     character(len=*), intent(in) :: modifier
@@ -4944,7 +4944,7 @@ contains
   subroutine readExcited(node, geo, ctrl)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> geometry object, which contains atomic species information
     type(TGeometry), intent(in) :: geo
@@ -5407,7 +5407,7 @@ contains
   subroutine freqRanges(node, frequencies)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Frequencies, 0 being static
     real(dp), allocatable, intent(inout) :: frequencies(:)
@@ -5514,7 +5514,7 @@ contains
   subroutine readLaterAnalysis(node, ctrl)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to fill
     type(TControl), intent(inout) :: ctrl
@@ -5535,13 +5535,13 @@ contains
   subroutine readLaterHamiltonian(hamNode, ctrl, driverNode, geo)
 
     !> Hamiltonian node to parse
-    type(fnode), pointer :: hamNode
+    type(fnode), pointer, intent(in) :: hamNode
 
     !> Control structure to fill
     type(TControl), intent(inout) :: ctrl
 
     !> Geometry driver node to parse
-    type(fnode), pointer :: driverNode
+    type(fnode), pointer, intent(in) :: driverNode
 
     !> Geometry structure
     type(TGeometry), intent(in) :: geo
@@ -5653,7 +5653,7 @@ contains
   subroutine readElectronicFilling(hamNode, ctrl, geo)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: hamNode
+    type(fnode), pointer, intent(in) :: hamNode
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -5677,7 +5677,7 @@ contains
   subroutine readSpinConstants(hamNode, geo, orb, ctrl)
 
     !> node for Hamiltonian data
-    type(fnode), pointer :: hamNode
+    type(fnode), pointer, intent(in) :: hamNode
 
     !> geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -5803,7 +5803,7 @@ contains
   subroutine readElecDynamics(node, input, geom, masses)
 
     !> input data to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> ElecDynamicsInp instance
     type(TElecDynamicsInp), intent(inout) :: input
@@ -6030,7 +6030,7 @@ contains
   subroutine readMDInitTemp(node, tempAtom, minimumTemp)
 
     !> input data to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Ionic temperature
     real(dp), intent(out) :: tempAtom
@@ -6058,7 +6058,7 @@ contains
     character(*), intent(in) :: direction
 
     !> input tree for error return
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> direction indicator (1 - 4) for (x,y,z,all)
     integer :: iX
@@ -6084,7 +6084,7 @@ contains
   subroutine readInitialVelocitiesNAMD(node, input, nAtom)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> ElecDynamicsInp object structure to be filled
     type(TElecDynamicsInp), intent(inout) :: input
@@ -6132,7 +6132,7 @@ contains
   subroutine readTransportGeometry(root, geom, transpar)
 
     !> Root node containing the current block
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
 
     !> geometry of the system, which may be modified for some types of calculation
     type(TGeometry), intent(inout) :: geom
@@ -6359,7 +6359,7 @@ contains
     !> Electron temperature
     real(dp), intent(in) :: tempElec
 
-    type(fnode), pointer :: pNode
+    type(fnode), pointer, intent(in) :: pNode
     type(fnode), pointer :: field, child1, child2
     real(dp) :: Estep
     integer :: defValue, ii
@@ -6787,7 +6787,7 @@ contains
     character(mc), intent(in) :: name
 
     !> Node in the parser, needed for error handling
-    type(fnode), pointer :: pContact
+    type(fnode), pointer, intent(in) :: pContact
 
     !> Allowed discrepancy in positions of atoms between the contact's two  principle layers
     real(dp), intent(in) :: contactLayerTol
@@ -6863,7 +6863,7 @@ contains
   subroutine readDephasing(node, orb, geom, tp, tundos)
 
     !> Input tree node
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Atomic orbital information
     type(TOrbitals), intent(in) :: orb
@@ -6908,7 +6908,7 @@ contains
   subroutine readElPh(node, elph, geom, orb, tp)
 
     !> Input node in the tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> container for electron-phonon parameters
     type(TElPh), intent(inout) :: elph
@@ -6953,7 +6953,7 @@ contains
   subroutine readDephasingBP(node, elph, geom, orb, tp)
 
     !> Node in input document tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> container for buttiker-probes parameters
     type(TElPh), intent(inout) :: elph
@@ -7017,7 +7017,7 @@ contains
   subroutine readCoupling(node, elph, geom, orb, tp)
 
     !> Node in the input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> container for buttiker-probes parameters
     type(TElPh), intent(inout) :: elph
@@ -7125,7 +7125,7 @@ contains
 
   !> Read Tunneling and Dos options from analysis block
   subroutine readTunAndDos(root, orb, geo, tundos, transpar, tempElec)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TOrbitals), intent(in) :: orb
     type(TGeometry), intent(in) :: geo
 
@@ -7268,7 +7268,7 @@ contains
   subroutine readContacts(pNodeList, contacts, geom, task, contactLayerTol)
 
     !> Node to process
-    type(fnodeList), pointer :: pNodeList
+    type(fnodeList), pointer, intent(in) :: pNodeList
 
     !> Contacts
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
@@ -7405,7 +7405,7 @@ contains
   subroutine getFermiLevels(pNode, eFermis, nodeModifier)
 
     !> Document tree node to start from
-    type(fnode), pointer :: pNode
+    type(fnode), pointer, intent(in) :: pNode
 
     !> Fermi energies for contacts
     real(dp), intent(out) :: eFermis(:)
@@ -7434,7 +7434,7 @@ contains
   subroutine getEmitterCollectorByName(pNode, emitter, collector, contactNames)
 
     !> Node in the input tree for error reporting
-    type(fnode), pointer :: pNode
+    type(fnode), pointer, intent(in) :: pNode
 
     !> Contact number for emitting
     integer, intent(out) :: emitter
@@ -7466,7 +7466,7 @@ contains
   function getContactByName(contactNames, contName, pNode) result(contact)
 
     !> Node in the input tree for error reporting
-    type(fnode), pointer :: pNode
+    type(fnode), pointer, intent(in) :: pNode
 
     !> All of the contact labels
     character(len=*), intent(in) :: contactNames(:)
@@ -8301,7 +8301,7 @@ contains
   subroutine readSpinTuning(node, ctrl, nType)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl

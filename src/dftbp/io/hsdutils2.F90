@@ -58,7 +58,7 @@ contains
   subroutine setUnprocessed(node)
 
     !> The node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     if (associated(node)) then
       call removeAttribute(node, attrProcessed)
@@ -106,10 +106,10 @@ contains
   subroutine getUnprocessedNodes(node, nodeList)
 
     !> Root element of the tree to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Containst the list of unprocessed nodes.
-    type(fnodeList), pointer :: nodeList
+    type(fnodeList), pointer, intent(out) :: nodeList
 
     nodeList => getTagsWithoutAttribute(node, attrProcessed)
 
@@ -120,13 +120,13 @@ contains
   subroutine warnUnprocessedNodes(node, tIgnoreUnprocessed, nodeList)
 
     !> Root element of the tree to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> if anything left after processing should be flagged
     logical, intent(in), optional :: tIgnoreUnprocessed
 
     !> list of left over nodes (if present)
-    type(fnodeList), pointer, optional :: nodeList
+    type(fnodeList), pointer, optional, intent(out) :: nodeList
 
     type(fnodeList), pointer :: list
     type(fnode), pointer :: child
@@ -173,7 +173,7 @@ contains
     character(len=*), intent(in) :: fileName
 
     !> to the tree
-    type(fnode), pointer :: fp
+    type(fnode), pointer, intent(out) :: fp
 
     fp => parsefile(fileName)
     call removeSpace(fp)
@@ -186,7 +186,7 @@ contains
   subroutine getNodeName2(node, nodeName)
 
     !> Node to get the name from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the node name for an associated node or empty string for an unassociated one.
     type(string), intent(inout) :: nodeName
@@ -204,7 +204,7 @@ contains
   subroutine setNodeName(node, name, updateHsdName)
 
     !> Node to change.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> New name of the node.
     character(len=*), intent(in) :: name
@@ -238,7 +238,7 @@ contains
   subroutine removeModifier(node)
 
     !> The node to process.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     if (associated(node)) then
       call removeAttribute(node, attrModifier)
@@ -257,7 +257,7 @@ contains
     character(len=*), intent(in) :: modifier
 
     !>  The child which carries this modifier (for error messages)
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(in) :: child
 
     !>  Array of the modifiers, occurring in modifer.
     type(string), intent(inout) :: modifiers(:)
@@ -301,7 +301,7 @@ contains
     type(TUnit), intent(in) :: units(:)
 
     !> The child, which carries the modifier.
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(in) :: child
 
     !> Value to convert, converted value on return.
     real(dp), intent(inout) :: convertValue${FORTRAN_ARG_DIM_SUFFIX(RANK)}$
@@ -345,14 +345,14 @@ contains
   subroutine getDescendant(root, path, child, requested, processed, parent)
 
     !> Node to seek the descendants of
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
 
     !> Path to the descendant. Parents are separated by "/" from their children
     !> (e.g. node1/node2/node3)
     character(len=*), intent(in) :: path
 
     !> Pointer to the child on return or null pointer if not found
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(out) :: child
 
     !> Should the program stop, if specified descendant is not present (default: .false.)
     logical, intent(in), optional :: requested
@@ -362,7 +362,7 @@ contains
 
     !>If provided, contains parent node of the child, or the last associated node, if the child was
     !>not found.
-    type(fnode), pointer, optional :: parent
+    type(fnode), pointer, optional, intent(out) :: parent
 
     character(len=*), parameter :: pathSep = "/"
 

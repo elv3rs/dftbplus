@@ -48,7 +48,7 @@ contains
   subroutine convertOldHSD(root, oldVersion, curVersion)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     !> Version number of the old parser
     integer, intent(in) :: oldVersion
@@ -118,7 +118,7 @@ contains
   subroutine convert_1_2(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: child1, child2
 
@@ -139,7 +139,7 @@ contains
   subroutine convert_2_3(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, par
     logical :: tValue
@@ -212,7 +212,7 @@ contains
   subroutine convert_3_4(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode),pointer :: node, node2, node3
     type(fnodeList), pointer :: children
@@ -252,7 +252,7 @@ contains
   subroutine replaceRange(node)
 
     !> node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     type(fnode), pointer :: node2
     integer :: bounds(2)
@@ -276,7 +276,7 @@ contains
   subroutine convert_4_5(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, ch3, par, dummy
     logical :: tVal
@@ -382,7 +382,7 @@ contains
   subroutine convert_5_6(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, ch3, ch4, par, dummy
     logical :: tVal
@@ -436,7 +436,7 @@ contains
   subroutine convert_6_7(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1
 
@@ -460,7 +460,7 @@ contains
   subroutine convert_7_8(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, par
     logical :: tVal
@@ -512,7 +512,7 @@ contains
   subroutine convert_8_9(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2
     logical :: tVal1, tVal2
@@ -563,7 +563,7 @@ contains
   subroutine convert_9_10(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, ch3, ch4, par, dummy
     logical :: tVal1, tVal2
@@ -741,7 +741,7 @@ contains
   subroutine convert_10_11(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2
 
@@ -770,7 +770,7 @@ contains
   subroutine convert_11_12(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2
     type(string) :: buffer
@@ -798,7 +798,7 @@ contains
   subroutine convert_12_13(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, par1
     integer :: maxIter
@@ -859,7 +859,7 @@ contains
   subroutine convert_13_14(root)
 
     !> Root tag of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: ch1, ch2, ch3, par, dummy, hybridAlgorithm
     type(string) :: buffer
@@ -947,7 +947,7 @@ contains
   subroutine handleD3Defaults(root)
 
     !> Root node of the HSD-tree
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(inout) :: root
 
     type(fnode), pointer :: pD3, pDampMethod, pChild
     type(string) :: buffer

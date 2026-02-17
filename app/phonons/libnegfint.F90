@@ -599,13 +599,13 @@ contains
     real(dp), intent(in) :: wght
 
     !> Tunneling
-    real(dp), dimension(:,:), pointer :: tunn
+    real(dp), dimension(:,:), pointer, intent(out) :: tunn
 
     !> Local or projected dos
-    real(dp), dimension(:,:), pointer :: ledos
+    real(dp), dimension(:,:), pointer, intent(out) :: ledos
 
     !> Heat currents
-    real(dp), dimension(:), pointer :: currents
+    real(dp), dimension(:), pointer, intent(out) :: currents
 
     type(lnParams) :: params
 
@@ -807,7 +807,7 @@ contains
   subroutine write_file(negf, pTot, pKRes, filename, kpoints, kWeights)
 
     !> Contains input data, runtime quantities and output data
-    type(TNegf) :: negf
+    type(TNegf), intent(inout) :: negf
 
     !> Total data to be written
     real(dp), intent(in) :: pTot(:,:)

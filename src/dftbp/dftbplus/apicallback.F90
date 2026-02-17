@@ -152,7 +152,7 @@ contains
   function TAPICallback_canAsiChangeTheModel(this) result(canIt)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Can the ASI binding change the state?
     logical :: canIt
@@ -166,13 +166,13 @@ contains
   subroutine TAPICallback_registerDM(this, callback, auxPtr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(inout) :: this
 
     !> Callback procedure to invoke
     procedure(TDMHSCallbackFunc) :: callback
 
     !> Auxillary data set by the callback
-    class(*), pointer :: auxPtr
+    class(*), pointer, intent(in) :: auxPtr
 
     this%dm_callback => callback
     this%dmAuxPtr => auxPtr
@@ -184,7 +184,7 @@ contains
   subroutine TAPICallback_invokeDM_real(this, iKpoint, iSpin, dataBuf, blacsDescr)
 
     !> Instance of the callback
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Index of k-point
     integer, value :: iKpoint
@@ -212,7 +212,7 @@ contains
   subroutine TAPICallback_invokeDM_cplx(this, iKpoint, iSpin, dataBuf, blacsDescr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Index of k-point
     integer, value :: iKpoint
@@ -240,13 +240,13 @@ contains
   subroutine TAPICallback_registerS(this, callback, auxPtr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(inout) :: this
 
     !> Callback procedure to invoke
     procedure(TDMHSCallbackFunc) :: callback
 
     !> Auxillary data set by the callback
-    class(*), pointer :: auxPtr
+    class(*), pointer, intent(in) :: auxPtr
 
     this%s_callback => callback
     this%sAuxPtr => auxPtr
@@ -258,13 +258,13 @@ contains
   subroutine TAPICallback_registerSetS(this, callback, auxPtr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(inout) :: this
 
     !> Callback procedure to invoke
     procedure(TSetDMHSCallbackFunc) :: callback
 
     !> Auxillary data set by the callback
-    class(*), pointer :: auxPtr
+    class(*), pointer, intent(in) :: auxPtr
 
     this%set_s_callback => callback
     this%set_sAuxPtr => auxPtr
@@ -276,7 +276,7 @@ contains
   subroutine TAPICallback_invokeS_real(this, iKpoint, iSpin, dataBuf, status, blacsDescr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Index of k-point
     integer, value :: iKpoint
@@ -313,7 +313,7 @@ contains
   subroutine TAPICallback_invokeS_cplx(this, iKpoint, iSpin, dataBuf, status, blacsDescr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Indices of k-point and spin chanel
     integer, value :: iKpoint, iSpin
@@ -347,13 +347,13 @@ contains
   subroutine TAPICallback_registerH(this, callback, auxPtr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(inout) :: this
 
     !> Callback procedure to invoke
     procedure(TDMHSCallbackFunc) :: callback
 
     !> Auxillary data set by the callback
-    class(*), pointer :: auxPtr
+    class(*), pointer, intent(in) :: auxPtr
 
     this%h_callback => callback
     this%hAuxPtr => auxPtr
@@ -365,13 +365,13 @@ contains
   subroutine TAPICallback_registerSetH(this, callback, auxPtr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(inout) :: this
 
     !> Callback procedure to invoke
     procedure(TSetDMHSCallbackFunc) :: callback
 
     !> Auxillary data set by the callback
-    class(*), pointer :: auxPtr
+    class(*), pointer, intent(in) :: auxPtr
 
     this%set_h_callback => callback
     this%set_hAuxPtr => auxPtr
@@ -383,7 +383,7 @@ contains
   subroutine TAPICallback_invokeH_real(this, iKpoint, iSpin, dataBuf, status, blacsDescr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Index of k-point
     integer, value :: iKpoint
@@ -420,7 +420,7 @@ contains
   subroutine TAPICallback_invokeH_cplx(this, iKpoint, iSpin, dataBuf, status, blacsDescr)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> Index of k-point
     integer, value :: iKpoint
@@ -545,7 +545,7 @@ contains
   subroutine TAPIinvokeHS_real(this, iKS, isCholesky, S, H, isSChanged, isHChanged)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> The combined spin and k-point index
     integer, intent(in) :: iKS(:)
@@ -584,7 +584,7 @@ contains
   subroutine TAPIinvokeHS_cplx(this, iKS, isCholesky, S, H, isSChanged, isHChanged)
 
     !> Instance
-    class(TAPICallback) :: this
+    class(TAPICallback), intent(in) :: this
 
     !> The combined spin and k-point index
     integer, intent(in) :: iKS(:)

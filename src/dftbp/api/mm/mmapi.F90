@@ -923,7 +923,7 @@ contains
     procedure(TDMHSCallbackFunc) :: callback
 
     !> pointer to a context object for the DM callback
-    class(*), pointer :: aux_ptr
+    class(*), pointer, intent(in) :: aux_ptr
 
     call this%checkInit()
     call this%main%apicallback%registerDM(callback, aux_ptr)
@@ -942,7 +942,7 @@ contains
     procedure(TDMHSCallbackFunc) :: callback
 
     !> pointer to a context object for the S callback
-    class(*), pointer :: aux_ptr
+    class(*), pointer, intent(in) :: aux_ptr
 
     call this%checkInit()
     call this%main%apicallback%registerS(callback, aux_ptr)
@@ -961,7 +961,7 @@ contains
     procedure(TSetDMHSCallbackFunc) :: callback
 
     !> pointer to a context object for the S callback
-    class(*), pointer :: aux_ptr
+    class(*), pointer, intent(in) :: aux_ptr
 
     call this%checkInit()
     call this%main%apicallback%registerSetS(callback, aux_ptr)
@@ -980,7 +980,7 @@ contains
     procedure(TDMHSCallbackFunc) :: callback
 
     !> pointer to a context object for the H callback
-    class(*), pointer :: aux_ptr
+    class(*), pointer, intent(in) :: aux_ptr
 
     call this%checkInit()
     call this%main%apicallback%registerH(callback, aux_ptr)
@@ -999,7 +999,7 @@ contains
     procedure(TSetDMHSCallbackFunc) :: callback
 
     !> pointer to a context object for the H callback
-    class(*), pointer :: aux_ptr
+    class(*), pointer, intent(in) :: aux_ptr
 
     call this%checkInit()
     call this%main%apicallback%registerSetH(callback, aux_ptr)

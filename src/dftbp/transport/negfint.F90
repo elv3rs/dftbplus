@@ -600,7 +600,7 @@ contains
     Type(TTranspar), intent(in) :: transpar
 
     !> Green's function calculational parameters
-    Type(TNEGFGreenDensInfo) :: greendens
+    Type(TNEGFGreenDensInfo), intent(inout) :: greendens
 
     !> number of neighbours for each atom
     Integer, intent(in) :: nNeigh(:)
@@ -755,7 +755,7 @@ contains
     type(TTranspar), intent(in) :: transPar
 
     !> Green's function calculational parameters
-    type(TNEGFGreenDensInfo) :: greenDens
+    type(TNEGFGreenDensInfo), intent(inout) :: greenDens
 
     !> Number of atoms in the system
     integer, intent(in) :: nAtoms
@@ -920,7 +920,7 @@ contains
     real(dp), intent(in) :: wght
 
     !> local DOS
-    real(dp), dimension(:,:), pointer :: ledos
+    real(dp), dimension(:,:), pointer, intent(out) :: ledos
 
     type(lnParams) :: params
 
@@ -985,10 +985,10 @@ contains
     type(TNegf), intent(inout) :: negf
 
     !> hamiltonian in dense format
-    real(dp), dimension(:,:) :: H_dev
+    real(dp), dimension(:,:), intent(inout) :: H_dev
 
     !> overlap in dense format
-    real(dp), dimension(:,:) :: S_dev
+    real(dp), dimension(:,:), intent(inout) :: S_dev
 
     !> hamiltonian in CSR format
     type(z_CSR), intent(inout) :: HH
@@ -1037,16 +1037,16 @@ contains
     real(dp), intent(in) :: wght
 
     !> Tunneling amplitudes
-    real(dp), dimension(:,:), pointer :: tunn
+    real(dp), dimension(:,:), pointer, intent(out) :: tunn
 
     !> current magnitudes
-    real(dp), dimension(:,:), pointer :: curr
+    real(dp), dimension(:,:), pointer, intent(out) :: curr
 
     !> local density of states
-    real(dp), dimension(:,:), pointer :: ledos
+    real(dp), dimension(:,:), pointer, intent(out) :: ledos
 
     !> current directions
-    real(dp), dimension(:), pointer :: currents
+    real(dp), dimension(:), pointer, intent(out) :: currents
 
     type(lnParams) :: params
 
@@ -1751,7 +1751,7 @@ contains
   subroutine write_file(negf, matTot, matSKRes, filename, nS, kpoints, kWeights)
 
     !> Contains input data, runtime quantities and output data
-    type(TNegf) :: negf
+    type(TNegf), intent(inout) :: negf
 
     !> results to print if allocated
     real(dp), intent(in), allocatable :: matTot(:,:)
@@ -1832,7 +1832,7 @@ contains
   subroutine write_files(negf, matTot, matSKRes, nS, kpoints, kWeights, regionLabels)
 
     !> Contains input data, runtime quantities and output data
-    type(TNegf) :: negf
+    type(TNegf), intent(inout) :: negf
 
     !> results to print if allocated
     real(dp), intent(in) :: matTot(:,:)
@@ -2178,8 +2178,8 @@ contains
 
     subroutine get_fmtstring(nK, skp, fmtstring)
       integer, intent(in) :: nK
-      character(:), allocatable :: skp
-      character(6) :: fmtstring
+      character(:), allocatable, intent(out) :: skp
+      character(6), intent(out) :: fmtstring
       integer :: nchars
 
       nchars = 3

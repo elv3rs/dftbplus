@@ -260,7 +260,7 @@ contains
     type(TgridCache), intent(inout) :: sf
 
     !> Contains the molecular orbital on the grid on exit
-    real(dp), pointer :: gridValReal(:,:,:)
+    real(dp), pointer, intent(out) :: gridValReal(:,:,:)
 
     !> Indices of the moleular orbital (spin, kpoint, level)
     integer, intent(out) :: levelIndex(:)
@@ -282,7 +282,7 @@ contains
     type(TgridCache), intent(inout) :: sf
 
     !> Contains the molecular orbital on the grid on exit
-    complex(dp), pointer :: gridValCmpl(:,:,:)
+    complex(dp), pointer, intent(out) :: gridValCmpl(:,:,:)
 
     !> Indices of the moleular orbital (spin, kpoint, level)
     integer, intent(out) :: levelIndex(:)
@@ -304,10 +304,10 @@ contains
     type(TgridCache), intent(inout), target :: sf
 
     !> Contains the real grid onexit
-    real(dp), pointer :: gridValReal(:,:,:)
+    real(dp), pointer, intent(out) :: gridValReal(:,:,:)
 
     !> Contains the complex grid on exit
-    complex(dp), pointer :: gridValCmpl(:,:,:)
+    complex(dp), pointer, intent(out) :: gridValCmpl(:,:,:)
 
     !> Level indexes of the processed orbital on exit
     integer, intent(out) :: levelIndex(:)

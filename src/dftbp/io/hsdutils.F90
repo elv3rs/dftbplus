@@ -180,7 +180,7 @@ contains
   subroutine getChVal_logical(node, name, variableValue, default, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -195,7 +195,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     integer :: iStart, iErr
@@ -237,7 +237,7 @@ contains
   subroutine getChVal_logicalR1(node, name, variableValue, default, nItem, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -256,7 +256,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     integer :: iStart, iErr, nReadItem
@@ -315,7 +315,7 @@ contains
   subroutine getChVal_string(node, name, variableValue, default, modifier, child, multiple)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -330,7 +330,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> If true, string contains as many tokens as possible, not just one (with spaces between the
     !> tokens).
@@ -387,7 +387,7 @@ contains
   subroutine getChVal_real(node, name, variableValue, default, modifier, child, isDefaultExported)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -402,7 +402,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Is the default value (if provided) set in the tree if there is no user input?
     logical, intent(in), optional :: isDefaultExported
@@ -450,7 +450,7 @@ contains
   subroutine getChVal_realR1(node, name, variableValue, default, nItem, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -469,7 +469,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     integer :: iStart, iErr, nReadItem
@@ -532,7 +532,7 @@ contains
   subroutine getChVal_realR2(node, name, variableValue, default, nItem, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -551,7 +551,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     real(dp) :: buffer(size(variableValue))
     integer :: nReadItem
@@ -596,7 +596,7 @@ contains
   subroutine getChVal_complex(node, name, variableValue, default, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -611,7 +611,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     integer :: iStart, iErr
@@ -654,7 +654,7 @@ contains
   subroutine getChVal_complexR1(node, name, variableValue, default, nItem, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -673,7 +673,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     integer :: iStart, iErr, nReadItem
@@ -732,7 +732,7 @@ contains
   subroutine getChVal_int(node, name, variableValue, default, modifier, child, isDefaultExported)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -747,7 +747,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Is the default value (if provided) set in the tree if there is no user input?
     logical, intent(in), optional :: isDefaultExported
@@ -794,7 +794,7 @@ contains
   subroutine getChVal_intR1(node, name, variableValue, default, nItem, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -813,7 +813,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     integer :: iStart, iErr, nReadItem
@@ -875,7 +875,7 @@ contains
   subroutine getChVal_intR2(node, name, variableValue, default, nItem, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -894,7 +894,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     integer :: buffer(size(variableValue))
     integer :: nReadItem
@@ -943,7 +943,7 @@ contains
   subroutine getChVal_lString(node, name, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -955,7 +955,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -992,7 +992,7 @@ contains
     type(TListString), intent(inout) :: variableValue
 
     !> node for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     type(string) :: token
@@ -1019,7 +1019,7 @@ contains
   subroutine getChVal_lReal(node, name, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1031,7 +1031,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1067,7 +1067,7 @@ contains
 
     !> value Contains the value of the parsed text
     type(TListReal), intent(inout) :: variableValue
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     real(dp) :: buffer
@@ -1094,7 +1094,7 @@ contains
   subroutine getChVal_lRealR1(node, name, dim, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1109,7 +1109,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1150,7 +1150,7 @@ contains
     type(TListRealR1), intent(inout) :: variableValue
 
     !> nodes for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     real(dp) :: buffer(dim)
@@ -1180,7 +1180,7 @@ contains
   subroutine getChVal_lComplex(node, name, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1192,7 +1192,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1228,7 +1228,7 @@ contains
 
     !> value Contains the value of the parsed text
     type(TListComplex), intent(inout) :: variableValue
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     complex(dp) :: buffer
@@ -1255,7 +1255,7 @@ contains
   subroutine getChVal_lComplexR1(node, name, dim, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1270,7 +1270,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1311,7 +1311,7 @@ contains
     type(TListComplexR1), intent(inout) :: variableValue
 
     !> nodes for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     complex(dp) :: buffer(dim)
@@ -1341,7 +1341,7 @@ contains
   subroutine getChVal_lInt(node, name, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1353,7 +1353,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1391,7 +1391,7 @@ contains
     type(TListInt), intent(inout) :: variableValue
 
     !> node for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     integer :: buffer
@@ -1418,7 +1418,7 @@ contains
   subroutine getChVal_lIntR1(node, name, dim, variableValue, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1433,7 +1433,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> the child itself
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1474,7 +1474,7 @@ contains
     type(TListIntR1), intent(inout) :: variableValue
 
     !> node for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     integer :: buffer(dim)
@@ -1506,7 +1506,7 @@ contains
       & child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1527,7 +1527,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1580,7 +1580,7 @@ contains
     type(TListRealR1), intent(inout) :: valueReal
 
     !> for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     real(dp) :: bufferReal(dimReal)
@@ -1620,7 +1620,7 @@ contains
       & valueReal, modifier, child)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -1644,7 +1644,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     type(string) :: text, modif
     type(fnode), pointer :: child2
@@ -1702,7 +1702,7 @@ contains
     type(TListRealR1), intent(inout) :: valueReal
 
     !> for error handling
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     integer :: iStart, iErr
     real(dp) :: bufferReal(dimReal)
@@ -1741,13 +1741,13 @@ contains
       & allowEmptyValue, dummyValue)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
 
     !> Value on return
-    type(fnode), pointer :: variableValue
+    type(fnode), pointer, intent(out) :: variableValue
 
     !> Default value for the child, if child is not found. If the empty string is passed as default
     !> value, the child is created but no value is added to it. The returned value pointer will be
@@ -1759,7 +1759,7 @@ contains
     type(string), intent(inout), optional :: modifier
 
     !> Pointer to the child node (with the spec. name) on return
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> If the node created as default should be tagged as list.
     logical, intent(in), optional :: list
@@ -1934,13 +1934,13 @@ contains
   subroutine getChild(node, name, child, requested, modifier, emptyIfMissing)
 
     !> Node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child node to look for
     character(len=*), intent(in) :: name
 
     !> Contains a pointer to the child on return
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(out) :: child
 
     !> If true and child not found, error is issued
     logical, intent(in), optional :: requested
@@ -1990,13 +1990,13 @@ contains
   subroutine getChildren(node, name, children)
 
     !> Parent node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the children to look for
     character(len=*), intent(in) :: name
 
     !> List of the children.
-    type(fnodeList), pointer :: children
+    type(fnodeList), pointer, intent(out) :: children
 
     type(fnode), pointer :: child
     integer :: ii
@@ -2014,7 +2014,7 @@ contains
   subroutine setChVal_logical(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2026,7 +2026,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2058,7 +2058,7 @@ contains
   subroutine setChVal_logicalR1(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2070,7 +2070,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2198,7 +2198,7 @@ contains
   subroutine setChVal_real(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2210,7 +2210,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2282,7 +2282,7 @@ contains
   subroutine setChVal_realR1(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2294,7 +2294,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2383,7 +2383,7 @@ contains
   subroutine setChVal_realR2(node, name, variableValue, replace, child, modifier)
 
     !> node to process from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2395,7 +2395,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), intent(in), optional :: modifier
@@ -2475,7 +2475,7 @@ contains
   subroutine setChVal_complex(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2487,7 +2487,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2565,7 +2565,7 @@ contains
   subroutine setChVal_complexR1(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2577,7 +2577,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2661,7 +2661,7 @@ contains
   subroutine setChVal_int(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2673,7 +2673,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2744,7 +2744,7 @@ contains
   subroutine setChVal_intR1(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2756,7 +2756,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Optional modifier for the child
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     character(len=*), optional, intent(in) :: modifier
 
@@ -2844,7 +2844,7 @@ contains
   subroutine setChVal_intR2(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2856,7 +2856,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -2932,7 +2932,7 @@ contains
   subroutine setChVal_char(node, name, variableValue, replace, child, omitQuotes, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2944,7 +2944,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> If quotes around the string should be omitted
     logical, intent(in), optional :: omitQuotes
@@ -2986,7 +2986,7 @@ contains
   subroutine setChVal_charR1(node, name, variableValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -2998,7 +2998,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -3077,7 +3077,7 @@ contains
   subroutine setChVal_intR2RealR2(node, name, intValue, realValue, replace, child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -3092,7 +3092,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -3186,7 +3186,7 @@ contains
       & child, modifier)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
@@ -3204,7 +3204,7 @@ contains
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -3305,19 +3305,19 @@ contains
   subroutine setChVal_node(node, name, variableValue, replace, child, modifier, list)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to look for
     character(len=*), intent(in) :: name
 
     !> Value to set
-    type(fnode), pointer :: variableValue
+    type(fnode), pointer, intent(in) :: variableValue
 
     !> Replace if child with same name already exists
     logical, intent(in), optional :: replace
 
     !> Pointer to the child node (with the provided name)
-    type(fnode), pointer, optional :: child
+    type(fnode), pointer, optional, intent(out) :: child
 
     !> Optional modifier for the child
     character(len=*), optional, intent(in) :: modifier
@@ -3360,7 +3360,7 @@ contains
   subroutine createChild_local(node, name, list, replace, child, variableValue)
 
     !> The node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child to create
     character(len=*), intent(in) :: name
@@ -3372,7 +3372,7 @@ contains
     logical, intent(in) :: replace
 
     !> Pointer to the created child on return
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(out) :: child
 
     !> Value to set (if empty, no child is appended to the created child)
     character(len=*), intent(in), optional :: variableValue
@@ -3459,13 +3459,13 @@ contains
   subroutine setChild(node, name, child, replace, list, modifier)
 
     !> Node to append the child to
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(inout) :: node
 
     !> Name of the child node to append
     character(len=*), intent(in) :: name
 
     !> Contains the pointer to the added child node on return
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(out) :: child
 
     !> If an already existing child with the same name should be replaced
     logical, intent(in), optional :: replace
@@ -3520,7 +3520,7 @@ contains
   subroutine getFirstTextChild(node, str)
 
     !> The node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> String representation of the TEXT_NODE.
     type(string), intent(out) :: str
@@ -3543,7 +3543,7 @@ contains
   subroutine checkError(node, iErr, msg)
 
     !> Node which the error flag was set for
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Content of the error flag.
     integer, intent(in) :: iErr
@@ -3564,7 +3564,7 @@ contains
   subroutine checkNoData(node, str, start)
 
     !> Node which is being processed (for error message)
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> String content of the child.
     character(len=*), intent(in) :: str
@@ -3583,7 +3583,7 @@ contains
   subroutine detailedError(node, msg)
 
     !> Node where the error occurred.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Message to print
     character(len=*), intent(in) :: msg
@@ -3601,7 +3601,7 @@ contains
   subroutine detailedWarning(node, msg)
 
     !> Node where the error occurred.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Message to print
     character(len=*), intent(in) :: msg
@@ -3619,7 +3619,7 @@ contains
   subroutine appendPathAndLine(node, str)
 
     !> Node, for which path and line should be added
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> String prepending the path and line information
     type(string), intent(inout) :: str
