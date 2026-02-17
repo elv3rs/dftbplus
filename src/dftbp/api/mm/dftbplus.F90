@@ -16,5 +16,11 @@ module dftbplus
       & getMaxAngFromSlakoFile, TDftbPlus, TDftbPlus_destruct, TDftbPlus_init, TDftbPlusAtomList,&
       & TDftbPlusInput, TDftbPlusInput_destruct, TQDepExtPotGen
   implicit none (type, external)
+  private
+
+  public :: dumpHsd, fnode, setChild, setChildValue
+  public :: convertAtomTypesToSpecies, getDftbPlusApi, getDftbPlusBuild, &
+      & getMaxAngFromSlakoFile, TDftbPlus, TDftbPlus_destruct, TDftbPlus_init, &
+      & TDftbPlusAtomList, TDftbPlusInput, TDftbPlusInput_destruct, TQDepExtPotGen
 
 end module dftbplus

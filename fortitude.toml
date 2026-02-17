@@ -60,13 +60,6 @@ real-suffix = "dp"
 "src/dftbp/dftbplus/inputconversion.F90" = ["C072"]
 "src/dftbp/io/charmanip.F90" = ["C072"]
 "src/dftbp/type/linkedlists0.F90" = ["C072"]
-# C131 missing-accessibility-statement (6 violations across 6 files)
-"src/dftbp/api/mm/dftbplus.F90" = ["C131"]
-"src/dftbp/dftb/extfields.F90" = ["C131"]
-"src/dftbp/dftb/repulsive/repulsivelist.F90" = ["C131"]
-"src/dftbp/math/bisect.F90" = ["C131"]
-"src/dftbp/math/factorial.F90" = ["C131"]
-"src/dftbp/math/hermite.F90" = ["C131"]
 # C132 default-public-accessibility (5 violations across 5 files)
 "src/dftbp/common/accuracy.F90" = ["C132"]
 "src/dftbp/common/release.F90" = ["C132"]

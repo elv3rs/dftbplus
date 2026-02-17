@@ -9,6 +9,9 @@
 module dftbp_math_bisect
   use dftbp_common_accuracy, only : dp
   implicit none (type, external)
+  private
+
+  public :: bisection
 
 
   !> Bisection driver to find a point in an array xx(:) between xx(1) and xx(size(xx)) such that

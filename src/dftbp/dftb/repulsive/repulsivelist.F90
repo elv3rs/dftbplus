@@ -12,6 +12,9 @@
 module dftbp_dftb_repulsive_repulsivelist
   use dftbp_dftb_repulsive_repulsive, only : TRepulsive
   implicit none (type, external)
+  private
+
+  public :: TRepulsiveList
 
   @:declare_allocatable_list(NAME=TRepulsiveList, TYPE=class(TRepulsive))
 

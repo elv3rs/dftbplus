@@ -12,6 +12,7 @@ module dftbp_dftb_extfields
   use dftbp_dftb_potentials, only : TPotentials
   use dftbp_io_message, only : warning
   implicit none (type, external)
+  private
 
   public :: TEField, TElecFieldInput, addUpExternalField
 

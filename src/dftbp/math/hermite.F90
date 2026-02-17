@@ -12,6 +12,9 @@
 module dftbp_math_hermite
   use dftbp_common_accuracy, only : dp
   implicit none (type, external)
+  private
+
+  public :: hx
 
 contains
 
