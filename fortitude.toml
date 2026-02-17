@@ -29,6 +29,7 @@ extend-exclude = [
     "src/dftbp/poisson/",
 ]
 
+preview = true
 select = ["ALL"]
 ignore = [
     # --- Internal test rules (not for real projects) ---
@@ -46,10 +47,8 @@ real-suffix = "dp"
 # New code must comply; existing violations are tracked here.
 [check.per-file-ignores]
 # C003 implicit-external-procedures / C002 interface-implicit-typing
-# (unfixable: nested interface bodies where autofix can't insert)
-"src/dftbp/dftb/dispiface.F90" = ["C002", "C003"]
+# (unfixable: nested interface bodies inside fypp template loop)
 "src/dftbp/mixer/mixer.F90" = ["C002", "C003"]
-"src/dftbp/solvation/solvation.F90" = ["C002", "C003"]
 # C071 assumed-size-array (28 violations across 2 files)
 "src/dftbp/api/mm/capi.F90" = ["C071"]
 "src/dftbp/api/mm/qdepextpotgenc.F90" = ["C071"]

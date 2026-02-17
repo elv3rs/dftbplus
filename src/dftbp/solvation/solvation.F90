@@ -59,6 +59,7 @@ module dftbp_solvation_solvation
     !> Update internal stored coordinates
     subroutine updateCoords(this, env, neighList, img2CentCell, coords, species0)
       import :: TSolvation, TEnvironment, TNeighbourList, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -84,6 +85,7 @@ module dftbp_solvation_solvation
     !> Update internal copy of lattice vectors
     subroutine updateLatVecs(this, latVecs)
       import :: TSolvation, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -97,6 +99,7 @@ module dftbp_solvation_solvation
     !> Get energy contributions
     subroutine getEnergies(this, energies)
       import :: TSolvation, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -111,6 +114,7 @@ module dftbp_solvation_solvation
     subroutine addGradients(this, env, neighList, species, coords, img2CentCell, gradients,&
         & errStatus)
       import :: dp, TEnvironment, TNeighbourList, TSolvation, TStatus
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -142,6 +146,7 @@ module dftbp_solvation_solvation
     !> Get stress tensor contributions
     subroutine getStress(this, stress)
       import :: TSolvation, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -155,6 +160,7 @@ module dftbp_solvation_solvation
     !> Distance cut off for dispersion interactions
     function getRCutoff(this) result(cutoff)
       import :: TSolvation, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -168,6 +174,7 @@ module dftbp_solvation_solvation
     !> Updates with changed charges for the instance.
     subroutine updateCharges(this, env, species, neighList, qq, q0, img2CentCell, orb, errStatus)
       import :: dp, TEnvironment, TNeighbourList, TOrbitals, TSolvation, TStatus
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -202,6 +209,7 @@ module dftbp_solvation_solvation
     !> Returns shifts per atom
     subroutine getShifts(this, shiftPerAtom, shiftPerShell)
       import :: TSolvation, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(inout) :: this
@@ -217,6 +225,7 @@ module dftbp_solvation_solvation
     !> Is the electrostic field modified by this solvent model?
     pure function isEFieldModified(this) result(isChanged)
       import :: TSolvation
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(in) :: this
@@ -230,6 +239,7 @@ module dftbp_solvation_solvation
     !> Returns solvent region relative dielectric constant
     pure function getEpsilon_r(this) result(e_r)
       import :: TSolvation, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TSolvation), intent(in) :: this

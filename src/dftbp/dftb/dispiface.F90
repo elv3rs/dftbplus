@@ -59,6 +59,7 @@ module dftbp_dftb_dispiface
     !> Update internal stored coordinate
     subroutine updateCoordsIface(this, env, neigh, img2CentCell, coords, species0, stat)
       import :: TDispersionIface, TEnvironment, TNeighbourList, dp, TStatus
+      implicit none (type, external)
 
       !> Data structure
       class(TDispersionIface), intent(inout) :: this
@@ -87,6 +88,7 @@ module dftbp_dftb_dispiface
     !> Update internal copy of lattice vectors
     subroutine updateLatVecsIface(this, latVecs)
       import :: TDispersionIface, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TDispersionIface), intent(inout) :: this
@@ -99,6 +101,7 @@ module dftbp_dftb_dispiface
     !> Get energy contributions
     subroutine getEnergiesIface(this, energies)
       import :: TDispersionIface, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TDispersionIface), intent(inout) :: this
@@ -112,6 +115,7 @@ module dftbp_dftb_dispiface
     subroutine addGradientsIface(this, env, neigh, img2CentCell, coords, species0, &
         & gradients, stat)
       import :: TDispersionIface, TEnvironment, TNeighbourList, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TDispersionIface), intent(inout) :: this
@@ -142,6 +146,7 @@ module dftbp_dftb_dispiface
     !> Get stress tensor contributions
     subroutine getStressIface(this, stress)
       import :: TDispersionIface, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TDispersionIface), intent(inout) :: this
@@ -154,6 +159,7 @@ module dftbp_dftb_dispiface
     !> Distance cut off for dispersion interactions
     function getRCutoffIface(this) result(cutoff)
       import :: TDispersionIface, dp
+      implicit none (type, external)
 
       !> Data structure
       class(TDispersionIface), intent(inout) :: this
