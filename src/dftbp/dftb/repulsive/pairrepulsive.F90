@@ -10,7 +10,7 @@
 !> Implements a two body repulsive potential interface
 module dftbp_dftb_repulsive_pairrepulsive
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TPairRepulsive, TPairRepulsiveItem
@@ -35,7 +35,7 @@ module dftbp_dftb_repulsive_pairrepulsive
     !> Returns the real-space cutoff of the two-body repulsive
     function TPairRepulsive_getCutoff(this) result(cutoff)
       import :: TPairRepulsive, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TPairRepulsive), intent(in) :: this
@@ -49,7 +49,7 @@ module dftbp_dftb_repulsive_pairrepulsive
     !> Returns energy of the two-body repulsive for a given distance
     subroutine TPairRepulsive_getValue(this, rr, energy, dEnergy, d2Energy)
       import :: TPairRepulsive, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TPairRepulsive), intent(in) :: this

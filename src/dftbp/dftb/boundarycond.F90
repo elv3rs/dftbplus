@@ -18,7 +18,7 @@ module dftbp_dftb_boundarycond
   use dftbp_math_quaternions, only : rotate3
   use dftbp_math_simplealgebra, only : invert33, determinant33
   use dftbp_type_commontypes, only : TOrbitals
-  implicit none
+  implicit none (type, external)
 
   private
   public :: zAxis, boundaryCondsEnum, TBoundaryConds, TBoundaryConds_init

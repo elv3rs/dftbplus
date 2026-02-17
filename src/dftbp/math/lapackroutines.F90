@@ -17,7 +17,7 @@ module dftbp_math_lapackroutines
   use dftbp_common_accuracy, only : rdp, rsp
   use dftbp_common_status, only : TStatus
   use dftbp_io_message, only : error
-  implicit none
+  implicit none (type, external)
 
   private
   public :: gesv, getri, getrf, sytri, sytrf, larnv, hetri, hetrf, gesvd, potrf, trsm, getrs, posv

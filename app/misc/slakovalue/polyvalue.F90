@@ -13,7 +13,7 @@ program polyvalue
   use dftbp_common_globalenv, only : stdOut
   use dftbp_dftb_repulsive_polyrep, only : TPolyRep, TPolyRep_init, TPolyRepInp
   use dftbp_io_message, only : error
-  implicit none
+  implicit none (type, external)
 
   character(lc) :: arg, fname
   logical :: homo

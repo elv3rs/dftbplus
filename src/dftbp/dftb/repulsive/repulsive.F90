@@ -11,7 +11,7 @@
 module dftbp_dftb_repulsive_repulsive
   use dftbp_common_accuracy, only : dp
   use dftbp_dftb_periodic, only : TNeighbourList
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TRepulsive
@@ -36,7 +36,7 @@ module dftbp_dftb_repulsive_repulsive
     !> Returns the real space cutoff needed by the neighbour lists
     function getRCutOff(this) result(cutOff)
       import :: TRepulsive, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TRepulsive), intent(in) :: this
@@ -50,7 +50,7 @@ module dftbp_dftb_repulsive_repulsive
     !> Transmits the updated lattice vectors to enable for pre-calculations.
     subroutine updateLatVecs(this, latVecs)
       import :: TRepulsive, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TRepulsive), intent(inout) :: this
@@ -64,7 +64,7 @@ module dftbp_dftb_repulsive_repulsive
     !> Transmits the updated coordinates to enable for pre-calculations.
     subroutine updateCoords(this, coords, species, img2CentCell, neighbourList)
       import :: TRepulsive, TNeighbourList, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TRepulsive), intent(inout) :: this
@@ -88,7 +88,7 @@ module dftbp_dftb_repulsive_repulsive
     subroutine getEnergy(this, coords, species, img2CentCell, neighbourList, Eatom, Etotal,&
         & iAtInCentralRegion)
       import :: TRepulsive, TNeighbourList, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance.
       class(TRepulsive), intent(in) :: this
@@ -120,7 +120,7 @@ module dftbp_dftb_repulsive_repulsive
     !> Returns the gradients of the repulsive interaction
     subroutine getGradients(this, coords, species, img2CentCell, neighbourList, grads)
       import :: TRepulsive, TNeighbourList, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TRepulsive), intent(in) :: this
@@ -146,7 +146,7 @@ module dftbp_dftb_repulsive_repulsive
     !> Returns the stress tensor contribution from the repulsive term
     subroutine getStress(this, coords, species, img2CentCell, neighbourList, cellVol, stress)
       import :: TRepulsive, TNeighbourList, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TRepulsive), intent(in) :: this

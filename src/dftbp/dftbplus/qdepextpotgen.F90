@@ -8,7 +8,7 @@
 !> Contains the interface for an external population dependent potential.
 module dftbp_dftbplus_qdepextpotgen
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TQDepExtPotGen, TQDepExtPotGenWrapper
@@ -50,6 +50,7 @@ module dftbp_dftbplus_qdepextpotgen
     !> of an electrostatic potential you would have to invert its sign.
     !>
     subroutine getExtPotIface(this, chargePerAtom, chargePerShell, extPotAtom, extPotShell)
+    implicit none (type, external)
       import :: TQDepExtPotGen, dp
 
       !> Instance.
@@ -78,6 +79,7 @@ module dftbp_dftbplus_qdepextpotgen
     !! Note: External potential is defined as the external potential the electrons feel, so in case
     !! of an electrostatic potential you would have to invert its sign.
     subroutine getExtPotGradIface(this, chargePerAtom, chargePerShell, extPotGrad)
+    implicit none (type, external)
       import :: TQDepExtPotGen, dp
 
       !> Class instance.

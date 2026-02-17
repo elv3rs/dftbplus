@@ -38,8 +38,6 @@ ignore = [
     "S001",    # line-too-long — 1669 violations, manual reformatting needed
 
     # --- Coding conventions (too many violations to enforce yet) ---
-    "C003",    # implicit-external-procedures — 290 violations, widespread in fypp macros
-    "C002",    # interface-implicit-typing — 32 violations, tied to C003 patterns
     "C061",    # missing-intent — 388 violations, would need gradual enforcement
 
     # --- Scientific / domain idioms (false positives for scientific code) ---
@@ -53,6 +51,11 @@ real-suffix = "dp"
 # Rules enforced globally but grandfathered in specific files.
 # New code must comply; existing violations are tracked here.
 [check.per-file-ignores]
+# C003 implicit-external-procedures / C002 interface-implicit-typing
+# (unfixable: nested interface bodies where autofix can't insert)
+"src/dftbp/dftb/dispiface.F90" = ["C002", "C003"]
+"src/dftbp/mixer/mixer.F90" = ["C002", "C003"]
+"src/dftbp/solvation/solvation.F90" = ["C002", "C003"]
 # C071 assumed-size-array (28 violations across 2 files)
 "src/dftbp/api/mm/capi.F90" = ["C071"]
 "src/dftbp/api/mm/qdepextpotgenc.F90" = ["C071"]

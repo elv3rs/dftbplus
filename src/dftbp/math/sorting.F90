@@ -12,7 +12,7 @@
 !> but adaptive heap sorts?
 module dftbp_math_sorting
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: heap_sort, index_heap_sort, merge_sort, unique

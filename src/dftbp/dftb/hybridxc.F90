@@ -46,7 +46,7 @@ module dftbp_dftb_hybridxc
   use dftbp_math_bisect, only : bisection
 #:endif
 
-  implicit none
+  implicit none (type, external)
 
 #! Routine NAME label, main variable TYPE
 #:set FLAVOURS = [('real', 'real'), ('cmplx', 'complex'), ('pauli', 'complex')]
@@ -317,6 +317,7 @@ module dftbp_dftb_hybridxc
   abstract interface
     !> Calculates analytical long-range or full-range HF gamma (derivative) of given type.
     function gammaFunc(this, iSp1, iSp2, dist) result(gamma)
+    implicit none (type, external)
 
       import :: THybridXcFunc, dp
 

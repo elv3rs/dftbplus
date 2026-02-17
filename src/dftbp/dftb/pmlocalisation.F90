@@ -19,7 +19,7 @@ module dftbp_dftb_pmlocalisation
   use dftbp_io_message, only : error, warning
   use dftbp_math_blasroutines, only : hemm, hemv, symm
   use dftbp_math_sorting, only : heap_sort, unique
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TPipekMezeyInp, TPipekMezey, initialise

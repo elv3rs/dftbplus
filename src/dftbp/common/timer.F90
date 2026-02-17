@@ -9,7 +9,7 @@
 module dftbp_common_timer
   use dftbp_common_accuracy, only : dp
   use dftbp_common_globalenv, only : stdOut
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TTimer

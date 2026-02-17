@@ -13,7 +13,7 @@ module dftbp_dftb_extcharges
   use dftbp_common_environment, only : TEnvironment
   use dftbp_dftb_boundarycond, only : TBoundaryConds
   use dftbp_dftb_coulomb, only : TCoulomb
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TExtCharges, TExtCharges_init

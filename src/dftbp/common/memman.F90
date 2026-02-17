@@ -14,7 +14,7 @@ module dftbp_common_memman
   use dftbp_common_accuracy, only : dp
   use dftbp_io_message, only : error
 
-  implicit none
+  implicit none (type, external)
 
   private
   public :: incrmntOfArray, TAlignedArray
@@ -45,6 +45,7 @@ module dftbp_common_memman
   !> Bound to 'posix_memalign' to allocate aligned memory
   interface
     function posixMemalign(ptr, alignment, size) result(error) bind(C, name="posix_memalign")
+    implicit none (type, external)
       import c_ptr, c_size_t, c_int
       type(c_ptr), intent(inout) :: ptr
       integer(c_size_t), intent(in), value :: alignment, size
@@ -56,6 +57,7 @@ module dftbp_common_memman
   !> Bound to 'free' to deallocate memory again being previously allocated using 'posix_memalign'
   interface
     subroutine free(ptr) bind(C, name="free")
+    implicit none (type, external)
       import c_ptr
       type(c_ptr), value :: ptr
     end subroutine free

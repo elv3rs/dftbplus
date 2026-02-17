@@ -8,7 +8,7 @@
 !> Contains the abstract interface that can provide any of the thermostats
 module dftbp_md_thermostat
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TThermostat
@@ -27,7 +27,7 @@ module dftbp_md_thermostat
     !> Returns the initial velocities
     subroutine TThermostat_getInitVelocities(this, velocities)
       import :: TThermostat, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TThermostat), intent(inout) :: this
@@ -41,7 +41,7 @@ module dftbp_md_thermostat
     !> Updates the velocities
     subroutine TThermostat_updateVelocities(this, velocities)
       import :: TThermostat, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TThermostat), intent(inout) :: this
@@ -55,7 +55,7 @@ module dftbp_md_thermostat
     !> Write internal state of the thermostat
     subroutine TThermostat_writeState(this, fd)
       import :: TThermostat
-      implicit none
+      implicit none (type, external)
 
       !> Instance
       class(TThermostat), intent(in) :: this

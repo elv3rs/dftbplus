@@ -145,7 +145,7 @@ module dftbp_dftbplus_initprogram
   use dftbp_transport_negfint, only : TNegfInt, TNegfInt_init, transportPeriodicSetup
 #:endif
   use dftbp_transport_negfvars, only : TTransPar
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TDangerousChange, TDftbPlusMain, TNegfInt

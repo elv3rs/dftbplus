@@ -9,7 +9,7 @@
 !> DOI: 10.1039/c7ra07400j can be adapted for DFTB.
 module dftbp_dftb_bondpopulations
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: addPairWiseBondInfo

@@ -10,7 +10,7 @@
 !> Auxiliary subroutines for the ASSERT command
 module dftbp_common_assert
   use dftbp_common_globalenv, only : abortProgram, stdOut
-  implicit none
+  implicit none (type, external)
 
   private
 #:block DEBUG_CODE

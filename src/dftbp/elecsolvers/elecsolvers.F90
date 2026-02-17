@@ -12,7 +12,7 @@ module dftbp_elecsolvers_elecsolvers
   use dftbp_common_accuracy, only : dp, lc
   use dftbp_elecsolvers_elecsolvertypes, only : electronicSolverTypes
   use dftbp_elecsolvers_elsisolver, only : TElsiSolver, TElsiSolverInp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TElectronicSolverInp, TElectronicSolver, TElectronicSolver_init, TElsiSolverInp

@@ -10,7 +10,7 @@ module dftbp_dftbplus_qdepextpotgenc
   use, intrinsic :: iso_c_binding, only : c_double, c_ptr
   use dftbp_common_accuracy, only : dp
   use dftbp_dftbplus_qdepextpotgen, only : TQDepExtPotGen
-  implicit none
+  implicit none (type, external)
   private
 
   public :: getExtPotIfaceC, getExtPotGradIfaceC
@@ -21,6 +21,7 @@ module dftbp_dftbplus_qdepextpotgenc
 
     !> Interface to set up external potential
     subroutine getExtPotIfaceC(refPtr, dQAtom, extPotAtom) bind(C)
+    implicit none (type, external)
       import :: c_double, c_ptr
 
       !> Reference pointer
@@ -37,6 +38,7 @@ module dftbp_dftbplus_qdepextpotgenc
 
     !> Interface to set up gradient of external potential
     subroutine getExtPotGradIfaceC(refPtr, dQAtom, extPotAtomGrad) bind(C)
+    implicit none (type, external)
       import :: c_double, c_ptr
 
       !> Reference pointer

@@ -19,7 +19,7 @@ program splvalue
 #:if WITH_MPI
   use dftbp_common_mpienv, only : TMpiEnv
 #:endif
-  implicit none
+  implicit none (type, external)
 
   character(*), parameter :: fname = "test.skf"
   character(lc) :: arg

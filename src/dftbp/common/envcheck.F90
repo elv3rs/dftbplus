@@ -15,7 +15,7 @@ module dftbp_common_envcheck
   use dftbp_common_environment, only : TEnvironment
   use dftbp_common_globalenv, only : stdOut
   use dftbp_io_message, only : warning
-  implicit none
+  implicit none (type, external)
 
   private
   public :: checkStackSize
@@ -26,7 +26,7 @@ module dftbp_common_envcheck
     subroutine get_stacksize(cStack, iErr) bind(C, name="get_stacksize_c")
 
       import :: c_char, c_int
-      implicit none
+      implicit none (type, external)
 
       !> Current stacksize
       integer(kind=c_int), intent(out) :: cStack

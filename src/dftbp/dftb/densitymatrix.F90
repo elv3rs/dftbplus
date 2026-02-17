@@ -29,7 +29,7 @@ module dftbp_dftb_densitymatrix
       & magmaf_zmalloc, magmaf_zsetmatrix
 #:endif
 
-  implicit none
+  implicit none (type, external)
   private
 
   public :: TDensityMatrix, TDensityMatrix_init, transformDualSpaceToBvKRealSpace

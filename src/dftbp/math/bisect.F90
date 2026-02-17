@@ -8,7 +8,7 @@
 !> Contains routines to locate a value in an ascending array using bisection
 module dftbp_math_bisect
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
 
   !> Bisection driver to find a point in an array xx(:) between xx(1) and xx(size(xx)) such that

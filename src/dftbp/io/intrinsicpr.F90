@@ -9,7 +9,7 @@
 module dftbp_io_intrinsicpr
   use dftbp_common_accuracy, only : dp, lc
   use dftbp_common_globalenv, only : stdOut
-  implicit none
+  implicit none (type, external)
 
   private
   public :: printContent

@@ -15,7 +15,7 @@
 module dftbp_math_blasroutines
   use dftbp_common_accuracy, only : dp, rdp, rsp
   use dftbp_extlibs_blas, only : cher, dspmv, sspmv, ssyr, zher
-  implicit none
+  implicit none (type, external)
 
   private
   public ::  gemv, gemm, ger, hemm, hemv, her, herk, her2k, sbmv, scal, spmv, symm, swap

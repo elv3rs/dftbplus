@@ -48,7 +48,7 @@ module dftbp_timedep_linrespgrad
 
 #:endif
 
-  implicit none
+  implicit none (type, external)
 
   private
   public :: LinRespGrad_old, conicalIntersectionOptimizer

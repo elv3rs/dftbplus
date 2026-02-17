@@ -8,7 +8,7 @@
 !> Module defining abstract base class for geometry optimizers
 module dftbp_geoopt_optimizer
   use dftbp_common_accuracy, only : dp
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TOptimizer, TOptimizerInput
@@ -31,7 +31,7 @@ module dftbp_geoopt_optimizer
     !> Calculate displacement from gradient
     subroutine step(this, val, grad, displ)
       import :: TOptimizer, dp
-      implicit none
+      implicit none (type, external)
 
       !> Instance of geometry optimization driver
       class(TOptimizer), intent(inout) :: this
@@ -50,7 +50,7 @@ module dftbp_geoopt_optimizer
     !> Reset optimizer
     subroutine reset(this)
       import :: TOptimizer
-      implicit none
+      implicit none (type, external)
 
       !> Instance of geometry optimization driver
       class(TOptimizer), intent(inout) :: this

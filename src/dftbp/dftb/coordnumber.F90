@@ -14,7 +14,7 @@ module dftbp_dftb_coordnumber
   use dftbp_dftb_periodic, only : getNrOfNeighboursForAll, TNeighbourList
   use dftbp_io_message, only : error
   use dftbp_math_blasroutines, only : gemv
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TCNCont, TCNInput, cnType, init
@@ -223,6 +223,7 @@ module dftbp_dftb_coordnumber
   abstract interface
     !> Abstract interface for the counting function (and its derivative)
     pure function countFunction(k, r, r0) result(res)
+    implicit none (type, external)
       import :: dp
 
       !> Constant for counting function

@@ -11,7 +11,7 @@
 module dftbp_md_tempprofile
   use dftbp_common_accuracy, only : dp, minTemp
   use dftbp_io_charmanip, only : tolower
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TTempProfile, TempProfile_init, identifyTempProfile

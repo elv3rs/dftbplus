@@ -13,7 +13,7 @@ module dftbp_capicallback
   use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_funptr, c_loc, c_null_ptr, c_f_procpointer
   use dftbp_common_accuracy, only : dp
 
-  implicit none
+  implicit none (type, external)
 
   private
   public :: dmhs_callback_c_wrapper, set_dmhs_callback_c_wrapper, TCAuxWrapper, TCMatrixDescr
@@ -43,6 +43,7 @@ module dftbp_capicallback
   abstract interface
     subroutine dmhs_callback_c_t(auxPtr, iKpoint, iSpin, blacsDescr, dataPtr, matrixDescr) bind(c)
       use, intrinsic :: iso_c_binding, only: c_int, c_ptr
+      implicit none (type, external)
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       type(c_ptr), value :: auxPtr
       !> 1-based index of k-points of the matrix
@@ -63,6 +64,7 @@ module dftbp_capicallback
     integer function set_dmhs_callback_c_t(auxPtr, iKpoint, iSpin, blacsDescr, dataPtr,&
         & matrixDescr) bind(c) result(res)
       use, intrinsic :: iso_c_binding, only: c_int, c_ptr
+      implicit none (type, external)
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       type(c_ptr), value :: auxPtr
       !> 1-based index of k-points of the matrix

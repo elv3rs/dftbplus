@@ -142,7 +142,7 @@ module dftbp_dftbplus_main
   use dftbp_dftbplus_mainio, only : receiveGeometryFromSocket
   use dftbp_io_ipisocket, only : IpiSocketComm
 #:endif
-  implicit none
+  implicit none (type, external)
 
   private
   public :: runDftbPlus

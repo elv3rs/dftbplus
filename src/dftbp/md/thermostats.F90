@@ -18,7 +18,7 @@ module dftbp_md_thermostats
   use dftbp_md_dummytherm, only : TDummyTherm, TDummyTherm_init
   use dftbp_md_nhctherm, only : TNhcTherm, TNhcTherm_init, TNhcThermInput
   use dftbp_md_thermostat, only : TThermostat
-  implicit none
+  implicit none (type, external)
 
   private
   public :: thermostatTypes

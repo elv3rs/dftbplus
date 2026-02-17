@@ -11,7 +11,7 @@
 module dftbp_dftbplus_apicallback
   use dftbp_common_accuracy, only : dp
   use dftbp_type_densedescr, only : TDenseDescr
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TAPICallback, TDMHSCallbackFunc, TSetDMHSCallbackFunc
@@ -26,6 +26,7 @@ module dftbp_dftbplus_apicallback
     !> Interface example for dense BLACS matrices containing various information
     subroutine TDMHSCallbackFunc(auxObj, iKpoint, iSpin, blacsDescr, dataBufReal, dataBufCplx)
       use dftbp_common_accuracy, only : dp
+      implicit none (type, external)
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       class(*), intent(inout) :: auxObj
       !> 1-based indices of k-point of the matrix
@@ -54,6 +55,7 @@ module dftbp_dftbplus_apicallback
     integer function TSetDMHSCallbackFunc(auxObj, iKpoint, iSpin, blacsDescr, dataBufReal,&
         & dataBufCplx) result(res)
       use dftbp_common_accuracy, only : dp
+      implicit none (type, external)
       !> Pointer to auxilary data that is set when callback is registered. Can be NULL.
       class(*), intent(inout) :: auxObj
       !> 1-based indices of k-point of the matrix

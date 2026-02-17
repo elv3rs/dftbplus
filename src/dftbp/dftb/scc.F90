@@ -30,7 +30,7 @@ module dftbp_dftb_scc
 
 #:endif
 
-  implicit none
+  implicit none (type, external)
 
   private
   public :: TSccInput, TScc, TScc_init
