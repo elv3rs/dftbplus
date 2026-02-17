@@ -34,10 +34,8 @@ select = ["ALL"]
 ignore = [
     # --- Internal test rules (not for real projects) ---
     "FORT",    # all Fortitude internal test rules (FORT99xx)
-
-    # --- Formatting / style (not autofixable, too many) ---
-    "S001",    # line-too-long — 1669 violations, manual reformatting needed
 ]
+line-length = 132  # Fortran standard free-form line length
 
 # C021 (no-real-suffix): dftbplus uses `dp` (= real64) from accuracy module.
 [check.kind-suffixes]
