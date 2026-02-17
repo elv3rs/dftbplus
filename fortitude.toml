@@ -37,9 +37,6 @@ ignore = [
     # --- Formatting / style (not autofixable, too many) ---
     "S001",    # line-too-long — 1669 violations, manual reformatting needed
 
-    # --- Coding conventions (too many violations to enforce yet) ---
-    "C061",    # missing-intent — 388 violations, would need gradual enforcement
-
     # --- Scientific / domain idioms (false positives for scientific code) ---
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 ]
@@ -61,7 +58,7 @@ real-suffix = "dp"
 "src/dftbp/api/mm/qdepextpotgenc.F90" = ["C071"]
 # C072 assumed-size-character (9 violations across 7 files)
 "app/misc/slakovalue/integvalue.F90" = ["C072"]
-"src/dftbp/api/mm/mmapi.F90" = ["C072"]
+"src/dftbp/api/mm/mmapi.F90" = ["C061", "C072"]
 "src/dftbp/common/unitconversion.F90" = ["C072"]
 "src/dftbp/dftbplus/input/fileaccess.F90" = ["C072"]
 "src/dftbp/dftbplus/inputconversion.F90" = ["C072"]
@@ -79,4 +76,44 @@ real-suffix = "dp"
 "src/dftbp/common/release.F90" = ["C132"]
 "src/dftbp/dftb/dispersions.F90" = ["C132"]
 "src/dftbp/dftbplus/outputfiles.F90" = ["C132"]
-"src/dftbp/timedep/linrespcommon.F90" = ["C132"]
+"src/dftbp/timedep/linrespcommon.F90" = ["C061", "C132"]
+# C061 missing-intent (388 violations across 40 files)
+# Most are pointer dummy arguments in HSD parser code and API callbacks.
+"app/modes/initmodes.F90" = ["C061"]
+"app/phonons/initphonons.F90" = ["C061"]
+"app/phonons/libnegfint.F90" = ["C061"]
+"app/phonons/phonons.F90" = ["C061"]
+"app/transporttools/helpsetupgeom.F90" = ["C061"]
+"app/transporttools/parser.F90" = ["C061"]
+"app/waveplot/gridcache.F90" = ["C061"]
+"app/waveplot/initwaveplot.F90" = ["C061"]
+"src/dftbp/derivs/linearresponse.F90" = ["C061"]
+"src/dftbp/derivs/perturb.F90" = ["C061"]
+"src/dftbp/dftb/forces.F90" = ["C061"]
+"src/dftbp/dftb/mdftb.F90" = ["C061"]
+"src/dftbp/dftb/sparse2dense.F90" = ["C061"]
+"src/dftbp/dftbplus/apicallback.F90" = ["C061"]
+"src/dftbp/dftbplus/initprogram.F90" = ["C061"]
+"src/dftbp/dftbplus/main.F90" = ["C061"]
+"src/dftbp/dftbplus/mainio.F90" = ["C061"]
+"src/dftbp/dftbplus/oldcompat.F90" = ["C061"]
+"src/dftbp/dftbplus/parser.F90" = ["C061"]
+"src/dftbp/dftbplus/specieslist.F90" = ["C061"]
+"src/dftbp/elecsolvers/elsicsc.F90" = ["C061"]
+"src/dftbp/geoopt/gdiis.F90" = ["C061"]
+"src/dftbp/geoopt/rationalfunc.F90" = ["C061"]
+"src/dftbp/io/hsdparser.F90" = ["C061"]
+"src/dftbp/io/hsdutils.F90" = ["C061"]
+"src/dftbp/io/hsdutils2.F90" = ["C061"]
+"src/dftbp/io/xmlutils.F90" = ["C061"]
+"src/dftbp/md/mdcommon.F90" = ["C061"]
+"src/dftbp/reks/reksgrad.F90" = ["C061"]
+"src/dftbp/solvation/gbsafile.F90" = ["C061"]
+"src/dftbp/solvation/sasa.F90" = ["C061"]
+"src/dftbp/solvation/solvparser.F90" = ["C061"]
+"src/dftbp/timedep/linresp.F90" = ["C061"]
+"src/dftbp/timedep/linrespgrad.F90" = ["C061"]
+"src/dftbp/timedep/timeprop.F90" = ["C061"]
+"src/dftbp/transport/matconv.F90" = ["C061"]
+"src/dftbp/transport/negfint.F90" = ["C061"]
+"src/dftbp/type/typegeometryhsd.F90" = ["C061"]
