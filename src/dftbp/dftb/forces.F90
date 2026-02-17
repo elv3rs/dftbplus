@@ -343,10 +343,10 @@ contains
     real(dp), intent(in) :: EDM(:)
 
     !> Container for SK Hamiltonian integrals
-    type(TSlakoCont) :: skHamCont
+    type(TSlakoCont), intent(in) :: skHamCont
 
     !> Container for SK overlap integrals
-    type(TSlakoCont) :: skOverCont
+    type(TSlakoCont), intent(in) :: skOverCont
 
     !> List of all atomic coordinates
     real(dp), intent(in) :: coords(:,:)
@@ -433,10 +433,10 @@ contains
     real(dp), intent(in) :: EDM(:)
 
     !> Container for SK Hamiltonian integrals
-    type(TSlakoCont) :: skHamCont
+    type(TSlakoCont), intent(in) :: skHamCont
 
     !> Container for SK overlap integrals
-    type(TSlakoCont) :: skOverCont
+    type(TSlakoCont), intent(in) :: skOverCont
 
     !> List of all atomic coordinates
     real(dp), intent(in) :: coords(:,:)
@@ -567,10 +567,10 @@ contains
     real(dp), intent(in) :: EDM(:)
 
     !> Container for SK Hamiltonian integrals
-    type(TSlakoCont) :: skHamCont
+    type(TSlakoCont), intent(in) :: skHamCont
 
     !> Container for SK overlap integrals
-    type(TSlakoCont) :: skOverCont
+    type(TSlakoCont), intent(in) :: skOverCont
 
     !> List of all atomic coordinates
     real(dp), intent(in) :: coords(:,:)
@@ -696,10 +696,10 @@ contains
     real(dp), intent(in) :: EDM(:)
 
     !> Container for SK Hamiltonian integrals
-    type(TSlakoCont) :: skHamCont
+    type(TSlakoCont), intent(in) :: skHamCont
 
     !> Container for SK overlap integrals
-    type(TSlakoCont) :: skOverCont
+    type(TSlakoCont), intent(in) :: skOverCont
 
     !> List of all atomic coordinates
     real(dp), intent(in) :: coords(:,:)

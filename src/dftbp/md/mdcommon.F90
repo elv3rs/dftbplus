@@ -95,7 +95,7 @@ contains
     integer, intent(in) :: nAllAtom
 
     !> If system should be transformed to translational rest frame
-    logical :: isTranslationRemoved
+    logical, intent(in) :: isTranslationRemoved
 
     !> Atomic coordinates
     !real(dp) :: coords(:,:)

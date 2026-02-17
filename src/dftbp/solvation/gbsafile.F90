@@ -45,7 +45,7 @@ contains
     character(len=*), intent(in) :: speciesNames(:)
 
     !> Node for error handling
-    type(fnode), pointer, optional :: node
+    type(fnode), pointer, optional, intent(in) :: node
 
     type(TFileDescr) :: fd
     type(TLineReader) :: lineReader

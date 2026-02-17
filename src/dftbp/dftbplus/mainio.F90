@@ -3271,7 +3271,7 @@ contains
     integer, intent(in) :: nSpin
 
     !> is this a spin polarized calculation?
-    logical :: tSpin
+    logical, intent(in) :: tSpin
 
     !> Are spin orbit interactions present
     logical, intent(in) :: tSpinOrbit

@@ -98,7 +98,7 @@ contains
     type(TDiis), intent(inout) :: this
 
     !> Point to start from
-    real(dp) :: x(:)
+    real(dp), intent(in) :: x(:)
 
     call this%diis%reset(this%nElem)
     this%x(:) = x

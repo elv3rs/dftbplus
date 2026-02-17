@@ -5351,7 +5351,7 @@ contains
     real(dp), intent(in) :: xpy(:,:)
 
     !> File descriptor for ATQ.DAT
-    type(TFileDescr) :: fdTransQ
+    type(TFileDescr), intent(out) :: fdTransQ
 
     !> File unit for tagged output (> -1 for write out)
     type(TFileDescr), intent(in) :: fdTagged

@@ -311,7 +311,10 @@ contains
     !> Transition charge block
     real(dp), intent(out) :: qq_ij(:,:)
 
-    integer :: nOrb, iOrb1, iOrb2
+    !> Number of orbitals on the atom
+    integer, intent(in) :: nOrb
+
+    integer :: iOrb1, iOrb2
     integer :: mu, nu, ss
 
     ss = 1

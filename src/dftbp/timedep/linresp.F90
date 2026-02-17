@@ -149,7 +149,7 @@ contains
     integer, intent(in) :: nSpin
 
     !> Onsite corrections if in use
-    real(dp), allocatable :: onSiteMatrixElements(:,:,:,:)
+    real(dp), allocatable, intent(in) :: onSiteMatrixElements(:,:,:,:)
 
     !> Whether current process is responsible for file I/O
     logical, intent(in) :: isIoProc
