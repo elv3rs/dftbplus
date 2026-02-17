@@ -53,6 +53,5 @@ extra-allowed-literals = [9]
 # C003 implicit-external-procedures / C002 interface-implicit-typing
 # (unfixable: nested interface bodies inside fypp template loop)
 "src/dftbp/mixer/mixer.F90" = ["C002", "C003"]
-# C071 assumed-size-array (28 violations across 2 files)
+# C071 assumed-size-array: 1 remaining violation (fortranChar helper, not bind(C))
 "src/dftbp/api/mm/capi.F90" = ["C071"]
-"src/dftbp/api/mm/qdepextpotgenc.F90" = ["C071"]
