@@ -274,7 +274,7 @@ contains
     type(TOrbitals), intent(in) :: orb
 
     !> Species of each atom
-    integer :: species(:)
+    integer, intent(in) :: species(:)
 
     !> Coordinates of all atoms
     real(dp), intent(in) :: coord(:,:)
@@ -357,7 +357,7 @@ contains
     type(TOrbitals), intent(in) :: orb
 
     !> Species of each atom
-    integer :: species(:)
+    integer, intent(in) :: species(:)
 
     !> Coordinates of all atoms
     real(dp), intent(in) :: coord(:,:)
@@ -958,7 +958,7 @@ contains
     type(TOrbitals), intent(in) :: orb
 
     !> Species of each atom
-    integer :: species(:)
+    integer, intent(in) :: species(:)
 
     !> Coordinates of all atoms
     real(dp), intent(in) :: coord(:,:)
@@ -1046,7 +1046,7 @@ contains
     type(TOrbitals), intent(in) :: orb
 
     !> Species of each atom
-    integer :: species(:)
+    integer, intent(in) :: species(:)
 
     !> Coordinates of all atoms
     real(dp), intent(in) :: coord(:,:)

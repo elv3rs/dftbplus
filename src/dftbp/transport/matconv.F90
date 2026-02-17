@@ -830,7 +830,7 @@ contains
   subroutine rdestroy_CSR(mat)
 
     !> matrix
-    type(r_CSR) :: mat
+    type(r_CSR), intent(inout) :: mat
 
     if (allocated(mat%nzval)) then
       call destroy(mat)
@@ -842,7 +842,7 @@ contains
   subroutine rdestroy_DNS(mat)
 
     !> matrix
-    type(r_DNS) :: mat
+    type(r_DNS), intent(inout) :: mat
 
     if (allocated(mat%val)) then
       call destroy(mat)
@@ -854,7 +854,7 @@ contains
   subroutine zdestroy_CSR(mat)
 
     !> matrix
-    type(z_CSR) :: mat
+    type(z_CSR), intent(inout) :: mat
 
     if (allocated(mat%nzval)) then
       call destroy(mat)
@@ -866,7 +866,7 @@ contains
   subroutine zdestroy_DNS(mat)
 
     !> matrix
-    type(z_DNS) :: mat
+    type(z_DNS), intent(inout) :: mat
 
     if (allocated(mat%val)) then
       call destroy(mat)

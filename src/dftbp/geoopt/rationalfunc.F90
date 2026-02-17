@@ -175,9 +175,11 @@ contains
     !> Failed to solve eigenvalue problem
     logical, intent(out) :: fail
 
+    integer, intent(out) :: n
+
     integer, parameter :: maxiter = 100
     integer, parameter :: initial_dyn_array_size = 10
-    integer :: n, m, jold, ij, i, j, iold
+    integer :: m, jold, ij, i, j, iold
     logical :: converged
     real(dp), allocatable :: lun1(:, :), lun2(:, :)
     real(dp) :: valn, uim, s, denerg

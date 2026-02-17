@@ -742,7 +742,7 @@ contains
     type(TDftbPlusMain), intent(inout) :: this
 
     !> Current self-consistent iteration
-    integer :: iSccIter
+    integer, intent(in) :: iSccIter
 
     !> Whether the charges in the scc calculator should be updated before obtaining the potential
     logical, intent(in) :: updateScc
@@ -2963,7 +2963,7 @@ contains
     type(TAPICallback), intent(inout), allocatable :: apiCallBack
 
     !> Possibly fatal situations to check for at run-time
-    type(TDangerousChange) :: dangerousChanges
+    type(TDangerousChange), intent(in) :: dangerousChanges
 
     !> Status of operation
     type(TStatus), intent(out) :: errStatus
@@ -3193,7 +3193,7 @@ contains
     type(Tapicallback), intent(inout), allocatable :: apiCallBack
 
     !> Possibly fatal situations to check for at run-time
-    type(TDangerousChange) :: dangerousChanges
+    type(TDangerousChange), intent(in) :: dangerousChanges
 
     !> Status of operation
     type(TStatus), intent(out) :: errStatus
@@ -3343,7 +3343,7 @@ contains
     type(Tapicallback), intent(in), allocatable :: apiCallBack
 
     !> Possibly fatal situations to check for at run-time
-    type(TDangerousChange) :: dangerousChanges
+    type(TDangerousChange), intent(in) :: dangerousChanges
 
     !> Status of operation
     type(TStatus), intent(inout) :: errStatus
@@ -3536,7 +3536,7 @@ contains
     type(Tapicallback), intent(in), allocatable :: apiCallBack
 
     !> Possibly fatal situations to check for at run-time
-    type(TDangerousChange) :: dangerousChanges
+    type(TDangerousChange), intent(in) :: dangerousChanges
 
     !> Status of operation
     type(TStatus), intent(out) :: errStatus
@@ -3758,7 +3758,7 @@ contains
     type(Tapicallback), intent(in), allocatable :: apiCallBack
 
     !> Possibly fatal situations to check for at run-time
-    type(TDangerousChange) :: dangerousChanges
+    type(TDangerousChange), intent(in) :: dangerousChanges
 
     !> Status of operation
     type(TStatus), intent(out) :: errStatus

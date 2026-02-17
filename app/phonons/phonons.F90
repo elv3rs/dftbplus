@@ -227,7 +227,7 @@ contains
   end subroutine ComputeModes
 
   subroutine PhononDispersion(tWriter)
-    type(TTaggedWriter) :: tWriter
+    type(TTaggedWriter), intent(inout) :: tWriter
 
     type(TFileDescr) :: fu, ftag
     integer  :: ii, jj, kk, ll, nAtom,  iAtom,  iK, jAtom,  kAtom
@@ -336,10 +336,10 @@ contains
   end subroutine setConversionUnits
 
   subroutine writeTaggedOut(tWriter, tunnTot, ldosTot, conductance)
-    type(TTaggedWriter) :: tWriter
-    real(dp), dimension(:,:) :: tunnTot
-    real(dp), dimension(:,:) :: ldosTot
-    real(dp), dimension(:,:) :: conductance
+    type(TTaggedWriter), intent(inout) :: tWriter
+    real(dp), dimension(:,:), intent(in) :: tunnTot
+    real(dp), dimension(:,:), intent(in) :: ldosTot
+    real(dp), dimension(:,:), intent(in) :: conductance
 
     type(TFileDescr) :: fu
 
