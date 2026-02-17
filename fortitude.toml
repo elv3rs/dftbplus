@@ -56,6 +56,3 @@ extra-allowed-literals = [9]
 # C071 assumed-size-array (28 violations across 2 files)
 "src/dftbp/api/mm/capi.F90" = ["C071"]
 "src/dftbp/api/mm/qdepextpotgenc.F90" = ["C071"]
-# C072 assumed-size-character (remaining violations in 2 files)
-"app/misc/slakovalue/integvalue.F90" = ["C072"]
-"src/dftbp/type/linkedlists0.F90" = ["C072"]

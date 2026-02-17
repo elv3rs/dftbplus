@@ -66,6 +66,7 @@ contains
   subroutine processArguments(fname, homo, extended, col)
 
     !> File name
+    ! allow(C072)
     character(*), intent(out) :: fname
 
     !> homonuclear?

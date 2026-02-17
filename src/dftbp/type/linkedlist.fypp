@@ -288,6 +288,7 @@ contains
   !!* @param index Index of the element (0 < index < length of the list)
   subroutine ${TYPE_NAME}$_get(list, data, index)
     type(${TYPE_NAME}$), intent(inout) :: list
+    ! allow(C072)
     ${ITEM_TYPE}$${NODE_ATTRIB}$, intent(out) :: data
     integer, intent(in) :: index
 
@@ -350,6 +351,7 @@ contains
   !!*         shape of the elements in the list.
   subroutine ${TYPE_NAME}$_asArray(list, val)
     type(${TYPE_NAME}$), intent(in) :: list
+    ! allow(C072)
     ${ITEM_TYPE}$${ITEM_ARRAY_ATTRIB}$, intent(out) :: val
 
     type(TNode), pointer :: pCur
