@@ -35,7 +35,7 @@ ignore = [
     "FORT",    # all Fortitude internal test rules (FORT99xx)
 
     # --- Formatting / style (not autofixable, too many) ---
-    "S001",    # line-too-long — 1640 violations, manual reformatting needed
+    "S001",    # line-too-long — 1669 violations, manual reformatting needed
 
     # --- Coding conventions (too many violations to enforce yet) ---
     "C003",    # implicit-external-procedures — 290 violations, widespread in fypp macros
@@ -45,12 +45,32 @@ ignore = [
     # --- Scientific / domain idioms (false positives for scientific code) ---
     "C021",    # no-real-suffix — 61 violations, scientific code uses bare literals
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
-
-    # --- Legacy interfaces (cannot be changed without API breaks) ---
-    "C071",    # assumed-size-array — 28 violations, legacy interfaces
-    "C072",    # assumed-size-character-intent — 9 violations, legacy C interop
-
-    # --- Coding conventions (autofix available but would break: modules lack explicit `public ::`) ---
-    "C131",    # missing-accessibility-statement — 6 violations
-    "C132",    # default-public-accessibility — 5 violations
 ]
+
+# Rules enforced globally but grandfathered in specific files.
+# New code must comply; existing violations are tracked here.
+[check.per-file-ignores]
+# C071 assumed-size-array (28 violations across 2 files)
+"src/dftbp/api/mm/capi.F90" = ["C071"]
+"src/dftbp/api/mm/qdepextpotgenc.F90" = ["C071"]
+# C072 assumed-size-character (9 violations across 7 files)
+"app/misc/slakovalue/integvalue.F90" = ["C072"]
+"src/dftbp/api/mm/mmapi.F90" = ["C072"]
+"src/dftbp/common/unitconversion.F90" = ["C072"]
+"src/dftbp/dftbplus/input/fileaccess.F90" = ["C072"]
+"src/dftbp/dftbplus/inputconversion.F90" = ["C072"]
+"src/dftbp/io/charmanip.F90" = ["C072"]
+"src/dftbp/type/linkedlists0.F90" = ["C072"]
+# C131 missing-accessibility-statement (6 violations across 6 files)
+"src/dftbp/api/mm/dftbplus.F90" = ["C131"]
+"src/dftbp/dftb/extfields.F90" = ["C131"]
+"src/dftbp/dftb/repulsive/repulsivelist.F90" = ["C131"]
+"src/dftbp/math/bisect.F90" = ["C131"]
+"src/dftbp/math/factorial.F90" = ["C131"]
+"src/dftbp/math/hermite.F90" = ["C131"]
+# C132 default-public-accessibility (5 violations across 5 files)
+"src/dftbp/common/accuracy.F90" = ["C132"]
+"src/dftbp/common/release.F90" = ["C132"]
+"src/dftbp/dftb/dispersions.F90" = ["C132"]
+"src/dftbp/dftbplus/outputfiles.F90" = ["C132"]
+"src/dftbp/timedep/linrespcommon.F90" = ["C132"]
