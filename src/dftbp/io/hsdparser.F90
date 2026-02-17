@@ -155,7 +155,7 @@ contains
     character(len=*), intent(in) :: file
 
     !> DOM-tree of the parsed input on exit
-    type(fnode), pointer :: xmlDoc
+    type(fnode), pointer, intent(out) :: xmlDoc
 
     type(TFileDescr) :: fd
     integer :: iostat
@@ -185,7 +185,7 @@ contains
     character(len=*), intent(in), optional :: file
 
     !> DOM-tree of the parsed input on exit
-    type(fnode), pointer :: xmlDoc
+    type(fnode), pointer, intent(out) :: xmlDoc
 
     logical, parameter :: parsedTypes(nSeparator) = .true.
     type(fnode), pointer :: rootNode, dummy
@@ -217,7 +217,7 @@ contains
       & fileDepth, curLine, parsedTypes, tNew) result (tFinished)
 
     !> Node which should contain parsed input
-    type(fnode), pointer :: curNode
+    type(fnode), pointer, intent(in) :: curNode
 
     !> Number of open blocks/assignments.
     integer, intent(in) :: depth
@@ -506,7 +506,7 @@ contains
   function createChildNode(parentNode, childName, curLine, file) result(newChild)
 
     !> Parent node containing of the child to be created
-    type(fnode), pointer :: parentNode
+    type(fnode), pointer, intent(in) :: parentNode
 
     !> Name of the new child
     character(*), intent(in) :: childName
@@ -675,7 +675,7 @@ contains
   subroutine dumpHSD_file(myDoc, file, subnode)
 
     !> The DOM tree
-    type(fnode), pointer :: myDoc
+    type(fnode), pointer, intent(in) :: myDoc
 
     !> Name of the file
     character(len=*), intent(in) :: file
@@ -703,7 +703,7 @@ contains
   subroutine dumpHSD_opened(myDoc, fd, subnode)
 
     !> The DOM tree
-    type(fnode), pointer :: myDoc
+    type(fnode), pointer, intent(in) :: myDoc
 
     !> File descriptor for an open file where output should go.
     integer, intent(in) :: fd
@@ -743,7 +743,7 @@ contains
   recursive subroutine dumpHSD_recursive(node, indent, fd, tRightValue, buffer)
 
     !> Node to dump
-    type(fnode),      pointer :: node
+    type(fnode),      pointer, intent(in) :: node
 
     !> Current indentation level
     integer, intent(in) :: indent
@@ -849,7 +849,7 @@ contains
   subroutine getNodeHSDName(node, name)
 
     !> Node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> name of the node on return
     type(string), intent(inout) :: name
@@ -866,7 +866,7 @@ contains
   subroutine getHSDPath(node, path, excludeRoot)
 
     !> Node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> String containing the path on return
     type(string), intent(inout) :: path
@@ -899,7 +899,7 @@ contains
   recursive subroutine getHSDPath_recursive(node, path, inclRoot, buffer)
 
     !> Node to look for
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> String containing the path until now
     type(string), intent(inout) :: path

@@ -402,8 +402,8 @@ contains
   !!* @param root Root of the entire tree (in the case it must be converted)
   !!* @param flags Contains parser flags on exit.
   subroutine readOptions(node, root, flags)
-    type(fnode), pointer :: node
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: node
+    type(fnode), pointer, intent(in) :: root
     type(TParserFlags), intent(out) :: flags
 
     integer :: inputVersion
@@ -433,7 +433,7 @@ contains
   subroutine readGeometry(geonode, geo)
 
     !> Node containing the geometry
-    type(fnode), pointer :: geonode
+    type(fnode), pointer, intent(in) :: geonode
 
     !> Contains the geometry information on exit
     type(TGeometry), intent(out) :: geo
@@ -463,7 +463,7 @@ contains
 
   !> Read geometry information for transport calculation
   subroutine readTransportGeometry(root, geom, tp)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TGeometry), intent(inout) :: geom
     type(TTransPar), intent(inout) :: tp
 
@@ -546,7 +546,7 @@ contains
 
   !> Read bias information, used in Analysis and Green's function solver
   subroutine readContacts(pNodeList, contacts, geom, upload)
-    type(fnodeList), pointer :: pNodeList
+    type(fnodeList), pointer, intent(in) :: pNodeList
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
     type(TGeometry), intent(in) :: geom
     logical, intent(in) :: upload
@@ -619,7 +619,7 @@ contains
     integer, intent(in) :: atomrange(2)
     type(TGeometry), intent(in) :: geom
     integer, intent(in) :: id
-    type(fnode), pointer :: pContact
+    type(fnode), pointer, intent(in) :: pContact
     real(dp), intent(in) :: plShiftTol
     real(dp), intent(out) :: contactVec(3)
     integer, intent(out) :: contactDir
@@ -670,9 +670,9 @@ contains
 
   !> Used to read atomic masses from SK files
   subroutine readSKfiles(child, geo, speciesMass)
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(in) :: child
     type(TGeometry), intent(in) :: geo
-    real(dp), dimension(:) :: speciesMass
+    real(dp), dimension(:), intent(out) :: speciesMass
 
     type(TOldSKData) :: skData
     type(TListCharLc), allocatable :: skFiles(:)
@@ -759,9 +759,9 @@ contains
 
 
   subroutine readMasses(value, geo, speciesMass)
-    type(fnode), pointer :: value
+    type(fnode), pointer, intent(in) :: value
     type(TGeometry), intent(in) :: geo
-    real(dp), dimension(:) :: speciesMass
+    real(dp), dimension(:), intent(out) :: speciesMass
 
     type(fnode), pointer :: child, child2
     type(string) :: modif
@@ -786,7 +786,7 @@ contains
   subroutine readKPoints(node, geo, tBadIntegratingKPoints)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
@@ -932,7 +932,7 @@ contains
 
 
   subroutine  readKPointsFile(child)
-    type(fnode),  pointer ::  child
+    type(fnode),  pointer, intent(in) ::  child
     type(string) :: text
 
     call getFirstTextChild(child, text)
@@ -942,7 +942,7 @@ contains
 
 
   subroutine readKPointsFile_help(child,text)
-    type(fnode),  pointer ::  child
+    type(fnode),  pointer, intent(in) ::  child
     character(len=*), intent(in) :: text
     integer, save :: iStart, iErr=0, ii, iOldStart
     real(dp), dimension(:), allocatable :: tmparray
@@ -982,7 +982,7 @@ contains
   !!  dx_1 dx_1    dy_1 dx_1   dz_1 dx_1   dx_2 dx_1    dy_2 dx_1
   !!
   subroutine readDftbHessian(child)
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(in) :: child
 
     type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
@@ -1038,7 +1038,7 @@ contains
 
 
   subroutine readDynMatrix(child)
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(in) :: child
 
     type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
@@ -1070,7 +1070,7 @@ contains
 
 
   subroutine readCp2kHessian(child)
-    type(fnode), pointer :: child
+    type(fnode), pointer, intent(in) :: child
 
     type(TListRealR1) :: realBuffer
     integer :: iCount, jCount, ii, kk, jj, ll
@@ -1188,12 +1188,13 @@ contains
 
   !> Reads the Analysis block.
   subroutine readAnalysis(node, geo, pdos, tundos, transpar, atTemperature)
-    type(fnode), pointer :: node, pnode
+    type(fnode), pointer, intent(in) :: node
+    type(fnode), pointer :: pnode
     type(TGeometry), intent(in) :: geo
     type(TPdos), intent(inout) :: pdos
     type(TNEGFTunDos), intent(inout) :: tundos
     type(TTransPar), intent(inout) :: transpar
-    real(dp) :: atTemperature
+    real(dp), intent(in) :: atTemperature
     real(dp) :: TempRange(2)
 
     type(fnode), pointer :: val, child, field
@@ -1235,7 +1236,7 @@ contains
 
 
   subroutine readPDOSRegions(children, geo, iAtInregion, regionLabels)
-    type(fnodeList), pointer :: children
+    type(fnodeList), pointer, intent(in) :: children
     type(TGeometry), intent(in) :: geo
     type(TWrappedInt1), allocatable, intent(out) :: iAtInRegion(:)
     character(lc), allocatable, intent(out) :: regionLabels(:)
@@ -1265,7 +1266,7 @@ contains
 
   !> Read Tunneling and Dos options from analysis block
   subroutine readTunAndDos(root, geo, tundos, transpar, temperature)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TGeometry), intent(in) :: geo
 
     !> The container to be filled
@@ -1399,7 +1400,7 @@ contains
 
   !> Get contacts for terminal currents by name
   subroutine getEmitterCollectorByName(pNode, emitter, collector, contactNames)
-    type(fnode), pointer :: pNode
+    type(fnode), pointer, intent(in) :: pNode
     integer, intent(out) :: emitter, collector
     character(len=*), intent(in) :: contactNames(:)
 
@@ -1426,7 +1427,7 @@ contains
   function getContactByName(contactNames, contName, pNode) result(contact)
     character(len=*), intent(in) :: contactNames(:)
     character(len=*), intent(in) :: contName
-    type(fnode), pointer :: pNode
+    type(fnode), pointer, intent(in) :: pNode
     integer :: contact
 
     logical :: tFound
@@ -1448,7 +1449,7 @@ contains
 
   !> Set model for w-dependent delta in G.F.
   subroutine readDeltaModel(root, tundos)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TNEGFTunDos), intent(inout) :: tundos
 
     type(fnode), pointer :: pValue, pChild, field
@@ -1603,7 +1604,7 @@ contains
 
   !> Select family of modes to analyze and restrict transmission
   subroutine setTypeOfModes(root, transpar)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TTransPar), intent(inout) :: transpar
 
     type(string) :: buffer
@@ -1643,7 +1644,7 @@ contains
   !> Check that the geometry orientation is consistent with selTypeModes
   !! Currently only checks that transport direction is along z
   subroutine checkTypeOfModes(root, tp)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TTransPar), intent(inout) :: tp
 
     select case (selTypeModes)
@@ -1659,7 +1660,7 @@ contains
 
   !> Check that transport direction is along z
   subroutine checkAlongZ(root, tp)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
     type(TTransPar), intent(inout) :: tp
 
     real(dp) :: contactVec(3)

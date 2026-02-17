@@ -28,7 +28,7 @@ contains
   function getFirstChildByName(node, name) result(child)
 
     !> Parent node containing children
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Child name to look for (empty string returns the node itself)
     character(len=*), intent(in) :: name
@@ -61,7 +61,7 @@ contains
   function getLastChildByName(node, name) result(child)
 
     !> Parent node containing children
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Child name to look for (empty string returns the node itself)
     character(len=*), intent(in) :: name
@@ -94,7 +94,7 @@ contains
   function getChildrenByName(node, name) result(childList)
 
     !> Parent node to investigate.
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the children to look for.
     character(len=*), intent(in) :: name
@@ -128,7 +128,7 @@ contains
   recursive subroutine removeSpace(node)
 
     !> Node to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     type(fnode), pointer :: child, child2, dummy
     type(string) :: buffer
@@ -157,7 +157,7 @@ contains
   function getTagsWithoutAttribute(node, name, rootOnly) result(nodeList)
 
     !> Tree to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the attribute to look for
     character(len=*), intent(in) :: name
@@ -189,7 +189,7 @@ contains
       &nodeList)
 
     !> Tree to investigate
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Name of the attribute to look for
     character(len=*), intent(in) :: name
@@ -198,7 +198,7 @@ contains
     logical, intent(in) :: rootOnly
 
     !> List of the nodes without the specified attribute
-    type(fnodeList), pointer :: nodeList
+    type(fnodeList), pointer, intent(inout) :: nodeList
 
     type(fnode), pointer :: attr, child
 
@@ -227,7 +227,7 @@ contains
   subroutine removeChildNodes(node)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     type(fnode), pointer :: child, child2
 
@@ -249,7 +249,7 @@ contains
   subroutine removeNodes(nodeList)
 
     !> Contains the nodes to remove
-    type(fnodeList), pointer :: nodeList
+    type(fnodeList), pointer, intent(in) :: nodeList
 
     type(fnode), pointer :: child
     integer :: ii

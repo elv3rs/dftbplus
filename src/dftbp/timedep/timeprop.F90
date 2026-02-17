@@ -771,10 +771,10 @@ contains
     logical, intent(in) :: tRealHS
 
     !> The k-points
-    real(dp) :: kPoint(:,:)
+    real(dp), intent(in) :: kPoint(:,:)
 
     !> Weight of the K-Points
-    real(dp) :: kWeight(:)
+    real(dp), intent(in) :: kWeight(:)
 
     !> Whether this is a hybrid xc-functional calculation
     logical, intent(in) :: isHybridXc
@@ -1009,7 +1009,7 @@ contains
       & errStatus)
 
     !> ElecDynamics instance
-    type(TElecDynamics) :: this
+    type(TElecDynamics), intent(inout) :: this
 
     !> Boundary conditions on the calculation
     type(TBoundaryConds), intent(in) :: boundaryCond
@@ -1141,7 +1141,7 @@ contains
     type(TTaggedWriter), intent(inout) :: taggedWriter
 
     !> Reference external potential (usual provided via API)
-    type(TRefExtPot) :: refExtPot
+    type(TRefExtPot), intent(in) :: refExtPot
 
     !> Error status
     type(TStatus), intent(inout) :: errStatus
@@ -1202,7 +1202,7 @@ contains
       & cellVec, errStatus)
 
     !> ElecDynamics instance
-    type(TElecDynamics) :: this
+    type(TElecDynamics), intent(inout) :: this
 
     !> Boundary conditions on the calculation
     type(TBoundaryConds), intent(in) :: boundaryCond
@@ -1323,7 +1323,7 @@ contains
     type(TTaggedWriter), intent(inout) :: taggedWriter
 
     !> Reference external potential (usual provided via API)
-    type(TRefExtPot) :: refExtPot
+    type(TRefExtPot), intent(in) :: refExtPot
 
     !> Lattice vectors if periodic
     real(dp), intent(in) :: latVec(:,:)
@@ -1409,7 +1409,7 @@ contains
       & deltaRho, HSqrCplxCam, Ssqr, solvation, hybridXc, dispersion, rho, errStatus)
 
     !> ElecDynamics instance
-    type(TElecDynamics) :: this
+    type(TElecDynamics), intent(inout) :: this
 
     !> Square hamiltonian at each spin and k-point
     complex(dp), intent(inout) :: H1(:,:,:)
@@ -1484,7 +1484,7 @@ contains
     real(dp), intent(in), allocatable :: onSiteElements(:,:,:,:)
 
     !> Reference external potential (usual provided via API)
-    type(TRefExtPot) :: refExtPot
+    type(TRefExtPot), intent(in) :: refExtPot
 
     !> Change in density matrix
     complex(dp), allocatable, intent(inout) :: deltaRho(:,:,:)
@@ -4447,7 +4447,7 @@ contains
     real(dp), intent(in), allocatable :: onSiteElements(:,:,:,:)
 
     !> Reference external potential (usual provided via API)
-    type(TRefExtPot) :: refExtPot
+    type(TRefExtPot), intent(in) :: refExtPot
 
     !> Lattice vectors if periodic
     real(dp), intent(in) :: latVec(:,:)
@@ -4824,7 +4824,7 @@ contains
     real(dp), intent(in), allocatable :: onSiteElements(:,:,:,:)
 
     !> Reference external potential (usual provided via API)
-    type(TRefExtPot) :: refExtPot
+    type(TRefExtPot), intent(in) :: refExtPot
 
     !> Solvation model
     class(TSolvation), allocatable, intent(inout) :: solvation

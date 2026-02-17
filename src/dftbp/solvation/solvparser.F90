@@ -51,7 +51,7 @@ contains
   subroutine readSolvation(node, geo, input)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry, including atomic information
     type(TGeometry), intent(in) :: geo
@@ -86,7 +86,7 @@ contains
   subroutine readSolvGB(node, geo, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -259,7 +259,7 @@ contains
   subroutine readSolvCosmo(node, geo, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -329,7 +329,7 @@ contains
   subroutine readDomainDecomposition(node, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Input for the domain decomposition algorithm
     type(TDomainDecompositionInput), intent(out) :: input
@@ -348,7 +348,7 @@ contains
   subroutine readSolvSASA(node, geo, input, probeRadDefault, surfaceTensionDefault)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -415,7 +415,7 @@ contains
   subroutine readCM5(node, input, geo)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -460,7 +460,7 @@ contains
   subroutine readSolvent(node, solvent)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Data associated with the solvent
     type(TSolventData), intent(out) :: solvent
@@ -505,7 +505,7 @@ contains
   subroutine readReferenceState(node, solvent, temperature, shift, freeEnergyShift)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Data associated with the solvent
     type(TSolventData), intent(in) :: solvent
@@ -548,7 +548,7 @@ contains
   subroutine readVanDerWaalsRad(node, geo, vdwRad)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -595,7 +595,7 @@ contains
   subroutine readAngularGrid(node, angGrid, default)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Grid identifier
     integer, intent(out) :: angGrid

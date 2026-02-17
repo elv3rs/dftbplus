@@ -155,11 +155,11 @@ contains
   subroutine readParserOptions(node, root, flags)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Root of the entire tree (in case it needs to be converted, for example because dftbp_of
     !> compatibility options)
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
 
     !> Contains parser flags on exit.
     type(TParserFlags), intent(out) :: flags
@@ -206,7 +206,7 @@ contains
   subroutine readGeometry(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Input structure to be filled
     type(TInputData), intent(inout) :: input
@@ -231,7 +231,7 @@ contains
   subroutine readTransportGeometry(root, geom, transpar)
 
     !> Root node containing the current block
-    type(fnode), pointer :: root
+    type(fnode), pointer, intent(in) :: root
 
     !> geometry of the system, which may be modified for some types of calculation
     type(TGeometry), intent(inout) :: geom
@@ -292,7 +292,7 @@ contains
 
   !> Read bias information, used in Analysis and Green's function eigensolver
   subroutine readContacts(pNodeList, contacts, geom, task, iAtInRegion, nPLs)
-    type(fnodeList), pointer :: pNodeList
+    type(fnodeList), pointer, intent(in) :: pNodeList
     type(ContactInfo), allocatable, dimension(:), intent(inout) :: contacts
     type(TGeometry), intent(in) :: geom
     character(*), intent(in) :: task
@@ -386,7 +386,7 @@ contains
 
   subroutine getSKcutoff(node, geo, mSKCutoff)
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Geometry structure to be filled
     type(TGeometry), intent(in) :: geo
@@ -430,7 +430,7 @@ contains
   !> established
   subroutine readSKFiles(node, nSpecies, speciesNames, maxSKcutoff)
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Nr. of species in the system
     integer, intent(in) :: nSpecies
@@ -543,7 +543,7 @@ contains
   subroutine SKTruncations(node, truncationCutOff, skInterMeth)
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> This is the resulting cutoff distance
     real(dp), intent(out) :: truncationCutOff

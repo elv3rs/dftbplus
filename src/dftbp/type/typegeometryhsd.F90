@@ -48,7 +48,7 @@ contains
   subroutine writeTGeometryHSD_dom(node, geo)
 
     !> Node in the HSD-tree which should contain the geometry
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> The geometry
     type(TGeometry), intent(in) :: geo
@@ -98,7 +98,7 @@ contains
   subroutine readTGeometryHSD(node, geo)
 
     !> Node in the HSD tree containing the geomery
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -221,7 +221,7 @@ contains
   subroutine readTGeometryGen(node, geo)
 
     !> Node containing the geometry in Gen format
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -238,7 +238,7 @@ contains
   subroutine readTGeometryGen_help(node, geo, text)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -401,7 +401,7 @@ contains
   subroutine readTGeometryXyz(node, geo)
 
     !> Node containing the geometry in XYZ format
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -418,7 +418,7 @@ contains
   subroutine readTGeometryXyz_help(node, geo, text)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -516,7 +516,7 @@ contains
   subroutine readTGeometryVasp(node, geo)
 
     !> Node containing the geometry in Gen format
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -533,7 +533,7 @@ contains
   subroutine readTGeometryVasp_help(node, geo, text)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -713,7 +713,7 @@ contains
   subroutine readTGeometryLammps(node, geo)
 
     !> Node containing the geometry in Gen format
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -746,7 +746,7 @@ contains
   subroutine readTGeometryLammps_help(node, geo, commandInput, dataInput)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(out) :: geo
@@ -1046,7 +1046,7 @@ contains
   subroutine setupPeriodicGeometry(node, geo)
 
     !> Node to parse (only needed to produce proper error messages)
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Contains the geometry on exit
     type(TGeometry), intent(inout) :: geo

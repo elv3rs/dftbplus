@@ -512,31 +512,31 @@ contains
     real(dp), intent(in) :: coords(:,:)
 
     !> Real space cut-offs for surface area contribution
-    real(dp) :: tolerance
+    real(dp), intent(in) :: tolerance
 
     !> Smoothing dielectric function parameters
-    real(dp) :: smoothingPar(3)
+    real(dp), intent(in) :: smoothingPar(3)
 
     !> Van-der-Waals radii + probe radius
-    real(dp), allocatable :: probeRad(:)
+    real(dp), allocatable, intent(in) :: probeRad(:)
 
     !> Thresholds for smooth numerical integration
-    real(dp), allocatable :: thresholds(:, :)
+    real(dp), allocatable, intent(in) :: thresholds(:, :)
 
     !> Radial weight
-    real(dp), allocatable :: radWeight(:)
+    real(dp), allocatable, intent(in) :: radWeight(:)
 
     !> Angular grid for surface integration
-    real(dp), allocatable :: angGrid(:, :)
+    real(dp), allocatable, intent(in) :: angGrid(:, :)
 
     !> Weights of grid points for surface integration
-    real(dp), allocatable :: angWeight(:)
+    real(dp), allocatable, intent(in) :: angWeight(:)
 
     !> Solvent accessible surface area
-    real(dp), allocatable :: sasa(:)
+    real(dp), allocatable, intent(inout) :: sasa(:)
 
     !> Derivative of solvent accessible surface area w.r.t. coordinates
-    real(dp), allocatable :: dsdr(:, :, :)
+    real(dp), allocatable, intent(inout) :: dsdr(:, :, :)
 
     integer :: iAt1, iSp1, iAt2, iAt2f, iSp2, iNeigh, ip
     integer :: iAtFirst, iAtLast, nAtom, mNeighbour, nEval
