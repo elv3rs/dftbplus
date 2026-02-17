@@ -256,7 +256,7 @@ contains
     end if
 
     !! "-3.1234567E-123 ": nDec = 7, nExpDigit = 3, nChar = 16
-    nExpDigit = ceiling(log(maxexponent(1.0_dp) / log(10.0)) / log(10.0))
+    nExpDigit = ceiling(log(maxexponent(1.0_dp) / log(10.0_dp)) / log(10.0_dp))
     nDecDigit = precision(1.0_dp)
     nChar = nDecDigit + nExpDigit + 6
     nField = 80 / nChar

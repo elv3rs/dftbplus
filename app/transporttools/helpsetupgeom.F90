@@ -176,7 +176,7 @@ contains
       ! sort contact directions perpendicular to device by largest coord range in that direction
       contRange(:) = abs(maxval(geom%coords(:,iAtInRegion(icont)%data(:)),dim=2)&
           & - minval(geom%coords(:,iAtInRegion(icont)%data(:)),dim=2))
-      contRange(abs(contDir(icont))) = huge(1.0)
+      contRange(abs(contDir(icont))) = huge(1.0_dp)
       call index_heap_sort(visitOrder, contRange)
       loop1: do ii = 3, 1, -1
         jj = visitOrder(ii)
@@ -184,7 +184,7 @@ contains
           cycle loop1
         end if
         subarray(:) = subarray * (abs(maxval(geom%coords(jj,iAtInRegion(icont)%data(:))) -&
-            & minval(geom%coords(jj,iAtInRegion(icont)%data(:)))) + epsilon(1.0))
+            & minval(geom%coords(jj,iAtInRegion(icont)%data(:)))) + epsilon(1.0_dp))
         subarray(:) = subarray + geom%coords(jj, iAtInRegion(icont)%data(:))
       end do loop1
       call index_heap_sort(indxs, subarray)

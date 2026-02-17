@@ -365,7 +365,7 @@ contains
     real(dp), intent(in) :: locations(:,:)
 
     !> Default potential softening
-    real(dp), save :: epsSoften = 1E-6
+    real(dp), save :: epsSoften = 1E-6_dp
 
     call main%scc%getInternalElStatPotential(pot, env, locations, epsSoften)
 

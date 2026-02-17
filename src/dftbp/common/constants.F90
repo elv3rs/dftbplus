@@ -98,7 +98,7 @@ module dftbp_common_constants
 
 
   !> Rydberg -> m-1 codata 2006 R_infty
-  real(dp), parameter :: Rydberg__m = 10973731.568527
+  real(dp), parameter :: Rydberg__m = 10973731.568527_dp
 
 
   !> Hartree -> cm-1

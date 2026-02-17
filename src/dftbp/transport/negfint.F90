@@ -678,7 +678,7 @@ contains
       atomStart(nDevicePLs+1) = nAtom + 1
     end if
 
-    if (transpar%defined .and. ncont > .0) then
+    if (transpar%defined .and. ncont > .0_dp) then
 
       if(.not.transpar%tNoGeometry) then
 

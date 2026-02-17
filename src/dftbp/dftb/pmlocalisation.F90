@@ -341,7 +341,7 @@ contains
           if (abs(AB)>0.0_dp) then
             C4A = -Ast / sqrt(AB)
             alpha = 0.25_dp * acos(C4A)
-            if (Bst <= 0.0) then
+            if (Bst <= 0.0_dp) then
               alpha = -alpha
             end if
           else
@@ -364,7 +364,7 @@ contains
       end do
 
       conv = abs(alphamax) - abs(alphalast)
-      if (iIter > 2 .and. ((abs(conv)<pipekTol) .or. alphamax == 0.0)) then
+      if (iIter > 2 .and. ((abs(conv)<pipekTol) .or. alphamax == 0.0_dp)) then
         tConverged = .true.
         exit lpLocalise
       end if
@@ -503,7 +503,7 @@ contains
 
         if (real(iLev1)/real(nLev) > rCount) then
           write(stdout, "(1X,I0,'%')")int(100*real(iLev1)/real(nLev))
-          rCount = rCount + 0.1  ! every 10%
+          rCount = rCount + 0.1_dp  ! every 10%
         end if
 
         nLevPairs = 0
@@ -563,7 +563,7 @@ contains
           if (abs(AB)>0.0_dp) then
             C4A = -Ast / sqrt(AB)
             alpha = 0.25_dp * acos(C4A)
-            if (Bst <= 0.0) then
+            if (Bst <= 0.0_dp) then
               alpha = -alpha
             end if
           else
@@ -668,7 +668,7 @@ contains
           & "change ",Localisation-oldLocalisation
 
       conv = abs(alphamax) - abs(alphalast)
-      if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0)) then
+      if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0_dp)) then
         write(stdout, *)"Converged on rotation angle"
         tConverged = .true.
         exit lpLocalise
@@ -937,7 +937,7 @@ contains
           if (abs(AB)>0.0_dp) then
             C4A = -Ast / sqrt(AB)
             alpha = 0.25_dp * acos(C4A)
-            if (Bst <= 0.0) then
+            if (Bst <= 0.0_dp) then
               alpha = -alpha
             end if
           else
@@ -960,7 +960,7 @@ contains
       end do
 
       conv = abs(alphamax) - abs(alphalast)
-      if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0)) then
+      if (iIter > 2 .and. ((abs(conv)<convergence) .or. alphamax == 0.0_dp)) then
         tConverged = .true.
         exit lpLocalise
       end if

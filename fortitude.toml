@@ -43,9 +43,12 @@ ignore = [
     "C061",    # missing-intent — 388 violations, would need gradual enforcement
 
     # --- Scientific / domain idioms (false positives for scientific code) ---
-    "C021",    # no-real-suffix — 61 violations, scientific code uses bare literals
     "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 ]
+
+# C021 (no-real-suffix): dftbplus uses `dp` (= real64) from accuracy module.
+[check.kind-suffixes]
+real-suffix = "dp"
 
 # Rules enforced globally but grandfathered in specific files.
 # New code must comply; existing violations are tracked here.

@@ -165,10 +165,10 @@ contains
       gSum3(:) = gSum3 * g3c
       gSum33 = gSum33 * gc
       localEnergies(iAt1) = localEnergies(iAt1) - gSum + (c6(iAt1,iAt1)/12.0_dp * etam3&
-          & - pi**1.5 * sum(c6(:,iAt1))/(6.0_dp * vol)) * etam3
+          & - pi**1.5_dp * sum(c6(:,iAt1))/(6.0_dp * vol)) * etam3
       do ii = 1, 3
         localStress(ii,ii) = localStress(ii,ii) - gSum/vol&
-            & - (pi**1.5 * sum(c6(:,iAt1))/(6.0_dp * vol*vol)) * etam3
+            & - (pi**1.5_dp * sum(c6(:,iAt1))/(6.0_dp * vol*vol)) * etam3
       end do
       localStress = localStress - gSum33 / vol
       localDeriv(:,iAt1) =  localDeriv(:,iAt1) +  gSum3
@@ -329,10 +329,10 @@ contains
       gSum3(:) = gSum3 * g3c
       gSum33 = gSum33 * gc
       localEnergies(iAt1) = localEnergies(iAt1) - gSum + (c6(iSp1,iSp1)/12.0_dp * etam3&
-          & - pi**1.5 * sum(c6(species0(1:nAtom),iSp1))/(6.0_dp * vol)) * etam3
+          & - pi**1.5_dp * sum(c6(species0(1:nAtom),iSp1))/(6.0_dp * vol)) * etam3
       do ii = 1, 3
         localStress(ii,ii) = localStress(ii,ii) - gSum/vol&
-            & - (pi**1.5 * sum(c6(species0(1:nAtom),iSp1))/(6.0_dp * vol*vol)) * etam3
+            & - (pi**1.5_dp * sum(c6(species0(1:nAtom),iSp1))/(6.0_dp * vol*vol)) * etam3
       end do
       localStress = localStress - gSum33 / vol
       localDeriv(:,iAt1) =  localDeriv(:,iAt1) +  gSum3

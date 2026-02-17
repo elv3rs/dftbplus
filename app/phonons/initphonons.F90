@@ -1103,7 +1103,7 @@ contains
     !! ---------- + --------- + --------- + ---------- + ---------- +...
     !! dx_1 dx_1    dy_1 dx_1   dz_1 dx_1   dx_2 dx_1    dy_2 dx_1
 
-    nBlocks = nDerivs/5.0
+    nBlocks = nDerivs/5.0_dp
     allocate(HessCp2k(nDerivs*nBlocks,5))
 
     call openFile(fd, trim(char(filename)))

@@ -1691,7 +1691,7 @@ contains
     do iS = 1, nIndepHam
       do iK = 1, nKPts
         loop1: do iLev = 1, nOrbs
-          if (filling(iLev, iK, iS) < epsilon(1.0)) then
+          if (filling(iLev, iK, iS) < epsilon(1.0_dp)) then
             ! assumes Fermi filling, so above this is empty
             nFilled(iS, iK) = iLev - 1
             exit loop1
@@ -1707,7 +1707,7 @@ contains
     do iS = 1, nIndepHam
       do iK = 1, nKpts
         loop2: do iLev = 1, nOrbs
-          if (abs(filling(iLev, iK, iS) - maxFill) > epsilon(1.0)) then
+          if (abs(filling(iLev, iK, iS) - maxFill) > epsilon(1.0_dp)) then
             ! assumes Fermi filling, so this is filled
             nEmpty(iS, iK) = iLev
             exit loop2

@@ -225,7 +225,7 @@ contains
           this%alpha = 1.5_dp * this%alpha
         else
           ! points the other way, mix in less
-          this%alpha = 0.5 * this%alpha
+          this%alpha = 0.5_dp * this%alpha
         end if
 
         ! add a fraction down the DIIS estimated gradient onto the new solution

@@ -179,7 +179,7 @@ contains
       end if
       cpuTime = this%cpuTimes(iTimer)
       wallTime = this%wallClockTimes(iTimer)
-      if (abs(cpuTime) < 1e-2_dp .and. abs(wallTime) < 1e-2) then
+      if (abs(cpuTime) < 1e-2_dp .and. abs(wallTime) < 1e-2_dp) then
         cycle loop1
       end if
       prefix = repeat(" ", 2 * (level - 1))

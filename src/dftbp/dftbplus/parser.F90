@@ -2391,7 +2391,7 @@ contains
       call getChildValue(child2, "Frequency", ctrl%electricField%EFieldOmega, 0.0_dp, &
           & modifier=modifier, child=child3)
       call convertUnitHsd(char(modifier), freqUnits, child3, ctrl%electricField%EFieldOmega)
-      if (ctrl%electricField%EFieldOmega > 0.0) then
+      if (ctrl%electricField%EFieldOmega > 0.0_dp) then
         ! angular frequency
         ctrl%electricField%EFieldOmega = 2.0_dp * pi * ctrl%electricField%EFieldOmega
         ctrl%electricField%isTDEfield = .true.

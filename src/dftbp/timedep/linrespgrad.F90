@@ -69,7 +69,7 @@ module dftbp_timedep_linrespgrad
   real(dp), parameter :: arTol = epsilon(1.0_rsp)
 
   !> Threshold for Stratmann solver
-  real(dp), parameter :: convThreshStrat = 0.1*epsilon(1.0_rsp)
+  real(dp), parameter :: convThreshStrat = 0.1_dp*epsilon(1.0_rsp)
 
   !> Maximal allowed iteration in the ARPACK solver.
   integer, parameter :: maxArIter = 300

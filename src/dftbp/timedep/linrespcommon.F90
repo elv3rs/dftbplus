@@ -89,7 +89,7 @@ contains
     do ii = 2, nxov
       call indxov(win, ii, getIA, iOcc, iVrt, iSpin)
       ! Check if this is a still within a degenerate group, otherwise process the group
-      if (abs(grndEigVal(iOcc, 1)-eOcc) > epsilon(0.0) .or. abs(wij(ii) - eExc) > epsilon(0.0)) then
+      if (abs(grndEigVal(iOcc, 1)-eOcc) > epsilon(0.0_dp) .or. abs(wij(ii) - eExc) > epsilon(0.0_dp)) then
         eOcc = grndEigVal(iOcc, 1)
         eExc = wij(ii)
         mu = 0.0_dp

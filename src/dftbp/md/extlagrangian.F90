@@ -97,7 +97,7 @@ module dftbp_md_extlagrangian
   real(dp), parameter :: auxCoeffs7(0:7) = &
       & [-36.0_dp, 99.0_dp, -88.0_dp, 11.0_dp, 32.0_dp, -25.0_dp, 8.0_dp,&
       & -1.0_dp]
-  real(dp), parameter :: alpha7 = 1.6e-3
+  real(dp), parameter :: alpha7 = 1.6e-3_dp
   real(dp), parameter :: kappa7 = 1.86_dp
 
 contains

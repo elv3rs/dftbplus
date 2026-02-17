@@ -3971,7 +3971,7 @@ contains
       if (this%nEl(1) /= this%nEl(2)) then
         call error("Internal error, Delta DFTB requires a spin free reference")
       end if
-      if (abs(this%nEl(1) - nint(this%nEl(1))) > epsilon(0.0)) then
+      if (abs(this%nEl(1) - nint(this%nEl(1))) > epsilon(0.0_dp)) then
         call error("Delta DFTB requires an integer number of electrons in the reference state")
       end if
       if (mod(sum(nint(this%nEl)),2) /= 0) then
@@ -5802,7 +5802,7 @@ contains
       end if
     end if
 
-    if (iSolver == electronicSolverTypes%pexsi .and. tempElec < epsilon(0.0)) then
+    if (iSolver == electronicSolverTypes%pexsi .and. tempElec < epsilon(0.0_dp)) then
       call error("This solver requires a finite electron broadening")
     end if
 

@@ -1831,7 +1831,7 @@ contains
 
     if (iError == 0) then
       alphaRight = alpha
-      alpha = (alphaLeft + alphaRight) / 2.0
+      alpha = (alphaLeft + alphaRight) / 2.0_dp
       iIter = 0
       diff = diffRecReal(alpha, minG, minR, volume)
       do while (abs(diff) > tolerance .and. iIter <= nSearchIter)
@@ -1840,7 +1840,7 @@ contains
         else
           alphaRight = alpha
         end if
-        alpha = (alphaLeft + alphaRight) / 2.0
+        alpha = (alphaLeft + alphaRight) / 2.0_dp
         diff = diffRecReal(alpha, minG, minR, volume)
         iIter = iIter + 1
       end do

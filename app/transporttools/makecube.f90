@@ -109,10 +109,10 @@ program makecube
   write(*,*) "CUBE"
   write(*,*) "x, y, z"
   write(*,"(i4,3f12.5)") 1,or(1)/au,or(2)/au,or(3)/au
-  write(*,"(i4,3f12.5)") nx,(x(2)-x(1))/au,0.0,0.0
-  write(*,"(i4,3f12.5)") ny,0.0,(y(2)-y(1))/au,0.0
-  write(*,"(i4,3f12.5)") nz,0.0,0.0,(z(2)-z(1))/au
-  write(*,"(i1,4f12.5)") 1,0.0,0.0,0.0,0.0
+  write(*,"(i4,3f12.5)") nx,(x(2)-x(1))/au,0.0_dp,0.0_dp
+  write(*,"(i4,3f12.5)") ny,0.0_dp,(y(2)-y(1))/au,0.0_dp
+  write(*,"(i4,3f12.5)") nz,0.0_dp,0.0_dp,(z(2)-z(1))/au
+  write(*,"(i1,4f12.5)") 1,0.0_dp,0.0_dp,0.0_dp,0.0_dp
 
 
   do i=1,nx

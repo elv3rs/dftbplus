@@ -6052,7 +6052,7 @@ contains
         & + transpose(tmpSqr(:,:,1))*tmpSqr(:,:,1) + transpose(tmpSqr(:,:,2))*tmpSqr(:,:,2)&
         & + transpose(tmpSqr(:,:,3))*tmpSqr(:,:,3))
     symSqrMat2(nOrb+1:,nOrb+1:) = symSqrMat2(:nOrb,:nOrb)
-    symSqrMat2(nOrb+1:,:nOrb) = symSqrMat2(nOrb+1:,:nOrb) + 0.25*&
+    symSqrMat2(nOrb+1:,:nOrb) = symSqrMat2(nOrb+1:,:nOrb) + 0.25_dp*&
         & (transpose(tmpSqr(:,:,0))*cmplx(tmpSqr(:,:,1),tmpSqr(:,:,2),dp) +&
         & tmpSqr(:,:,0)*cmplx(transpose(tmpSqr(:,:,1)),transpose(tmpSqr(:,:,2)),dp))
     symSqrMat2(:nOrb,:nOrb) = symSqrMat2(:nOrb,:nOrb) +0.25_dp *&
