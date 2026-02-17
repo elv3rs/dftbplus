@@ -903,6 +903,7 @@ contains
   !> Converts a 0-char terminated C-type string into a Fortran string.
   function fortranChar(cstring, maxlen) result(res)
 
+    ! allow(assumed-size)
     !> C-type string as array
     character(kind=c_char), intent(in) :: cstring(*)
 
