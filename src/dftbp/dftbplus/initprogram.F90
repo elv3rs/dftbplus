@@ -6110,7 +6110,7 @@ contains
     logical, intent(in) :: tCasidaForces
 
     !> Solvation data and calculations
-    class(TSolvation), allocatable :: solvation
+    class(TSolvation), allocatable, intent(in) :: solvation
 
     !> Is this an excited state calculation with a hybrid functional
     logical, intent(in) :: isHybLinResp
@@ -6119,7 +6119,7 @@ contains
     integer, intent(in) :: nSpin
 
     !> If the calculation is helical geometry
-    logical :: tHelical
+    logical, intent(in) :: tHelical
 
     !> Is there spin-orbit coupling
     logical, intent(in) :: tSpinOrbit
@@ -6665,7 +6665,7 @@ contains
     type(TDensityMatrix), intent(out) :: densityMatrix
 
     !> Electronic structure solver
-    type(TElectronicSolver) :: electronicSolver
+    type(TElectronicSolver), intent(in) :: electronicSolver
 
     !> Is the eigenvector -> density matrix on the GPU (if MAGMA)
     logical, intent(in) :: isGpuUsed

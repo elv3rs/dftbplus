@@ -469,7 +469,7 @@ contains
 
   ! -----------------------------------------------------------------------------------------------
   subroutine swap(a,b)
-    integer :: a,b
+    integer, intent(inout) :: a,b
     integer :: tmp
     tmp=a
     a=b

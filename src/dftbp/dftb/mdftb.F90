@@ -1187,7 +1187,7 @@ contains
     class(TNonSccDiff), intent(in) :: derivator
 
     !> Container for SK overlap integrals
-    type(TSlakoCont) :: skOverCont
+    type(TSlakoCont), intent(in) :: skOverCont
 
     !> Density matrix in Packed format
     real(dp), intent(in) :: rho(:)
@@ -1214,7 +1214,7 @@ contains
     real(dp), intent(in) :: coords(:,:)
 
     !> External dipolar contribution to the Hamiltonian
-    real(dp), allocatable :: extDipoleAtom(:,:)
+    real(dp), allocatable, intent(in) :: extDipoleAtom(:,:)
 
     integer :: ii, jj, ll, mu, nu, kk
     integer :: nOrb1, nOrb2
