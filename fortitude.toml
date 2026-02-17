@@ -62,7 +62,6 @@ real-suffix = "dp"
 "src/dftbp/type/linkedlists0.F90" = ["C072"]
 # C031 magic-number-in-array-size (32 violations across 20 files)
 "src/dftbp/dftbplus/main.F90" = ["C031"]
-"src/dftbp/dftbplus/parser.F90" = ["C061"]
 "src/dftbp/md/mdcommon.F90" = ["C031"]
 "src/dftbp/timedep/linrespgrad.F90" = ["C031"]
 "src/dftbp/type/typegeometryhsd.F90" = ["C031"]

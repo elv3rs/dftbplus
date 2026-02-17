@@ -419,10 +419,10 @@ contains
 #:endif
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Parent of node (for error messages)
-    type(fnode), pointer :: parent
+    type(fnode), pointer, intent(in) :: parent
 
     !> geometry of the system
     type(TGeometry), intent(in) :: geom
@@ -1100,7 +1100,7 @@ contains
 #:endif
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -1168,7 +1168,7 @@ contains
 #:endif
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -1714,7 +1714,7 @@ contains
 #:endif
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2109,7 +2109,7 @@ contains
 #:endif
 
     !> Node to get the information from
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2295,7 +2295,7 @@ contains
 #:endif
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -2628,7 +2628,7 @@ contains
 #:endif
 
     !> Relevant node in input tree
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TControl), intent(inout) :: ctrl
@@ -4047,7 +4047,7 @@ contains
   subroutine readOptions(node, ctrl, geom)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to fill
     type(TControl), intent(inout) :: ctrl
@@ -5141,7 +5141,7 @@ contains
 #:endif
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(fnode), pointer, intent(in) :: node
 
     !> Control structure to fill
     type(TControl), intent(inout) :: ctrl
