@@ -36,9 +36,6 @@ ignore = [
 
     # --- Formatting / style (not autofixable, too many) ---
     "S001",    # line-too-long — 1669 violations, manual reformatting needed
-
-    # --- Scientific / domain idioms (false positives for scientific code) ---
-    "C031",    # magic-number-in-array-size — 32 violations, 3 = spatial dims etc.
 ]
 
 # C021 (no-real-suffix): dftbplus uses `dp` (= real64) from accuracy module.
@@ -94,7 +91,7 @@ real-suffix = "dp"
 "src/dftbp/dftb/sparse2dense.F90" = ["C061"]
 "src/dftbp/dftbplus/apicallback.F90" = ["C061"]
 "src/dftbp/dftbplus/initprogram.F90" = ["C061"]
-"src/dftbp/dftbplus/main.F90" = ["C061"]
+"src/dftbp/dftbplus/main.F90" = ["C031", "C061"]
 "src/dftbp/dftbplus/mainio.F90" = ["C061"]
 "src/dftbp/dftbplus/oldcompat.F90" = ["C061"]
 "src/dftbp/dftbplus/parser.F90" = ["C061"]
@@ -106,14 +103,32 @@ real-suffix = "dp"
 "src/dftbp/io/hsdutils.F90" = ["C061"]
 "src/dftbp/io/hsdutils2.F90" = ["C061"]
 "src/dftbp/io/xmlutils.F90" = ["C061"]
-"src/dftbp/md/mdcommon.F90" = ["C061"]
+"src/dftbp/md/mdcommon.F90" = ["C031", "C061"]
 "src/dftbp/reks/reksgrad.F90" = ["C061"]
 "src/dftbp/solvation/gbsafile.F90" = ["C061"]
 "src/dftbp/solvation/sasa.F90" = ["C061"]
 "src/dftbp/solvation/solvparser.F90" = ["C061"]
 "src/dftbp/timedep/linresp.F90" = ["C061"]
-"src/dftbp/timedep/linrespgrad.F90" = ["C061"]
+"src/dftbp/timedep/linrespgrad.F90" = ["C031", "C061"]
 "src/dftbp/timedep/timeprop.F90" = ["C061"]
 "src/dftbp/transport/matconv.F90" = ["C061"]
 "src/dftbp/transport/negfint.F90" = ["C061"]
-"src/dftbp/type/typegeometryhsd.F90" = ["C061"]
+"src/dftbp/type/typegeometryhsd.F90" = ["C031", "C061"]
+# C031 magic-number-in-array-size (32 violations across 20 files)
+# Common patterns: 118 (elements), 9 (3×3 tensor), 6 (spline coefficients)
+"src/dftbp/common/atomicmass.F90" = ["C031"]
+"src/dftbp/common/atomicrad.F90" = ["C031"]
+"src/dftbp/common/constants.F90" = ["C031"]
+"src/dftbp/common/environment.F90" = ["C031"]
+"src/dftbp/dftb/coordnumber.F90" = ["C031"]
+"src/dftbp/dftb/dftd4param.F90" = ["C031"]
+"src/dftbp/dftb/repulsive/splinerep.F90" = ["C031"]
+"src/dftbp/dftb/vdwdata.F90" = ["C031"]
+"src/dftbp/io/ipisocket.F90" = ["C031"]
+"src/dftbp/math/randomgenpool.F90" = ["C031"]
+"src/dftbp/math/ranlux.F90" = ["C031"]
+"src/dftbp/md/extlagrangian.F90" = ["C031"]
+"src/dftbp/reks/reksio.F90" = ["C031"]
+"src/dftbp/solvation/cm5.F90" = ["C031"]
+"src/dftbp/solvation/solvdata.F90" = ["C031"]
+"src/dftbp/type/oldskdata.F90" = ["C031"]
