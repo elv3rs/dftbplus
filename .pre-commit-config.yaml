@@ -1,0 +1,13 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/PlasmaFAIR/fortitude-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: fortitude-check
+        # Note: pre-commit runs on changed files only (no fypp preprocessing).
+        # For full lint with fypp, use the CI workflow or run `fortitude check`
+        # directly. This hook catches the most common issues on commit.
+        args: [--isolated]
+      - id: fortitude-format
+        args: [--isolated]
