@@ -7,7 +7,7 @@
 
 program test_timeprop
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
       & TDftbPlus, TDftbPlus_init, TDftbPlusInput
   use dftbp_common_constants, only : AA__Bohr, V_m__au
   ! Only needed for the internal test system
@@ -55,8 +55,8 @@ contains
     type(TDftbPlusInput) :: input
 
     real(dp) :: coords(3, nAtom), merminEnergy, dipole(3, 1), energy, atomNetCharges(nAtom, 1)
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pType2Files, pElecDyn
-    type(fnode), pointer :: pPerturb, pKick
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pType2Files, pElecDyn
+    type(hsd_table), pointer :: pPerturb, pKick
 
     character(:), allocatable :: DftbVersion
     integer :: major, minor, patch, istep, ii

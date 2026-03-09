@@ -1,12 +1,11 @@
-set(test-collection "io")
+set(test-collection "dftbplus")
 
 set(sources-f90
   testapp.f90)
 
 set(sources-fypp
-  hsdcompat.F90
-  indexselection.F90
-  tokenreader.F90)
+  parser.F90
+  oldcompat.F90)
 
 set(sources-fypp-f90)
 foreach(source-fypp IN LISTS sources-fypp)

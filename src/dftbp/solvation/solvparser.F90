@@ -19,10 +19,9 @@ module dftbp_solvation_solvparser
       & massDensityUnits, massUnits
   use dftbp_dftbplus_specieslist, only : readSpeciesList
   use dftbp_extlibs_lebedev, only : gridSize
-  use dftbp_extlibs_xmlf90, only : char, fnode, getNodeName, string
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdutils, only : detailedError, detailedWarning, getChild, getChildValue, setChild
-  use dftbp_io_hsdutils2, only : convertUnitHsd, localiseName
+  use dftbp_io_hsdcompat, only : hsd_table, detailedError, detailedWarning, getChild, getChildValue, &
+      & setChild, getNodeName, textNodeName, setChildValue, convertUnitHsd, hsd_rename_child
   use dftbp_math_bisect, only : bisection
   use dftbp_solvation_born, only : fgbKernel, TGBInput
   use dftbp_solvation_cm5, only : TCM5Input
@@ -51,7 +50,7 @@ contains
   subroutine readSolvation(node, geo, input)
 
     !> Node to parse
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry, including atomic information
     type(TGeometry), intent(in) :: geo
@@ -59,14 +58,14 @@ contains
     !> Solvation data on exit
     type(TSolvationInp), intent(out) :: input
 
-    type(fnode), pointer :: solvModel
-    type(string) :: buffer
+    type(hsd_table), pointer :: solvModel
+    character(len=:), allocatable :: buffer
 
-    call localiseName(node, "GeneralizedBorn", "GeneralisedBorn")
+    call hsd_rename_child(node, "GeneralizedBorn", "GeneralisedBorn")
     call getChildValue(node, "", solvModel)
     call getNodeName(solvModel, buffer)
 
-    select case (char(buffer))
+    select case (buffer)
     case default
       call detailedError(node, "Invalid solvation model name.")
     case ("generalisedborn")
@@ -86,7 +85,7 @@ contains
   subroutine readSolvGB(node, geo, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -95,11 +94,11 @@ contains
     type(TGBInput), intent(out) :: input
 
     type(TGBInput), allocatable :: defaults
-    type(string) :: buffer, modifier
-    type(fnode), pointer :: child, value1, field
+    character(len=:), allocatable :: buffer, modifier
+    type(hsd_table), pointer :: child, value1, field
     logical :: tHBondCorr, tALPB
     real(dp) :: temperature, shift, alphaALPB
-    type(string), allocatable :: searchPath(:)
+    character(len=:), allocatable :: searchPath(:)
     type(TSolventData) :: solvent
     real(dp), parameter :: alphaDefault = 0.571412_dp
     character(len=:), allocatable :: paramFile, paramTmp
@@ -113,7 +112,7 @@ contains
     if (associated(value1)) then
       allocate(defaults)
       call getChildValue(node, "ParamFile", buffer, "", child=child)
-      paramFile = trim(unquote(char(buffer)))
+      paramFile = trim(unquote(buffer))
       call getParamSearchPaths(searchPath)
       call findFile(searchPath, paramFile, paramTmp)
       if (allocated(paramTmp)) call move_alloc(paramTmp, paramFile)
@@ -134,9 +133,9 @@ contains
     input%dielectricConstant = solvent%dielectricConstant
 
     call getChildValue(node, "Kernel", buffer, "Still", child=child)
-    select case(tolower(unquote(char(buffer))))
+    select case(tolower(unquote(buffer)))
     case default
-      call detailedError(child, "Unknown interaction kernel: "//char(buffer))
+      call detailedError(child, "Unknown interaction kernel: "//buffer)
     case("still")
       input%kernel = fgbKernel%still
     case("p16")
@@ -150,12 +149,12 @@ contains
     else
       call getChildValue(node, "FreeEnergyShift", shift, modifier=modifier, child=field)
     end if
-    call convertUnitHsd(char(modifier), energyUnits, field, shift)
+    call convertUnitHsd(modifier, energyUnits, field, shift)
 
     ! temperature, influence depends on the reference state
     call getChildValue(node, "Temperature", temperature, ambientTemperature,&
         & modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), energyUnits, field, temperature)
+    call convertUnitHsd(modifier, energyUnits, field, temperature)
 
     ! reference state for free energy calculation
     call readReferenceState(node, solvent, temperature, shift, input%freeEnergyShift)
@@ -168,7 +167,7 @@ contains
       call getChildValue(node, "BornScale", input%bornScale)
       call getChildValue(node, "BornOffset", input%bornOffset, modifier=modifier, child=field)
     end if
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%bornOffset)
+    call convertUnitHsd(modifier, lengthUnits, field, input%bornOffset)
     call getChildValue(node, "OBCCorrection", input%obc, [1.00_dp, 0.80_dp, 4.85_dp])
 
     call getChild(node, "CM5", child, requested=.false.)
@@ -186,9 +185,9 @@ contains
       call getChildValue(node, "Descreening", value1, child=child)
     end if
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//char(buffer)//&
+      call detailedError(child, "Unknown method '"//buffer//&
           & "' to generate descreening parameters")
     case("defaults")
       if (.not.allocated(defaults)) then
@@ -204,7 +203,7 @@ contains
 
     call getChildValue(node, "Cutoff", input%rCutoff, 35.0_dp * AA__Bohr, modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%rCutoff)
+    call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
     call getChild(node, "SASA", value1, requested=.false.)
     if (associated(value1) .or. allocated(defaults)) then
@@ -233,9 +232,9 @@ contains
           call getChildValue(node, "HBondStrength", value1, child=child)
         end if
         call getNodeName(value1, buffer)
-        select case(char(buffer))
+        select case(buffer)
         case default
-          call detailedError(child, "Unknown method '"//char(buffer)//&
+          call detailedError(child, "Unknown method '"//buffer//&
               & "' to generate H-bond parameters")
         case("defaults")
           if (allocated(defaults)) then
@@ -259,7 +258,7 @@ contains
   subroutine readSolvCosmo(node, geo, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -267,8 +266,8 @@ contains
     !> Contains the input for the solvation module on exit
     type(TCosmoInput), intent(out) :: input
 
-    type(string) :: buffer, modifier
-    type(fnode), pointer :: child, value1, field
+    character(len=:), allocatable :: buffer, modifier
+    type(hsd_table), pointer :: child, value1, field
     real(dp) :: temperature, shift
     real(dp), allocatable :: radScale(:), radScaleSpecies(:), radScaleDefault(:)
     type(TSolventData) :: solvent
@@ -284,12 +283,12 @@ contains
 
     ! shift value for the free energy (usually zero)
     call getChildValue(node, "FreeEnergyShift", shift, 0.0_dp, modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), energyUnits, field, shift)
+    call convertUnitHsd(modifier, energyUnits, field, shift)
 
     ! temperature, influence depends on the reference state
     call getChildValue(node, "Temperature", temperature, ambientTemperature, modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), energyUnits, field, temperature)
+    call convertUnitHsd(modifier, energyUnits, field, temperature)
 
     call readReferenceState(node, solvent, temperature, shift, input%freeEnergyShift)
 
@@ -309,9 +308,9 @@ contains
 
     call getChildValue(node, "Solver", value1, "DomainDecomposition", child=child)
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//char(buffer)//"' to solve COSMO equation")
+      call detailedError(child, "Unknown method '"//buffer//"' to solve COSMO equation")
     case("domaindecomposition")
       call readDomainDecomposition(value1, input%ddInput)
     end select
@@ -329,15 +328,15 @@ contains
   subroutine readDomainDecomposition(node, input)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Input for the domain decomposition algorithm
     type(TDomainDecompositionInput), intent(out) :: input
 
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
 
     call getChildValue(node, "MaxMoment", input%lmax, child=child)
-    call localiseName(node, "Regularization", "Regularisation")
+    call hsd_rename_child(node, "Regularization", "Regularisation")
     call getChildValue(node, "Regularisation", input%eta, 0.2_dp, child=child)
     call getChildValue(node, "Accuracy", input%conv, child=child)
 
@@ -348,7 +347,7 @@ contains
   subroutine readSolvSASA(node, geo, input, probeRadDefault, surfaceTensionDefault)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -362,8 +361,8 @@ contains
     !> Default values for the surface tension
     real(dp), intent(in), optional :: surfaceTensionDefault(:)
 
-    type(string) :: buffer, modifier
-    type(fnode), pointer :: child, value1, field
+    character(len=:), allocatable :: buffer, modifier
+    type(hsd_table), pointer :: child, value1, field
 
     if (geo%tPeriodic .or. geo%tHelical) then
       call detailedError(node, "SASA model currently not available with the selected boundary&
@@ -372,11 +371,11 @@ contains
 
     call getChildValue(node, "ProbeRadius", input%probeRad, probeRadDefault, modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%probeRad)
+    call convertUnitHsd(modifier, lengthUnits, field, input%probeRad)
 
     call getChildValue(node, "Smoothing", input%smoothingPar, 0.3_dp*AA__Bohr, modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%smoothingPar)
+    call convertUnitHsd(modifier, lengthUnits, field, input%smoothingPar)
 
     call getChildValue(node, "Tolerance", input%tolerance, 1.0e-6_dp, child=child)
 
@@ -391,9 +390,9 @@ contains
       call getChildValue(node, "SurfaceTension", value1, child=child)
     end if
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//char(buffer)//"' to generate surface tension")
+      call detailedError(child, "Unknown method '"//buffer//"' to generate surface tension")
     case("defaults")
       if (.not.present(surfaceTensionDefault)) then
         call detailedError(child, "No defaults available for surface tension values")
@@ -406,7 +405,7 @@ contains
 
     call getChildValue(node, "Offset", input%sOffset, 2.0_dp * AA__Bohr, modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%sOffset)
+    call convertUnitHsd(modifier, lengthUnits, field, input%sOffset)
 
   end subroutine readSolvSASA
 
@@ -415,7 +414,7 @@ contains
   subroutine readCM5(node, input, geo)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -423,20 +422,20 @@ contains
     !> Contains the input for the CM5 module on exit
     type(TCM5Input), intent(out) :: input
 
-    type(fnode), pointer :: value1, dummy, child, field
-    type(string) :: buffer, modifier
+    type(hsd_table), pointer :: value1, dummy, child, field
+    character(len=:), allocatable :: buffer, modifier
     real(dp), allocatable :: atomicRadDefault(:)
 
     call getChildValue(node, "Alpha", input%alpha, 2.474_dp/AA__Bohr, modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), inverseLengthUnits, field, input%alpha)
+    call convertUnitHsd(modifier, inverseLengthUnits, field, input%alpha)
 
     allocate(input%atomicRad(geo%nSpecies))
     call getChildValue(node, "Radii", value1, "AtomicRadii", child=child)
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//char(buffer)//"' to generate radii")
+      call detailedError(child, "Unknown method '"//buffer//"' to generate radii")
     case("atomicradii")
       allocate(atomicRadDefault(geo%nSpecies))
       atomicRadDefault(:) = getAtomicRad(geo%speciesNames)
@@ -451,7 +450,7 @@ contains
     end if
 
     call getChildValue(node, "Cutoff", input%rCutoff, 30.0_dp, modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%rCutoff)
+    call convertUnitHsd(modifier, lengthUnits, field, input%rCutoff)
 
   end subroutine readCM5
 
@@ -460,29 +459,29 @@ contains
   subroutine readSolvent(node, solvent)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Data associated with the solvent
     type(TSolventData), intent(out) :: solvent
 
-    type(string) :: buffer, modifier
-    type(fnode), pointer :: child, value1, field
+    character(len=:), allocatable :: buffer, modifier
+    type(hsd_table), pointer :: child, value1, field
     logical :: found
 
     call getChildValue(node, "Solvent", value1, child=child)
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case default
-      call detailedError(child, "Invalid solvent method '" // char(buffer) // "'")
+      call detailedError(child, "Invalid solvent method '" // buffer // "'")
     case('fromname')
       call getChildValue(value1, "", buffer)
-      call SolventFromName(solvent, unquote(char(buffer)), found)
+      call SolventFromName(solvent, unquote(buffer), found)
       if (.not. found) then
-        call detailedError(value1, "Invalid solvent " // char(buffer))
+        call detailedError(value1, "Invalid solvent " // buffer)
       end if
     case('fromconstants')
       call getChildValue(value1, "Epsilon", buffer)
-      if (unquote(char(buffer)) == "Inf") then
+      if (unquote(buffer) == "Inf") then
          if (ieee_support_inf(solvent%dielectricConstant)) then
             solvent%dielectricConstant = ieee_value(solvent%dielectricConstant, ieee_positive_inf)
          else
@@ -493,9 +492,9 @@ contains
       end if
       call getChildValue(value1, "MolecularMass", solvent%molecularMass, modifier=modifier,&
           & child=field)
-      call convertUnitHsd(char(modifier), massUnits, field, solvent%molecularMass)
+      call convertUnitHsd(modifier, massUnits, field, solvent%molecularMass)
       call getChildValue(value1, "Density", solvent%density, modifier=modifier, child=field)
-      call convertUnitHsd(char(modifier), massDensityUnits, field, solvent%density)
+      call convertUnitHsd(modifier, massDensityUnits, field, solvent%density)
     end select
 
   end subroutine readSolvent
@@ -505,7 +504,7 @@ contains
   subroutine readReferenceState(node, solvent, temperature, shift, freeEnergyShift)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Data associated with the solvent
     type(TSolventData), intent(in) :: solvent
@@ -519,16 +518,16 @@ contains
     !> Free energy shift includings state specific terms
     real(dp), intent(out) :: freeEnergyShift
 
-    type(string) :: state
-    type(fnode), pointer :: child
+    character(len=:), allocatable :: state
+    type(hsd_table), pointer :: child
     real(dp), parameter :: referenceDensity = kg__au/(1.0e10_dp*AA__Bohr)**3
     real(dp), parameter :: referenceMolecularMass = amu__au
     real(dp), parameter :: idealGasMolVolume = 24.79_dp
 
     call getChildValue(node, "State", state, "gsolv", child=child)
-    select case(tolower(unquote(char(state))))
+    select case(tolower(unquote(state)))
     case default
-      call detailedError(child, "Unknown reference state: "//char(state))
+      call detailedError(child, "Unknown reference state: "//state)
     case("gsolv") ! just the bare shift
       freeEnergyShift = shift
     case("reference") ! gsolv=reference option in cosmotherm
@@ -548,7 +547,7 @@ contains
   subroutine readVanDerWaalsRad(node, geo, vdwRad)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Geometry of the current system
     type(TGeometry), intent(in) :: geo
@@ -556,16 +555,16 @@ contains
     !> Van-der-Waals Radii
     real(dp), allocatable, intent(out) :: vdwRad(:)
 
-    type(string) :: buffer
-    type(fnode), pointer :: child, value1, dummy
+    character(len=:), allocatable :: buffer
+    type(hsd_table), pointer :: child, value1, dummy
     real(dp), allocatable :: vdwRadDefault(:)
 
     allocate(vdwRad(geo%nSpecies))
     call getChildValue(node, "Radii", value1, "vanDerWaalsRadiiD3", child=child)
     call getNodeName(value1, buffer)
-    select case(char(buffer))
+    select case(buffer)
     case default
-      call detailedError(child, "Unknown method '"//char(buffer)//"' to generate radii")
+      call detailedError(child, "Unknown method '"//buffer//"' to generate radii")
     case("vanderwaalsradiid3")
       allocate(vdwRadDefault(geo%nSpecies))
       vdwRadDefault(:) = getVanDerWaalsRadiusD3(geo%speciesNames)
@@ -595,7 +594,7 @@ contains
   subroutine readAngularGrid(node, angGrid, default)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Grid identifier
     integer, intent(out) :: angGrid
@@ -603,7 +602,7 @@ contains
     !> Default grid size
     integer, intent(in), optional :: default
 
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
     character(lc) :: errorStr
     integer :: gridPoints
 

@@ -16,17 +16,17 @@ program skderivs
   use dftbp_dftb_slakoeqgrid, only : getNIntegrals, getSKIntegrals, init, skEqGridNew, skEqGridOld,&
       & TSlakoEqGrid
   use dftbp_io_charmanip, only : i2c, unquote
-  use dftbp_io_hsdparser, only : parseHSD
-  use dftbp_io_hsdutils, only : detailedError, getChild, getChildValue
-  use dftbp_io_hsdutils2, only : warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_error_t, &
+      & detailedError, getChild, getChildValue, &
+      & warnUnprocessedNodes, new_table
+  use dftbp_extlibs_hsd, only : hsd_load
+  use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListInt, TListIntR1
   use dftbp_type_oldskdata, only : readFromFile, TOldSKData
 #:if WITH_MPI
   use dftbp_common_mpienv
 #:endif
-  use dftbp_extlibs_xmlf90, only : append_to_string, assignment(=), char, fNode, resize_string,&
-      & string
-implicit none
+  implicit none
 
 
   !> Contains the data necessary for the main program
@@ -68,7 +68,7 @@ contains
     real(dp), allocatable :: sk(:,:), ham(:,:), over(:,:)
     type(TFileDescr), allocatable :: fdHam(:), fdOver(:)
     character(lc) :: strTmp
-    type(string) :: buffer
+    character(len=:), allocatable :: buffer
     integer :: ii, jj, nGrid
     real(dp) :: rr
 
@@ -81,7 +81,7 @@ contains
 
     write(stdout, "(A)") ""
     write(stdout, "(A)") "Following files will be created:"
-    call resize_string(buffer, 1024)
+    buffer = ""
     do ii = 1, size(inp%iHam)
       strTmp = trim(inp%output) // ".ham." // i2c(ii)
       call openFile(fdHam(ii), strTmp, mode="w")
@@ -115,17 +115,17 @@ contains
         buffer = trim(strTmp)
         if (inp%value) then
           write (strTmp, "(E23.15)") ham(inp%iHam(jj), 0)
-          call append_to_string(buffer, trim(strTmp))
+          buffer = buffer // trim(strTmp)
         end if
         if (inp%first) then
           write (strTmp, "(E23.15)") ham(inp%iHam(jj), 1)
-          call append_to_string(buffer, trim(strTmp))
+          buffer = buffer // trim(strTmp)
         end if
         if (inp%second) then
           write (strTmp, "(E23.15)") ham(inp%iHam(jj), 2)
-          call append_to_string(buffer, trim(strTmp))
+          buffer = buffer // trim(strTmp)
         end if
-        write (fdHam(jj)%unit, "(A)") char(buffer)
+        write (fdHam(jj)%unit, "(A)") buffer
       end do
 
       do jj = 1, size(inp%iOver)
@@ -133,17 +133,17 @@ contains
         buffer = trim(strTmp)
         if (inp%value) then
           write (strTmp, "(E23.15)") over(inp%iOver(jj), 0)
-          call append_to_string(buffer, trim(strTmp))
+          buffer = buffer // trim(strTmp)
         end if
         if (inp%first) then
           write (strTmp, "(E23.15)") over(inp%iOver(jj), 1)
-          call append_to_string(buffer, trim(strTmp))
+          buffer = buffer // trim(strTmp)
         end if
         if (inp%second) then
           write (strTmp, "(E23.15)") over(inp%iOver(jj), 2)
-          call append_to_string(buffer, trim(strTmp))
+          buffer = buffer // trim(strTmp)
         end if
-        write (fdOver(jj)%unit, "(A)") char(buffer)
+        write (fdOver(jj)%unit, "(A)") buffer
       end do
     end do
 
@@ -165,11 +165,11 @@ contains
     !> name of the tag at the root of the tree
     character(*), intent(in) :: rootTag
 
-    type(fNode), pointer :: hsdTree, root, child
+    type(hsd_table), pointer :: hsdTree, root, child
     type(TOldSKData) :: skData12(1,1), skData21(1,1)
     character(lc) :: strTmp
     logical :: useOldInter
-    type(string) :: buffer
+    character(len=:), allocatable :: buffer
     integer :: angShellOrdered(size(shellNames))
     type(TListIntR1) :: angShells(2)
     type(TListInt), allocatable :: lIntTmp
@@ -181,7 +181,20 @@ contains
       angShellOrdered(ii) = ii - 1
     end do
 
-    call parseHSD(rootTag, hsdInputName, root)
+    block
+      type(hsd_error_t), allocatable :: hsdError
+      type(hsd_table), pointer :: content
+      allocate(content)
+      call hsd_load(hsdInputName, content, hsdError)
+      if (allocated(hsdError)) then
+        call error("Error loading input file '" // trim(hsdInputName) // "': " &
+            & // trim(hsdError%message))
+      end if
+      content%name = rootTag
+      allocate(hsdTree)
+      call new_table(hsdTree, name="document")
+      call hsdTree%add_child(content)
+    end block
 
     write(stdout, "(A)") repeat("-", 80)
     write(stdout, "(A)") "Interpreting input file '" // hsdInputName // "'"
@@ -190,9 +203,9 @@ contains
 
     !! First interaction
     call getChildValue(root, "File1", buffer)
-    call readFromFile(skData12(1,1), unquote(char(buffer)), .false.)
+    call readFromFile(skData12(1,1), unquote(buffer), .false.)
     call getChildValue(root, "MaxAngularMomentum1", buffer, child=child)
-    strTmp = unquote(char(buffer))
+    strTmp = unquote(buffer)
     call init(angShells(1))
     do jj = 1, size(shellNames)
       if (trim(strTmp) == trim(shellNames(jj))) then
@@ -205,13 +218,13 @@ contains
     end if
 
     call getChildValue(root, "File2", buffer, "")
-    if (char(buffer) == "") then
+    if (buffer == "") then
       nSpecies = 1
     else
       nSpecies = 2
-      call readFromFile(skData21(1,1), unquote(char(buffer)), .false.)
+      call readFromFile(skData21(1,1), unquote(buffer), .false.)
       call getChildValue(root, "MaxAngularMomentum2", buffer, child=child)
-      strTmp = unquote(char(buffer))
+      strTmp = unquote(buffer)
       call init(angShells(2))
       do jj = 1, size(shellNames)
         if (trim(strTmp) == trim(shellNames(jj))) then
@@ -260,7 +273,7 @@ contains
     end if
     call getChildValue(root, "End", inp%to, child=child)
     call getChildValue(root, "OutputPrefix", buffer)
-    inp%output = unquote(char(buffer))
+    inp%output = unquote(buffer)
 
     allocate(lIntTmp)
     call init(lIntTmp)

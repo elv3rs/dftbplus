@@ -4,10 +4,8 @@ set(sources-fpp
   ${curdir}/charmanip.F90
   ${curdir}/commonformats.F90
   ${curdir}/formatout.F90
+  ${curdir}/hsderror.F90
   ${curdir}/hsdcompat.F90
-  ${curdir}/hsdparser.F90
-  ${curdir}/hsdutils.F90
-  ${curdir}/hsdutils2.F90
   ${curdir}/indexselection.F90
   ${curdir}/intrinsicpr.F90
   ${curdir}/linereader.F90
@@ -15,7 +13,7 @@ set(sources-fpp
   ${curdir}/message.F90
   ${curdir}/taggedoutput.F90
   ${curdir}/tokenreader.F90
-  ${curdir}/xmlutils.F90)
+  ${curdir}/unitbridge.F90)
 
 if(WITH_SOCKETS)
   list(APPEND sources-fpp ${curdir}/ipisocket.F90)

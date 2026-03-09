@@ -51,8 +51,6 @@ dftbp_preprocess("${FYPP}" "${fypp_flags}" "F90" "f90" "${ALL-SOURCES-FPP}" all-
 
 add_library(dftbplus ${ALL-SOURCES-F90} ${all-sources-f90-preproc} ${ALL-SOURCES-C})
 
-target_sources(dftbplus PRIVATE $<TARGET_OBJECTS:xmlf90_objlib>)
-
 # Link ddCOSMO implementation
 target_sources(dftbplus PRIVATE $<TARGET_OBJECTS:ddcosmo_objlib>)
 
@@ -76,10 +74,7 @@ endif()
 
 # External libraries
 
-target_include_directories(dftbplus PUBLIC
-  $<BUILD_INTERFACE:$<TARGET_PROPERTY:xmlf90_objlib,INTERFACE_INCLUDE_DIRECTORIES>>)
-
-# hsd-fortran (modern HSD parser)
+# Link hsd-fortran (modern HSD parser)
 target_link_libraries(dftbplus PUBLIC hsd)
 
 target_include_directories(dftbplus PUBLIC
@@ -179,11 +174,6 @@ if(INSTALL_INCLUDE_FILES)
       DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
       )
   endif()
-
-  get_target_property(moddirs xmlf90_objlib INTERFACE_INCLUDE_DIRECTORIES)
-  foreach(moddir IN LISTS moddirs)
-    install(DIRECTORY "${moddir}/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_MODULEDIR}")
-  endforeach()
 
   get_target_property(moddirs ddcosmo_objlib INTERFACE_INCLUDE_DIRECTORIES)
   foreach(moddir IN LISTS moddirs)

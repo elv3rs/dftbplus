@@ -8,7 +8,7 @@
 !> example code for changing internal charges inside calculation
 program test_intcharges
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : convertAtomTypesToSpecies, dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild,&
+  use dftbplus, only : convertAtomTypesToSpecies, dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild,&
       & getMaxAngFromSlakoFile, setChild, setChildValue, TDftbPlus, TDftbPlus_init, TDftbPlusInput
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
@@ -57,8 +57,8 @@ contains
     real(dp) :: coords(3, nAtom), gradients(3, nAtom)
     real(dp) :: atomCharges(nAtom), cm5Charges(nAtom), atomMasses(nAtom)
     real(dp) :: q0(nAtom)
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pAnalysis, pCm5
-    type(fnode), pointer :: pParserOpts
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pAnalysis, pCm5
+    type(hsd_table), pointer :: pParserOpts
 
     character(:), allocatable :: DftbVersion
     integer :: major, minor, patch

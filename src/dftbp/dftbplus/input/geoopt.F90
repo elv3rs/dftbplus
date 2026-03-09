@@ -9,13 +9,11 @@
 module dftbp_dftbplus_input_geoopt
   use dftbp_common_accuracy, only : dp
   use dftbp_common_unitconversion, only : energyUnits, forceUnits, lengthUnits, timeUnits
-  use dftbp_extlibs_xmlf90, only : char, fnode, getNodeName, string
   use dftbp_geoopt_package, only : TFilterInput, TFireInput, TLbfgsInput, TOptimizerInput,&
       & TOptTolerance, TRationalFuncInput, TSteepdescInput
   use dftbp_io_charmanip, only : unquote
-  use dftbp_io_hsdutils, only : detailedError, getChild, getChildValue, getSelectedAtomIndices,&
-      & setChild
-  use dftbp_io_hsdutils2, only : convertUnitHsd, localiseName
+  use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, getSelectedAtomIndices, &
+      & setChild, getNodeName, textNodeName, setChildValue, convertUnitHsd, hsd_rename_child
   use dftbp_type_typegeometry, only : TGeometry
   implicit none
 
@@ -50,7 +48,7 @@ contains
   subroutine readGeoOptInput(node, geom, input, atomsRange)
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geom
@@ -62,10 +60,10 @@ contains
     !> calculations)
     character(len=*), intent(in) :: atomsRange
 
-    type(fnode), pointer :: child, value1
-    type(string) :: buffer
+    type(hsd_table), pointer :: child, value1
+    character(len=:), allocatable :: buffer
 
-    call localiseName(node, "Optimizer", "Optimiser")
+    call hsd_rename_child(node, "Optimizer", "Optimiser")
     call getChildValue(node, "Optimiser", child, "Rational")
     call readOptimizerInput(child, input%optimiser)
 
@@ -80,7 +78,7 @@ contains
     call getChildValue(node, "MaxSteps", input%nGeoSteps, 20*geom%nAtom)
 
     call getChildValue(node, "OutputPrefix", buffer, "geo_end")
-    input%outFile = trim(unquote(char(buffer)))
+    input%outFile = trim(unquote(buffer))
 
   end subroutine readGeoOptInput
 
@@ -89,7 +87,7 @@ contains
   subroutine readOptimizerInput(node, input)
 
     !> Optimiser node
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Control structure to be filled
     class(TOptimizerInput), allocatable, intent(out) :: input
@@ -98,10 +96,10 @@ contains
     type(TFireInput), allocatable :: fireInput
     type(TLbfgsInput), allocatable :: lbfgsInput
     type(TRationalFuncInput), allocatable :: rationalFuncInput
-    type(string) :: buffer
+    character(len=:), allocatable :: buffer
 
     call getNodeName(node, buffer)
-    select case (char(buffer))
+    select case (buffer)
     case default
       call detailedError(node, "Invalid optimiser name.")
     case("steepestdescent")
@@ -129,7 +127,7 @@ contains
   subroutine readFilterInput(node, geom, input, atomsRange)
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geom
@@ -141,8 +139,8 @@ contains
     !> calculations)
     character(len=*), intent(in) :: atomsRange
 
-    type(fnode), pointer :: child
-    type(string) :: buffer
+    type(hsd_table), pointer :: child
+    character(len=:), allocatable :: buffer
 
     call getChildValue(node, "LatticeOpt", input%lattice, .false.)
     if (input%lattice) then
@@ -154,7 +152,7 @@ contains
       call getChildValue(node, "Isotropic", input%isotropic, .false.)
     end if
     call getChildValue(node, "MovedAtoms", buffer, trim(atomsRange), multiple=.true., child=child)
-    call getSelectedAtomIndices(child, char(buffer), geom%speciesNames, geom%species, &
+    call getSelectedAtomIndices(child, buffer, geom%speciesNames, geom%species, &
         & input%indMovedAtom)
 
   end subroutine readFilterInput
@@ -164,29 +162,29 @@ contains
   subroutine readOptTolerance(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TOptTolerance), intent(out) :: input
 
-    type(fnode), pointer :: field
-    type(string) :: modifier
+    type(hsd_table), pointer :: field
+    character(len=:), allocatable :: modifier
 
     call getChildValue(node, "Energy", input%energy, huge(1.0_dp), modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), energyUnits, field, input%energy)
+    call convertUnitHsd(modifier, energyUnits, field, input%energy)
 
     call getChildValue(node, "GradNorm", input%gradNorm, huge(1.0_dp), modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), forceUnits, field, input%gradNorm)
+    call convertUnitHsd(modifier, forceUnits, field, input%gradNorm)
     call getChildValue(node, "GradElem", input%gradElem, 1.0e-4_dp, modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), forceUnits, field, input%gradElem)
+    call convertUnitHsd(modifier, forceUnits, field, input%gradElem)
 
     call getChildValue(node, "DispNorm", input%dispNorm, huge(1.0_dp), modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%dispNorm)
+    call convertUnitHsd(modifier, lengthUnits, field, input%dispNorm)
     call getChildValue(node, "DispElem", input%dispElem, huge(1.0_dp), modifier=modifier,&
         & child=field)
-    call convertUnitHsd(char(modifier), lengthUnits, field, input%dispElem)
+    call convertUnitHsd(modifier, lengthUnits, field, input%dispElem)
 
   end subroutine readOptTolerance
 
@@ -195,7 +193,7 @@ contains
   subroutine readSteepDescInput(node, input)
 
     !> Node to get the information from
-    type(fnode), intent(in), pointer :: node
+    type(hsd_table), intent(in), pointer :: node
 
     !> Control structure to be filled
     type(TSteepDescInput), intent(out) :: input
@@ -209,13 +207,13 @@ contains
   subroutine readFireInput(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TFireInput), intent(out) :: input
 
-    type(fnode), pointer :: field
-    type(string) :: modifier
+    type(hsd_table), pointer :: field
+    character(len=:), allocatable :: modifier
 
     call getChildValue(node, "nMin", input%nMin, 5)
     call getChildValue(node, "aPar", input%a_start, 0.1_dp)
@@ -223,7 +221,7 @@ contains
     call getChildValue(node, "fDec", input%f_dec, 0.5_dp)
     call getChildValue(node, "fAlpha", input%f_alpha, 0.99_dp)
     call getChildValue(node, "StepSize", input%dt_max, 1.0_dp, modifier=modifier, child=field)
-    call convertUnitHsd(char(modifier), timeUnits, field, input%dt_max)
+    call convertUnitHsd(modifier, timeUnits, field, input%dt_max)
 
   end subroutine readFireInput
 
@@ -232,7 +230,7 @@ contains
   subroutine readLbfgsInput(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TLbfgsInput), intent(out) :: input
@@ -246,7 +244,7 @@ contains
   subroutine readRationalFuncInput(node, input)
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Control structure to be filled
     type(TRationalFuncInput), intent(out) :: input

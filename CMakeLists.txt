@@ -169,8 +169,6 @@ endif()
 # Follow GNU conventions for installing directories
 include(GNUInstallDirs)
 
-add_subdirectory(external/xmlf90 EXCLUDE_FROM_ALL)
-
 # Include hsd-fortran library (modern HSD parser)
 set(HSD_FORTRAN_GIT_REPOSITORY "https://github.com/elv3rs/hsd-fortran.git")
 set(HSD_FORTRAN_GIT_TAG "b2af1ccada0154c15e7b334346e148d3976c5f6d")  # do not change manually!

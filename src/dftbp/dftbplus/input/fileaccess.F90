@@ -9,9 +9,8 @@
 
 module dftbp_dftbplus_input_fileaccess
   use dftbp_common_file, only : fileAccessValues
-  use dftbp_extlibs_xmlf90, only : fnode
   use dftbp_io_charmanip, only : tolower, unquote
-  use dftbp_io_hsdutils, only : detailedError, getChild, getChildValue, setChildValue
+  use dftbp_io_hsdcompat, only : hsd_table, detailedError, getChild, getChildValue, setChildValue
   use dftbp_type_linkedlist, only : asArray, destruct, init, len, TListString
   implicit none
 
@@ -25,12 +24,12 @@ contains
   subroutine readBinaryAccessTypes(node, accessTypes)
 
     !> Parent note which should contain the "BinaryAccessTypes" subnode
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Read and write access types on exit (defaulting to ["stream", "stream"])
     character(*), intent(out) :: accessTypes(:)
 
-    type(fnode), pointer :: child
+    type(hsd_table), pointer :: child
     type(TListString) :: stringList
     integer :: ii
 

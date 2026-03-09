@@ -9,8 +9,8 @@
 !> periodic geometry with k-points.
 program test_treeinit
   use, intrinsic :: iso_fortran_env, only : output_unit
-  use dftbplus, only : dumpHsd, fnode, getDftbPlusApi, getDftbPlusBuild, setChild, setChildValue,&
-      & TDftbPlus, TDftbPlus_init, TDftbPlusInput
+  use dftbplus, only : dumpHsd, hsd_table, getDftbPlusApi, getDftbPlusBuild, setChild,&
+      & setChildValue, TDftbPlus, TDftbPlus_init, TDftbPlusInput
   use dftbp_common_constants, only : AA__Bohr
   ! Only needed for the internal test system
   use testhelpers, only : writeAutotestTag
@@ -50,7 +50,7 @@ contains
     real(dp) :: coords(3, 2), latVecs(3, 3), gradients(3, 2), stressTensor(3,3)
 
     ! pointers to the parts of the input tree that will be set
-    type(fnode), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pOptions, pParserOpts
+    type(hsd_table), pointer :: pRoot, pGeo, pHam, pDftb, pMaxAng, pSlakos, pOptions, pParserOpts
 
     character(:), allocatable :: DftbVersion
     integer :: major, minor, patch

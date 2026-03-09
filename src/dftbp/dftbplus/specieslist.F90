@@ -11,9 +11,8 @@
 module dftbp_dftbplus_specieslist
   use dftbp_common_accuracy, only : dp
   use dftbp_common_unitconversion, only : TUnit
-  use dftbp_extlibs_xmlf90, only : char, fnode, string
-  use dftbp_io_hsdutils, only : getChildValue
-  use dftbp_io_hsdutils2, only : convertUnitHsd, setProcessed
+  use dftbp_io_hsdcompat, only : hsd_table, getChildValue
+  use dftbp_io_hsdcompat, only : convertUnitHsd, setProcessed
   implicit none
 
   private
@@ -34,7 +33,7 @@ contains
   subroutine readSpeciesListReal(node, speciesNames, array, default, units, markAllProcessed)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Names of all species
     character(len=*), intent(in) :: speciesNames(:)
@@ -51,8 +50,8 @@ contains
     !> Whether all unread subnodes should also be marked as processed (default: .true.)
     logical, optional, intent(in) :: markAllProcessed
 
-    type(fnode), pointer :: child
-    type(string) :: modifier
+    type(hsd_table), pointer :: child
+    character(len=:), allocatable :: modifier
     integer :: iSp
     logical :: markAllProcessed_
 
@@ -61,7 +60,7 @@ contains
         do iSp = 1, size(speciesNames)
           call getChildValue(node, speciesNames(iSp), array(iSp), default=default(iSp),&
               & modifier=modifier, child=child, isDefaultExported=.false.)
-          call convertUnitHsd(char(modifier), units, child, array(iSp))
+          call convertUnitHsd(modifier, units, child, array(iSp))
         end do
       else
         do iSp = 1, size(speciesNames)
@@ -73,7 +72,7 @@ contains
       if (present(units)) then
         do iSp = 1, size(speciesNames)
           call getChildValue(node, speciesNames(iSp), array(iSp), modifier=modifier, child=child)
-          call convertUnitHsd(char(modifier), units, child, array(iSp))
+          call convertUnitHsd(modifier, units, child, array(iSp))
         end do
       else
         do iSp = 1, size(speciesNames)
@@ -93,7 +92,7 @@ contains
   subroutine readSpeciesListInt(node, speciesNames, array, default, markAllProcessed)
 
     !> Node to process
-    type(fnode), pointer :: node
+    type(hsd_table), pointer :: node
 
     !> Names of all species
     character(len=*), intent(in) :: speciesNames(:)

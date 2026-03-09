@@ -11,12 +11,9 @@
 module dftbp_dftb_elecconstraints
   use dftbp_common_accuracy, only : dp, hugeIterations
   use dftbp_dftbplus_input_geoopt, only : readOptimizerInput
-  use dftbp_extlibs_xmlf90, only : char, destroyNodeList, fnode, fnodeList, getItem1, getLength,&
-      & string
   use dftbp_geoopt_package, only : createOptimizer, TOptimizer, TOptimizerInput
-  use dftbp_io_hsdutils, only : detailedError, getChild, getChildren, getChildValue,&
-      & getSelectedAtomIndices
-  use dftbp_io_hsdutils2, only : localiseName
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, detailedError, getChild, getChildren, getChildValue, &
+      & getSelectedAtomIndices, getLength, getItem1, destroyNodeList, hsd_rename_child
   use dftbp_type_commontypes, only : TOrbitals
   use dftbp_type_typegeometry, only : TGeometry
   use dftbp_type_wrappedintr, only : TWrappedInt1, TWrappedReal2
@@ -166,7 +163,7 @@ contains
     type(TElecConstraintInp), intent(out) :: input
 
     !> Node to get the information from
-    type(fnode), pointer, intent(in) :: node
+    type(hsd_table), pointer, intent(in) :: node
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -177,9 +174,9 @@ contains
     !> Is this a calculation with Pauli wavefunctions
     logical, intent(in) :: is2Component
 
-    type(fnode), pointer :: constrContainer, dummyNode, child1
+    type(hsd_table), pointer :: constrContainer, dummyNode, child1
 
-    call localiseName(node, "Optimizer", "Optimiser")
+    call hsd_rename_child(node, "Optimizer", "Optimiser")
     call getChildValue(node, "Optimiser", child1, "FIRE")
     call readOptimizerInput(child1, input%optimiser)
 
@@ -199,7 +196,7 @@ contains
   subroutine readMullikenConstraintInputs(constrContainer, geo, isSpinPol, is2Component, inputs)
 
     !> Node containing all constraints
-    type(fnode), pointer, intent(in) :: constrContainer
+    type(hsd_table), pointer, intent(in) :: constrContainer
 
     !> Geometry of the system
     type(TGeometry), intent(in) :: geo
@@ -213,10 +210,10 @@ contains
     !> Array of input structures (depending on number of Mulliken constraints defined)
     type(TMullikenConstrInp), allocatable, intent(out) :: inputs(:)
 
-    type(fnodeList), pointer :: constrNodes
-    type(fnode), pointer :: constrNode, child1
-    type(fnode), pointer :: totalPopNode, populationsNode, totalChargeNode, chargesNode
-    type(string) :: buffer
+    type(hsd_child_list), pointer :: constrNodes
+    type(hsd_table), pointer :: constrNode, child1
+    type(hsd_table), pointer :: totalPopNode, populationsNode, totalChargeNode, chargesNode
+    character(len=:), allocatable :: buffer
     real(dp) :: rTmp
     integer :: iConstrInp, nConstrInp, nAssociated
 
@@ -230,7 +227,7 @@ contains
       associate(input => inputs(iConstrInp))
         call getItem1(constrNodes, iConstrInp, constrNode)
         call getChildValue(constrNode, "Atoms", buffer, child=child1, multiple=.true.)
-        call getSelectedAtomIndices(child1, char(buffer), geo%speciesNames, geo%species,&
+        call getSelectedAtomIndices(child1, buffer, geo%speciesNames, geo%species,&
             & input%atoms)
 
         call getChild(constrNode, "Populations", populationsNode, requested=.false.)

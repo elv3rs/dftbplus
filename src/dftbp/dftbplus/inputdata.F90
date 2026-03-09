@@ -470,6 +470,10 @@ module dftbp_dftbplus_inputdata
     !> Nr. of SCC iterations without restart info
     integer :: restartFreq  = 20
     logical :: tWriteDetailedXML = .false.
+
+    !> Output format for detailed output file ("xml", "hsd", "json")
+    character(len=4) :: detailedOutputFormat = "xml"
+
     logical :: tWriteResultsTag = .false.
     logical :: tWriteDetailedOut = .true.
     logical :: tWriteBandDat = .true.

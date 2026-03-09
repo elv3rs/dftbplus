@@ -9,7 +9,6 @@
 
 !> Linked list of single strings
 module dftbp_type_linkedlists0
-  use dftbp_extlibs_xmlf90, only : assignment(=), len, operator(==), string
   implicit none
 
   private
@@ -17,7 +16,7 @@ module dftbp_type_linkedlists0
   $:define_list(&
       & TYPE_NAME='TListString',&
       & ITEM_TYPE='character(len=*)',&
-      & NODE_TYPE='type(string)',&
+      & NODE_TYPE='character(len=:), allocatable',&
       & PADDING="''", )
 
 end module dftbp_type_linkedlists0

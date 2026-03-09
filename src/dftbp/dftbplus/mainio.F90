@@ -34,13 +34,11 @@ module dftbp_dftbplus_mainio
   use dftbp_dftb_sparse2dense, only : unpackHS, unpackSPauli
   use dftbp_dftb_spin, only : qm2ud
   use dftbp_elecsolvers_elecsolvers, only : TElectronicSolver
-  use dftbp_extlibs_xmlf90, only : xml_ADDXMLDeclaration, xml_Close, xml_EndElement,&
-      & xml_NewElement, xml_OpenFile, xmlf_t
   use dftbp_io_charmanip, only : i2c
   use dftbp_io_commonformats, only : format1U, format1U1e, format1Ue, format2U, format2Ue,&
       & formatBorn, formatdBorn, formatGeoOut, formatHessian
   use dftbp_io_formatout, only : writeGenFormat, writeSparse, writeSparseAsSquare, writeXYZFormat
-  use dftbp_io_hsdutils, only : writeChildValue
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_set, new_table, dumpHsd, setChildValue
   use dftbp_io_message, only : error, warning
   use dftbp_io_taggedoutput, only : tagLabels, TTaggedWriter
   use dftbp_math_blasroutines, only : hemv
@@ -2233,9 +2231,10 @@ contains
   end subroutine writeResultsTag
 
 
-  !> Write XML format of derived results
+  !> Write detailed results in configurable format (XML, HSD, or JSON)
   subroutine writeDetailedXml(runId, speciesName, species0, coord0Out, tPeriodic, tHelical, latVec,&
-      & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural)
+      & origin, tRealHS, nKPoint, nSpin, nStates, nOrb, kPoint, kWeight, filling, occNatural,&
+      & outputFormat)
 
     !> Identifier for the run
     integer, intent(in) :: runId
@@ -2288,63 +2287,73 @@ contains
     !> Occupation numbers for natural orbitals
     real(dp), allocatable, target, intent(in) :: occNatural(:)
 
-    type(xmlf_t) :: xf
+    !> Output format for the detailed file ("xml", "hsd", "json")
+    character(len=*), intent(in), optional :: outputFormat
+
+    type(hsd_table) :: root, geo, occ, spinSec, excOcc
     real(dp), allocatable :: bufferRealR2(:,:)
     integer :: ii, jj, ll
     real(dp), pointer :: pOccNatural(:,:)
+    character(len=4) :: fmt
+    character(len=:), allocatable :: outFileName
 
+    call new_table(root, "detailedout")
+    call hsd_set(root, "identity", runId)
 
-
-    call xml_OpenFile("detailed.xml", xf, indent=.true.)
-    call xml_ADDXMLDeclaration(xf)
-    call xml_NewElement(xf, "detailedout")
-    call writeChildValue(xf, "identity", runId)
-    call xml_NewElement(xf, "geometry")
-    call writeChildValue(xf, "typenames", speciesName)
+    call new_table(geo, "geometry")
+    call setChildValue(geo, "typenames", speciesName)
     if (tPeriodic .or. tHelical) then
-      call writeChildValue(xf, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
+      call setChildValue(geo, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
           & coord0Out + spread(origin, 2, size(coord0Out, dim=2)))
     else
-      call writeChildValue(xf, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
+      call setChildValue(geo, "typesandcoordinates", reshape(species0, [ 1, size(species0) ]),&
           & coord0Out)
     end if
-    call writeChildValue(xf, "periodic", tPeriodic)
-    call writeChildValue(xf, "helical", tHelical)
+    call hsd_set(geo, "periodic", tPeriodic)
+    call hsd_set(geo, "helical", tHelical)
     if (tPeriodic .or. tHelical) then
-      call writeChildValue(xf, "latticevectors", latVec)
-      call writeChildValue(xf, "coordinateorigin", origin)
+      call hsd_set(geo, "latticevectors", latVec)
+      call hsd_set(geo, "coordinateorigin", origin)
     end if
-    call xml_EndElement(xf, "geometry")
-    call writeChildValue(xf, "real", tRealHS)
-    call writeChildValue(xf, "nrofkpoints", nKPoint)
-    call writeChildValue(xf, "nrofspins", nSpin)
-    call writeChildValue(xf, "nrofstates", nStates)
-    call writeChildValue(xf, "nroforbitals", nOrb)
+    call root%add_child(geo)
+
+    call hsd_set(root, "real", tRealHS)
+    call hsd_set(root, "nrofkpoints", nKPoint)
+    call hsd_set(root, "nrofspins", nSpin)
+    call hsd_set(root, "nrofstates", nStates)
+    call hsd_set(root, "nroforbitals", nOrb)
     allocate(bufferRealR2(4, nKPoint))
     bufferRealR2(1:3, :) = kPoint
     bufferRealR2(4,:) = kWeight
-    call writeChildValue(xf, "kpointsandweights", bufferRealR2)
-    call xml_NewElement(xf, "occupations")
+    call hsd_set(root, "kpointsandweights", bufferRealR2)
+
+    call new_table(occ, "occupations")
     do ii = 1, nSpin
-      call xml_NewElement(xf, "spin" // i2c(ii))
+      call new_table(spinSec, "spin" // i2c(ii))
       do jj = 1, nKpoint
-        call writeChildValue(xf, "k" // i2c(jj), filling(:, jj, mod(ii,3)))
+        call hsd_set(spinSec, "k" // i2c(jj), filling(:, jj, mod(ii,3)))
       end do
-      call xml_EndElement(xf, "spin" // i2c(ii))
+      call occ%add_child(spinSec)
     end do
-    call xml_EndElement(xf, "occupations")
+    call root%add_child(occ)
+
     if (allocated(occNatural)) then
-      call xml_NewElement(xf, "excitedoccupations")
-      call xml_NewElement(xf, "spin" // i2c(1))
-      !pOccNatural(1:size(occNatural), 1:1) => occNatural
+      call new_table(excOcc, "excitedoccupations")
+      call new_table(spinSec, "spin" // i2c(1))
       ll = size(occNatural)
       pOccNatural(1:ll, 1:1) => occNatural
-      call writeChildValue(xf, "k" // i2c(1), pOccNatural)
-      call xml_EndElement(xf, "spin" // i2c(1))
-      call xml_EndElement(xf, "excitedoccupations")
+      call hsd_set(spinSec, "k" // i2c(1), pOccNatural)
+      call excOcc%add_child(spinSec)
+      call root%add_child(excOcc)
     end if
-    call xml_EndElement(xf, "detailedout")
-    call xml_Close(xf)
+
+    if (present(outputFormat)) then
+      fmt = outputFormat
+    else
+      fmt = "xml"
+    end if
+    outFileName = "detailed." // trim(fmt)
+    call dumpHsd(root, outFileName)
   end subroutine writeDetailedXml
 
 

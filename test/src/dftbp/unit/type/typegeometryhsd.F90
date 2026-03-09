@@ -11,8 +11,7 @@ module test_type_typegeometryhsd
   use fortuno_serial, only : suite => serial_suite_item, test_list
   use dftbp_common_accuracy, only : dp
   use dftbp_common_constants, only : AA__Bohr
-  use dftbp_extlibs_xmlf90, only : createDocumentNode, createTextNode, destroyNode, fnode
-  use dftbp_io_hsdutils, only : setChildValue
+  use dftbp_io_hsdcompat, only : hsd_table, new_table, hsd_set, destroyNode
   use dftbp_type_typegeometryhsd, only : readTGeometryLammps, TGeometry
   $:FORTUNO_SERIAL_IMPORTS()
   implicit none
@@ -29,7 +28,7 @@ module test_type_typegeometryhsd
 
   ! Node wrapper to trigger automatic destruction when going out of scope
   type :: TLammpsGeoNode
-    type(fnode), pointer :: node => null()
+    type(hsd_table), pointer :: node => null()
   contains
     final :: TLammpsGeoNode_final
   end type TLammpsGeoNode
@@ -309,13 +308,10 @@ contains
       !> The mock input texts
       character(len=*), intent(in) :: text1, text2
 
-      type(fnode), pointer :: child1, child2
-
-      this%node => createDocumentNode()
-      child1 => createTextNode(text1)
-      child2 => createTextNode(text2)
-      call setChildValue(this%node, "CommandFile", child1)
-      call setChildValue(this%node, "DataFile", child2)
+      allocate(this%node)
+      call new_table(this%node, name="lammps_input")
+      call hsd_set(this%node, "CommandFile", text1)
+      call hsd_set(this%node, "DataFile", text2)
 
   end subroutine TLammpsGeoNode_init
 
@@ -326,7 +322,10 @@ contains
       !> The geometry node
       type(TLammpsGeoNode), intent(inout) :: this
 
-      if (associated(this%node)) call destroyNode(this%node)
+      if (associated(this%node)) then
+        deallocate(this%node)
+        this%node => null()
+      end if
 
   end subroutine TLammpsGeoNode_final
 
