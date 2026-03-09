@@ -37,3 +37,6 @@
 [submodule "external/fortuno/origin"]
 	path = external/fortuno/origin
 	url = https://github.com/fortuno-repos/fortuno.git
+[submodule "external/hsd-fortran/origin"]
+	path = external/hsd-fortran/origin
+	url = https://github.com/elv3rs/hsd-fortran.git

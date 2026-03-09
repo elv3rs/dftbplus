@@ -4,6 +4,7 @@ set(sources-f90
   testapp.f90)
 
 set(sources-fypp
+  hsd_smoke.F90
   indexselection.F90
   tokenreader.F90)
 

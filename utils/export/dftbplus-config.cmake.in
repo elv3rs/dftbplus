@@ -93,6 +93,10 @@ if(NOT TARGET DftbPlus::DftbPlus)
     find_dependency(ChimesCalc)
   endif()
 
+  if(NOT TARGET hsd)
+    find_dependency(hsd)
+  endif()
+
   include("${CMAKE_CURRENT_LIST_DIR}/dftbplus-targets.cmake")
 
 endif()

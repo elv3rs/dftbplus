@@ -171,6 +171,12 @@ include(GNUInstallDirs)
 
 add_subdirectory(external/xmlf90 EXCLUDE_FROM_ALL)
 
+# Include hsd-fortran library (modern HSD parser)
+set(HSD_FORTRAN_GIT_REPOSITORY "https://github.com/elv3rs/hsd-fortran.git")
+set(HSD_FORTRAN_GIT_TAG "b2af1ccada0154c15e7b334346e148d3976c5f6d")  # do not change manually!
+dftbp_config_hybrid_dependency(hsd hsd "Submodule;Fetch" "QUIET"
+  external/hsd-fortran "${exclude}" "${HSD_FORTRAN_GIT_REPOSITORY}" "${HSD_FORTRAN_GIT_TAG}")
+
 # Include ddCOSMO library
 add_subdirectory(external/ddcosmo EXCLUDE_FROM_ALL)
 
