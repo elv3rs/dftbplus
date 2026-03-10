@@ -159,6 +159,7 @@ contains
 
   end subroutine readHsdFile
 
+  ! (end of readHsdFile)
 
   !> Parse input from an HSD/XML file
   subroutine parseHsdTree(hsdTree, input, parserFlags)
