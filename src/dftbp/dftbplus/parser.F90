@@ -102,6 +102,7 @@ module dftbp_dftbplus_parser
   public :: parserVersion, rootTag
   public :: TParserFlags
   public :: readHsdFile, parseHsdTree
+  public :: readMDInitTemp, readParallel
 
 
   !> Tag at the head of the input document tree

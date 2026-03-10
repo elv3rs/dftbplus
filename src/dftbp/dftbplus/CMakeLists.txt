@@ -14,6 +14,8 @@ set(sources-fpp
   ${curdir}/outputfiles.F90
   ${curdir}/oldcompat.F90
   ${curdir}/parser.F90
+  ${curdir}/parser_parallel.F90
+  ${curdir}/parser_shared_utils.F90
   ${curdir}/qdepextpotgen.F90
   ${curdir}/qdepextpotproxy.F90
   ${curdir}/specieslist.F90
