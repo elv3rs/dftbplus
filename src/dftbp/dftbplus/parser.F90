@@ -57,8 +57,8 @@ module dftbp_dftbplus_parser
 #:endif
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_extlibs_tblite, only : tbliteMethod
-  use dftbp_extlibs_hsd, only : hsd_load, hsd_error_t
-  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, textNodeName, getNodeName,&
+  use dftbp_extlibs_hsd, only : hsd_load, hsd_error_t, hsd_merge
+  use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, new_table, textNodeName, getNodeName,&
       & getItem1, getLength, destroyNodeList, destroyNode, removeChild, getChild,&
       & getChildren, getChildValue, setChild, setChildValue, detailedError,&
       & detailedWarning, getSelectedAtomIndices, convertUnitHsd, getNodeName2,&
@@ -134,12 +134,28 @@ contains
     type(hsd_table), pointer :: hsdTree
 
     type(hsd_error_t), allocatable :: hsdError
+    type(hsd_table) :: content
+    type(hsd_table), pointer :: rootChild
+    integer :: stat
 
-    allocate(hsdTree)
-    call hsd_load(hsdFile, hsdTree, hsdError)
+    ! Load the HSD file into a local table.  hsd_load fills it as a flat table
+    ! whose children are the top-level HSD blocks (Geometry, Hamiltonian, ...).
+    call hsd_load(hsdFile, content, hsdError)
     if (allocated(hsdError)) then
       call error("Error parsing HSD file '" // hsdFile // "': " // hsdError%message)
     end if
+
+    ! Build the wrapper structure that the rest of the code expects:
+    !   hsdTree ("document") --> dftbplusinput --> (file content)
+    ! This matches the tree shape historically produced by parseHSD(rootTag, ...)
+    ! and expected by parseHsdTree via getChild(hsdTree, rootTag, root).
+    allocate(hsdTree)
+    call new_table(hsdTree, name="document")
+    allocate(rootChild)
+    call new_table(rootChild, name=rootTag)
+    call hsd_merge(rootChild, content, stat)
+    call hsdTree%add_child(rootChild)
+    deallocate(rootChild)
 
   end subroutine readHsdFile
 

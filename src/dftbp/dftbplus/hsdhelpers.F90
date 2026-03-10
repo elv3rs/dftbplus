@@ -103,9 +103,12 @@ contains
     ! Issue warning about unprocessed nodes
     call warnUnprocessedNodes(root, parserFlags%tIgnoreUnprocessed)
 
-    ! Dump processed tree in HSD format
+    ! Dump processed tree in HSD format.
+    ! Pass the dftbplusinput child (root), not the document wrapper (hsdTree),
+    ! so that the output file contains the bare HSD blocks without the
+    ! dftbplusinput { ... } envelope — matching the legacy dumpHSD behaviour.
     if (tIoProc .and. parserFlags%tWriteHSD) then
-      call dumpHsd(hsdTree, hsdProcFileName)
+      call dumpHsd(root, hsdProcFileName)
       write(stdout, '(/,/,A)') "Processed input in HSD format written to '" // hsdProcFileName&
           & // "'"
     end if
