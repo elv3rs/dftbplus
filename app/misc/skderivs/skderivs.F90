@@ -18,7 +18,7 @@ program skderivs
   use dftbp_io_charmanip, only : i2c, unquote
   use dftbp_io_hsdcompat, only : hsd_table, hsd_error_t, &
       & detailedError, getChild, getChildValue, &
-      & warnUnprocessedNodes, new_table
+      & warnUnprocessedNodes, new_table, handleReplacementNodes
   use dftbp_extlibs_hsd, only : hsd_load
   use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, init, intoArray, len, TListInt, TListIntR1
@@ -193,6 +193,7 @@ contains
       content%name = rootTag
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
+      call handleReplacementNodes(content)
       call hsdTree%add_child(content)
       deallocate(content)
       nullify(content)

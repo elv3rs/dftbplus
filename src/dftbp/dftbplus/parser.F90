@@ -62,7 +62,7 @@ module dftbp_dftbplus_parser
       & getItem1, getLength, destroyNodeList, destroyNode, removeChild, getChild,&
       & getChildren, getChildValue, setChild, setChildValue, detailedError,&
       & detailedWarning, getSelectedAtomIndices, convertUnitHsd, getNodeName2,&
-      & getNodeHSDName, localiseName, setUnprocessed, splitModifier
+      & getNodeHSDName, localiseName, setUnprocessed, splitModifier, handleReplacementNodes
   use dftbp_geoopt_geoopt, only : geoOptTypes
   use dftbp_io_charmanip, only : i2c, newline, tolower, unquote
   use dftbp_io_message, only : error, warning
@@ -159,6 +159,7 @@ contains
       call error("Error merging HSD content into tree for file '" // hsdFile // "'")
     end if
     call content%destroy()
+    call handleReplacementNodes(rootChild)
     call hsdTree%add_child(rootChild)
     deallocate(rootChild)
 

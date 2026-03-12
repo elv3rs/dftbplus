@@ -25,7 +25,7 @@ module modes_initmodes
       & getItem1, getLength, getNodeName, textNodeName, hsd_dump, hsd_error_t,&
       & detailedError, detailedWarning, getChild, getChildren, getChildValue,&
       & getSelectedAtomIndices, getSelectedIndices, convertUnitHsd, getNodeName2, setUnprocessed,&
-      & warnUnprocessedNodes, removeChildNodes, new_table
+      & warnUnprocessedNodes, removeChildNodes, new_table, handleReplacementNodes
   use dftbp_extlibs_hsd, only : hsd_load
   use dftbp_io_message, only : error
   use dftbp_type_linkedlist, only : append, asArray, destruct, get, init, len, TListCharLc,&
@@ -180,6 +180,7 @@ contains
       content%name = rootTag
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
+      call handleReplacementNodes(content)
       call hsdTree%add_child(content)
       deallocate(content)
       nullify(content)

@@ -62,6 +62,7 @@ module dftbp_io_hsdcompat
   public :: checkError
   public :: getFirstTextChild
   public :: dumpHsd
+  public :: handleReplacementNodes
 
   !> Re-export core types from hsd-data for convenience
   public :: hsd_table, hsd_value, hsd_node, hsd_iterator, new_table, new_value
@@ -2914,6 +2915,59 @@ contains
     call hsd_rename_child(node, localName, anglicisedName, stat, case_insensitive=.true.)
 
   end subroutine localiseName
+
+
+  !> Handle '!' replacement-prefix nodes in the HSD tree.
+  !>
+  !> The legacy HSD parser supported a '!' prefix meaning "replace if present
+  !> or create". For example, !Analysis{} would replace an existing Analysis
+  !> block. hsd-fortran does not recognise this prefix and creates nodes with
+  !> literal names like '!analysis'. This routine walks the tree and applies
+  !> replacement semantics: for each child whose name starts with '!', any
+  !> existing sibling with the base name is removed and the '!'-prefixed node
+  !> is renamed to the base name.
+  recursive subroutine handleReplacementNodes(node)
+    type(hsd_table), intent(inout), target :: node
+
+    class(hsd_node), pointer :: cur
+    integer :: ii, nChildren, nRepl, stat
+    character(len=lc) :: replNames(32)
+
+    ! First, recurse into all table children
+    nChildren = node%num_children
+    do ii = 1, nChildren
+      call node%get_child(ii, cur)
+      if (.not. associated(cur)) cycle
+      select type (cur)
+      type is (hsd_table)
+        call handleReplacementNodes(cur)
+      end select
+    end do
+
+    ! Collect names of !-prefixed children
+    nRepl = 0
+    do ii = 1, node%num_children
+      call node%get_child(ii, cur)
+      if (.not. associated(cur)) cycle
+      if (.not. allocated(cur%name)) cycle
+      if (len_trim(cur%name) < 2) cycle
+      if (cur%name(1:1) == "!") then
+        nRepl = nRepl + 1
+        if (nRepl <= 32) replNames(nRepl) = cur%name
+      end if
+    end do
+
+    ! Process each replacement node
+    do ii = 1, min(nRepl, 32)
+      ! Remove existing sibling with the base name (strip leading '!')
+      call hsd_remove_child(node, trim(replNames(ii)(2:)), stat, case_insensitive=.true.)
+
+      ! Rename the !-prefixed node to the base name
+      call hsd_rename_child(node, trim(replNames(ii)), trim(replNames(ii)(2:)), stat, &
+          & case_insensitive=.true.)
+    end do
+
+  end subroutine handleReplacementNodes
 
 
 end module dftbp_io_hsdcompat

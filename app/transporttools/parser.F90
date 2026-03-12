@@ -23,7 +23,7 @@ module transporttools_parser
       & getChildValue, getSelectedAtomIndices, &
       & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
       & getNodeName, getNodeHSDName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, destroyNode, new_table
+      & dumpHsd, destroyNode, new_table, handleReplacementNodes
   use dftbp_extlibs_hsd, only : hsd_load
   use dftbp_io_message, only : error, warning
   use dftbp_transport_negfvars, only : ContactInfo, TTransPar
@@ -109,6 +109,7 @@ contains
       content%name = rootTag
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
+      call handleReplacementNodes(content)
       call hsdTree%add_child(content)
       deallocate(content)
       nullify(content)

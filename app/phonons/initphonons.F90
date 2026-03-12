@@ -24,7 +24,7 @@ module phonons_initphonons
       & getSelectedAtomIndices, getSelectedIndices, setChild, setChildValue, &
       & convertUnitHsd, setUnprocessed, warnUnprocessedNodes, &
       & getNodeName, textNodeName, getItem1, getLength, destroyNodeList, &
-      & dumpHsd, getFirstTextChild, new_table
+      & dumpHsd, getFirstTextChild, new_table, handleReplacementNodes
   use dftbp_extlibs_hsd, only : hsd_load
   use dftbp_io_message, only : error
   use dftbp_io_tokenreader, only : getNextToken
@@ -236,6 +236,7 @@ contains
       content%name = rootTag
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
+      call handleReplacementNodes(content)
       call hsdTree%add_child(content)
       deallocate(content)
       nullify(content)

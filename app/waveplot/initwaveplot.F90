@@ -28,7 +28,7 @@ module waveplot_initwaveplot
       & getItem1, getLength, getNodeName, hsd_dump, hsd_error_t,&
       & hsd_rename_child, detailedError, detailedWarning, getChild, getChildren,&
       & getChildValue, getSelectedIndices, setChild, setChildValue, convertUnitHsd,&
-      & warnUnprocessedNodes, destroyNodeList, removeChildNodes, new_table
+      & warnUnprocessedNodes, destroyNodeList, removeChildNodes, new_table, handleReplacementNodes
   use dftbp_extlibs_hsd, only : hsd_load
   use dftbp_io_message, only : error, warning
   use dftbp_math_simplealgebra, only : determinant33
@@ -304,6 +304,7 @@ contains
       content%name = rootTag
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
+      call handleReplacementNodes(content)
       call hsdTree%add_child(content)
       deallocate(content)
       nullify(content)
@@ -329,6 +330,7 @@ contains
       call error("Error loading detailed output file '" // unquote(strBuffer) // "': "&
           & // trim(hsdError%message))
     end if
+    call handleReplacementNodes(tmp)
     call getChild(tmp, "detailedout", detailed)
     call readDetailed(this, detailed, tGroundState, kPointsWeights)
     call destroyNode(tmp)
