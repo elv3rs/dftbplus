@@ -406,7 +406,7 @@ contains
     !! Finish parsing, dump parsed and processed input
     if (tWriteHSD) then
       ! TODO(Phase 4): call hsd_dump(hsdTree, hsdParsedInput)
-      write(stdout, "(A)") "Processed input written as HSD to '" // hsdParsedInput // "'"
+      ! write(stdout, "(A)") "Processed input written as HSD to '" // hsdParsedInput // "'"
     end if
     write(stdout, "(A)") repeat("-", 80)
     write(stdout, *)
