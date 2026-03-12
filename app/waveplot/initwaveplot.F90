@@ -41,7 +41,7 @@ module waveplot_initwaveplot
   public :: TProgramVariables, TProgramVariables_init
 
 
-  !> Data type containing variables from detailed.xml.
+  !> Data type containing variables from detailed.hsd.
   type TInput
 
     !> Geometry instance
@@ -200,7 +200,7 @@ module waveplot_initwaveplot
   !> Data type containing program variables.
   type TProgramVariables
 
-    !> Data of detailed.xml
+    !> Data of detailed.hsd
     type(TInput) :: input
 
     !> Data of eigenvec.bin
@@ -305,6 +305,8 @@ contains
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
+      deallocate(content)
+      nullify(content)
     end block
     call getChild(hsdTree, rootTag, root)
 
@@ -319,8 +321,8 @@ contains
 
     call getChildValue(root, "GroundState", tGroundState, .true.)
 
-    ! Read data from detailed output (supports .xml, .hsd, .json)
-    call getChildValue(root, "DetailedXML", strBuffer)
+    ! Read data from detailed output (HSD format)
+    call getChildValue(root, "DetailedXML", strBuffer, "detailed.hsd")
     allocate(tmp)
     call hsd_load(unquote(strBuffer), tmp, hsdError)
     if (allocated(hsdError)) then
@@ -404,7 +406,7 @@ contains
   end subroutine TProgramVariables_init
 
 
-  !> Interpret the information stored in detailed.xml.
+  !> Interpret the information stored in detailed.hsd.
   subroutine readDetailed(this, detailed, tGroundState, kPointsWeights)
 
     !> Container of program variables
@@ -478,7 +480,7 @@ contains
   end subroutine readDetailed
 
 
-  !> Read in the geometry stored as .xml in internal or .gen format.
+  !> Read in the geometry stored as .hsd in internal or .gen format.
   subroutine readGeometry(geo, geonode)
 
     !> Geometry instance
@@ -555,7 +557,7 @@ contains
     !! If current level is found be calculated explicitely
     logical :: tFound
 
-    !! Warning issued, if the detailed.xml id does not match the eigenvector id
+    !! Warning issued, if the detailed.hsd id does not match the eigenvector id
     character(len=63) :: warnId(3) = [&
         & "The external files you are providing differ from those provided",&
         & "when this input file was generated. The results you obtain with",&
@@ -897,7 +899,7 @@ contains
     read(fd%unit) id
 
     if (id /= identity) then
-      call error("Ids for eigenvectors ("// i2c(id) //") and xml-input ("// i2c(identity) // &
+      call error("Ids for eigenvectors ("// i2c(id) //") and hsd-input ("// i2c(identity) // &
           & ") don't match.")
     end if
 

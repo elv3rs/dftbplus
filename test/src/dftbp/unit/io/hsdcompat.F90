@@ -13,7 +13,7 @@ module test_io_hsdcompat
   use dftbp_common_unitconversion, only : TUnit
   use dftbp_extlibs_hsd, only : hsd_table, hsd_error_t, hsd_get, hsd_set, new_table, &
       & hsd_load_string, HSD_STAT_OK, hsd_has_child, hsd_get_attrib, &
-      & hsd_set_attrib, hsd_get_table
+      & hsd_set_attrib, hsd_get_table, hsd_warn_unprocessed, MAX_WARNING_LEN
   use dftbp_io_hsdcompat, only : getChildValue, getChild, setChildValue, setChild, &
       & detailedWarning, convertUnitHsd, getNodeName, getNodeName2, getNodeHSDName, &
       & warnUnprocessedNodes, setUnprocessed, &
@@ -426,16 +426,16 @@ contains
     type(hsd_table) :: root
     type(hsd_error_t), allocatable :: err
     real(dp) :: val
+    character(len=:), allocatable :: modifier
 
     ! Create HSD with a value having Angstrom modifier
     call hsd_load_string('Distance [Angstrom] = 1.0', root, err)
     @:ASSERT(.not. allocated(err))
 
-    ! Read with unit conversion
-    call getChildValue(root, "Distance", val)
-    ! convertUnitHsd should detect the [Angstrom] modifier and convert
-    ! For now just verify the value was read (modifier handling depends on caller)
+    ! Read with modifier — caller must accept the modifier or get an error
+    call getChildValue(root, "Distance", val, modifier=modifier)
     @:ASSERT(abs(val - 1.0_dp) < 1.0e-10_dp)
+    @:ASSERT(modifier == "Angstrom")
   $:END_TEST()
 
 
@@ -473,6 +473,41 @@ contains
     ! Just verify it doesn't crash — output goes to stderr
     call detailedWarning(root, "Test warning message")
     @:ASSERT(.true.)
+  $:END_TEST()
+
+
+  $:TEST("dispatch_child_marked_processed", label="hsdcompat")
+    !! Regression: dispatch children obtained via getChildValue (table variant)
+    !! must be marked as processed so that warnUnprocessedNodes does not report
+    !! them as unread.  This mirrors the Geometry = GenFormat { ... } pattern.
+    type(hsd_table), target :: root
+    type(hsd_table), pointer :: value1, child
+    type(hsd_error_t), allocatable :: err
+    character(len=:), allocatable :: buffer
+    character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+    integer :: paramVal
+
+    call hsd_load_string(&
+        & 'Block = MyChoice {' // new_line('a') // &
+        & '  Param = 42' // new_line('a') // &
+        & '}', root, err)
+    @:ASSERT(.not. allocated(err))
+
+    ! Simulate the dispatch pattern: get the table block, then its first child
+    call getChildValue(root, "Block", value1, child=child)
+    call getNodeName(value1, buffer)
+    @:ASSERT(buffer == "mychoice")
+
+    ! The dispatch child (MyChoice) must be marked as processed
+    @:ASSERT(value1%processed)
+
+    ! Read a child from the dispatch table to process it
+    call getChildValue(value1, "Param", paramVal)
+    @:ASSERT(paramVal == 42)
+
+    ! warnUnprocessedNodes must not find any unprocessed nodes
+    call hsd_warn_unprocessed(root, warnings)
+    @:ASSERT(size(warnings) == 0)
   $:END_TEST()
 
 

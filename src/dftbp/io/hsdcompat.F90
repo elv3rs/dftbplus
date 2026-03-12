@@ -26,14 +26,16 @@ module dftbp_io_hsdcompat
   use dftbp_common_accuracy, only : dp, lc, mc
   use dftbp_common_status, only : TStatus
   use dftbp_common_unitconversion, only : TUnit, convertUnit, statusCodes
-  use dftbp_extlibs_hsd, only : hsd_table, hsd_value, hsd_node, hsd_node_ptr, hsd_iterator, &
+  use dftbp_extlibs_hsd, only : hsd_table, hsd_value, hsd_node, hsd_iterator, &
       & hsd_error_t, &
       & hsd_get, hsd_get_or, hsd_get_or_set, hsd_get_matrix, &
-      & hsd_set, hsd_get_child, hsd_get_table, hsd_has_child, hsd_remove_child, &
+      & hsd_set, hsd_clear_children, &
+      & hsd_get_child, hsd_get_table, hsd_has_child, hsd_remove_child, &
       & hsd_child_count, hsd_get_keys, hsd_get_attrib, hsd_has_attrib, hsd_set_attrib, &
-      & hsd_rename_child, hsd_get_choice, &
+      & hsd_rename_child, &
       & new_table, new_value, &
       & hsd_load, hsd_load_string, hsd_dump, hsd_dump_to_string, &
+      & hsd_warn_unprocessed, MAX_WARNING_LEN, &
       & HSD_STAT_OK, HSD_STAT_NOT_FOUND, HSD_STAT_TYPE_ERROR
   use dftbp_io_charmanip, only : i2c, tolower, unquote
   use dftbp_io_indexselection, only : getIndexSelection
@@ -228,10 +230,12 @@ contains
     type(hsd_table), target, save :: singleton
     logical, save :: initialized = .false.
 
+    !$omp critical (getTextPseudoTable_init)
     if (.not. initialized) then
       call new_table(singleton, name=textNodeName)
       initialized = .true.
     end if
+    !$omp end critical (getTextPseudoTable_init)
     ptr => singleton
 
   end function getTextPseudoTable_
@@ -276,10 +280,16 @@ contains
     integer :: stat
 
     call hsd_get(node, textName_(name), val, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required integer value: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -298,10 +308,16 @@ contains
     integer :: stat
 
     call hsd_get(node, textName_(name), val, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required real value: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -320,10 +336,16 @@ contains
     integer :: stat
 
     call hsd_get(node, textName_(name), val, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required logical value: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -369,9 +391,12 @@ contains
               ! Truly empty table block – return empty string
               val = ""
             else
-              ! Table with content (e.g. "Prefix = {path/}") – use default
-              val = default
-              call hsd_set(node, textName_(name), default)
+              ! Table with content (e.g. "Prefix = {path/}") – try extracting text
+              call getTextContent_(node, name, val)
+              if (len(val) == 0) then
+                val = default
+                call hsd_set(node, textName_(name), default)
+              end if
             end if
           else
             ! Child does not exist at all – use default and write it back
@@ -383,10 +408,25 @@ contains
     else
       call hsd_get(node, textName_(name), val, stat=stat)
       if (stat /= HSD_STAT_OK) then
-        call error(formatErrMsg_(node, "Missing required string value: '" // name // "'"))
+        block
+          type(hsd_table), pointer :: tbl
+          call hsd_get_table(node, name, tbl)
+          if (associated(tbl)) then
+            call getTextContent_(node, name, val)
+            if (len(val) == 0) then
+              call error(formatErrMsg_(node, "Missing required string value: '" // name // "'"))
+            end if
+          else
+            call error(formatErrMsg_(node, "Missing required string value: '" // name // "'"))
+          end if
+        end block
       end if
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -408,8 +448,35 @@ contains
     type(hsd_table), pointer, intent(out), optional :: child
     logical, intent(in), optional :: isDefaultExported
 
-    call hsd_get_or_set(node, textName_(name), val, default)
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    integer :: stat
+
+    if (present(isDefaultExported)) then
+      if (.not. isDefaultExported) then
+        call hsd_get_or(node, textName_(name), val, default, stat=stat)
+        if (stat == HSD_STAT_TYPE_ERROR) then
+          call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+        end if
+        if (present(modifier)) then
+          call getModifier_(node, name, modifier)
+        else
+          call checkNoModifier_(node, name)
+        end if
+        if (present(child)) then
+          call hsd_get_table(node, name, child)
+          if (.not. associated(child)) child => node
+        end if
+        return
+      end if
+    end if
+    call hsd_get_or_set(node, textName_(name), val, default, stat=stat)
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    end if
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -427,8 +494,35 @@ contains
     type(hsd_table), pointer, intent(out), optional :: child
     logical, intent(in), optional :: isDefaultExported
 
-    call hsd_get_or_set(node, textName_(name), val, default)
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    integer :: stat
+
+    if (present(isDefaultExported)) then
+      if (.not. isDefaultExported) then
+        call hsd_get_or(node, textName_(name), val, default, stat=stat)
+        if (stat == HSD_STAT_TYPE_ERROR) then
+          call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+        end if
+        if (present(modifier)) then
+          call getModifier_(node, name, modifier)
+        else
+          call checkNoModifier_(node, name)
+        end if
+        if (present(child)) then
+          call hsd_get_table(node, name, child)
+          if (.not. associated(child)) child => node
+        end if
+        return
+      end if
+    end if
+    call hsd_get_or_set(node, textName_(name), val, default, stat=stat)
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    end if
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -445,8 +539,17 @@ contains
     character(len=:), allocatable, intent(out), optional :: modifier
     type(hsd_table), pointer, intent(out), optional :: child
 
-    call hsd_get_or_set(node, textName_(name), val, default)
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    integer :: stat
+
+    call hsd_get_or_set(node, textName_(name), val, default, stat=stat)
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    end if
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -472,13 +575,19 @@ contains
     integer :: stat, nn
 
     call hsd_get(node, textName_(name), tmp, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required integer array: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for integer array '" // name // "': type conversion error"))
     end if
     nn = min(size(tmp), size(val))
     val(:nn) = tmp(:nn)
     if (present(nItem)) nItem = size(tmp)
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -499,13 +608,19 @@ contains
     integer :: stat, nn
 
     call hsd_get(node, textName_(name), tmp, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required real array: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for real array '" // name // "': type conversion error"))
     end if
     nn = min(size(tmp), size(val))
     val(:nn) = tmp(:nn)
     if (present(nItem)) nItem = size(tmp)
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -526,13 +641,19 @@ contains
     integer :: stat, nn
 
     call hsd_get(node, textName_(name), tmp, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required logical array: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for logical array '" // name // "': type conversion error"))
     end if
     nn = min(size(tmp), size(val))
     val(:nn) = tmp(:nn)
     if (present(nItem)) nItem = size(tmp)
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -554,12 +675,13 @@ contains
     type(hsd_table), pointer, intent(out), optional :: child
 
     real(dp), allocatable :: tmp(:,:)
-    integer :: stat, nrows, ncols, r, c
-    integer :: nr, nc
+    integer :: stat, nrows, ncols
 
     call hsd_get_matrix(node, textName_(name), tmp, nrows, ncols, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required real matrix: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for real matrix '" // name // "': type conversion error"))
     end if
     ! Legacy compatibility: the old xmlf90 code read matrix values sequentially
     ! (row by row from text) and filled Fortran arrays in column-major order.
@@ -567,7 +689,11 @@ contains
     ! We must flatten in row-major (text) order and refill in column-major.
     call fillColumnMajorFromTextMatrix_real_(tmp, nrows, ncols, val)
     if (present(nItem)) nItem = nrows * ncols
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -586,15 +712,20 @@ contains
 
     integer, allocatable :: tmp(:,:)
     integer :: stat, nrows, ncols
-    integer :: nr, nc
 
     call hsd_get_matrix(node, textName_(name), tmp, nrows, ncols, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_NOT_FOUND) then
       call error(formatErrMsg_(node, "Missing required integer matrix: '" // name // "'"))
+    else if (stat /= HSD_STAT_OK) then
+      call error(formatErrMsg_(node, "Invalid value for integer matrix '" // name // "': type conversion error"))
     end if
     call fillColumnMajorFromTextMatrix_int_(tmp, nrows, ncols, val)
     if (present(nItem)) nItem = nrows * ncols
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -617,18 +748,23 @@ contains
     integer :: nr, nc
 
     call hsd_get_matrix(node, textName_(name), tmp, nrows, ncols, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    else if (stat /= HSD_STAT_OK) then
       nr = min(size(default, 1), size(val, 1))
       nc = min(size(default, 2), size(val, 2))
       val(:nr, :nc) = default(:nr, :nc)
-      ! Store default as flattened 1D array (hsd_set_matrix not yet available)
-      call hsd_set(node, textName_(name), reshape(default, [size(default)]))
+      call hsd_set(node, textName_(name), default)
       if (present(nItem)) nItem = size(default)
     else
       call fillColumnMajorFromTextMatrix_real_(tmp, nrows, ncols, val)
       if (present(nItem)) nItem = nrows * ncols
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -714,6 +850,7 @@ contains
                 end block
                 call hsd_remove_child(node, name, stat, case_insensitive=.true.)
                 call addChildGetPtr_(node, wrapTbl, container)
+                if (associated(container)) container%processed = .true.
               end block
             class default
               container => null()
@@ -758,6 +895,11 @@ contains
     ! Get the first table child of the container for dispatch
     if (associated(container)) then
       call getFirstTableChild_(container, variableValue, stat)
+      ! Mark the dispatch child as processed so that warnUnprocessedNodes does
+      ! not report it as unread.  The caller's select-case dispatch will read
+      ! its children (marking them individually); the dispatch child itself is
+      ! only used to determine the method name via getNodeName / getNodeName2.
+      if (associated(variableValue)) variableValue%processed = .true.
       ! If no table child found but text content exists, return a pointer to a
       ! static pseudo-table named "#text" so that the dispatch pattern
       ! (getNodeName2 + select case) can detect inline text data — matching the
@@ -794,6 +936,11 @@ contains
       else
         modifier = ""
       end if
+    else
+      if (associated(container) .and. allocated(container%attrib) &
+          & .and. len_trim(container%attrib) > 0) then
+        call error(formatErrMsg_(container, "Entity is not allowed to have a modifier"))
+      end if
     end if
 
   end subroutine getChVal_table
@@ -816,7 +963,9 @@ contains
     integer :: stat, nn
 
     call hsd_get(node, textName_(name), tmp, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    else if (stat /= HSD_STAT_OK) then
       nn = min(size(default), size(val))
       val(:nn) = default(:nn)
       call hsd_set(node, textName_(name), default)
@@ -826,7 +975,11 @@ contains
       val(:nn) = tmp(:nn)
       if (present(nItem)) nItem = size(tmp)
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -848,7 +1001,9 @@ contains
     integer :: stat, nn
 
     call hsd_get(node, textName_(name), tmp, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    else if (stat /= HSD_STAT_OK) then
       nn = min(size(default), size(val))
       val(:nn) = default(:nn)
       call hsd_set(node, textName_(name), default)
@@ -858,7 +1013,11 @@ contains
       val(:nn) = tmp(:nn)
       if (present(nItem)) nItem = size(tmp)
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -880,17 +1039,23 @@ contains
     integer :: stat, nn
 
     call hsd_get(node, textName_(name), tmp, stat=stat)
-    if (stat /= HSD_STAT_OK) then
+    if (stat == HSD_STAT_TYPE_ERROR) then
+      call error(formatErrMsg_(node, "Invalid value for '" // name // "': type conversion error"))
+    else if (stat /= HSD_STAT_OK) then
       nn = min(size(default), size(val))
       val(:nn) = default(:nn)
-      ! Write back default as string (Fortran boolean array → hsd)
+      call hsd_set(node, textName_(name), default)
       if (present(nItem)) nItem = size(default)
     else
       nn = min(size(tmp), size(val))
       val(:nn) = tmp(:nn)
       if (present(nItem)) nItem = size(tmp)
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -926,7 +1091,11 @@ contains
     if (iErr == TOKEN_ERROR) then
       call error(formatErrMsg_(node, "Invalid string value in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -956,7 +1125,11 @@ contains
     if (iErr == TOKEN_ERROR) then
       call error(formatErrMsg_(node, "Invalid real value in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -992,7 +1165,11 @@ contains
     else if (iErr == TOKEN_EOS .and. nItem /= 0) then
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1022,7 +1199,11 @@ contains
     if (iErr == TOKEN_ERROR) then
       call error(formatErrMsg_(node, "Invalid integer value in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1056,7 +1237,11 @@ contains
     else if (iErr == TOKEN_EOS .and. nItem /= 0) then
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1086,7 +1271,11 @@ contains
     if (iErr == TOKEN_ERROR) then
       call error(formatErrMsg_(node, "Invalid complex value in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1120,7 +1309,11 @@ contains
     else if (iErr == TOKEN_EOS .and. nItem /= 0) then
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1177,7 +1370,11 @@ contains
     if (len(valueInt) /= len(valueReal)) then
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1233,7 +1430,11 @@ contains
     if (len(valueStr) /= len(valueInt) .or. len(valueInt) /= len(valueReal)) then
       call error(formatErrMsg_(node, "Unexpected end of data in '" // name // "'"))
     end if
-    if (present(modifier)) call getModifier_(node, name, modifier)
+    if (present(modifier)) then
+      call getModifier_(node, name, modifier)
+    else
+      call checkNoModifier_(node, name)
+    end if
     if (present(child)) then
       call hsd_get_table(node, name, child)
       if (.not. associated(child)) child => node
@@ -1303,6 +1504,7 @@ contains
             ! Replace the value node with the new table in the parent
             call hsd_remove_child(node, name, stat, case_insensitive=.true.)
             call addChildGetPtr_(node, wrapTbl, child)
+            if (associated(child)) child%processed = .true.
           end block
         class default
           child => null()
@@ -1340,6 +1542,8 @@ contains
     type(hsd_table), intent(inout), target :: node
     character(len=*), intent(in) :: name
     integer, intent(in) :: val
+    !> Intentionally unused: hsd_set is inherently upsert (always replaces if the key exists),
+    !> so no separate replace logic is needed. Kept for API compatibility with the old xmlf90 layer.
     logical, intent(in), optional :: replace
     type(hsd_table), pointer, intent(out), optional :: child
 
@@ -1631,10 +1835,11 @@ contains
         call txt%set_raw(trim(adjustl(strBuffer)))
         call child%add_child(txt)
       end block
+      if (present(modifier)) child%attrib = modifier
     else
       call hsd_set(node, textName_(name), trim(adjustl(strBuffer)))
+      if (present(modifier)) call hsd_set_attrib(node, name, modifier)
     end if
-    if (present(modifier)) call hsd_set_attrib(node, name, modifier)
 
   end subroutine setChVal_intR2RealR2
 
@@ -1678,7 +1883,7 @@ contains
     logical, intent(out), optional :: changed
 
     logical :: changed_
-    integer :: status
+    integer :: status, setStat
 
     changed_ = len_trim(modifier) > 0
     if (changed_) then
@@ -1687,7 +1892,10 @@ contains
         call detailedError(child, MSG_INVALID_MODIFIER // modifier // "'")
       end if
       if (present(replace)) then
-        if (replace) call hsd_set(child, "", convertValue)
+        if (replace) then
+          call hsd_set(child, "#text", convertValue, stat=setStat)
+          if (setStat /= 0) call detailedError(child, "Failed to write converted value back to HSD tree")
+        end if
       end if
     end if
     if (present(changed)) changed = changed_
@@ -1704,7 +1912,7 @@ contains
     logical, intent(out), optional :: changed
 
     logical :: changed_
-    integer :: status
+    integer :: status, setStat
 
     changed_ = len_trim(modifier) > 0
     if (changed_) then
@@ -1713,7 +1921,10 @@ contains
         call detailedError(child, MSG_INVALID_MODIFIER // modifier // "'")
       end if
       if (present(replace)) then
-        if (replace) call hsd_set(child, "", convertValue)
+        if (replace) then
+          call hsd_set(child, "#text", convertValue, stat=setStat)
+          if (setStat /= 0) call detailedError(child, "Failed to write converted value back to HSD tree")
+        end if
       end if
     end if
     if (present(changed)) changed = changed_
@@ -1730,7 +1941,7 @@ contains
     logical, intent(out), optional :: changed
 
     logical :: changed_
-    integer :: status
+    integer :: status, setStat
 
     changed_ = len_trim(modifier) > 0
     if (changed_) then
@@ -1739,7 +1950,10 @@ contains
         call detailedError(child, MSG_INVALID_MODIFIER // modifier // "'")
       end if
       if (present(replace)) then
-        if (replace) call hsd_set(child, "", convertValue)
+        if (replace) then
+          call hsd_set(child, "#text", transpose(convertValue), stat=setStat)
+          if (setStat /= 0) call detailedError(child, "Failed to write converted value back to HSD tree")
+        end if
       end if
     end if
     if (present(changed)) changed = changed_
@@ -1800,19 +2014,40 @@ contains
   end function hasInlineData
 
   ! ============================================================
-  !  warnUnprocessedNodes — stub for transition
+  !  warnUnprocessedNodes — detect unused input nodes
   ! ============================================================
 
-  !> Warn about unprocessed nodes (stub during transition).
+  !> Warn about unprocessed nodes in the HSD tree.
   !>
-  !> In the new architecture, unprocessed node detection is handled by
-  !> schema_validate_strict. This is a no-op stub during transition.
+  !> Walks the tree and collects any nodes that were not accessed during parsing.
+  !> If tIgnoreUnprocessed is .true., warnings are suppressed; if .false. (the
+  !> default) and unprocessed nodes exist, the program stops with an error.
   subroutine warnUnprocessedNodes(node, tIgnoreUnprocessed)
     type(hsd_table), intent(in) :: node
     logical, intent(in), optional :: tIgnoreUnprocessed
 
-    ! No-op: schema_validate_strict will replace this
-    ! once schemas are defined for each parser section.
+    character(len=MAX_WARNING_LEN), allocatable :: warnings(:)
+    logical :: tIgnore
+    integer :: ii
+
+    tIgnore = .false.
+    if (present(tIgnoreUnprocessed)) tIgnore = tIgnoreUnprocessed
+
+    call hsd_warn_unprocessed(node, warnings)
+
+    if (size(warnings) > 0) then
+      if (tIgnore) then
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+      else
+        do ii = 1, size(warnings)
+          call warning(trim(warnings(ii)))
+        end do
+        call error("The following " // i2c(size(warnings)) &
+            & // " node(s) have been ignored by the parser.")
+      end if
+    end if
 
   end subroutine warnUnprocessedNodes
 
@@ -1884,6 +2119,13 @@ contains
     type(hsd_table) :: newTable
     class(hsd_node), pointer :: storedChild
 
+    ! If replace requested, remove any existing child with this name first
+    if (present(replace)) then
+      if (replace) then
+        call hsd_remove_child(node, name, case_insensitive=.true.)
+      end if
+    end if
+
     ! Create a table and add it (add_child makes a copy via source=)
     call new_table(newTable, name=name)
     call node%add_child(newTable)
@@ -1899,36 +2141,60 @@ contains
 
     if (present(modifier)) then
       if (len_trim(modifier) > 0) then
-        call hsd_set_attrib(node, name, modifier)
+        child%attrib = modifier
       end if
     end if
 
   end subroutine setChild
 
   ! ============================================================
-  !  setUnprocessed — no-op stub
+  !  setUnprocessed — clear processed flag
   ! ============================================================
 
-  !> Mark a node as unprocessed (no-op in hsd-data).
+  !> Mark a node as unprocessed.
   !>
-  !> In the legacy code, this removed the "processed" attribute.
-  !> In hsd-data, processing tracking is not used.
+  !> Clears the processed flag so that warnUnprocessedNodes will report the node
+  !> as unread. Used by oldcompat when restructuring nodes for re-parsing.
   subroutine setUnprocessed(node)
-    type(hsd_table), intent(in) :: node
+    type(hsd_table), intent(inout) :: node
 
-    ! No-op
+    node%processed = .false.
 
   end subroutine setUnprocessed
 
-  !> Mark a node as processed (no-op in hsd-data).
+  !> Mark a node (and optionally all descendants) as processed.
   !>
-  !> In the legacy code, this set the "processed" attribute. In hsd-data,
-  !> processing tracking is not used (schema validation replaces it).
+  !> Sets the processed flag so that warnUnprocessedNodes will not report the
+  !> node as unread. When recursive is .true., all table children are also
+  !> marked recursively.
   recursive subroutine setProcessed(node, recursive)
     type(hsd_table), pointer, intent(in) :: node
     logical, intent(in), optional :: recursive
 
-    ! No-op
+    integer :: ii
+    class(hsd_node), pointer :: ch
+    logical :: doRecurse
+
+    if (.not. associated(node)) return
+    node%processed = .true.
+
+    doRecurse = .false.
+    if (present(recursive)) doRecurse = recursive
+    if (doRecurse) then
+      do ii = 1, node%num_children
+        call node%get_child(ii, ch)
+        if (.not. associated(ch)) cycle
+        ch%processed = .true.
+        select type (t => ch)
+        type is (hsd_table)
+          block
+            type(hsd_table), pointer :: tptr
+            tptr => t
+            call setProcessed(tptr, recursive=.true.)
+          end block
+        end select
+      end do
+    end if
 
   end subroutine setProcessed
 
@@ -1954,13 +2220,12 @@ contains
 
   !> Navigate to a descendant node along a "/" separated path.
   !>
-  !> Replaces the legacy getDescendant(root, path, child, requested, processed, parent).
-  subroutine getDescendant(root, path, child, requested, processed, parent)
+  !> Replaces the legacy getDescendant(root, path, child, requested, parent).
+  subroutine getDescendant(root, path, child, requested, parent)
     type(hsd_table), intent(inout), target :: root
     character(len=*), intent(in) :: path
     type(hsd_table), pointer, intent(out) :: child
     logical, intent(in), optional :: requested
-    logical, intent(in), optional :: processed
     type(hsd_table), pointer, intent(out), optional :: parent
 
     integer :: iSlash
@@ -2018,7 +2283,7 @@ contains
     logical, intent(in), optional :: updateHsdName
     type(hsd_table), intent(inout), optional :: parent
 
-    node%name = tolower(name)
+    node%name = name
     if (present(parent)) call parent%invalidate_index()
 
   end subroutine setNodeName
@@ -2056,11 +2321,7 @@ contains
   subroutine removeChildNodes(node)
     type(hsd_table), intent(inout), target :: node
 
-    ! Reset the children array by reinitializing
-    node%num_children = 0
-    node%capacity = 0
-    if (allocated(node%children)) deallocate(node%children)
-    node%index_active = .false.
+    call hsd_clear_children(node)
 
   end subroutine removeChildNodes
 
@@ -2092,8 +2353,10 @@ contains
     type(hsd_table), pointer, intent(inout) :: child
     type(hsd_table), pointer :: removed
 
-    call hsd_remove_child(parent, child%name)
-    child => null()
+    if (associated(child)) then
+      call hsd_remove_child(parent, child%name)
+      child => null()
+    end if
     removed => null()
 
   end function removeChild
@@ -2356,6 +2619,33 @@ contains
 
   end subroutine getModifier_
 
+
+  !> Check that a node does not carry a modifier (attrib).
+  !>
+  !> If the named child (or the node itself when name is empty) has a non-empty
+  !> attrib, the user supplied a modifier (e.g. [Kelvin]) where none is accepted.
+  !> This matches the legacy MSG_NOMODIFIER check.
+  subroutine checkNoModifier_(parent, name)
+    type(hsd_table), intent(in), target :: parent
+    character(len=*), intent(in) :: name
+
+    character(len=:), allocatable :: attrib
+    integer :: stat
+
+    if (len_trim(name) == 0) then
+      if (allocated(parent%attrib) .and. len_trim(parent%attrib) > 0) then
+        call error(formatErrMsg_(parent, "Entity is not allowed to have a modifier"))
+      end if
+    else
+      call hsd_get_attrib(parent, name, attrib, stat)
+      if (stat == HSD_STAT_OK .and. len_trim(attrib) > 0) then
+        call error(formatErrMsg_(parent, "Entity '" // name // "' is not allowed to have a modifier"))
+      end if
+    end if
+
+  end subroutine checkNoModifier_
+
+
   !> Get the first table child of a node (for dispatch patterns with empty name).
   subroutine getFirstTableChild_(node, child, stat)
     type(hsd_table), intent(in), target :: node
@@ -2460,10 +2750,12 @@ contains
             & .or. v%name == "#text") then
           call v%get_string(piece, stat)
           if (stat == HSD_STAT_OK .and. allocated(piece)) then
-            if (len(text) > 0) then
-              text = text // " " // piece
-            else
-              text = piece
+            if (len_trim(piece) > 0) then
+              if (len(text) > 0) then
+                text = text // " " // piece
+              else
+                text = piece
+              end if
             end if
           end if
         end if

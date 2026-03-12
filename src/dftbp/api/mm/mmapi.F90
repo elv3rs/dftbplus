@@ -240,7 +240,8 @@ contains
     type(TDftbPlusInput), intent(inout) :: this
 
     if (associated(this%hsdTree)) then
-      call destroyNode(this%hsdTree)
+      call this%hsdTree%destroy()
+      deallocate(this%hsdTree)
       this%hsdTree => null()
     end if
 
@@ -453,6 +454,7 @@ contains
     allocate(root)
     call new_table(root, name=rootTag)
     call input%hsdTree%add_child(root)
+    deallocate(root)
 
   end subroutine TDftbPlus_getEmptyInput
 

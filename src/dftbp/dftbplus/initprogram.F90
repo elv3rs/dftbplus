@@ -837,7 +837,7 @@ module dftbp_dftbplus_initprogram
     !> Produce tagged output?
     logical :: tWriteAutotest
 
-    !> Produce detailed.xml
+    !> Produce detailed.hsd
     logical :: tWriteDetailedXML
 
     !> Output format for detailed file ("xml", "hsd", "json")

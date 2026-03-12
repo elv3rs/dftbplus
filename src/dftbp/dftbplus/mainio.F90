@@ -2350,10 +2350,16 @@ contains
     if (present(outputFormat)) then
       fmt = outputFormat
     else
-      fmt = "xml"
+      fmt = "hsd"
     end if
     outFileName = "detailed." // trim(fmt)
-    call dumpHsd(root, outFileName)
+    block
+      type(hsd_table) :: wrapper
+      call new_table(wrapper)
+      call wrapper%add_child(root)
+      call dumpHsd(wrapper, outFileName)
+      call wrapper%destroy()
+    end block
   end subroutine writeDetailedXml
 
 

@@ -42,8 +42,8 @@ module phonons_initphonons
   character(len=*), parameter :: autotestTag = "autotest.tag"
   character(len=*), parameter :: hsdInput = "phonons_in.hsd"
   character(len=*), parameter :: hsdParsedInput = "phonons_pin.hsd"
-  character(len=*), parameter :: xmlInput = "phonons_in.xml"
-  character(len=*), parameter :: xmlParsedInput = "phonons_pin.xml"
+  character(len=*), parameter :: xmlInput = "phonons_in.hsd"
+  character(len=*), parameter :: xmlParsedInput = "phonons_pin.hsd"
 
   public :: initProgramVariables, destructProgramVariables
   public :: TPdos, autotestTag
@@ -237,6 +237,8 @@ contains
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
+      deallocate(content)
+      nullify(content)
     end block
     call getChild(hsdTree, rootTag, root)
 

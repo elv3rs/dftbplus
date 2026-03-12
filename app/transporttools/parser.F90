@@ -44,13 +44,13 @@ module transporttools_parser
   character(len=*), parameter :: hsdInputName = "setup_in.hsd"
 
   !> XML input file
-  character(len=*), parameter :: xmlInputName = "setup_in.xml"
+  character(len=*), parameter :: xmlInputName = "setup_in.hsd"
 
   !> Processed HSD input
   character(len=*), parameter :: hsdProcInputName = "setup_pin.hsd"
 
   !> Processed  XML input
-  character(len=*), parameter :: xmlProcInputName = "setup_pin.xml"
+  character(len=*), parameter :: xmlProcInputName = "setup_pin.hsd"
 
   !> Tag at the head of the input document tree
   character(len=*), parameter :: rootTag = "setup_in"
@@ -110,6 +110,8 @@ contains
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
+      deallocate(content)
+      nullify(content)
     end block
     call getChild(hsdTree, rootTag, root)
 

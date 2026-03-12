@@ -472,7 +472,7 @@ module dftbp_dftbplus_inputdata
     logical :: tWriteDetailedXML = .false.
 
     !> Output format for detailed output file ("xml", "hsd", "json")
-    character(len=4) :: detailedOutputFormat = "xml"
+    character(len=4) :: detailedOutputFormat = "hsd"
 
     logical :: tWriteResultsTag = .false.
     logical :: tWriteDetailedOut = .true.

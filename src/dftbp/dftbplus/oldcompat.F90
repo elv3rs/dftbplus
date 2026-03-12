@@ -151,7 +151,7 @@ contains
         &"ReselectIndividually", &
         &"Keyword renamed to 'ReselectIndividually'.")
 
-    call getDescendant(root, "Hamiltonian/DFTB/Variational", ch1)
+    call getDescendant(root, "Hamiltonian/DFTB/Variational", ch1, parent=par)
     if (associated(ch1)) then
       call getChildValue(ch1, "", tValue)
       call setUnprocessed(ch1)
@@ -160,6 +160,7 @@ contains
             &is not supported any more!")
       else
         call detailedWarning(ch1, "Energy calculation is made only variational, option removed.")
+        call hsd_remove_child(par, ch1%name)
         call destroyNode(ch1)
       end if
     end if
@@ -472,7 +473,7 @@ contains
     !> Root tag of the HSD-tree
     type(hsd_table), pointer :: root
 
-    type(hsd_table), pointer :: ch1, ch2
+    type(hsd_table), pointer :: ch1, ch2, par
     logical :: tVal1, tVal2
 
     ! If this is an electron dynamics restart, then remove keywords for the (un-needed) ground state
@@ -490,15 +491,17 @@ contains
         call setUnprocessed(ch2)
       end if
       if (tVal1 .and. .not.tVal2) then
-        call getDescendant(root, "Hamiltonian/DFTB/Filling", ch1)
+        call getDescendant(root, "Hamiltonian/DFTB/Filling", ch1, parent=par)
         if (associated(ch1)) then
           call detailedWarning(ch1, "Restarted electronDynamics does not require Filling{}&
               & settings unless projected onto ground state")
+          call hsd_remove_child(par, ch1%name)
           call destroyNode(ch1)
         end if
-        call getDescendant(root, "Analysis", ch1)
+        call getDescendant(root, "Analysis", ch1, parent=par)
         if (associated(ch1)) then
           call detailedWarning(ch1, "Restarted electronDynamics does not use the Analysis{} block")
+          call hsd_remove_child(par, ch1%name)
           call destroyNode(ch1)
         end if
       end if
@@ -730,7 +733,7 @@ contains
     !> Root tag of the HSD-tree
     type(hsd_table), pointer :: root
 
-    type(hsd_table), pointer :: ch1, ch2
+    type(hsd_table), pointer :: ch1, ch2, par
     character(len=:), allocatable :: buffer
 
     call getDescendant(root, "Transport", ch1)
@@ -739,10 +742,11 @@ contains
       call getNodeName(ch1, buffer)
       if (buffer /= "contacthamiltonian") then
       #:for LABEL in [("xTB"), ("DFTB")]
-        call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1)
+        call getDescendant(root, "Hamiltonian/${LABEL}$/Charge", ch1, parent=par)
         if (associated(ch1)) then
           call setUnprocessed(ch1)
           call detailedWarning(ch1, "Device region charge cannot be set if contacts are present.")
+          call hsd_remove_child(par, ch1%name)
           call destroyNode(ch1)
         end if
       #:endfor

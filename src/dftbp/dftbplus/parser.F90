@@ -57,7 +57,7 @@ module dftbp_dftbplus_parser
 #:endif
   use dftbp_extlibs_sdftd3, only : dampingFunction, TSDFTD3Input
   use dftbp_extlibs_tblite, only : tbliteMethod
-  use dftbp_extlibs_hsd, only : hsd_load, hsd_error_t, hsd_merge
+  use dftbp_extlibs_hsd, only : hsd_load, hsd_error_t, hsd_merge, HSD_STAT_OK
   use dftbp_io_hsdcompat, only : hsd_table, hsd_child_list, new_table, textNodeName, getNodeName,&
       & getItem1, getLength, destroyNodeList, destroyNode, removeChild, getChild,&
       & getChildren, getChildValue, setChild, setChildValue, detailedError,&
@@ -155,6 +155,10 @@ contains
     allocate(rootChild)
     call new_table(rootChild, name=rootTag)
     call hsd_merge(rootChild, content, stat)
+    if (stat /= HSD_STAT_OK) then
+      call error("Error merging HSD content into tree for file '" // hsdFile // "'")
+    end if
+    call content%destroy()
     call hsdTree%add_child(rootChild)
     deallocate(rootChild)
 

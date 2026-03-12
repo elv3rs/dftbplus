@@ -194,6 +194,8 @@ contains
       allocate(hsdTree)
       call new_table(hsdTree, name="document")
       call hsdTree%add_child(content)
+      deallocate(content)
+      nullify(content)
     end block
 
     write(stdout, "(A)") repeat("-", 80)

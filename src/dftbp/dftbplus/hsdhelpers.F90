@@ -8,15 +8,11 @@
 #:include "common.fypp"
 
 !> HSD-parsing related helper routines.
-!>
-!> Supports multiple input formats: HSD, XML, JSON, TOML. The format is auto-detected
-!> from the file extension. The default input file is "dftb_in.hsd" but the code will
-!> also search for dftb_in.xml, dftb_in.json, and dftb_in.toml if the HSD file is not found.
 module dftbp_dftbplus_hsdhelpers
   use dftbp_common_globalenv, only : stdOut, tIoProc
   use dftbp_dftbplus_inputdata, only : TInputData
   use dftbp_dftbplus_parser, only : parseHsdTree, readHsdFile, rootTag, TParserFlags
-  use dftbp_io_hsdcompat, only : hsd_table, destroyNode, dumpHsd, getChild, warnUnprocessedNodes
+  use dftbp_io_hsdcompat, only : hsd_table, dumpHsd, getChild, warnUnprocessedNodes
   use dftbp_io_message, only : error
   implicit none
 
@@ -31,9 +27,8 @@ module dftbp_dftbplus_hsdhelpers
   character(*), parameter :: hsdFileName = inputBaseName // ".hsd"
 
   !> Supported input formats with their extensions (searched in order)
-  integer, parameter :: nFormats = 4
-  character(len=5), parameter :: inputExtensions(nFormats) = [character(len=5) :: &
-      & ".hsd", ".xml", ".json", ".toml"]
+  integer, parameter :: nFormats = 1
+  character(len=5), parameter :: inputExtensions(nFormats) = [character(len=5) :: ".hsd"]
 
   !> Name of the DFTB+ processed input file
   character(*), parameter :: hsdProcFileName = "dftb_pin.hsd"
@@ -42,8 +37,7 @@ contains
 
   !> Parses input file and returns initialised input structure.
   !>
-  !> Searches for input files in the following order: dftb_in.hsd, dftb_in.xml,
-  !> dftb_in.json, dftb_in.toml. Uses the first one found.
+  !> Searches for the input file dftb_in.hsd.
   subroutine parseHsdInput(input)
 
     !> Input data parsed from the input file
@@ -58,15 +52,16 @@ contains
     call readHsdFile(inputFile, hsdTree)
     call parseHsdTree(hsdTree, input, parserFlags)
     call doPostParseJobs(hsdTree, parserFlags)
-    call destroyNode(hsdTree)
+    call hsdTree%destroy()
+    deallocate(hsdTree)
+    hsdTree => null()
 
   end subroutine parseHsdInput
 
 
-  !> Searches for the input file across supported formats and returns the first found.
+  !> Searches for the HSD input file and returns it if found.
   !>
-  !> Searches for: dftb_in.hsd, dftb_in.xml, dftb_in.json, dftb_in.toml
-  !> Stops with an error if none is found.
+  !> Stops with an error if not found.
   subroutine findInputFile_(inputFile)
 
     !> Path of the found input file
@@ -82,7 +77,7 @@ contains
     end do
 
     call error("No input file found. Searched for: " // &
-        & "dftb_in.hsd, dftb_in.xml, dftb_in.json, dftb_in.toml")
+        & inputBaseName // trim(inputExtensions(1)))
 
   end subroutine findInputFile_
 

@@ -50,9 +50,8 @@ contains
     type(TGeometry), intent(in) :: geo
 
     call setChildValue(node, "TypeNames", geo%speciesNames, .false.)
-    ! TODO: setChildValue with mixed int+real matrix not yet supported in hsdcompat
-    ! call setChildValue(node, "TypesAndCoordinates", &
-    !     &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
+    call setChildValue(node, "TypesAndCoordinates", &
+        &reshape(geo%species, (/ 1, size(geo%species) /)), geo%coords, .false.)
     call setChildValue(node, "Periodic", geo%tPeriodic, .false.)
     if (geo%tPeriodic .or. geo%tHelical) then
       call setChildValue(node, "LatticeVectors", geo%latVecs, .false.)
@@ -128,9 +127,8 @@ contains
         geo%tFracCoord = .true.
       case default
         call convertUnitHsd(modifier, lengthUnits, typesAndCoords, geo%coords)
-        ! TODO: setChildValue with mixed int+real matrix not yet supported in hsdcompat
-        ! call setChildValue(typesAndCoords, "", reshape(geo%species, [1, size(geo%species)]),&
-        !     & geo%coords, replace=.true.)
+        call setChildValue(typesAndCoords, "", reshape(geo%species, [1, size(geo%species)]),&
+            & geo%coords, replace=.true.)
       end select
     end if
     if (geo%tPeriodic) then

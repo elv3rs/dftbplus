@@ -24,7 +24,7 @@ Options = {
     Verbose = Yes                        # Wanna see a lot of messages?
 }
 
-DetailedXML = "detailed.xml"           # File containing the detailed xml output
+DetailedXML = "detailed.hsd"           # File containing the detailed hsd output
 # of DFTB+
 EigenvecBin = "excitedOrbs.bin"        # File cointaining the binary eigenvecs
 
