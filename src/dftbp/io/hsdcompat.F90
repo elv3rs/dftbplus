@@ -2400,7 +2400,7 @@ contains
       allocate(children%items(cnt))
     end if
 
-    ! Second pass: fill pointers
+    ! Second pass: fill pointers and mark as processed
     idx = 0
     call iter%init(node)
     do while (iter%next(cur))
@@ -2411,6 +2411,7 @@ contains
           if (childName == tolower(name)) then
             idx = idx + 1
             children%items(idx)%ptr => t
+            t%processed = .true.
           end if
         end if
       end select
